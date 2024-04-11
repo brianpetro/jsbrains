@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JS Brains - Smart Chat Model - Universal Adapter Demo</title>
+    <style>
+        :root {
+            --lch-black: 0% 0 0;
+            --lch-white: 100% 0 0;
+            --lch-gray: 96% 0.005 96;
+            --lch-gray-dark: 92% 0.005 96;
+            --lch-gray-darker: 75% 0.005 96;
+            --lch-blue: 54% 0.23 255;
+            --lch-blue-light: 95% 0.03 255;
+            --lch-blue-dark: 80% 0.08 255;
+            --lch-red: 51% 0.2 31;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: oklch(var(--lch-gray));
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 {
+            margin: 0;
+        }
+        h2 {
+            margin: 0;
+        }
+        p {
+            margin: 3ch;
+            text-align: center;
+            line-height: 1.37;
+        }
+        label {
+            margin-bottom: 1ch;
+            font-weight: bold;
+        }
+        input, select, button {
+            padding: 2ch;
+            margin-bottom: 1ch;
+            border: 1px solid oklch(var(--lch-gray-dark));
+            border-radius: 2ch;
+            width: 300px;
+        }
+        button {
+            background-color: oklch(var(--lch-blue));
+            color: white;
+            border: none;
+            cursor: pointer;
+            &#send {
+                max-width: 10ch;
+            }
+        }
+        button:hover {
+            background-color: oklch(var(--lch-blue-dark));
+        }
+        #chat {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 200ch;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            .msg {
+                margin-bottom: 1ch;
+                border: 1px solid oklch(var(--lch-gray-dark));
+                padding: 2ch;
+                border-radius: 2ch;
+                background-color: white;
+                max-width: 100ch;
+                box-shadow: 0 0.2ch 0.4ch oklch(var(--lch-gray-dark));
+                display: flex;
+                justify-content: flex-start;
+                &.user {
+                    background-color: oklch(var(--lch-white));
+                    align-self: end;
+                }
+                &.assistant {
+                    background-color: oklch(var(--lch-blue-light));
+                }
+            }
+        }
+        #notice {
+            color: oklch(var(--lch-red));
+            margin-bottom: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <h1>JS Brains - Smart Chat Model</h1>
+    <h2>Universal Adapter Demo</h2>
+    <p>A seriously simple sample app using JS Brains Smart Chat Model to interact with multiple LLMs in less than 200 lines of code.<br>You can find the source code for this app <a href="https://github.com/brianpetro/jsbrains/tree/main/smart-chat-model" target="_blank">here</a>.</p>
+    <div>
+        <label for="model-select">Choose a Model:</label>
+        <select id="model-select" style="margin-bottom: 20px;">
+            <!-- Options will be loaded dynamically -->
+        </select>
+    </div>
+    <div>
+        <label for="api-key">API Key:</label>
+        <input type="text" id="api-key" placeholder="Enter your API key" style="margin-bottom: 10px; width: 300px;">
+    </div>
+    <div>
+        <div id="notice"></div>
+        <div id="chat"></div>
+        <div>
+            <input type="text" id="user-input" placeholder="Type your message here..." onkeydown="if (event.key === 'Enter') send_message()">
+            <button id="send" onclick="send_message()">Send</button>
+        </div>
+    </div>
+    <script src="https://github.com/brianpetro/jsbrains/releases/download/0.0.1/smart_chat_model_web.js"></script>
+    <script>
+        const { SmartChatModel } = smart_chat_model;
+        let chat_model;
+        document.addEventListener('DOMContentLoaded', function() {
+            const models = SmartChatModel.models;
+            const model_selector = document.getElementById('model-select');
+            for (const key in models) {
+                if(key.startsWith('custom')) continue;
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = models[key].model_name + ' - ' + models[key].description;
+                model_selector.appendChild(option);
+            }
+        });
+        function init_chat_model() {
+            const api_key = document.getElementById('api-key').value;
+            const model_key = document.getElementById('model-select').value;
+            const env = { chats: { current: { get_chat_ml: async () => ({ messages: [] }) } } };
+            const notice_container = document.getElementById('notice');
+            if (model_key.startsWith('anthropic')) return notice_container.innerHTML = `<div style="color: red;">Anthropic prevents simple applications (those without a backend server) from accessing Claude. You can contact them to request they change this policy that goes against making AI accessible: <a href="https://docs.anthropic.com/claude/reference/need-support-contact-us" target="_blank">Contact Anthropic</a></div>`;
+            else if (api_key === '') return notice_container.innerHTML = `<div style="color: red;">You must enter an API key to use this application.</div>`;
+            else notice_container.innerHTML = '';
+            chat_model = new SmartChatModel(env, model_key, { api_key: api_key });
+            chat_model.chunk_handler = (chunk) => {
+                chunk = chunk.replace(/\n/g, '<br>');
+                const last_msg = document.getElementById('chat').lastElementChild;
+                if(last_msg && last_msg.classList.contains('user')) new_msg(chunk, 'assistant');
+                else last_msg.innerHTML += chunk;
+            };
+            chat_model.done_handler = (final_response) => {
+                final_response = final_response.replace(/\n/g, '<br>');
+                const last_msg = document.getElementById('chat').lastElementChild;
+                if(last_msg && last_msg.classList.contains('user')) new_msg(final_response, 'assistant');
+                else last_msg.innerHTML = final_response;
+            };
+        }
+        function new_msg(message, role) {
+            const chat_container = document.getElementById('chat');
+            const message_container = document.createElement('div');
+            message_container.className = `msg ${role}`;
+            message_container.textContent = `${message}`;
+            chat_container.appendChild(message_container);
+        }
+        async function send_message() {
+            if (!chat_model) init_chat_model(); // Initialize model on first send or when settings change
+            const user_input = document.getElementById('user-input');
+            const message = user_input.value;
+            user_input.value = ''; // Clear input after sending
+            new_msg(message, 'user');
+            const req = {
+                messages: [{ role: "user", content: message }],
+                temperature: 0.3,
+                max_tokens: 1000,
+                stream: true
+            };
+            try {
+                await chat_model.complete(req);
+            } catch (error) {
+                console.error('Error:', error);
+                new_msg('Failed to get response from the model. See console for details.', 'System');
+            }
+        }
+        // Optional: Reinitialize the model when the user changes the API key or model selection
+        document.getElementById('api-key').addEventListener('change', init_chat_model);
+        document.getElementById('model-select').addEventListener('change', init_chat_model);
+    </script>
+</body>
+</html>

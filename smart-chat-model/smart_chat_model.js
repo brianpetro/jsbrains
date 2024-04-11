@@ -37,6 +37,7 @@ class SmartChatModel {
     if(this.config.adapter) this.adapter = new adapters[this.config.adapter](this);
     console.log(this.adapter);
   }
+  static get models() { return chat_models; }
   get default_opts() {
     return {
       temperature: 0.3,
@@ -144,14 +145,14 @@ class SmartChatModel {
   async request(req){
     req.url = this.endpoint;
     req.throw = false;
-    const resp = await this.request_adapter(req);
+    const resp = this._request_adapter ? await this._request_adapter(req) : await fetch(this.endpoint, req);
     console.log(resp);
     const resp_json = await this.get_resp_json(resp);
     console.log(resp_json);
     return resp_json;
   }
   async get_resp_json(resp) { return (typeof resp.json === 'function') ? await resp.json() : await resp.json; }
-  get request_adapter(){ return this._request_adapter || fetch; } // handle fallback to fetch (allows for overwriting in child classes)
+  get request_adapter(){ return this._request_adapter; } // handle fallback to fetch (allows for overwriting in child classes)
 
   async stream(req) {
     console.log("Streaming Request: ");
@@ -225,12 +226,12 @@ class SmartChatModel {
     // Should handle:
     // 1. Add message to current chat history
     // 2. Update chat UI
-    this.main.done_handler(full_str);
+    if(typeof this.main.done_handler === 'function') this.main.done_handler(full_str);
   }
   chunk_handler(text_chunk) {
     // Should handle:
     // 1. Update chat UI
-    this.main.chunk_handler(text_chunk);
+    if(typeof this.main.chunk_handler === 'function') this.main.chunk_handler(text_chunk);
   }
   async count_tokens(input) {
     if(typeof this.adapter?.count_tokens === 'function') return await this.adapter.count_tokens(input);
