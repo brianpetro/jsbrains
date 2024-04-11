@@ -134,7 +134,7 @@
             const model_key = document.getElementById('model-select').value;
             const env = { chats: { current: { get_chat_ml: async () => ({ messages: [] }) } } };
             const notice_container = document.getElementById('notice');
-            if (model_key.startsWith('anthropic')) return notice_container.innerHTML = `<div style="color: red;">Anthropic prevents simple applications (those without a backend server) from accessing Claude. You can contact them to request they change this policy that goes against making AI accessible: <a href="https://docs.anthropic.com/claude/reference/need-support-contact-us" target="_blank">Contact Anthropic</a></div>`;
+            if (model_key.startsWith('anthropic')) notice_container.innerHTML = `<div style="color: red;">Anthropic prevents simple applications (those without a backend server) from accessing Claude. You can contact them to request they change this policy that goes against making AI accessible: <a href="https://docs.anthropic.com/claude/reference/need-support-contact-us" target="_blank">Contact Anthropic</a></div>`;
             else if (api_key === '') return notice_container.innerHTML = `<div style="color: red;">You must enter an API key to use this application.</div>`;
             else notice_container.innerHTML = '';
             chat_model = new SmartChatModel(env, model_key, { api_key: api_key });
