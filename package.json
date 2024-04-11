@@ -1,0 +1,30 @@
+{
+  "name": "jsbrains",
+  "version": "1.0.0",
+  "description": "A collection of smart modules for building brains in JavaScript.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "models",
+    "embeddings",
+    "framework"
+  ],
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "workspaces": [
+    "smart-chat-model",
+    "smart-chats",
+    "smart-chunks",
+    "smart-collections",
+    "smart-embed"
+  ]
+}
