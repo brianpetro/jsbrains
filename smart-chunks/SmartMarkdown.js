@@ -26,6 +26,8 @@ class SmartMarkdown {
   // v1
   // get block from path
   get_block_from_path(block_path, markdown, opts={}){
+    // if block_path ends with # and only one # then returns content prior to first heading
+    if(block_path.endsWith('#') && block_path.split('#').length === 2) return markdown.split('#')[0];
     if(!this.validate_block_path(block_path)) return markdown;
     const {
       chars_per_line = null,
