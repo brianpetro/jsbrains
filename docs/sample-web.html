@@ -26,16 +26,14 @@
             justify-content: center;
             height: 100vh;
         }
-        h1 {
-            margin: 0;
-        }
-        h2 {
+        h1, h2 {
             margin: 0;
         }
         p {
             margin: 3ch;
             text-align: center;
             line-height: 1.37;
+            max-width: 60ch;
         }
         label {
             margin-bottom: 1ch;
@@ -56,9 +54,9 @@
             &#send {
                 max-width: 10ch;
             }
-        }
-        button:hover {
-            background-color: oklch(var(--lch-blue-dark));
+            &:hover {
+                background-color: oklch(var(--lch-blue-dark));
+            }
         }
         #chat {
             margin-bottom: 20px;
