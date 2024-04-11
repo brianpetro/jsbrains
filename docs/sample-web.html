@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>JS Brains - Smart Chat Model - Universal Adapter Demo</title>
     <meta property="og:image" content="https://brianpetro.github.io/jsbrains/sample-web.gif">
     <style>
@@ -33,23 +34,20 @@
                 margin-bottom: 2ch;
             }
         }
-        h1, h2 {
+        h1, h2, p {
             margin: 0;
+            text-align: center;
         }
         p {
-            /* margin: 3ch; */
-            text-align: center;
             line-height: 1.37;
             max-width: 60ch;
         }
         label {
-            /* margin-bottom: 1ch; */
             font-weight: bold;
             align-self: center;
         }
         input, select, button {
             padding: 2ch;
-            /* margin-bottom: 1ch; */
             border: 1px solid oklch(var(--lch-gray-dark));
             border-radius: 2ch;
             flex-grow: 1;
@@ -69,7 +67,6 @@
             }
         }
         #chat {
-            /* margin-bottom: 20px; */
             width: 100%;
             max-width: 77ch;
             display: flex;
