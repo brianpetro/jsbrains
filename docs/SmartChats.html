@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: ObsAJSON</title>
+    <title>JSDoc: Class: SmartChats</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: ObsAJSON</h1>
+    <h1 class="page-title">Class: SmartChats</h1>
 
     
 
@@ -28,11 +28,10 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>ObsAJSON<span class="signature">(collection)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>SmartChats<span class="signature">(env, opts<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>Class ObsAJSON extends LongTermMemory to handle JSON-based storage of collections.
-This class provides methods to load and save collections to a JSON file with asynchronous operations,
-ensuring data integrity and error handling. It uses an adapter to interact with the file system.</p></div>
+            <div class="class-description"><p>Class representing a manager for smart chat conversations.
+It handles the creation, loading, saving, and management of chat conversations in various formats.</p></div>
         
     
 </header>
@@ -47,7 +46,7 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
     
 
     
-    <h4 class="name" id="ObsAJSON"><span class="type-signature"></span>new ObsAJSON<span class="signature">(collection)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="SmartChats"><span class="type-signature"></span>new SmartChats<span class="signature">(env, opts<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -55,7 +54,7 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
 
 
 <div class="description">
-    <p>Constructs an instance of ObsAJSON.</p>
+    <p>Creates an instance of SmartChats.</p>
 </div>
 
 
@@ -79,7 +78,11 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -91,7 +94,7 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
 
         <tr>
             
-                <td class="name"><code>collection</code></td>
+                <td class="name"><code>env</code></td>
             
 
             <td class="type">
@@ -104,10 +107,61 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
             
 
-            <td class="description last"><p>The collection to be managed.</p></td>
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>The environment context, used across the chat system.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>opts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    {}
+                
+                </td>
+            
+
+            <td class="description last"><p>Optional parameters to configure the SmartChats instance.</p></td>
         </tr>
 
     
@@ -148,7 +202,7 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_ObsAJSON.js.html">smart-collections/ObsAJSON.js</a>, <a href="smart-collections_ObsAJSON.js.html#line7">line 7</a>
+        <a href="smart-chats_smart_chats.js.html">smart-chats/smart_chats.js</a>, <a href="smart-chats_smart_chats.js.html#line29">line 29</a>
     </li></ul></dd>
     
 
@@ -194,6 +248,72 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
     
 
     
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="file_format"><span class="type-signature"></span>file_format<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    <p>Getter for the file format based on the default file type.</p>
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chats_smart_chats.js.html">smart-chats/smart_chats.js</a>, <a href="smart-chats_smart_chats.js.html#line94">line 94</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
 
     
         <h3 class="subsection-title">Methods</h3>
@@ -204,7 +324,7 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
     
 
     
-    <h4 class="name" id="_save"><span class="type-signature">(async) </span>_save<span class="signature">(force<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="get_conversation_ids_and_file_types"><span class="type-signature">(async) </span>get_conversation_ids_and_file_types<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;Array.&lt;string>>>}</span></h4>
     
 
     
@@ -212,166 +332,7 @@ ensuring data integrity and error handling. It uses an adapter to interact with 
 
 
 <div class="description">
-    <p>Saves the collection to a JSON file. This method is throttled to prevent multiple saves at once.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-        <th>Default</th>
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>force</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    false
-                
-                </td>
-            
-
-            <td class="description last"><p>Forces the save operation even if currently saving.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_ObsAJSON.js.html">smart-collections/ObsAJSON.js</a>, <a href="smart-collections_ObsAJSON.js.html#line63">line 63</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="load"><span class="type-signature">(async) </span>load<span class="signature">()</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Asynchronously loads the collection from a JSON file.
-Parses the file content and initializes collection items based on the stored data.
-Handles file not found errors by creating necessary directories and files.</p>
+    <p>Retrieves conversation IDs and their corresponding file types from the filesystem.</p>
 </div>
 
 
@@ -415,167 +376,7 @@ Handles file not found errors by creating necessary directories and files.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_ObsAJSON.js.html">smart-collections/ObsAJSON.js</a>, <a href="smart-collections_ObsAJSON.js.html#line22">line 22</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="validate_save"><span class="type-signature">(async) </span>validate_save<span class="signature">(new_file_path, old_file_path)</span><span class="type-signature"> &rarr; {Promise.&lt;boolean>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Validates the new file size against the old file size to ensure data integrity.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>new_file_path</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Path to the new file.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>old_file_path</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Path to the old file.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_ObsAJSON.js.html">smart-collections/ObsAJSON.js</a>, <a href="smart-collections_ObsAJSON.js.html#line116">line 116</a>
+        <a href="smart-chats_smart_chats.js.html">smart-chats/smart_chats.js</a>, <a href="smart-chats_smart_chats.js.html#line100">line 100</a>
     </li></ul></dd>
     
 
@@ -604,7 +405,7 @@ Handles file not found errors by creating necessary directories and files.</p>
 
         
 <div class="param-desc">
-    <p>True if the new file size is more than 50% of the old file size, otherwise false.</p>
+    <p>An array of conversation IDs and file types.</p>
 </div>
 
 
@@ -615,13 +416,350 @@ Handles file not found errors by creating necessary directories and files.</p>
     </dt>
     <dd>
         
-<span class="param-type">Promise.&lt;boolean></span>
+<span class="param-type">Promise.&lt;Array.&lt;Array.&lt;string>>></span>
 
 
     </dd>
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="load_all"><span class="type-signature">(async) </span>load_all<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Loads all conversations from the filesystem and initializes them.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chats_smart_chats.js.html">smart-chats/smart_chats.js</a>, <a href="smart-chats_smart_chats.js.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="new"><span class="type-signature">(async) </span>new<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates a new chat instance and initializes the chat UI.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chats_smart_chats.js.html">smart-chats/smart_chats.js</a>, <a href="smart-chats_smart_chats.js.html#line51">line 51</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="save"><span class="type-signature">(async) </span>save<span class="signature">(key, chat_ml)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Saves a chat conversation by its key.
+If the chat does not exist, it creates a new one.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The key identifier for the chat.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>chat_ml</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The chat content in markup language.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chats_smart_chats.js.html">smart-chats/smart_chats.js</a>, <a href="smart-chats_smart_chats.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
