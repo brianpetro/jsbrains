@@ -36,6 +36,17 @@
   }
 ];
  */
+/**
+ * Validates a tool call against its specification to ensure all parameters are correct.
+ * This function checks if all provided keys in the tool call content match the expected types,
+ * handles type coercion for numeric values, validates against enums, and ensures all required
+ * parameters are present.
+ *
+ * @param {Object} tool - The tool object containing the function specification.
+ * @param {Object} tool_call_content - The actual parameters passed to the tool function.
+ * @returns {boolean} - Returns true if the tool call is valid.
+ * @throws {Error} - Throws an error if any validation fails.
+ */
 function is_valid_tool_call(tool, tool_call_content) {
   const props = tool.function.parameters.properties;
   // check if all keys are in tool spec
