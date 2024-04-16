@@ -1,15 +1,75 @@
+/**
+ * GeminiAdapter class provides methods to adapt the chat model interactions specifically for the Gemini model.
+ * It includes methods to prepare request bodies, handle tool calls and messages, and manage streaming responses.
+ */
 class GeminiAdapter {
+  /**
+   * Constructs a GeminiAdapter instance with a specified model configuration.
+   * @param {Object} model - The model configuration object.
+   */
   constructor(model) { this.model = model; }
+
+  /**
+   * Prepares the request body for the Gemini API by converting ChatML format to a format compatible with Gemini.
+   * @param {Object} body - The options object containing messages and other parameters in ChatML format.
+   * @returns {Object} The request body formatted for the Gemini API.
+   */
   prepare_request_body(body) { return chatml_to_gemini(body); }
+
+  /**
+   * Extracts the first tool call from the JSON response content.
+   * @param {Object} json - The JSON response from which to extract the tool call.
+   * @returns {Object|null} The first tool call found, or null if none exist.
+   */
   get_tool_call(json) { return json.candidates?.[0]?.content?.parts?.[0]?.functionCall; }
+
+  /**
+   * Retrieves the name of the tool from a tool call object.
+   * @param {Object} tool_call - The tool call object from which to extract the name.
+   * @returns {string|null} The name of the tool, or null if not available.
+   */
   get_tool_name(tool_call) { return tool_call?.name; }
+
+  /**
+   * Retrieves the input content of a tool call.
+   * @param {Object} tool_call - The tool call object from which to extract the input.
+   * @returns {Object|null} The input of the tool call, or null if not available.
+   */
   get_tool_call_content(tool_call) { return tool_call?.args; }
+
+  /**
+   * Extracts the first message from the JSON response content.
+   * @param {Object} json - The JSON response from which to extract the message.
+   * @returns {Object|null} The first message found, or null if none exist.
+   */
   get_message(json) { return json.candidates?.[0]; }
+
+  /**
+   * Retrieves the content of the first message from the JSON response.
+   * @param {Object} json - The JSON response from which to extract the message content.
+   * @returns {string|null} The content of the first message, or null if no message is found.
+   */
   get_message_content(json) { return this.get_message(json)?.content?.parts.map(part => part.text).join(''); }
-  // handle escaped newlines
+
+  /**
+   * Handles escaped newlines in a streaming text chunk.
+   * @param {Object} event - The streaming event containing the data.
+   * @returns {string} The text chunk with escaped newlines replaced.
+   */
   get_text_chunk_from_stream(event) { return event.data.replace(/\\n/g, '\n'); }
-  // if readyState is 4, then the stream is done
+
+  /**
+   * Determines if the streaming response has ended based on the readyState of the XMLHttpRequest.
+   * @param {Object} event - The streaming event.
+   * @returns {boolean} True if the stream has ended, false otherwise.
+   */
   is_end_of_stream(event) { return event.source.xhr.readyState === 4; }
+
+  /**
+   * Counts the tokens in the input by making an API request to the Gemini token counting endpoint.
+   * @param {string|Object} input - The input text or object to count tokens in.
+   * @returns {Promise<number>} The total number of tokens in the input.
+   */
   async count_tokens(input) {
     const req = {
       url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:countTokens?key=${this.model.api_key}`,
@@ -27,7 +87,17 @@ class GeminiAdapter {
     const resp = await this.model.request_adapter(req);
     return resp?.json?.totalTokens;
   }
+
+  /**
+   * Getter for the standard API endpoint with the API key appended.
+   * @returns {string} The formatted endpoint URL for non-streaming requests.
+   */
   get endpoint() { return this.model.config.endpoint + "?key=" + this.model.api_key; }
+
+  /**
+   * Getter for the streaming API endpoint with the API key appended.
+   * @returns {string} The formatted endpoint URL for streaming requests.
+   */
   get endpoint_streaming() { return this.model.config.endpoint_streaming + "?key=" + this.model.api_key; }
 }
 exports.GeminiAdapter = GeminiAdapter;

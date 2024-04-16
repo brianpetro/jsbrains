@@ -1,7 +1,28 @@
+/**
+ * CohereAdapter class is designed to adapt the SmartChatModel's interaction with the Cohere API.
+ * It provides methods to prepare request bodies, handle streaming data, and extract message content from responses.
+ */
 class CohereAdapter {
+  /**
+   * Converts a ChatML object to a format suitable for a request to the Cohere API.
+   * @param {Object} chatml - The ChatML object containing the chat history and other parameters.
+   * @returns {Object} The request body formatted for the Cohere API.
+   */
   prepare_request_body(chatml) { return chatml_to_cohere(chatml); }
+
+  /**
+   * Extracts the message content from a JSON response from the Cohere API.
+   * @param {Object} json - The JSON response object from which to extract the text content.
+   * @returns {string} The extracted text content from the response.
+   */
   get_message_content(json) { return json.text; }
-  // note: OFF because streamer sends all chunks in one go
+
+  /**
+   * Processes streaming data received from the Cohere API and extracts text chunks.
+   * This method handles the accumulation of text data over multiple events and manages the state of the stream.
+   * @param {Object} event - The event object containing streaming data.
+   * @returns {string} The accumulated text chunk extracted from the stream.
+   */
   get_text_chunk_from_stream(event) {
     if(!this.last_line_index) this.last_line_index = 0;
     clearTimeout(this.last_line_timeout);
@@ -32,6 +53,12 @@ class CohereAdapter {
     console.log(text_chunk);
     return text_chunk;
   }
+
+  /**
+   * Determines if the end of the stream has been reached based on the event data.
+   * @param {Object} event - The event object that may indicate the end of the stream.
+   * @returns {boolean} True if the end of the stream is indicated, false otherwise.
+   */
   is_end_of_stream(event) { return this.end_of_stream; }
 }
 exports.CohereAdapter = CohereAdapter;
