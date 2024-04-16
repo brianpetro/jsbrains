@@ -89,15 +89,13 @@ class Collection {
     const existing = this.find_by(data);
     const item = existing ? existing : new this.item_type(this.env);
     item.is_new = !!!existing;
-    const changed = item.update_data(data);
-    if (existing && !changed) return existing;
-    if (item.validate_save()) this.set(item);
-    if (item.init instanceof AsyncFunction) {
-      return new Promise((resolve, reject) => {
-        item.init(data).then(() => resolve(item));
-      });
-    }
-    item.init(data);
+    const changed = item.update_data(data); // handles this.data
+    if (existing && !changed) return existing; // if existing item and no changes, return existing item (no need to save)
+    if (item.validate_save()) this.set(item); // make it available in collection (if valid)
+
+    // dynamically handle async init functions
+    if (item.init instanceof AsyncFunction) return new Promise((resolve, reject) => { item.init(data).then(() => resolve(item)); });
+    item.init(data); // handles functions that involve other items
     return item;
   }
 
@@ -201,8 +199,8 @@ class Collection {
    * Gets or sets the collection name. If a name is set, it overrides the default name.
    * @param {String} name - The new collection name.
    */
-  set collection_name(name) { this._collection_name = name; }
   get collection_name() { return (this._collection_name) ? this._collection_name : this.constructor.collection_name; }
+  set collection_name(name) { this._collection_name = name; }
   /**
    * Gets the keys of the items in the collection.
    * @return {String[]} The keys of the items.
