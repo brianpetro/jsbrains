@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: GeminiAdapter</title>
+    <title>JSDoc: Class: SmartMarkdown</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: GeminiAdapter</h1>
+    <h1 class="page-title">Class: SmartMarkdown</h1>
 
     
 
@@ -28,10 +28,13 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>GeminiAdapter<span class="signature">(model)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>SmartMarkdown<span class="signature">(config)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>GeminiAdapter class provides methods to adapt the chat model interactions specifically for the Gemini model.
-It includes methods to prepare request bodies, handle tool calls and messages, and manage streaming responses.</p></div>
+            <div class="class-description"><p>SmartMarkdown is a class designed to parse and manipulate markdown content
+based on specified configurations. It provides functionalities to extract
+specific blocks of text based on heading paths, handle exclusions of certain
+headings, and manage the size of text blocks according to maximum and minimum
+character limits.</p></div>
         
     
 </header>
@@ -46,7 +49,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
 
     
-    <h4 class="name" id="GeminiAdapter"><span class="type-signature"></span>new GeminiAdapter<span class="signature">(model)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="SmartMarkdown"><span class="type-signature"></span>new SmartMarkdown<span class="signature">(config)</span><span class="type-signature"></span></h4>
     
 
     
@@ -54,7 +57,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
 
 <div class="description">
-    <p>Constructs a GeminiAdapter instance with a specified model configuration.</p>
+    <p>Creates an instance of SmartMarkdown with the given configuration.</p>
 </div>
 
 
@@ -90,7 +93,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         <tr>
             
-                <td class="name"><code>model</code></td>
+                <td class="name"><code>config</code></td>
             
 
             <td class="type">
@@ -106,7 +109,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
             
 
-            <td class="description last"><p>The model configuration object.</p></td>
+            <td class="description last"><p>User-defined configuration settings.</p></td>
         </tr>
 
     
@@ -147,7 +150,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line5">line 5</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line8">line 8</a>
     </li></ul></dd>
     
 
@@ -197,13 +200,13 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         
             
-<h4 class="name" id="endpoint"><span class="type-signature"></span>endpoint<span class="type-signature"></span></h4>
+<h4 class="name" id="excluded_headings"><span class="type-signature"></span>excluded_headings<span class="type-signature"></span></h4>
 
 
 
 
 <div class="description">
-    <p>Getter for the standard API endpoint with the API key appended.</p>
+    <p>Retrieves the list of headings to be excluded from parsing, if any.</p>
 </div>
 
 
@@ -241,7 +244,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line95">line 95</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line32">line 32</a>
     </li></ul></dd>
     
 
@@ -259,13 +262,13 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         
             
-<h4 class="name" id="endpoint_streaming"><span class="type-signature"></span>endpoint_streaming<span class="type-signature"></span></h4>
+<h4 class="name" id=".defaults"><span class="type-signature">(static) </span>defaults<span class="type-signature"></span></h4>
 
 
 
 
 <div class="description">
-    <p>Getter for the streaming API endpoint with the API key appended.</p>
+    <p>Returns the default configuration for the SmartMarkdown parser.</p>
 </div>
 
 
@@ -303,7 +306,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line101">line 101</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line13">line 13</a>
     </li></ul></dd>
     
 
@@ -331,7 +334,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
 
     
-    <h4 class="name" id="count_tokens"><span class="type-signature">(async) </span>count_tokens<span class="signature">(input)</span><span class="type-signature"> &rarr; {Promise.&lt;number>}</span></h4>
+    <h4 class="name" id="file_path_to_breadcrumbs"><span class="type-signature"></span>file_path_to_breadcrumbs<span class="signature">(file_path)</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -339,7 +342,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
 
 <div class="description">
-    <p>Counts the tokens in the input by making an API request to the Gemini token counting endpoint.</p>
+    <p>Converts a file path to a breadcrumb string format.</p>
 </div>
 
 
@@ -375,16 +378,13 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         <tr>
             
-                <td class="name"><code>input</code></td>
+                <td class="name"><code>file_path</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type">string</span>
-|
-
-<span class="param-type">Object</span>
 
 
             
@@ -394,7 +394,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
             
 
-            <td class="description last"><p>The input text or object to count tokens in.</p></td>
+            <td class="description last"><p>The file path to convert.</p></td>
         </tr>
 
     
@@ -435,7 +435,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line73">line 73</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line246">line 246</a>
     </li></ul></dd>
     
 
@@ -464,490 +464,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         
 <div class="param-desc">
-    <p>The total number of tokens in the input.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;number></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="get_message"><span class="type-signature"></span>get_message<span class="signature">(json)</span><span class="type-signature"> &rarr; {Object|null}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Extracts the first message from the JSON response content.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>json</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The JSON response from which to extract the message.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line45">line 45</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The first message found, or null if none exist.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-|
-
-<span class="param-type">null</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="get_message_content"><span class="type-signature"></span>get_message_content<span class="signature">(json)</span><span class="type-signature"> &rarr; {string|null}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Retrieves the content of the first message from the JSON response.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>json</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The JSON response from which to extract the message content.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line52">line 52</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The content of the first message, or null if no message is found.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-|
-
-<span class="param-type">null</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="get_text_chunk_from_stream"><span class="type-signature"></span>get_text_chunk_from_stream<span class="signature">(event)</span><span class="type-signature"> &rarr; {string}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Handles escaped newlines in a streaming text chunk.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>event</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The streaming event containing the data.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line59">line 59</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The text chunk with escaped newlines replaced.</p>
+    <p>The breadcrumb string.</p>
 </div>
 
 
@@ -976,7 +493,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
 
     
-    <h4 class="name" id="get_tool_call"><span class="type-signature"></span>get_tool_call<span class="signature">(json)</span><span class="type-signature"> &rarr; {Object|null}</span></h4>
+    <h4 class="name" id="get_block_from_path"><span class="type-signature"></span>get_block_from_path<span class="signature">(block_path, markdown, opts)</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -984,7 +501,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
 
 <div class="description">
-    <p>Extracts the first tool call from the JSON response content.</p>
+    <p>Extracts a specific block of markdown based on a heading path.</p>
 </div>
 
 
@@ -1020,7 +537,53 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         <tr>
             
-                <td class="name"><code>json</code></td>
+                <td class="name"><code>block_path</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The path to the block, specified as a series of headings.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>markdown</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The markdown content to parse.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>opts</code></td>
             
 
             <td class="type">
@@ -1036,7 +599,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
             
 
-            <td class="description last"><p>The JSON response from which to extract the tool call.</p></td>
+            <td class="description last"><p>Options for block extraction, such as character limits per line.</p></td>
         </tr>
 
     
@@ -1077,7 +640,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line24">line 24</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line59">line 59</a>
     </li></ul></dd>
     
 
@@ -1106,331 +669,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         
 <div class="param-desc">
-    <p>The first tool call found, or null if none exist.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-|
-
-<span class="param-type">null</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="get_tool_call_content"><span class="type-signature"></span>get_tool_call_content<span class="signature">(tool_call)</span><span class="type-signature"> &rarr; {Object|null}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Retrieves the input content of a tool call.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tool_call</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The tool call object from which to extract the input.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line38">line 38</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The input of the tool call, or null if not available.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-|
-
-<span class="param-type">null</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="get_tool_name"><span class="type-signature"></span>get_tool_name<span class="signature">(tool_call)</span><span class="type-signature"> &rarr; {string|null}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Retrieves the name of the tool from a tool call object.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tool_call</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The tool call object from which to extract the name.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line31">line 31</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The name of the tool, or null if not available.</p>
+    <p>The extracted block of markdown text.</p>
 </div>
 
 
@@ -1442,9 +681,6 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     <dd>
         
 <span class="param-type">string</span>
-|
-
-<span class="param-type">null</span>
 
 
     </dd>
@@ -1462,7 +698,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
 
     
-    <h4 class="name" id="is_end_of_stream"><span class="type-signature"></span>is_end_of_stream<span class="signature">(event)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="get_headings_meta"><span class="type-signature"></span>get_headings_meta<span class="signature">(content)</span><span class="type-signature"> &rarr; {Array}</span></h4>
     
 
     
@@ -1470,7 +706,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
 
 <div class="description">
-    <p>Determines if the streaming response has ended based on the readyState of the XMLHttpRequest.</p>
+    <p>Analyzes the markdown content to extract metadata about each heading.</p>
 </div>
 
 
@@ -1506,13 +742,13 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         <tr>
             
-                <td class="name"><code>event</code></td>
+                <td class="name"><code>content</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type">string</span>
 
 
             
@@ -1522,7 +758,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
             
 
-            <td class="description last"><p>The streaming event.</p></td>
+            <td class="description last"><p>The markdown content to analyze.</p></td>
         </tr>
 
     
@@ -1563,7 +799,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line66">line 66</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line39">line 39</a>
     </li></ul></dd>
     
 
@@ -1592,7 +828,462 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         
 <div class="param-desc">
-    <p>True if the stream has ended, false otherwise.</p>
+    <p>An array of objects containing metadata about each heading.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="handle_duplicate_headings"><span class="type-signature"></span>handle_duplicate_headings<span class="signature">(acc)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Handles duplicate headings by appending a unique identifier to the heading path.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>acc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The accumulator object used in reduce function.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line198">line 198</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="heading_level"><span class="type-signature"></span>heading_level<span class="signature">(line)</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Determines the level of a heading based on the number of '#' characters.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>line</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The heading line to evaluate.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line252">line 252</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The level of the heading.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="is_content_line"><span class="type-signature"></span>is_content_line<span class="signature">(line)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Determines if a line of text should be considered as content.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>line</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The line of text to evaluate.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line236">line 236</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>True if the line is content, false otherwise.</p>
 </div>
 
 
@@ -1621,7 +1312,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
 
     
-    <h4 class="name" id="prepare_request_body"><span class="type-signature"></span>prepare_request_body<span class="signature">(body)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="is_heading"><span class="type-signature"></span>is_heading<span class="signature">(line, line)</span><span class="type-signature"> &rarr; {boolean|boolean}</span></h4>
     
 
     
@@ -1629,7 +1320,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
 
 <div class="description">
-    <p>Prepares the request body for the Gemini API by converting ChatML format to a format compatible with Gemini.</p>
+    <p>Checks if a line is a heading.</p>
 </div>
 
 
@@ -1665,13 +1356,13 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         <tr>
             
-                <td class="name"><code>body</code></td>
+                <td class="name"><code>line</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type">string</span>
 
 
             
@@ -1681,7 +1372,30 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
             
 
-            <td class="description last"><p>The options object containing messages and other parameters in ChatML format.</p></td>
+            <td class="description last"><p>The line to check.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>line</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The line to check.</p></td>
         </tr>
 
     
@@ -1722,7 +1436,323 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line17">line 17</a>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line260">line 260</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+<ul>
+        <li>
+<div class="param-desc">
+    <p>True if the line is a heading, false otherwise.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>True if the line is a heading, false otherwise.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+</li>
+    </ul>
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="output_block"><span class="type-signature"></span>output_block<span class="signature">(acc)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Outputs the current block into the structured blocks array after validation.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>acc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The accumulator object used in reduce function.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line210">line 210</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="parse"><span class="type-signature"></span>parse<span class="signature">(params)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Parses the markdown content and organizes it into structured blocks based on headings.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>params</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Parameters containing content and optional file path.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line136">line 136</a>
     </li></ul></dd>
     
 
@@ -1751,7 +1781,7 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
 
         
 <div class="param-desc">
-    <p>The request body formatted for the Gemini API.</p>
+    <p>An object containing parsed blocks and other metadata.</p>
 </div>
 
 
@@ -1763,6 +1793,324 @@ It includes methods to prepare request bodies, handle tool calls and messages, a
     <dd>
         
 <span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="validate_block_path"><span class="type-signature"></span>validate_block_path<span class="signature">(block_path)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Validates if the block path is correctly formatted to include at least one heading.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>block_path</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The block path to validate.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line266">line 266</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>True if the block path is valid, false otherwise.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="validate_heading"><span class="type-signature"></span>validate_heading<span class="signature">(headings)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Validates a heading against the list of excluded headings.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>headings</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The heading to validate.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chunks_SmartMarkdown.js.html">smart-chunks/SmartMarkdown.js</a>, <a href="smart-chunks_SmartMarkdown.js.html#line272">line 272</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>True if the heading is not excluded, false if it is.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
 
 
     </dd>
