@@ -490,7 +490,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_anthropic.js.html">smart-chat-model/adapters/anthropic.js</a>, <a href="smart-chat-model_adapters_anthropic.js.html#line32">line 32</a>
+        <a href="smart-chat-model_adapters_anthropic.js.html">smart-chat-model/adapters/anthropic.js</a>, <a href="smart-chat-model_adapters_anthropic.js.html#line76">line 76</a>
     </li></ul></dd>
     
 
@@ -522,6 +522,167 @@
     <ul>
 <li>The Anthropic object</li>
 </ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="chatml_to_cohere"><span class="type-signature"></span>chatml_to_cohere<span class="signature">(chatml)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Converts a ChatML object into a format suitable for the Cohere API.
+This function prepares the data by structuring it according to the requirements of the Cohere API,
+including the model to use, the chat history excluding the last user message, and the last message separately.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>chatml</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The ChatML object containing the model, messages, and other parameters like temperature.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="smart-chat-model_adapters_cohere.js.html">smart-chat-model/adapters/cohere.js</a>, <a href="smart-chat-model_adapters_cohere.js.html#line74">line 74</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The formatted object for the Cohere API request, containing the model, chat history, last message, and temperature.</p>
 </div>
 
 
@@ -651,7 +812,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line41">line 41</a>
+        <a href="smart-chat-model_adapters_gemini.js.html">smart-chat-model/adapters/gemini.js</a>, <a href="smart-chat-model_adapters_gemini.js.html#line111">line 111</a>
     </li></ul></dd>
     
 
@@ -1240,13 +1401,13 @@ as the input to the next, along with an optional options object.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartSocket.html">SmartSocket</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#test">test</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartSocket.html">SmartSocket</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#test">test</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Tue Apr 16 2024 08:15:15 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Tue Apr 16 2024 14:58:34 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
