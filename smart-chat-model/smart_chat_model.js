@@ -50,6 +50,14 @@ class SmartChatModel {
     };
   }
   async request_middlewares(opts) { return opts; }
+  /**
+   * Completes the chat interaction by processing the provided options, making an API request, and handling the response.
+   * This method supports both streaming and non-streaming responses, and can handle tool calls if specified in the response.
+   *
+   * @param {Object} opts - The options for the chat completion which may include settings like temperature, max tokens, etc.
+   * @param {boolean} render - Flag to determine if the response should be rendered in the UI.
+   * @returns {Promise<string|void>} - Returns the chat response content or handles tool outputs recursively. In case of errors, it may return an error message.
+   */
   async complete(opts={}, render=true) {
     opts = {
       ...this.default_opts,
@@ -119,24 +127,71 @@ class SmartChatModel {
     }
   }
   // HANDLE TOOLS
-  get_tool_handler(tool_name) { return this.env.actions.actions[tool_name].handler; } // Smart Actions architecture (may be overwritten to use custom logic)
+  /**
+   * Retrieves the tool handler function based on the tool name from the environment's actions.
+   * This method can be overridden to use custom logic for handling tools.
+   * 
+   * @param {string} tool_name - The name of the tool for which the handler is to be retrieved.
+   * @returns {Function} The handler function for the specified tool.
+   */
+  get_tool_handler(tool_name) { return this.env.actions.actions[tool_name].handler; }
+
+  /**
+   * Extracts the tool call information from a JSON response. This method supports adapter-specific logic.
+   * If no adapter method is provided, it defaults to the expected OpenAI JSON format.
+   * 
+   * @param {Object} json - The JSON response from which to extract the tool call.
+   * @returns {Object} The first tool call found in the response.
+   */
   get_tool_call(json) {
     if(typeof this.adapter?.get_tool_call === 'function') return this.adapter.get_tool_call(json);
     return json.choices?.[0].message.tool_calls?.[0]; // OpenAI format
   } 
+
+  /**
+   * Determines the tool name from a tool call object. Supports adapter-specific implementations.
+   * Defaults to extracting the name directly from the tool call structure.
+   * 
+   * @param {Object} tool_call - The tool call object from which to extract the tool name.
+   * @returns {string} The name of the tool.
+   */
   get_tool_name(tool_call) {
     if(typeof this.adapter?.get_tool_name === 'function') return this.adapter.get_tool_name(tool_call);
     return tool_call.function.name;
   }
+
+  /**
+   * Extracts the tool call content from a tool call object. Supports adapter-specific logic.
+   * Defaults to parsing the 'arguments' field of the tool call function as JSON.
+   * 
+   * @param {Object} tool_call - The tool call object from which to extract the content.
+   * @returns {Object} The parsed arguments of the tool call.
+   */
   get_tool_call_content(tool_call) {
     if(typeof this.adapter?.get_tool_call_content === 'function') return this.adapter.get_tool_call_content(tool_call);
     return JSON.parse(tool_call.function.arguments);
   }
+
   // HANDLE MESSAGES
+  /**
+   * Retrieves the message object from a JSON response. Supports adapter-specific implementations.
+   * Defaults to handling both OpenAI and Ollama formats by checking for message structures in 'choices'.
+   * 
+   * @param {Object} json - The JSON response from which to extract the message.
+   * @returns {Object} The message object extracted from the response.
+   */
   get_message(json) {
     if(typeof this.adapter?.get_message === 'function') return this.adapter.get_message(json);
     return json.choices?.[0].message || json.message; // supports OpenAI and Ollama
   }
+
+  /**
+   * Extracts the content of a message from a JSON response. Supports adapter-specific implementations.
+   * This method relies on `get_message` to first retrieve the message object.
+   * 
+   * @param {Object} json - The JSON response from which to extract the message content.
+   * @returns {string} The content of the message.
+   */
   get_message_content(json) {
     if(typeof this.adapter?.get_message_content === 'function') return this.adapter.get_message_content(json);
     return this.get_message(json).content;
