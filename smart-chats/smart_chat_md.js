@@ -1,21 +1,54 @@
 const { SmartChat } = require("./smart_chat");
+
+/**
+ * Extends SmartChat to handle markdown-specific functionalities.
+ */
 class SmartChatMD extends SmartChat {
+  /**
+   * Returns the file type associated with this class.
+   * @returns {string} The file type, which is 'md' for markdown.
+   */
   get file_type() { return 'md'; }
+
+  /**
+   * Updates the internal data with the provided ChatML and saves it.
+   * @param {Object} chat_ml - The ChatML object to update the data with.
+   */
   async update(chat_ml){
     this.data = this.from_chatml(chat_ml);
     await this.save();
   }
+
   // file-type specific parsing and formatting overrides
+  /**
+   * Retrieves the ChatML representation of the current data.
+   * @returns {Promise<Object>} The ChatML object.
+   */
   async get_chat_ml() {
-    // if(!this.data) await this.load();
     await this.load();
-    // console.log('this.data', this.data);
     const chat_ml = this.to_chatml(this.data);
-    // console.log('chat_ml', chat_ml);
     return chat_ml;
   }
+
+  /**
+   * Converts markdown text to a ChatML object.
+   * @param {string} markdown - The markdown string to convert.
+   * @returns {Object} The converted ChatML object.
+   */
   to_chatml(markdown) { return markdown_to_chat_ml(markdown); }
+
+  /**
+   * Converts a ChatML object to markdown text.
+   * @param {Object} chatml - The ChatML object to convert.
+   * @returns {string} The converted markdown string.
+   */
   from_chatml(chatml) { return chat_ml_to_markdown(chatml); }
+
+  /**
+   * Parses a user message to handle special syntax like mentions and converts them into system messages.
+   * @param {string} content - The user message content.
+   * @returns {Promise<string>} The processed content with mentions handled.
+   */
   async parse_user_message(content) {
     // DO: decided: should this be moved to new_user_message()??? Partially as sc-context???
     if (content.includes("@\"")) {
@@ -36,6 +69,7 @@ class SmartChatMD extends SmartChat {
     return content;
   }
 }
+
 /**
  * Convert a ChatML object to a markdown string
  * @param {Object} chat_ml - The ChatML object
@@ -89,17 +123,15 @@ function chat_ml_to_markdown(chat_ml) {
   });
   return markdown.trim();
 }
+
 /**
- * Convert a markdown string to a ChatML object
- * @param {string} markdown - The markdown string
- * @description This function converts a markdown string to a ChatML object. It converts markdown code blocks to tool calls.
- * @returns {Object} - The ChatML object
+ * Converts a markdown string to a ChatML object. It converts markdown code blocks to tool calls.
+ * @param {string} markdown - The markdown string to convert.
+ * @returns {Object} The ChatML object representing the markdown.
  */
 function markdown_to_chat_ml(markdown) {
   const lines = markdown.split('\n');
-  const chat_ml = {
-    messages: []
-  };
+  const chat_ml = { messages: [] };
   let current_role = '';
   let tool_name = null;
   let curr_msg = null;
