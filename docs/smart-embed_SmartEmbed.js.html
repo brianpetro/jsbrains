@@ -27,43 +27,88 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>const models = require('./models');
+
+/**
+ * An universal interface for embedding models.
+ */
 class SmartEmbed {
+  /**
+   * Create a SmartEmbed instance.
+   * @param {string|object} model - The model configuration key or the model configuration object.
+   */
   constructor(model) {
-    if(typeof model === 'object') {
-      this.config = {...model};
-    }else{
+    if (typeof model === 'object') {
+      this.config = { ...model };
+    } else {
       this.model_config_key = model;
       this.config = models[this.model_config_key];
     }
-    // stats
-    this.embed_ct = 0;
-    this.timestamp = null;
-    this.tokens = 0;
+    // Initialize statistics
+    this.embed_ct = 0; // Count of embeddings processed
+    this.timestamp = null; // Last operation timestamp
+    this.tokens = 0; // Count of tokens processed
   }
+
+  /**
+   * Factory method to create a new SmartEmbed instance and initialize it.
+   * @param {string} model_config_key - The key to retrieve model configuration from models.
+   * @param {...any} args - Additional arguments to pass to the constructor.
+   * @returns {Promise&lt;SmartEmbed>} A promise that resolves with an initialized SmartEmbed instance.
+   */
   static async create(model_config_key, ...args) {
     const adapter = new this(model_config_key, ...args);
     await adapter.init();
     return adapter;
   }
-  async init() { }
+
   /**
-   * @param {string} input
-   * @returns {Promise&lt;number>}
+   * Initialize the SmartEmbed instance. Placeholder for actual initialization logic.
+   */
+  async init() { }
+
+  /**
+   * Count the number of tokens in the input string.
+   * @param {string} input - The input string to process.
+   * @returns {Promise&lt;number>} A promise that resolves with the number of tokens.
    */
   async count_tokens(input) { }
+
   /**
-   * @param {string} input
-   * @returns {Promise&lt;number[]>}
+   * Embed the input string into a numerical array.
+   * @param {string} input - The input string to embed.
+   * @returns {Promise&lt;number[]>} A promise that resolves with the embedding array.
    */
   async embed(input) { }
+
   /**
-   * @param {string[]} input
-   * @returns {Promise&lt;number[][]>}
+   * Embed a batch of input strings into arrays of numerical arrays.
+   * @param {string[]} input - The array of strings to embed.
+   * @returns {Promise&lt;number[][]>} A promise that resolves with the array of embedding arrays.
    */
   async embed_batch(input) { }
+
+  /**
+   * Get the configured batch size for embedding.
+   * @returns {number} The batch size.
+   */
   get batch_size() { return this.config.batch_size; }
+
+  /**
+   * Get the dimensions of the embedding.
+   * @returns {number} The dimensions of the embedding.
+   */
   get dims() { return this.config.dims; }
+
+  /**
+   * Get the maximum number of tokens that can be processed.
+   * @returns {number} The maximum number of tokens.
+   */
   get max_tokens() { return this.config.max_tokens; }
+
+  /**
+   * Get the name of the model used for embedding.
+   * @returns {string} The model name.
+   */
   get model_name() { return this.config.model_name; }
 }
 
@@ -77,13 +122,13 @@ exports.SmartEmbed = SmartEmbed;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartSocket.html">SmartSocket</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#test">test</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartEmbed.html">SmartEmbed</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartSocket.html">SmartSocket</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#test">test</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Tue Apr 16 2024 15:27:32 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Tue Apr 16 2024 15:30:53 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
