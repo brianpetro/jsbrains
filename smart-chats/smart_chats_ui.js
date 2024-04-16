@@ -1,36 +1,85 @@
+/**
+ * Represents the user interface for SmartChat.
+ * This class handles the rendering and interaction logic for the chat interface.
+ */
 class SmartChatUI {
+  /**
+   * Creates an instance of SmartChatUI.
+   * @param {Object} env - The environment object containing configurations and utilities.
+   * @param {HTMLElement} container - The HTML container element for the chat UI.
+   */
   constructor(env, container) {
     this.env = env;
     this.main = this.env; // DEPRECATED
     this.container = container;
     this.templates = this.env.templates;
   }
+
+  /**
+   * Provides a context for the view rendering. Should be overridden in subclasses.
+   * @returns {Object} The context object for the view.
+   */
   get view_context() { return { /* override */ }; }
-  // calls this.env.render with same arguments
+
+  /**
+   * Renders templates using the environment's rendering engine.
+   * @param {...any} args - Arguments including template and data to render.
+   * @returns {Promise<string>} The rendered HTML string.
+   */
   async render(...args) { return await this.env.ejs.render(...args); }
-  // well-formed (architectural) methods
+
+  /**
+   * Displays a notice message in the console.
+   * @param {string} message - The message to display.
+   */
   show_notice(message) { console.log(message); }
+
+  /**
+   * Initializes the chat UI by clearing the container and rendering the initial chat template.
+   */
   async init() {
     console.log("init SmartChatRenderer");
     console.log(this.container);
-    // clear container
     this.container.innerHTML = "";
     console.log(this.env.chats.current);
     const data = await this.get_view_data();
     this.container.innerHTML = await this.render(this.templates.smart_chat, data, { context: this.view_context, rmWhitespace: true });
     this.post_process();
   }
+
+  /**
+   * Handles new user messages, updates the UI, and triggers rendering of typing indicator.
+   * @param {string} user_input - The user's input message.
+   */
   async new_user_message(user_input) {
     await this.new_message(user_input, "user");
     this.set_streaming_ux();
     await this.render_dotdotdot();
   }
+
+  /**
+   * Post-initialization processing, such as adding listeners and processing messages.
+   */
   async post_process() {
     this.add_listeners();
     this.messages.forEach(this.message_post_process.bind(this));
   }
-  add_listeners() { } // OVERRIDE
-  message_post_process(msg_elm) { } // OVERRIDE
+
+  /**
+   * Placeholder for adding listeners. Should be overridden in subclasses.
+   */
+  add_listeners() { }
+
+  /**
+   * Placeholder for message post-processing. Should be overridden in subclasses.
+   * @param {HTMLElement} msg_elm - The message element to process.
+   */
+  message_post_process(msg_elm) { }
+
+  /**
+   * Retrieves view data for rendering the chat interface.
+   * @returns {Promise<Object>} An object containing data for the view.
+   */
   add_message_listeners(msg_elm) { } // OVERRIDE
   async get_view_data() {
     const data = {
@@ -39,6 +88,10 @@ class SmartChatUI {
     };
     return data;
   }
+
+  /**
+   * Adds input listeners to the chat form for handling special keys and sending messages.
+   */
   add_chat_input_listeners() {
     const chat_input = this.container.querySelector(".sc-chat-form");
     const textarea = chat_input.querySelector("textarea");
@@ -130,7 +183,6 @@ class SmartChatUI {
     if(!this.last_msg.dataset.content) this.last_msg.dataset.content = "";
     if (append_last) {
       this.last_msg_content.innerHTML += content;
-      // addpend to data-content
       this.last_msg.dataset.content += content;
       if (content.indexOf('\n') > -1) this.render_md_as_html(this.last_msg);
     } else {
@@ -141,56 +193,79 @@ class SmartChatUI {
         this.last_msg.dataset.content = content;
       } else {
         this.last_msg_content.innerHTML = content;
-        // addpend to data-content
         this.last_msg.dataset.content = content;
       }
       this.message_post_process(this.last_msg);
     }
-    // scroll to bottom
     this.message_container.scrollTop = this.message_container.scrollHeight;
   }
+
+  /**
+   * Generates HTML for a message based on the role and content.
+   * @param {string} role - The role of the message sender.
+   * @param {string} content - The content of the message.
+   * @returns {Promise<string>} The HTML string for the message.
+   */
   async get_message_html(role, content) { return await this.render(this.templates.smart_chat_msg, { role, content }, { context: this.view_context, rmWhitespace: true }); }
 
-  // insert_selection from file suggestion modal
+  /**
+   * Inserts selected text from a suggestion modal into the chat input.
+   * @param {string} insert_text - The text to insert.
+   */
   insert_selection(insert_text) {
     const textarea = this.container.querySelector(".sc-chat-form textarea");
-    // get caret position
     let caret_pos = textarea.selectionStart;
-    // get text before caret
     let text_before = textarea.value.substring(0, caret_pos);
-    // get text after caret
     let text_after = textarea.value.substring(caret_pos, textarea.value.length);
-    // insert text
     textarea.value = text_before + insert_text + text_after;
-    // set caret position
     textarea.selectionStart = caret_pos + insert_text.length;
     textarea.selectionEnd = caret_pos + insert_text.length;
-    // focus on textarea
     textarea.focus();
   }
+
+  /**
+   * Renders a typing indicator ("...") and sets an interval to animate it.
+   */
   async render_dotdotdot() {
     if (this.dotdotdot_interval) clearInterval(this.dotdotdot_interval);
     await this.new_message("...", "assistant");
-    // if is '...', then initiate interval to change to '.' and then to '..' and then to '...'
     let dots = 0;
-    // get last .sc-message > .sc-message-content in sc-message-container
     const curr_msg = this.last_msg_content;
     curr_msg.innerHTML = '...';
     this.dotdotdot_interval = setInterval(() => {
       dots++;
-      if (dots > 3)
-        dots = 1;
+      if (dots > 3) dots = 1;
       curr_msg.innerHTML = '.'.repeat(dots);
     }, 500);
-    // wait 2 seconds for testing
-    // await new Promise(r => setTimeout(r, 2000));
   }
+
+  /**
+   * Returns the message container element.
+   * @returns {HTMLElement} The message container.
+   */
   get message_container() { return this.container.querySelector(".sc-message-container"); }
+
+  /**
+   * Returns the last message content element.
+   * @returns {HTMLElement} The last message content element.
+   */
   get last_msg() { return this.container.querySelector(".sc-message-container").lastElementChild.querySelector(".sc-message-content"); }
+
+  /**
+   * Returns the last message content span element.
+   * @returns {HTMLElement} The last message content span element.
+   */
   get last_msg_content() { return this.last_msg.querySelector("span:not(.sc-msg-button)"); }
+
+  /**
+   * Returns all message content elements.
+   * @returns {NodeListOf<HTMLElement>} A NodeList of message content elements.
+   */
   get messages() { return this.container.querySelectorAll(".sc-message-container .sc-message-content"); }
 
-  // TODO: REVIEW
+  /**
+   * Sets the user interface to a "streaming" mode, disabling input and showing an abort button.
+   */
   set_streaming_ux() {
     this.prevent_input = true;
     // hide send button
@@ -200,6 +275,10 @@ class SmartChatUI {
     if (this.container.querySelector("#sc-abort-button"))
       this.container.querySelector("#sc-abort-button").style.display = "block";
   }
+
+  /**
+   * Resets the user interface from "streaming" mode to normal.
+   */
   unset_streaming_ux() {
     this.prevent_input = false;
     // show send button, remove display none
@@ -209,6 +288,10 @@ class SmartChatUI {
     if (this.container.querySelector("#sc-abort-button"))
       this.container.querySelector("#sc-abort-button").style.display = "none";
   }
+
+  /**
+   * Clears any streaming user interface effects, such as intervals and temporary elements.
+   */
   clear_streaming_ux() {
     this.unset_streaming_ux();
     if (this.dotdotdot_interval) {
