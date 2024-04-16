@@ -1,23 +1,30 @@
 const { CollectionItem } = require('./CollectionItem');
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
 const helpers = require('./helpers');
-const {
-  deep_merge,
-} = helpers;
+const { deep_merge, } = helpers;
 
-// BASE COLLECTION CLASSES
 /**
- * Represents a collection of items.
+ * Base class representing a collection of items with various methods to manipulate and retrieve these items.
  */
 class Collection {
+  /**
+   * Constructs a new Collection instance.
+   * @param {Object} env - The environment context containing configurations and adapters.
+   */
   constructor(env) {
     this.env = env;
     this.brain = this.env; // DEPRECATED: use env instead of brain
     this.config = this.env.config;
     this.items = {};
-    // this.keys = []; // replaced by getter
     this.LTM = this.env.ltm_adapter.wake_up(this, this.env.ltm_adapter);
   }
+
+  /**
+   * Loads a collection based on the environment and optional configuration.
+   * @param {Object} env - The environment context.
+   * @param {Object} [config={}] - Optional configuration for the collection.
+   * @returns {Promise<Collection>|Collection} The loaded collection instance.
+   */
   static load(env, config = {}) {
     const { custom_collection_name } = config;
     env[this.collection_name] = new this(env);
@@ -31,7 +38,9 @@ class Collection {
     else env[this.collection_name].load();
     return env[this.collection_name];
   }
-  // Merge defaults from all classes in the inheritance chain (from top to bottom, so child classes override parent classes)
+  /**
+   * Merges default configurations from all classes in the inheritance chain.
+   */
   merge_defaults() {
     let current_class = this.constructor;
     while (current_class) { // merge collection config into item config
@@ -43,61 +52,72 @@ class Collection {
     }
     // console.log(Object.keys(this));
   }
-  // SAVE/LOAD
+
+  /**
+   * Saves the current state of the collection.
+   */
   save() { this.LTM.save(); }
+
+  /**
+   * Loads the collection state.
+   */
   load() { this.LTM.load(); }
+
+  /**
+   * Revives items from a serialized state.
+   * @param {string} key - The key of the item.
+   * @param {*} value - The serialized item value.
+   * @returns {CollectionItem|*} The revived item or the original value if not an object.
+   */
   reviver(key, value) {
     if (typeof value !== 'object' || value === null) return value; // skip non-objects, quick return
     if (value.class_name) return new (this.env.item_types[value.class_name])(this.env, value);
     return value;
   }
-  // reviver(key, value) { // JSON.parse reviver
-  //   if(typeof value !== 'object' || value === null) return value; // skip non-objects, quick return
-  //   if(value.class_name) this.items[key] = new (this.env.item_types[value.class_name])(this.env, value);
-  //   return null;
-  // }
   replacer(key, value) {
     if (value instanceof this.item_type) return value.data;
     if (value instanceof CollectionItem) return value.ref;
     return value;
   }
-  // CREATE
+
   /**
-   * Creates a new item or updates an existing one within the collection based on the provided data.
-   * @param {Object} data - The data to create a new item or update an existing one.
-   * @return {CollectionItem} The newly created or updated CollectionItem.
+   * Creates or updates an item in the collection based on the provided data.
+   * @param {Object} data - The data to create or update an item.
+   * @returns {Promise<CollectionItem>|CollectionItem} The newly created or updated item.
    */
   create_or_update(data = {}) {
     const existing = this.find_by(data);
     const item = existing ? existing : new this.item_type(this.env);
     item.is_new = !!!existing;
-    const changed = item.update_data(data); // handles this.data
-    if (existing && !changed) return existing; // if existing item and no changes, return existing item (no need to save)
-    if (item.validate_save()) this.set(item); // make it available in collection (if valid)
-
-    // dynamically handle async init functions
-    if (item.init instanceof AsyncFunction) return new Promise((resolve, reject) => { item.init(data).then(() => resolve(item)); });
-    item.init(data); // handles functions that involve other items
+    const changed = item.update_data(data);
+    if (existing && !changed) return existing;
+    if (item.validate_save()) this.set(item);
+    if (item.init instanceof AsyncFunction) {
+      return new Promise((resolve, reject) => {
+        item.init(data).then(() => resolve(item));
+      });
+    }
+    item.init(data);
     return item;
   }
+
   /**
    * Finds an item in the collection that matches the given data.
    * @param {Object} data - The criteria used to find the item.
-   * @return {CollectionItem|null} The found CollectionItem or null if not found.
+   * @returns {CollectionItem|null} The found item or null if not found.
    */
   find_by(data) {
     if(data.key) return this.get(data.key);
     const temp = new this.item_type(this.env);
     const temp_data = JSON.parse(JSON.stringify(data, temp.update_data_replacer));
     deep_merge(temp.data, temp_data); // deep merge data
-    // temp.update_data(data); // call deep merge directly to prevent double call of update_data in sub-classes
-    // if (temp.key) temp_data.key = temp.key;
     return temp.key ? this.get(temp.key) : null;
   }
   // READ
   /**
    * Filters the items in the collection based on the provided options.
    * @param {Object} opts - The options used to filter the items.
+   * @return {CollectionItem[]} The filtered items.
    */
   filter(opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(opts)).map(([key, item]) => item); }
   /**
@@ -130,40 +150,78 @@ class Collection {
    */
   get_rand(opts = null) {
     if (opts) {
-      // console.log("filter_opts: ", filter_opts);
       const filtered = this.filter(opts);
-      // console.log("filtered: " + filtered.length);
       return filtered[Math.floor(Math.random() * filtered.length)];
     }
     return this.items[this.keys[Math.floor(Math.random() * this.keys.length)]];
   }
   // UPDATE
+  /**
+   * Adds or updates an item in the collection.
+   * @param {CollectionItem} item - The item to add or update.
+   */
   set(item) {
     if (!item.key) throw new Error("Item must have key property");
     this.items[item.key] = item;
-    // if (!this.keys.includes(item.key)) this.keys.push(item.key); // this.keys replaced by getter
   }
+  /**
+   * Updates multiple items in the collection based on the provided keys and data.
+   * @param {String[]} keys - The keys of the items to update.
+   * @param {Object} data - The data to update the items with.
+   */
   update_many(keys = [], data = {}) { this.get_many(keys).forEach((item) => item.update_data(data)); }
   // DESTROY
+  /**
+   * Clears all items from the collection.
+   */
   clear() {
     this.items = {};
-    // this.keys = []; // replaced by getter
   }
+  /**
+   * Deletes an item from the collection based on its key.
+   * @param {String} key - The key of the item to delete.
+   */
   delete(key) {
     delete this.items[key];
-    // this.keys = this.keys.filter((k) => k !== key); // replaced by getter
   }
+  /**
+   * Deletes multiple items from the collection based on their keys.
+   * @param {String[]} keys - The keys of the items to delete.
+   */
   delete_many(keys = []) {
     keys.forEach((key) => delete this.items[key]);
-    // this.keys = Object.keys(this.items); // replaced by getter
   }
   // CONVENIENCE METHODS (namespace getters)
+  /**
+   * Gets the collection name derived from the class name.
+   * @return {String} The collection name.
+   */
   static get collection_name() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
-  get collection_name() { return (this._collection_name) ? this._collection_name : this.constructor.collection_name; }
+  /**
+   * Gets or sets the collection name. If a name is set, it overrides the default name.
+   * @param {String} name - The new collection name.
+   */
   set collection_name(name) { this._collection_name = name; }
+  get collection_name() { return (this._collection_name) ? this._collection_name : this.constructor.collection_name; }
+  /**
+   * Gets the keys of the items in the collection.
+   * @return {String[]} The keys of the items.
+   */
   get keys() { return Object.keys(this.items); }
+  /**
+   * Gets the class name of the item type the collection manages.
+   * @return {String} The item class name.
+   */
   get item_class_name() { return this.constructor.name.slice(0, -1).replace(/(ie)$/g, 'y'); } // remove 's' from end of name & if name ends in 'ie', replace with 'y'
+  /**
+   * Gets the name of the item type the collection manages, derived from the class name.
+   * @return {String} The item name.
+   */
   get item_name() { return this.item_class_name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+  /**
+   * Gets the constructor of the item type the collection manages.
+   * @return {Function} The item type constructor.
+   */
   get item_type() { return this.env.item_types[this.item_class_name]; }
 }
 exports.Collection = Collection;
