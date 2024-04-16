@@ -1,9 +1,23 @@
 const { LongTermMemory } = require('./long_term_memory');
+/**
+ * Class representing a specialized JSON storage system for Obsidian, extending the LongTermMemory class.
+ * This class handles the loading and saving of collections in a JSON format with specific handling
+ * for memory optimization and error management.
+ */
 class ObsidianAJSON extends LongTermMemory {
+  /**
+   * Creates an instance of ObsidianAJSON.
+   * @param {Object} collection - The collection of items to be managed.
+   */
   constructor(collection) {
     super(collection);
     this.adapter = this.brain.main.app.vault.adapter;
   }
+
+  /**
+   * Asynchronously loads the collection from a JSON file.
+   * Parses the JSON file, instantiates items based on their class names, and handles errors such as missing files.
+   */
   async load() {
     console.log("Loading: " + this.file_path);
     try {
@@ -29,12 +43,21 @@ class ObsidianAJSON extends LongTermMemory {
       }
     }
   }
-  // wraps _save in timeout to prevent multiple saves at once
+
+  /**
+   * Saves the collection to a file with a delay to prevent multiple saves at once.
+   * This method sets up a timeout to delay the actual save operation.
+   */
   save() {
     if(this.save_timeout) clearTimeout(this.save_timeout);
     this.save_timeout = setTimeout(() => { this._save(); }, 10000);
   }
-  // saves collection to file
+
+  /**
+   * Internal method to save the collection to a file.
+   * It checks for conditions to avoid unnecessary saves and handles errors.
+   * @param {boolean} [force=false] - Forces the save operation regardless of the usual checks.
+   */
   async _save(force=false) {
     if(this.save_timeout) clearTimeout(this.save_timeout);
     this.save_timeout = null;
@@ -61,6 +84,11 @@ class ObsidianAJSON extends LongTermMemory {
     }
     this._saving = false;
   }
+
+  /**
+   * Getter for the file name with a custom extension.
+   * @returns {string} The file name appended with '.ajson'.
+   */
   get file_name() { return super.file_name + '.ajson'; }
 }
 

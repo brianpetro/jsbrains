@@ -1,9 +1,23 @@
 const { LongTermMemory } = require('./long_term_memory');
+
+/**
+ * Class representing a specialized form of LongTermMemory that handles multiple .ajson files.
+ * It extends the LongTermMemory class to manage collections of items stored in .ajson format.
+ */
 class ObsMultiAJSON extends LongTermMemory {
+  /**
+   * Creates an instance of ObsMultiAJSON.
+   * @param {Object} collection - The collection of items to be managed.
+   */
   constructor(collection) {
     super(collection);
     this.adapter = this.env.main.app.vault.adapter;
   }
+
+  /**
+   * Asynchronously loads collection items from .ajson files within the specified data path.
+   * It ensures that only .ajson files are processed and handles JSON parsing and item instantiation.
+   */
   async load() {
     console.log("Loading collection items");
     if(!(await this.adapter.exists(this.data_path))) await this.adapter.mkdir(this.data_path);
@@ -30,13 +44,20 @@ class ObsMultiAJSON extends LongTermMemory {
     }
     console.log("Loaded collection items");
   }
-  // wraps _save in timeout to prevent multiple saves at once
+
+  /**
+   * Schedules a save operation to prevent multiple saves happening at the same time.
+   */
   save() {
     if(this.save_timeout) clearTimeout(this.save_timeout);
     this.save_timeout = setTimeout(() => { this._save(); }, 10000);
   }
-  // saves collection to file
-  async _save(force=false) {
+
+  /**
+   * Asynchronously saves modified collection items to their respective .ajson files.
+   * @param {boolean} [force=false] - Forces the save operation even if it's currently flagged as saving.
+   */
+  async _save(force = false) {
     let saved_ct = 0;
     if(this._saving) return console.log("Already saving");
     this._saving = true; // prevent multiple saves at once
@@ -66,6 +87,13 @@ class ObsMultiAJSON extends LongTermMemory {
     }
     this._saving = false;
   }
+
+  /**
+   * Validates the save operation by comparing the file sizes of the new and old files.
+   * @param {string} new_file_path - Path to the new file.
+   * @param {string} old_file_path - Path to the old file.
+   * @returns {Promise<boolean>} - True if the new file size is at least 50% of the old file size, otherwise false.
+   */
   async validate_save(new_file_path, old_file_path) {
     const new_file_size = (await this.adapter.stat(new_file_path))?.size;
     const old_file_size = (await this.adapter.stat(old_file_path))?.size;
@@ -75,7 +103,10 @@ class ObsMultiAJSON extends LongTermMemory {
     return new_file_size > (old_file_size * 0.5);
   }
 
-  // get file_name() { return super.file_name + '.ajson'; }
+  /**
+   * Gets the data path for storing .ajson files, appending '/multi' to the base path.
+   * @returns {string} The data path for .ajson files.
+   */
   get data_path() { return super.data_path + '/multi'; }
 }
 
