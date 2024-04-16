@@ -23,7 +23,17 @@ const adapters = require('./adapters');
 const chat_models = require('./models.json');
 const { is_valid_tool_call } = require('./utils/is_valid_tool_call');
 const { SmartStreamer } = require('./streamer');
+/**
+ * SmartChatModel class provides functionalities to handle chat interactions with various models and adapters.
+ * It supports streaming and non-streaming responses, tool calls, and customizations through options.
+ */
 class SmartChatModel {
+  /**
+   * Constructs an instance of SmartChatModel with specified environment, model key, and options.
+   * @param {Object} main - The main environment context, typically containing configurations and state.
+   * @param {string} model_key - Key to select the specific model configuration from models.json.
+   * @param {Object} opts - Optional parameters to override model configurations.
+   */
   constructor(main, model_key, opts={}) {
     this.env = main;
     this.main = this.env; // DEPRECATED

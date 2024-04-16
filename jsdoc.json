@@ -8,7 +8,7 @@
       "smart-embed"
     ],
     "includePattern": ".+\\.js(doc|x)?$",
-    "excludePattern": "(^|\\/|\\\\)_|node_modules"
+    "excludePattern": "node_modules"
   },
   "opts": {
     "recurse": true,
