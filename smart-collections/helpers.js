@@ -1,8 +1,8 @@
-// HASHING
-// const crypto = require('crypto');
-// function md5(string) { return crypto.createHash('md5').update(String(string)).digest('hex'); }
-// exports.md5 = md5;
-// create uid from embed_input_arr without using md5/crypto
+/**
+ * Creates a unique identifier for the given data without using cryptographic methods.
+ * @param {Object} data - The data object to create a UID for.
+ * @returns {string} A unique identifier based on the input data.
+ */
 function create_uid(data) {
   const str = JSON.stringify(data);
   let hash = 0;
@@ -17,7 +17,13 @@ function create_uid(data) {
   return hash.toString() + str.length;
 }
 exports.create_uid = create_uid;
-// DEEP MERGE
+
+/**
+ * Deeply merges two objects, giving precedence to the properties of the source object.
+ * @param {Object} target - The target object to merge properties into.
+ * @param {Object} source - The source object from which properties are sourced.
+ * @returns {Object} The merged object.
+ */
 function deep_merge(target, source) {
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
@@ -30,7 +36,12 @@ function deep_merge(target, source) {
   function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
 }
 exports.deep_merge = deep_merge;
-// NAMESPACES
+
+/**
+ * Converts a class name from camelCase to snake_case and makes plural forms.
+ * @param {string} class_name - The class name to convert.
+ * @returns {string} The snake_case and pluralized class name.
+ */
 function collection_instance_name_from(class_name) {
   return class_name
     .replace(/([a-z])([A-Z])/g, '$1_$2') // convert camelCase to snake_case
@@ -39,7 +50,13 @@ function collection_instance_name_from(class_name) {
     + 's';
 }
 exports.collection_instance_name_from = collection_instance_name_from;
-// COSINE SIMILARITY
+
+/**
+ * Calculates the cosine similarity between two vectors.
+ * @param {Array<number>} vector1 - The first vector.
+ * @param {Array<number>} vector2 - The second vector.
+ * @returns {number} The cosine similarity between the two vectors.
+ */
 function cos_sim(vector1, vector2) {
   const dotProduct = vector1.reduce((acc, val, i) => acc + val * vector2[i], 0);
   const normA = Math.sqrt(vector1.reduce((acc, val) => acc + val * val, 0));
@@ -47,6 +64,13 @@ function cos_sim(vector1, vector2) {
   return normA === 0 || normB === 0 ? 0 : dotProduct / (normA * normB);
 }
 exports.cos_sim = cos_sim;
+
+/**
+ * Maintains a collection of top items based on their similarity measure.
+ * @param {Object} _acc - The accumulator object that stores items and their minimum similarity.
+ * @param {Object} item - The new item to consider for inclusion.
+ * @param {number} [ct=10] - The count of top items to maintain.
+ */
 function top_acc(_acc, item, ct = 10) {
   if (_acc.items.size < ct) {
     _acc.items.add(item);
@@ -59,5 +83,10 @@ function top_acc(_acc, item, ct = 10) {
 }
 exports.top_acc = top_acc;
 
+/**
+ * Delays the execution of the next line in the code by a specified number of milliseconds.
+ * @param {number} ms - The number of milliseconds to delay.
+ * @returns {Promise} A promise that resolves after the specified delay.
+ */
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 exports.sleep = sleep;
