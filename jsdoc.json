@@ -1,0 +1,24 @@
+{
+  "source": {
+    "include": [
+      "smart-chat-model",
+      "smart-chats",
+      "smart-chunks",
+      "smart-collections",
+      "smart-embed"
+    ],
+    "includePattern": ".+\\.js(doc|x)?$",
+    "excludePattern": "(^|\\/|\\\\)_|node_modules"
+  },
+  "opts": {
+    "recurse": true,
+    "destination": "./docs/"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  }
+}

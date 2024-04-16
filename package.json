@@ -26,5 +26,8 @@
     "smart-chunks",
     "smart-collections",
     "smart-embed"
-  ]
+  ],
+  "devDependencies": {
+    "jsdoc": "^4.0.2"
+  }
 }
