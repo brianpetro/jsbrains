@@ -1,4 +1,15 @@
+/**
+ * SmartMarkdown is a class designed to parse and manipulate markdown content
+ * based on specified configurations. It provides functionalities to extract
+ * specific blocks of text based on heading paths, handle exclusions of certain
+ * headings, and manage the size of text blocks according to maximum and minimum
+ * character limits.
+ */
 class SmartMarkdown {
+  /**
+   * Returns the default configuration for the SmartMarkdown parser.
+   * @returns {Object} Default configuration settings.
+   */
   static get defaults() {
     return {
       excluded_headings: null, // comma separated list of headings to exclude
@@ -7,10 +18,23 @@ class SmartMarkdown {
       skip_blocks_with_headings_only: false, // skip blocks that only contain headings
     };
   }
+  /**
+   * Creates an instance of SmartMarkdown with the given configuration.
+   * @param {Object} config - User-defined configuration settings.
+   */
   constructor(config) {
     this.config = {...SmartMarkdown.defaults, ...config};
   }
+  /**
+   * Retrieves the list of headings to be excluded from parsing, if any.
+   * @returns {Array|null} An array of headings to exclude, or null if none.
+   */
   get excluded_headings() { (this.config.excluded_headings?.length) ? this.config.excluded_headings.split(",").map((header) => header.trim()) : null; }
+  /**
+   * Analyzes the markdown content to extract metadata about each heading.
+   * @param {string} content - The markdown content to analyze.
+   * @returns {Array} An array of objects containing metadata about each heading.
+   */  
   // WIP
   get_headings_meta(content) {
     return content.split('\n').reduce((acc, line, line_i, lines) => {
@@ -25,6 +49,13 @@ class SmartMarkdown {
 
   // v1
   // get block from path
+  /**
+   * Extracts a specific block of markdown based on a heading path.
+   * @param {string} block_path - The path to the block, specified as a series of headings.
+   * @param {string} markdown - The markdown content to parse.
+   * @param {Object} opts - Options for block extraction, such as character limits per line.
+   * @returns {string} The extracted block of markdown text.
+   */
   get_block_from_path(block_path, markdown, opts={}){
     // if block_path ends with # and only one # then returns content prior to first heading
     if(block_path.endsWith('#') && block_path.split('#').length === 2) return markdown.split('#')[0];
@@ -97,6 +128,11 @@ class SmartMarkdown {
     if (is_code) block.push("```"); // close code block if open
     return block.join("\n").trim();
   }
+  /**
+   * Parses the markdown content and organizes it into structured blocks based on headings.
+   * @param {Object} params - Parameters containing content and optional file path.
+   * @returns {Object} An object containing parsed blocks and other metadata.
+   */
   parse({ content, file_path='' }) {
     const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path) + ": "; // add ":" to indicate beginning of heading breadcrumbs
     // if is excalidraw file, block for 'Text Elements' heading only
@@ -154,7 +190,10 @@ class SmartMarkdown {
       current_headers: undefined,
     };
   }
-
+  /**
+   * Handles duplicate headings by appending a unique identifier to the heading path.
+   * @param {Object} acc - The accumulator object used in reduce function.
+   */
   // if block_headings is already in block_headings_list then add a number to the end
   handle_duplicate_headings(acc) {
     if (!acc.block_headings_list.includes(acc.block_headings)) return; // if block_headings is not in block_headings_list then return
@@ -163,6 +202,10 @@ class SmartMarkdown {
     while (uniqueHeadings.has(`${acc.block_headings}{${count}}`)) { count++; }
     acc.block_headings = `${acc.block_headings}{${count}}`;
   }
+  /**
+   * Outputs the current block into the structured blocks array after validation.
+   * @param {Object} acc - The accumulator object used in reduce function.
+   */
   // push the current block to the blocks array
   output_block(acc) {
     const { embed_input_max_chars, embed_input_min_chars } = this.config;
@@ -185,15 +228,47 @@ class SmartMarkdown {
       lines: [acc.start_line, acc.curr_line],
     }); // add block to blocks array
   }
+  /**
+   * Determines if a line of text should be considered as content.
+   * @param {string} line - The line of text to evaluate.
+   * @returns {boolean} True if the line is content, false otherwise.
+   */
   is_content_line(line) {
     // if (line === '') return false; // skip if line is empty // DO: make this configurable
     if (['- ', '- [ ] '].indexOf(line) > -1) return false; // skip if line is empty bullet or checkbox
     return true;
   }
+  /**
+   * Converts a file path to a breadcrumb string format.
+   * @param {string} file_path - The file path to convert.
+   * @returns {string} The breadcrumb string.
+   */
   file_path_to_breadcrumbs(file_path) { return file_path.replace('.md', '').split('/').map(crumb => crumb.trim()).filter(crumb => crumb !== '').join(' > '); } // remove .md file extension and convert file_path to breadcrumb formatting
+  /**
+   * Determines the level of a heading based on the number of '#' characters.
+   * @param {string} line - The heading line to evaluate.
+   * @returns {number} The level of the heading.
+   */  
   heading_level(line) { return line.split('#').length - 1; }
+  /**
+   * Checks if a line is a heading.
+   * @param {string} line - The line to check.
+   * @returns {boolean} True if the line is a heading, false otherwise.
+   * @param {string} line - The line to check.
+   * @returns {boolean} True if the line is a heading, false otherwise.
+  */
   is_heading(line) { return line.startsWith('#') && (['#', ' '].indexOf(line[1]) > -1); } // check if line is a heading (starts with # and second character is space or # indicating not a tag)
+  /**
+   * Validates if the block path is correctly formatted to include at least one heading.
+   * @param {string} block_path - The block path to validate.
+   * @returns {boolean} True if the block path is valid, false otherwise.
+   */
   validate_block_path(block_path) { return block_path.indexOf("#") > -1; } // validate block_path contains at least one "#"
+  /**
+   * Validates a heading against the list of excluded headings.
+   * @param {string} headings - The heading to validate.
+   * @returns {boolean} True if the heading is not excluded, false if it is.
+   */  
   validate_heading(headings) { return !!!this.excluded_headings?.some(exclusion => headings.indexOf(exclusion) > -1); } // validate heading against excluded headings
 
 }
