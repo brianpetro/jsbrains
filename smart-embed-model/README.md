@@ -1,22 +1,9 @@
 # Smart Embed
 Smart Embed is a library that provides a standardized interface for embedding content. It supports various local and remote embedding models, making it a versatile tool for your development needs.
 
-```mermaid
-graph TD
-    SE[SmartEmbed] -->|is extended by| SETNA[SmartEmbedTransformersNodeAdapter]
-    SE -->|is extended by| SETWA[SmartEmbedTransformersWebAdapter]
-    SE -->|is extended by| SEAA[SmartEmbedApiAdapter]
-    SEAA -->|is extended by| SEOAA[SmartEmbedOpenAIAdapter]
-    SEOAA -->|is extended by| SEAdaApi[SmartEmbedAdaApi]
-    SETWA -->|communicates via IPC| SETWC
-    SETNA -->|is extended by| SEBgeSmallNode[SmartEmbedBgeSmallNode]
-    SETNA -->|is extended by| SETWC[SmartEmbedTransformersWebConnector]
-    SETWA -->|is extended by| SEBgeSmallWeb[SmartEmbedBgeSmallWeb]
-```
-
 ## install
 ```bash
-npm install smart-embed
+npm install smart-embed-model
 ```
 
 ## usage
