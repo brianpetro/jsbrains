@@ -19,7 +19,7 @@ To initialize the `SmartEmbedModel` with a specific adapter, follow these steps:
    const config = {
      model_key: 'default_model', // Assuming 'default_model' is a valid key in your models configuration
      api_key: 'your_api_key_here', // Replace with your actual API key
-     adapter: 'api' // Specify the adapter type, e.g., 'api', 'local', etc.
+     adapter: 'api' // Specify the adapter type, e.g., 'api' (default), 'local_api', 'transformers' (huggingface)
    };
    ```
 
