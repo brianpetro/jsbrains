@@ -8,6 +8,39 @@ npm install smart-embed-model
 
 ## usage
 
+### Initializing SmartEmbedModel with Adapters
+
+To initialize the `SmartEmbedModel` with a specific adapter, follow these steps:
+
+1. **Configure the Model and Adapter:**
+   Define the configuration for your model and specify the adapter you want to use. Here's an example configuration:
+
+   ```javascript
+   const config = {
+     model_key: 'default_model', // Assuming 'default_model' is a valid key in your models configuration
+     api_key: 'your_api_key_here', // Replace with your actual API key
+     adapter: 'api' // Specify the adapter type, e.g., 'api', 'local', etc.
+   };
+   ```
+
+2. **Create an Instance of SmartEmbedModel:**
+   Use the `create` static method of `SmartEmbedModel` to initialize an instance with the environment and configuration:
+
+   ```javascript
+   SmartEmbedModel.create({}, config)
+     .then(model => {
+       console.log('SmartEmbedModel initialized successfully:', model);
+       // You can now use model to embed inputs or count tokens, etc.
+     })
+     .catch(error => {
+       console.error('Failed to initialize SmartEmbedModel:', error);
+     });
+   ```
+
+This setup will allow you to utilize the specified adapter for embedding operations or token counting with the `SmartEmbedModel`.
+
+
+
 ### `embed(input)`
 
 Generates an embedding for a single input string.
