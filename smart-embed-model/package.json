@@ -1,10 +1,10 @@
 {
-  "name": "smart-embed",
+  "name": "smart-embed-model",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "version": "1.0.7",
   "description": "Convenient interface for utilizing various embedding models via API and locally.",
-  "main": "smart_embed.js",
+  "main": "smart_embed_model.js",
   "scripts": {
     "build": "node build_web.js",
     "test": "npx ava --verbose test.js"

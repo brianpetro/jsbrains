@@ -7,7 +7,6 @@ class IframeAdapter extends Adapter {
     this.frame = null;
     this.output = {};
     this.response_handlers = {};
-    this.container = container; // iframe container
     this.web_script = web_connector.script; // web script to load in iframe
   }
   unload() {
@@ -37,7 +36,7 @@ class IframeAdapter extends Adapter {
       this.frame.srcdoc = this.iframe_script;
       this.container.appendChild(this.frame);
       await this.frame_loaded; // wait for iframe to load
-      this.frame.contentWindow.postMessage({ type: "init", model_config_key: this.config }, "*"); // send init message to iframe
+      this.frame.contentWindow.postMessage({ type: "init", model_config: {...this.main.config, container: null} }, "*"); // send init message to iframe
       await model_loaded; // wait for model to load
       this.frame.contentWindow.addEventListener("message", this.handle_iframe_messages.bind(this), false);
     }
@@ -118,10 +117,16 @@ class IframeAdapter extends Adapter {
 }
 exports.IframeAdapter = IframeAdapter;
 
-function create_uid(input) {
-  // SHA256 hash of input using web crypto api
-  const crypto = window.crypto || window.msCrypto;
-  const hash = crypto.createHash('sha256');
-  hash.update(JSON.stringify(input));
-  return hash.digest('hex');
+function create_uid(data) {
+  const str = JSON.stringify(data);
+  let hash = 0;
+  if (str.length === 0) return hash;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+    // remove negative sign
+    if (hash < 0) hash = hash * -1;
+  }
+  return hash.toString() + str.length;
 }

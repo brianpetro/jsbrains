@@ -2,8 +2,8 @@ const { TransformersAdapter } = require('./adapters/transformers');
 
 // CONNECTOR FOR OBSIDIAN
 class TransformersIframeConnector extends TransformersAdapter {
-  constructor(window) {
-    super({});
+  constructor(model_config, window) {
+    super({config: model_config}); // assigns config to this in Adapter
     this.model = null;
     this.running_init = false;
     this.window = window;
@@ -13,7 +13,7 @@ class TransformersIframeConnector extends TransformersAdapter {
     this.tokens = 0;
   }
   static async create(model_config, window) {
-    const connector = new TransformersIframeConnector(window);
+    const connector = new TransformersIframeConnector(model_config, window);
     await connector.init();
     return connector;
   }
