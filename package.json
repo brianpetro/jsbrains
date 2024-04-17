@@ -25,9 +25,10 @@
     "smart-chats",
     "smart-chunks",
     "smart-collections",
-    "smart-embed"
+    "smart-embed-model"
   ],
   "devDependencies": {
+    "dotenv": "^16.4.5",
     "jsdoc": "^4.0.2"
   }
 }

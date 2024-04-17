@@ -210,6 +210,7 @@ class SmartChatModel {
   async request(req){
     req.url = this.endpoint;
     req.throw = false;
+    // handle fallback to fetch (allows for overwriting in child classes)
     const resp = this._request_adapter ? await this._request_adapter(req) : await fetch(this.endpoint, req);
     console.log(resp);
     const resp_json = await this.get_resp_json(resp);
@@ -217,7 +218,7 @@ class SmartChatModel {
     return resp_json;
   }
   async get_resp_json(resp) { return (typeof resp.json === 'function') ? await resp.json() : await resp.json; }
-  get request_adapter(){ return this._request_adapter; } // handle fallback to fetch (allows for overwriting in child classes)
+  get request_adapter(){ return this._request_adapter; }
 
   async stream(req) {
     console.log("Streaming Request: ");
@@ -300,9 +301,7 @@ class SmartChatModel {
   }
   async count_tokens(input) {
     if(typeof this.adapter?.count_tokens === 'function') return await this.adapter.count_tokens(input);
-    if(!this.tokenizer) this.tokenizer = getEncoding("cl100k_base");
-    if(typeof input === 'object') input = JSON.stringify(input);
-    return this.tokenizer.encode(input).length;
+    return this.estimate_tokens(input);
   }
   estimate_tokens(input) {
     if(typeof this.adapter?.estimate_tokens === 'function') return this.adapter.estimate_tokens(input);
