@@ -26,12 +26,13 @@ class CollectionItem {
    * @param {Object} brain - The central storage or context.
    * @param {Object|null} data - Initial data for the item.
    */
-  constructor(brain, data = null) {
-    this.brain = brain;
-    this.config = this.brain?.config;
+  constructor(env, data = null) {
+    this.env = env;
+    this.brain = this.env; // DEPRECATED
+    this.config = this.env?.config;
     this.merge_defaults();
     if (data) this.data = data;
-    this.data.class_name = this.constructor.name;
+    if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
   /**
@@ -153,7 +154,7 @@ class CollectionItem {
    * Retrieves the collection name for the instance, either from data or the class method.
    * @returns {string} The collection name.
    */
-  get collection_name() { return this.data.collection_name ? this.data.collection_name : this.constructor.collection_name; }
+  get collection_name() { return this.data.collection_name ? this.data.collection_name : collection_instance_name_from(this.data.class_name || this.constructor.name); }
 
   /**
    * Retrieves the collection this item belongs to.
