@@ -54,9 +54,14 @@ class ApiAdapter extends Adapter {
     items = items.filter(item => item.embed_input?.length > 0); // remove items with empty embed_input (causes 400 error)
     if(items.length === 0) return console.log("empty batch (or all items have empty embed_input)");
     const embed_inputs = this.prepare_batch_input(items);
-    const embeddings = await this.request_embedding(embed_inputs);
+    let embeddings = await this.request_embedding(embed_inputs);
     if(!embeddings) return console.error(items);
-    return embeddings.map((embedding, i) => this.parse_embedding_output(embed_inputs, embedding, i));
+    embeddings = embeddings.map((embedding, i) => this.parse_embedding_output(embed_inputs, embedding, i));
+    return items.map((item, i) => {
+      item.vec = embeddings[i].vec;
+      item.tokens = embeddings[i].tokens;
+      return item;
+    });
   }
 
   /**
@@ -69,7 +74,7 @@ class ApiAdapter extends Adapter {
   parse_embedding_output(embed_inputs, embedding, i) {
     const total_chars = this.count_embed_input_chars(embed_inputs);
     return {
-      vec: embedding,
+      vec: embedding.vec,
       tokens: Math.round((embed_inputs[i].length / total_chars) * embedding.tokens)
     };
   }

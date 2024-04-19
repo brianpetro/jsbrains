@@ -160,7 +160,7 @@ class CollectionItem {
    * Retrieves the collection this item belongs to.
    * @returns {Object} The collection object.
    */
-  get collection() { return this.brain[this.collection_name]; }
+  get collection() { return this.env[this.collection_name]; }
 
   /**
    * Retrieves or generates the key for this item.
