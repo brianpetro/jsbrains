@@ -188,7 +188,7 @@ class ApiAdapter extends Adapter {
       // handle fallback to fetch (allows for overwriting in child classes)
       const resp = this.request_adapter ? await this.request_adapter({url: this.endpoint, ...req}) : await fetch(this.endpoint, req);
       const resp_json = await this.get_resp_json(resp);
-      console.log(resp_json);
+      // console.log(resp_json);
       if(this.is_error(resp_json)) return await this.handle_request_err(resp_json, req, retries);
       return resp_json;
     } catch (error) {

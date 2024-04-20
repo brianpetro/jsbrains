@@ -7,12 +7,13 @@ async function fetch_open_router_models() {
     const data = await response.json();
     console.log('Model data retrieved:', data);
     return data.data
-      .filter(model => !model.id.includes('instruct'))
+      // .filter(model => !model.id.includes('instruct'))
       .map(model => ({
         model_name: model.id,
         key: model.id,
         max_input_tokens: model.context_length,
         description: model.name,
+        actions: model.description.includes('tool use') || model.description.includes('function call')
       }))
     ;
   } catch (error) {
