@@ -1,0 +1,29 @@
+{
+  "name": "smart-entities",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "Easy to manage embedded collections.",
+  "main": "smart_entities.js",
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "keywords": [
+    "embeddings"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/js-brains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "devDependencies": {
+    "ava": "^6.0.1"
+  },
+  "dependencies": {
+    "smart-collections": "file:../smart-collections",
+    "smart-embed-model": "file:../smart-embed-model"
+  }
+}
