@@ -2,7 +2,7 @@
   "name": "smart-entities",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Easy to manage embedded collections.",
   "main": "smart_entities.js",
   "scripts": {
