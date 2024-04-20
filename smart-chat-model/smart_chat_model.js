@@ -72,7 +72,7 @@ class SmartChatModel {
   async complete(opts={}, render=true) {
     opts = {
       ...this.default_opts,
-      messages: (await this.current.get_chat_ml())?.messages || [],
+      messages: (await this.current?.get_chat_ml())?.messages || [],
       ...opts,
     };
     if(opts.stream !== false && this.config.streaming && !this.current.tool_choice) opts.stream = true; // no streaming if tool_choice is set
@@ -310,6 +310,7 @@ class SmartChatModel {
     return input.length / 4;
   }
   async test_api_key() {
+    console.log(this.api_key);
     try{
       const request = {
         messages: [
@@ -328,12 +329,13 @@ class SmartChatModel {
       if(!resp) return false;
       return true;
     }catch(err){
+      console.error(err);
       return false;
     }
   }
   // getters
-  get api_key() { return this.config.api_key; }
-  get current() { return this.env.chats.current; }
+  get api_key() { return this.config[this.config.smart_chat_model]?.api_key || this.config.api_key; }
+  get current() { return this.env.chats?.current; }
   // use endpoint of combine protocol, hostname, port, and path
   get endpoint() {
     if(typeof this.adapter?.endpoint !== 'undefined') return this.adapter.endpoint.replace('MODEL_NAME', this.model_name);
@@ -345,7 +347,7 @@ class SmartChatModel {
   }
   get max_input_tokens() { return this.config[this.config.model_name]?.max_input_tokens || this.config.max_input_tokens; }
   get max_output_tokens() { return this.config[this.config.model_name]?.max_output_tokens || this.config.max_output_tokens; }
-  get model_name() { return this.config[this.config.model_name]?.model_name || (this.config.fetch_models ? this.config.default_model : this.config.model_name); }
+  get model_name() { return this.config[this.config.model_name]?.model_name || (this.config.fetch_models ? this.config.default_model : this.config.smart_chat_model); }
 }
 exports.SmartChatModel = SmartChatModel;
 
