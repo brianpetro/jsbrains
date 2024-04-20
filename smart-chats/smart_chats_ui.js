@@ -2,9 +2,9 @@
  * Represents the user interface for SmartChat.
  * This class handles the rendering and interaction logic for the chat interface.
  */
-class SmartChatUI {
+class SmartChatsUI {
   /**
-   * Creates an instance of SmartChatUI.
+   * Creates an instance of SmartChatsUI.
    * @param {Object} env - The environment object containing configurations and utilities.
    * @param {HTMLElement} container - The HTML container element for the chat UI.
    */
@@ -303,4 +303,4 @@ class SmartChatUI {
     }
   }
 }
-exports.SmartChatUI = SmartChatUI;
+exports.SmartChatsUI = SmartChatsUI;

@@ -1,7 +1,6 @@
 {
   "openai": {
-    "model_name": "openai",
-    "description": "OpenAI Platform",
+    "description": "OpenAI",
     "type": "API",
     "endpoint": "https://api.openai.com/v1/chat/completions",
     "streaming": true,
@@ -9,9 +8,8 @@
     "fetch_models": true,
     "default_model": "gpt-3.5-turbo"
   },
-  "google-gemini": {
-    "model_name": "google-gemini",
-    "description": "Google's Gemini model",
+  "google_gemini": {
+    "description": "Google Gemini",
     "type": "API",
     "api_key_header": "none",
     "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
@@ -22,8 +20,7 @@
     "fetch_models": true,
     "default_model": "gemini-1.0-pro"
   },
-  "open-router": {
-    "model_name": "open-router",
+  "open_router": {
     "description": "Open Router",
     "type": "API",
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
@@ -32,8 +29,7 @@
     "default_model": "mistralai/mistral-7b-instruct:free"
   },
   "cohere": {
-    "model_name": "cohere",
-    "description": "Cohere",
+    "description": "Cohere Command-R",
     "type": "API",
     "endpoint": "https://api.cohere.ai/v1/chat",
     "streaming": false,
@@ -42,8 +38,7 @@
     "default_model": "command-r"
   },
   "anthropic": {
-    "model_name": "anthropic",
-    "description": "Anthropic",
+    "description": "Anthropic Claude",
     "type": "API",
     "endpoint": "https://api.anthropic.com/v1/messages",
     "streaming": false,
@@ -57,14 +52,14 @@
     "fetch_models": true,
     "default_model": "claude-3-sonnet-20240229"
   },
-  "custom-local": {
-    "model_name": "custom-local",
-    "description": "Custom model served locally using OpenAI API format",
+  "custom_local": {
+    "model_name": "custom_local",
+    "description": "Custom Local (OpenAI format)",
     "type": "API"
   },
-  "custom-api": {
-    "model_name": "custom-server",
-    "description": "Custom model served via external API using OpenAI API format",
+  "custom_api": {
+    "model_name": "custom_api",
+    "description": "Custom API (OpenAI format)",
     "type": "API"
   }
 }

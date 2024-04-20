@@ -20,10 +20,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const adapters = require('./adapters');
-const chat_models = require('./models.json');
-const old_models = require('./models.old.json');
+const platforms = require('./platforms.json');
 const { is_valid_tool_call } = require('./utils/is_valid_tool_call');
 const { SmartStreamer } = require('./streamer');
+const fetch_models = require("./models/fetch");
 /**
  * SmartChatModel class provides functionalities to handle chat interactions with various models and adapters.
  * It supports streaming and non-streaming responses, tool calls, and customizations through options.
@@ -32,23 +32,24 @@ class SmartChatModel {
   /**
    * Constructs an instance of SmartChatModel with specified environment, model key, and options.
    * @param {Object} main - The main environment context, typically containing configurations and state.
-   * @param {string} model_key - Key to select the specific model configuration from models.json.
-   * @param {Object} opts - Optional parameters to override model configurations.
+   * @param {string} platform_key - Key to select the specific model configuration from models.json.
+   * @param {Object} model_config - Optional parameters to override model configurations.
    */
-  constructor(main, model_key, opts={}) {
+  constructor(main, platform_key, model_config={}) {
     this.env = main;
     this.main = this.env; // DEPRECATED
     this.config = {
-      ...(chat_models[model_key] || old_models[model_key]), // from chat_models.json
-      ...opts, // user opts (overwrites model_config)
+      ...(platforms[platform_key] || {}),
+      ...model_config, // override default platform config
     }
+    this.platform_key = platform_key;
     this.active_stream = null;
     this._request_adapter = null;
-    this.models = chat_models;
+    this.platforms = platforms;
     if(this.config.adapter) this.adapter = new adapters[this.config.adapter](this);
     console.log(this.adapter);
   }
-  static get models() { return chat_models; }
+  static get models() { return platforms; }
   get default_opts() {
     return {
       temperature: 0.3,
@@ -333,8 +334,20 @@ class SmartChatModel {
       return false;
     }
   }
+  async get_models() {
+    // const fx_name = this.plugin.settings.chat_model_platform_key;
+    if(this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
+      const models = await fetch_models[this.platform_key](this.api_key);
+      if(models) {
+        // sort alphabetically by model name
+        models.sort((a, b) => a.model_name.localeCompare(b.model_name));
+        return models;
+      }else console.error(`No models found for ${this.platform_key}`, models);
+    }
+    return [];
+  }
   // getters
-  get api_key() { return this.config[this.config.smart_chat_model]?.api_key || this.config.api_key; }
+  get api_key() { return this.config.api_key; }
   get current() { return this.env.chats?.current; }
   // use endpoint of combine protocol, hostname, port, and path
   get endpoint() {
@@ -345,9 +358,9 @@ class SmartChatModel {
     if(typeof this.adapter?.endpoint_streaming !== 'undefined') return this.adapter.endpoint_streaming.replace('MODEL_NAME', this.model_name);
     return this.config.endpoint_streaming || this.endpoint;
   }
-  get max_input_tokens() { return this.config[this.config.model_name]?.max_input_tokens || this.config.max_input_tokens; }
-  get max_output_tokens() { return this.config[this.config.model_name]?.max_output_tokens || this.config.max_output_tokens; }
-  get model_name() { return this.config[this.config.model_name]?.model_name || (this.config.fetch_models ? this.config.default_model : this.config.smart_chat_model); }
+  get max_input_tokens() { return this.config.max_input_tokens; }
+  get max_output_tokens() { return this.config.max_output_tokens; }
+  get model_name() { return this.config.model_name || this.config.default_model; }
 }
 exports.SmartChatModel = SmartChatModel;
 

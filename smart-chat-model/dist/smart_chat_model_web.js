@@ -395,12 +395,12 @@ var smart_chat_model = (() => {
           streaming: false,
           adapter: "Cohere"
         },
-        "custom-local": {
-          model_name: "custom-local",
+        "custom_local": {
+          model_name: "custom_local",
           description: "Custom model served locally using OpenAI API format",
           type: "API"
         },
-        "custom-api": {
+        "custom_api": {
           model_name: "custom-server",
           description: "Custom model served via external API using OpenAI API format",
           type: "API"
