@@ -6,12 +6,15 @@ async function fetch_open_router_models() {
     }
     const data = await response.json();
     console.log('Model data retrieved:', data);
-    return data.data.map(model => ({
-      model_name: model.id,
-      key: model.id,
-      max_input_tokens: model.context_length,
-      description: model.name,
-    }));
+    return data.data
+      .filter(model => !model.id.includes('instruct'))
+      .map(model => ({
+        model_name: model.id,
+        key: model.id,
+        max_input_tokens: model.context_length,
+        description: model.name,
+      }))
+    ;
   } catch (error) {
     console.error('Failed to fetch model data:', error);
     return [];
