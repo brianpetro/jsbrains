@@ -92,13 +92,13 @@ class GeminiAdapter {
    * Getter for the standard API endpoint with the API key appended.
    * @returns {string} The formatted endpoint URL for non-streaming requests.
    */
-  get endpoint() { return this.model.config.endpoint + "?key=" + this.model.api_key; }
+  get endpoint() { return this.model.config.endpoint.replace('MODEL_NAME', this.model.model_name) + "?key=" + this.model.api_key; }
 
   /**
    * Getter for the streaming API endpoint with the API key appended.
    * @returns {string} The formatted endpoint URL for streaming requests.
    */
-  get endpoint_streaming() { return this.model.config.endpoint_streaming + "?key=" + this.model.api_key; }
+  get endpoint_streaming() { return this.model.config.endpoint_streaming.replace('MODEL_NAME', this.model.model_name) + "?key=" + this.model.api_key; }
 }
 exports.GeminiAdapter = GeminiAdapter;
 

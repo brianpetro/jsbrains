@@ -21,6 +21,7 @@
 
 const adapters = require('./adapters');
 const chat_models = require('./models.json');
+const old_models = require('./models.old.json');
 const { is_valid_tool_call } = require('./utils/is_valid_tool_call');
 const { SmartStreamer } = require('./streamer');
 /**
@@ -38,7 +39,7 @@ class SmartChatModel {
     this.env = main;
     this.main = this.env; // DEPRECATED
     this.config = {
-      ...chat_models[model_key], // from chat_models.json
+      ...(chat_models[model_key] || old_models[model_key]), // from chat_models.json
       ...opts, // user opts (overwrites model_config)
     }
     this.active_stream = null;
@@ -310,7 +311,7 @@ class SmartChatModel {
   }
   async test_api_key() {
     try{
-      const resp = await this.complete({
+      const request = {
         messages: [
           { role: "user", content: "Hello" },
         ],
@@ -318,7 +319,11 @@ class SmartChatModel {
         max_tokens: 100,
         stream: false,
         n: 1,
-      }, false);
+      };
+      if(this.config.fetch_models) {
+        request.model = this.config.default_model;
+      }
+      const resp = await this.complete(request, false);
       console.log(resp);
       if(!resp) return false;
       return true;
@@ -331,15 +336,16 @@ class SmartChatModel {
   get current() { return this.env.chats.current; }
   // use endpoint of combine protocol, hostname, port, and path
   get endpoint() {
-    if(typeof this.adapter?.endpoint !== 'undefined') return this.adapter.endpoint;
+    if(typeof this.adapter?.endpoint !== 'undefined') return this.adapter.endpoint.replace('MODEL_NAME', this.model_name);
     return this.config.endpoint || this.config.protocol + "://" + this.config.hostname + ":" + this.config.port + this.config.path;
   }
   get endpoint_streaming() {
-    if(typeof this.adapter?.endpoint_streaming !== 'undefined') return this.adapter.endpoint_streaming;
+    if(typeof this.adapter?.endpoint_streaming !== 'undefined') return this.adapter.endpoint_streaming.replace('MODEL_NAME', this.model_name);
     return this.config.endpoint_streaming || this.endpoint;
   }
-  get max_input_tokens() { return this.config.max_input_tokens; }
-  get max_output_tokens() { return this.config.max_output_tokens; }
-  get model_name() { return this.config.model_name; }
+  get max_input_tokens() { return this.config[this.config.model_name]?.max_input_tokens || this.config.max_input_tokens; }
+  get max_output_tokens() { return this.config[this.config.model_name]?.max_output_tokens || this.config.max_output_tokens; }
+  get model_name() { return this.config[this.config.model_name]?.model_name || (this.config.fetch_models ? this.config.default_model : this.config.model_name); }
 }
 exports.SmartChatModel = SmartChatModel;
+

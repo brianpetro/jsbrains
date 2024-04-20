@@ -1,114 +1,59 @@
 {
-  "openai-gpt-3.5-turbo": {
-    "model_name": "gpt-3.5-turbo",
-    "description": "OpenAI's GPT-3.5 model",
-    "max_input_tokens": 12288,
-    "max_output_tokens": 4096,
+  "openai": {
+    "model_name": "openai",
+    "description": "OpenAI Platform",
     "type": "API",
     "endpoint": "https://api.openai.com/v1/chat/completions",
-    "streaming": true,
-    "actions": true
+    "fetch_models": true,
+    "default_model": "gpt-3.5-turbo"
   },
-  "openai-gpt-4-turbo": {
-    "model_name": "gpt-4-turbo-preview",
-    "description": "OpenAI's GPT-4 model",
-    "max_input_tokens": 123900,
+  "google-gemini": {
+    "model_name": "google-gemini",
+    "description": "Google's Gemini model",
     "type": "API",
-    "endpoint": "https://api.openai.com/v1/chat/completions",
-    "streaming": true,
-    "actions": true
-  },
-  "google-gemini-1.0-pro": {
-    "model_name": "gemini-1.0-pro",
-    "description": "Google's Gemini 1.0 Pro model",
-    "max_input_tokens": 30000,
     "api_key_header": "none",
-    "type": "API",
-    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent",
-    "endpoint_streaming": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:streamGenerateContent",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
+    "endpoint_streaming": "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:streamGenerateContent",
     "streaming": true,
     "adapter": "Gemini",
-    "actions": true
+    "fetch_models": true,
+    "default_model": "gemini-1.0-pro"
   },
-  "anthropic-claude-3-opus": {
-    "model_name": "claude-3-opus-20240229",
-    "description": "Anthropic's Claude model",
-    "max_input_tokens": 200000,
-    "max_output_tokens": 4000,
+  "open-router": {
+    "model_name": "open-router",
+    "description": "Open Router",
     "type": "API",
-    "endpoint": "https://api.anthropic.com/v1/messages",
-    "streaming": false,
-    "api_key_header": "x-api-key",
-    "headers": {
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "tools-2024-04-04"
-    },
-    "adapter": "Anthropic",
-    "actions": true
-  },
-  "anthropic-claude-3-sonnet": {
-    "model_name": "claude-3-sonnet-20240229",
-    "description": "Anthropic's Sonnet model",
-    "max_input_tokens": 200000,
-    "max_output_tokens": 4000,
-    "type": "API",
-    "endpoint": "https://api.anthropic.com/v1/messages",
-    "streaming": false,
-    "api_key_header": "x-api-key",
-    "headers": {
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "tools-2024-04-04"
-    },
-    "adapter": "Anthropic",
-    "actions": true
-  },
-  "anthropic-claude-3-haiku": {
-    "model_name": "claude-3-haiku-20240307",
-    "description": "Anthropic's Haiku model",
-    "max_input_tokens": 200000,
-    "max_output_tokens": 4000,
-    "type": "API",
-    "endpoint": "https://api.anthropic.com/v1/messages",
-    "streaming": false,
-    "api_key_header": "x-api-key",
-    "headers": {
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "tools-2024-04-04"
-    },
-    "adapter": "Anthropic",
-    "actions": true
-  },
-  "google-gemini-1.5-pro-latest": {
-    "model_name": "gemini-1.5-pro-latest",
-    "description": "Google's Gemini 1.5 Pro model",
-    "max_input_tokens": 1000000,
-    "api_key_header": "none",
-    "type": "API",
-    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent",
-    "endpoint_streaming": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:streamGenerateContent",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "streaming": true,
-    "adapter": "Gemini",
-    "actions": true
+    "actions": true,
+    "fetch_models": true,
+    "default_model": "openrouter/auto"
   },
-  "cohere-command-r": {
-    "model_name": "command-r",
-    "description": "Cohere's Command-R model",
-    "max_input_tokens": 128000,
-    "max_output_tokens": 4000,
+  "cohere": {
+    "model_name": "cohere",
+    "description": "Cohere",
     "type": "API",
     "endpoint": "https://api.cohere.ai/v1/chat",
     "streaming": false,
-    "adapter": "Cohere"
+    "adapter": "Cohere",
+    "fetch_models": true,
+    "default_model": "command-r"
   },
-  "cohere-command-r-plus": {
-    "model_name": "command-r-plus",
-    "description": "Cohere's Command-R+ model",
-    "max_input_tokens": 128000,
-    "max_output_tokens": 4000,
+  "anthropic": {
+    "model_name": "anthropic",
+    "description": "Anthropic",
     "type": "API",
-    "endpoint": "https://api.cohere.ai/v1/chat",
+    "endpoint": "https://api.anthropic.com/v1/messages",
     "streaming": false,
-    "adapter": "Cohere"
+    "api_key_header": "x-api-key",
+    "headers": {
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "tools-2024-04-04"
+    },
+    "adapter": "Anthropic",
+    "actions": true,
+    "fetch_models": true,
+    "default_model": "claude-3-sonnet-20240229"
   },
   "custom-local": {
     "model_name": "custom-local",
@@ -121,3 +66,4 @@
     "type": "API"
   }
 }
+
