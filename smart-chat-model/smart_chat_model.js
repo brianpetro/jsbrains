@@ -71,6 +71,13 @@ class SmartChatModel {
    * @returns {Promise<string|void>} - Returns the chat response content or handles tool outputs recursively. In case of errors, it may return an error message.
    */
   async complete(opts={}, render=true) {
+    if(!this.base_model_config){
+      this.base_model_config = await this.get_base_model_config();
+      this.config = {
+        ...this.base_model_config,
+        ...this.config,
+      };
+    }
     opts = {
       ...this.default_opts,
       messages: (await this.current?.get_chat_ml())?.messages || [],
@@ -345,6 +352,10 @@ class SmartChatModel {
       }else console.error(`No models found for ${this.platform_key}`, models);
     }
     return [];
+  }
+  async get_base_model_config() {
+    const models = await this.get_models();
+    return models.find((m) => m.key === this.model_name);
   }
   // getters
   get api_key() { return this.config.api_key; }
