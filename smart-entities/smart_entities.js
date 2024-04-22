@@ -453,7 +453,10 @@ class SmartBlocks extends SmartEntities {
       const note_path = note.data.path;
       const note_content = await note.get_content();
       const { blocks } = this.env.smart_markdown.parse({ content: note_content, file_path: note_path });
-      blocks.forEach(block => this.create_or_update(block));
+      blocks.forEach(block => {
+        const item = this.create_or_update(block);
+        note.last_history.blocks[item.key] = true;
+      });
     }catch(e){
       console.log("error parsing blocks for note: ", note.key);
       console.log(e);
@@ -467,9 +470,9 @@ class SmartBlocks extends SmartEntities {
       // DOES NOT clear like in notes
       return; // skip rest if no items with vec
     }
-    Object.entries(this.items).forEach(([key, block]) => {
-      if(block.is_gone) return remove.push(key); // remove if expired
-    });
+    for(const [key, block] of Object.entries(this.items)) {
+      if(block.is_gone) remove.push(key); // remove if expired
+    }
     const remove_ratio = remove.length / total_items_w_vec;
     if((override && (remove_ratio < 0.5)) || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio*100)}%) Block-level embeddings?`)){
       this.delete_many(remove);
@@ -532,7 +535,7 @@ class SmartBlock extends SmartEntity {
   get folder() { return this.data.path.split("/").slice(0, -1).join("/"); }
   get is_block() { this.data.path.includes("#"); }
   get is_gone() {
-    if(this.env.smart_notes.unembedded_items.length) return false; // note gone if any notes are unembedded (prevent erroneous delete)
+    if(this.env.smart_notes.unembedded_items.length) return false; // note not gone if any notes are unembedded (prevent erroneous delete)
     if(!this.note) return true;
     if(this.note.is_gone) return true;
     if(!this.note.last_history.blocks[this.key]) return true;
