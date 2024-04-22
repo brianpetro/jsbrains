@@ -363,12 +363,13 @@ class SmartChatModel {
   // use endpoint of combine protocol, hostname, port, and path
   get endpoint() {
     if(typeof this.adapter?.endpoint !== 'undefined') return this.adapter.endpoint.replace('MODEL_NAME', this.model_name);
-    return this.config.endpoint || this.config.protocol + "://" + this.config.hostname + ":" + this.config.port + this.config.path;
+    return this.config.endpoint || this.config.protocol + "://" + this.config.hostname + (this.config.port ? ":" + this.config.port : "") + this.endpoint_path;
   }
   get endpoint_streaming() {
     if(typeof this.adapter?.endpoint_streaming !== 'undefined') return this.adapter.endpoint_streaming.replace('MODEL_NAME', this.model_name);
     return this.config.endpoint_streaming || this.endpoint;
   }
+  get endpoint_path() { return this.config.path.startsWith('/') ? this.config.path : '/' + this.config.path; }
   get max_input_tokens() { return this.config.max_input_tokens; }
   get max_output_tokens() { return this.config.max_output_tokens; }
   get model_name() { return this.config.model_name || this.config.default_model; }
