@@ -128,7 +128,7 @@ test('chatml_to_gemini should handle tools', t => {
     contents: [
       {
         role: 'user',
-        parts: [{ text: 'Hello' }]
+        parts: [{ text: 'Hello\nUse the "lookup" tool!' }]
       }
     ],
     generationConfig: {
