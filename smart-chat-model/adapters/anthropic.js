@@ -74,7 +74,17 @@ exports.AnthropicAdapter = AnthropicAdapter;
  * @returns {Object} - The Anthropic object
  */
 function chatml_to_anthropic(opts) {
-  const messages = opts.messages.filter(msg => msg.role !== 'system');
+  const messages = opts.messages
+    .filter(msg => msg.role !== 'system')
+    .map(m => {
+      if(typeof m.content === 'string') return { role: m.role, content: m.content };
+      if(Array.isArray(m.content)){
+        const content = m.content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+        return { role: m.role, content };
+      }
+      return m;
+    })
+  ;
   const { model, max_tokens, temperature, tools, } = opts;
   // DO: handled better (Smart Connections specific)
   // get index of last system message

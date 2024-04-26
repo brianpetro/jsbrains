@@ -1,5 +1,23 @@
 const test = require('ava');
 const { chatml_to_gemini } = require('./gemini');
+const safetySettings = [
+  {
+    category: "HARM_CATEGORY_HARASSMENT",
+    threshold: "BLOCK_NONE"
+  },
+  {
+    category: "HARM_CATEGORY_HATE_SPEECH",
+    threshold: "BLOCK_NONE"
+  },
+  {
+    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    threshold: "BLOCK_NONE"
+  },
+  {
+    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+    threshold: "BLOCK_NONE"
+  }
+];
 
 test('converts chatML to Gemini format with system message merged', t => {
   const input = {
@@ -29,47 +47,12 @@ test('converts chatML to Gemini format with system message merged', t => {
       stopSequences: ['stop'],
       candidate_count: 2,
     },
-    safetySettings: [
-      {
-        category: "HARM_CATEGORY_HARASSMENT",
-        threshold: "BLOCK_NONE"
-      },
-      {
-        category: "HARM_CATEGORY_HATE_SPEECH",
-        threshold: "BLOCK_NONE"
-      },
-      {
-        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        threshold: "BLOCK_NONE"
-      },
-      {
-        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-        threshold: "BLOCK_NONE"
-      }
-    ]
+    safetySettings
   };
   const result = chatml_to_gemini(input);
   t.deepEqual(result, expected);
 });
 
-const safetySettings = [
-  {
-    category: "HARM_CATEGORY_HARASSMENT",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_HATE_SPEECH",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-    threshold: "BLOCK_NONE"
-  }
-];
 test('handles input without system messages correctly', t => {
   const input = {
     messages: [
@@ -99,7 +82,7 @@ test('handles input without system messages correctly', t => {
 });
 
 
-test('chatml_to_gemini should handle tools', t => {
+test('should handle tools', t => {
   const input = {
     messages: [
       { role: 'user', content: 'Hello' },
@@ -164,3 +147,46 @@ test('chatml_to_gemini should handle tools', t => {
   t.deepEqual(chatml_to_gemini(input), expected);
 });
 
+test('handles message content as an array', t => {
+  const input = {
+    messages: [
+      { role: 'user', content: [
+        { type: 'text', text: 'User message' }
+      ]},
+      { role: 'assistant', content: [
+        { type: 'text', text: 'Assistant message' }
+      ]},
+      { role: 'user', content: [
+        { type: 'text', text: 'User message 2' }
+      ]}
+    ],
+    temperature: 0.5
+  };
+  const expected = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: 'User message' }]
+      },
+      {
+        role: 'model',
+        parts: [{ text: 'Assistant message' }]
+      },
+      {
+        role: 'user',
+        parts: [{ text: 'User message 2' }]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.5,
+      topK: 1,
+      topP: 1,
+      maxOutputTokens: 2048,
+      stopSequences: [],
+      candidate_count: 1,
+    },
+    safetySettings
+  };
+  const result = chatml_to_gemini(input);
+  t.deepEqual(result, expected);
+});

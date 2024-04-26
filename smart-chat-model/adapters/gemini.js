@@ -132,7 +132,7 @@ function chatml_to_gemini(opts) {
       .filter(msg => msg.role !== 'system') // filter out system messages
       .map(msg => ({
         role: msg.role === 'assistant' ? 'model' : msg.role,
-        parts: [{ text: msg.content }]
+        parts: Array.isArray(msg.content) ? [{text: msg.content.filter(c => c.type === 'text').map(c => c.text).join('\n')}] : [{ text: msg.content }]
       })),
     generationConfig: {
       temperature: opts.temperature || 0.9,

@@ -75,15 +75,22 @@ function chatml_to_cohere(chatml) {
     const cohere = {
         model: chatml.model,
         // skip last user message
-        chat_history: chatml.messages.slice(0, -1).map((message) => ({
-            role: message.role,
-            message: message.content,
-        })),
-        message: chatml.messages[chatml.messages.length - 1].content,
+        chat_history: chatml.messages
+            .slice(0, -1)
+            .map((message) => ({
+                role: message.role,
+                message: parse_message_content_to_string(message),
+            }))
+        ,
+        message: parse_message_content_to_string(chatml.messages[chatml.messages.length - 1]),
         temperature: chatml.temperature,
         // stream: chatml.stream // currently not supported
     };
     return cohere;
 }
 exports.chatml_to_cohere = chatml_to_cohere;
+
+function parse_message_content_to_string(message) {
+    return Array.isArray(message.content) ? message.content.filter(c => c.type === 'text').map(c => c.text).join('\n') : message.content;
+}
 

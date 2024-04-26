@@ -1,7 +1,7 @@
 const test = require('ava');
 const { chatml_to_anthropic } = require('./anthropic');
 
-test('chatml_to_anthropic filters out system messages and formats correctly', t => {
+test('filters out system messages and formats correctly', t => {
   const input = {
     messages: [
       { role: 'user', content: 'Hello' },
@@ -28,7 +28,7 @@ test('chatml_to_anthropic filters out system messages and formats correctly', t 
   t.deepEqual(result, expected);
 });
 
-test('chatml_to_anthropic adds system message context correctly', t => {
+test('adds system message context correctly', t => {
   const input = {
     messages: [
       { role: 'user', content: 'Hello' },
@@ -46,7 +46,7 @@ test('chatml_to_anthropic adds system message context correctly', t => {
   t.is(result.messages[result.messages.length - 1].content, expectedContent);
 });
 
-test('chatml_to_anthropic should handle tools', t => {
+test('should handle tools', t => {
   const input = {
     messages: [
       { role: 'user', content: 'Hello' },
@@ -98,7 +98,7 @@ test('chatml_to_anthropic should handle tools', t => {
 });
 
 
-test('chatml_to_anthropic adds non-context system message correctly', t => {
+test('adds non-context system message correctly', t => {
   const input = {
     messages: [
       { role: 'user', content: 'Hello' },
@@ -118,6 +118,59 @@ test('chatml_to_anthropic adds non-context system message correctly', t => {
     max_tokens: 100,
     temperature: 0.5
   };
+
+  const result = chatml_to_anthropic(input);
+  t.deepEqual(result, expected);
+});
+
+test('handles message content as an array', t => {
+  const input = {
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: "Hello"
+          }
+        ]
+      },
+      {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: 'Hi!'
+          }
+        ]
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'How are you?'
+          }
+        ]
+      }
+    ],
+    model: 'test-model',
+    max_tokens: 100,
+    temperature: 0.5
+  };
+
+
+  const expected = {
+    messages: [
+      { role: 'user', content: 'Hello' },
+      { role: 'assistant', content: 'Hi!' },
+      { role: 'user', content: 'How are you?' }
+    ],
+    model: 'test-model',
+    max_tokens: 100,
+    temperature: 0.5
+  };
+
 
   const result = chatml_to_anthropic(input);
   t.deepEqual(result, expected);
