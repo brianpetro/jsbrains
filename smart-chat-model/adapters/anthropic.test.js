@@ -77,6 +77,7 @@ test('should handle tools', t => {
       { role: 'user', content: 'Hello\nUse the "lookup" tool!' },
     ],
     model: 'test-model',
+    system: 'Required: use the "lookup" tool!',
     max_tokens: 100,
     temperature: 0.5,
     tools: [{

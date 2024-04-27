@@ -45,6 +45,11 @@ test('invalid tool call - incorrect type', t => {
   t.throws(() => is_valid_tool_call(tool_example, tool_call_content), { message: /is not of type string/ });
 });
 
+test('invalid tool call - empty object', t => {
+  const tool_call_content = {};
+  t.throws(() => is_valid_tool_call(tool_example, tool_call_content), { message: /object is empty/ });
+});
+
 /**
  * @openapi
  * /lookup:

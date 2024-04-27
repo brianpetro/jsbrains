@@ -49,6 +49,7 @@
  */
 function is_valid_tool_call(tool, tool_call_content) {
   const props = tool.function.parameters.properties;
+  if (Object.keys(tool_call_content).length === 0) throw new Error(`Invalid tool call: object is empty`);
   // check if all keys are in tool spec
   Object.entries(tool_call_content).forEach(([key, value]) => {
     if (!props[key]) throw new Error(`Invalid tool call: missing key ${key} in tool spec`, props);

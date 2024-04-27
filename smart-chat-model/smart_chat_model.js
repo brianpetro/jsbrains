@@ -121,7 +121,12 @@ class SmartChatModel {
         const tool_call_content = this.get_tool_call_content(tool_call);
         const tool = body.tools.find((t) => t.function.name === tool_name); // platform-agnostic
         if(is_valid_tool_call(tool, tool_call_content)){
-          await this.current.add_message({ role: 'assistant', tool_calls: [tool_call] });
+          await this.current.add_message({ role: 'assistant', tool_calls: [{
+            function: {
+              name: tool_name,
+              arguments: JSON.stringify(tool_call_content),
+            }
+          }] });
           const tool_handler = this.get_tool_handler(tool_name);
           if(!tool_handler) return console.error(`Tool ${tool_name} not found`);
           const tool_output = await tool_handler(tool_call_content);

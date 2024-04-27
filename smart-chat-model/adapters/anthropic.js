@@ -110,6 +110,7 @@ function chatml_to_anthropic(opts) {
     const tool_prompt = `Use the "${out.tools[0].name}" tool!`;
     const last_user_idx = out.messages.findLastIndex(msg => msg.role === 'user');
     out.messages[last_user_idx].content += '\n' + tool_prompt;
+    out.system = `Required: use the "${out.tools[0].name}" tool!`;
   }
   // DO: handled better (Smart Connections specific)
   // if system message exists prior to last_system_idx AND does not include "---BEGIN" then add to body.system
