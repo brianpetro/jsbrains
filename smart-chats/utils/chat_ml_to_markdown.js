@@ -14,10 +14,10 @@ function chat_ml_to_markdown(chat_ml) {
   chat_ml.messages.forEach(msg => {
     if (msg.role && msg.content) {
       if(markdown.length > 0) markdown += '\n\n';
-      markdown += `##### ${msg.role}`;
+      markdown += `##### ${msg.role}\n`;
       if (msg.role === 'tool') {
         console.log(msg);
-        markdown += "\n```";
+        markdown += "```";
         if (msg.tool_call_id) markdown += `${msg.tool_call_id}\n`;
         if (msg.content) markdown += `${msg.content}\n`;
         markdown += "```";
@@ -28,10 +28,11 @@ function chat_ml_to_markdown(chat_ml) {
         markdown += "```sc-context";
         // parse links from lines that start with ---BEGIN NOTE
         const lines = msg.content.split('\n').filter(line => line.trim().length && line.startsWith('---BEGIN NOTE') && line.indexOf('[[') > -1);
-        lines.forEach(line => {
+        lines.forEach((line, i) => {
           // between [[ and ]]
           const link = line.substring(line.indexOf('[[') + 2, line.indexOf(']]'));
-          if (link) markdown += `\n${link}`;
+          if (i > 0) markdown += '\n';
+          if (link) markdown += `${link}`;
         });
         markdown += "\n```";
       } else if (msg.content.indexOf('#') === 0 || msg.content.indexOf('\n#') > -1) { // content has markdown
@@ -39,7 +40,7 @@ function chat_ml_to_markdown(chat_ml) {
         const content = msg.content.replace(/\n[`]{3}/g, '\n\\```');
         markdown += `\n${content}`;
         markdown += "\n```";
-      } else markdown += `\n${msg.content}`;
+      } else markdown += `${msg.content}`;
     }
     if (msg.tool_calls) {
       msg.tool_calls.forEach(tool_call => {

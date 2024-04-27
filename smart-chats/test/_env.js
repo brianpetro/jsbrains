@@ -47,6 +47,11 @@ Image caption: random caption
 
 ##### user
 ![Has a caption](test1.jpg)
+
+##### user
+\`\`\`md
+## Heading in user input
+\`\`\`
 `.trim();
 const chat_ml = {
   messages: [
@@ -78,6 +83,7 @@ const chat_ml = {
       { type: 'image_url', image_url: { url: 'test1.jpg' } },
       { type: 'text', text: 'Image caption: Has a caption' },
     ]},
+    { role: 'user', content: "## Heading in user input" }
   ]
 };
 exports.chat_ml = chat_ml;
