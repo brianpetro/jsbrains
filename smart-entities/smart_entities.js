@@ -76,17 +76,17 @@ class SmartEntities extends Collection {
         // check if http://localhost:37420/embed is available
         console.log('Checking for local Smart Connect server...');
         try{
-          const sc_local = await this.env.main.obsidian?.requestUrl({url: 'http://localhost:37421/', method: 'GET'});
+          const request_adapter = this.env.main.obsidian?.requestUrl || null;
+          const sc_local = !request_adapter ? await fetch('http://localhost:37421/') : await request_adapter({url: 'http://localhost:37421/', method: 'GET'});
           // console.log(sc_local);
           if(sc_local.status === 200) {
             console.log('Local Smart Connect server found');
-            this.smart_embed = await SmartEmbedModel.create(this.env, {...model, request_adapter: this.env.main.obsidian?.requestUrl, adapter: 'local_api', local_endpoint: 'http://localhost:37421/embed_batch'});
+            this.smart_embed = await SmartEmbedModel.create(this.env, {...model, request_adapter: request_adapter, adapter: 'local_api', local_endpoint: 'http://localhost:37421/embed_batch'});
             return;
           }
         }catch(err){
           console.log('Could not connect to local Smart Connect server');
         }
-        this.env.local_model_type = 'Web';
         if(this.env.local_model_type === 'Web'){
           this.model_key += '_web'; // model registry name
           if(this.smart_embed) console.log(`Existing WebAdapter for ${this.collection_name} model: ${this.smart_embed_model}`);
@@ -94,7 +94,7 @@ class SmartEntities extends Collection {
         }else{
           this.model_key += '_node'; // model registry name
           if(this.smart_embed) console.log(`Existing NodeAdapter for ${this.collection_name} model: ${this.smart_embed_model}`); // Check if a connection for this model already exists
-          else this.smart_embed = await SmartEmbedModel.create(this.env, {...model, adapter: 'node'});
+          else this.smart_embed = await SmartEmbedModel.create(this.env, {...model, adapter: 'transformers'});
         }
       } else { // is API model
         this.model_key += '_api'; // model registry name
