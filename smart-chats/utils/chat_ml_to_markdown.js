@@ -1,3 +1,5 @@
+const { message_content_array_to_markdown } = require("./message_content_array_to_markdown");
+
 /**
  * Convert a ChatML object to a markdown string
  * @param {Object} chat_ml - The ChatML object
@@ -20,22 +22,7 @@ function chat_ml_to_markdown(chat_ml) {
         if (msg.content) markdown += `${msg.content}\n`;
         markdown += "```";
       } else if (Array.isArray(msg.content)) {
-        msg.content.forEach((content, i) => {
-          if (content.type === 'text'){
-            if(content.text.startsWith('Image caption: ')){
-              // if last content is image_url, add the image_url to the markdown
-              if(msg.content[i-1]?.type === 'image_url'){
-                markdown = markdown.split('\n').slice(0, -1).join('\n');
-                markdown += `\n![${content.text.split(':')[1].trim()}](${msg.content[i-1].image_url.url})`;
-              } else {
-                markdown += `\n${content.text}`;
-              }
-            } else {
-              markdown += `\n${content.text}`;
-            }
-          }
-          if (content.type === 'image_url') markdown += `\n![](${content.image_url.url})`;
-        });
+        markdown += message_content_array_to_markdown(msg.content);
       } else if (msg.content.indexOf('---BEGIN NOTE') > -1) {
         // DO: is this no longer necessary since sc_actions.parse_tool_output is used? 
         markdown += "```sc-context";

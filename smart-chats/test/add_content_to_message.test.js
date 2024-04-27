@@ -1,5 +1,5 @@
 const test = require('ava');
-const { add_content_to_message } = require('../src/add_content_to_message');
+const { add_content_to_message } = require('../utils/add_content_to_message');
 
 test('adds string content to an empty message', t => {
   const curr_msg = {};

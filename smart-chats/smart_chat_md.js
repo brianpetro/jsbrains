@@ -1,6 +1,6 @@
 const { SmartChat } = require("./smart_chat");
-const { chat_ml_to_markdown } = require("./src/chat_ml_to_markdown");
-const { markdown_to_chat_ml } = require("./src/markdown_to_chat_ml");
+const { chat_ml_to_markdown } = require("./utils/chat_ml_to_markdown");
+const { markdown_to_chat_ml } = require("./utils/markdown_to_chat_ml");
 
 /**
  * Extends SmartChat to handle markdown-specific functionalities.

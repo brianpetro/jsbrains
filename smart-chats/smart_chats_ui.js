@@ -1,3 +1,4 @@
+const { message_content_array_to_markdown } = require("../smart-chats/utils/message_content_array_to_markdown");
 /**
  * Represents the user interface for SmartChat.
  * This class handles the rendering and interaction logic for the chat interface.
@@ -206,7 +207,10 @@ class SmartChatsUI {
    * @param {string} content - The content of the message.
    * @returns {Promise<string>} The HTML string for the message.
    */
-  async get_message_html(role, content) { return await this.render(this.templates.smart_chat_msg, { role, content }, { context: this.view_context, rmWhitespace: true }); }
+  async get_message_html(role, content) {
+    if(Array.isArray(content)) content = message_content_array_to_markdown(content);
+    return await this.render(this.templates.smart_chat_msg, { role, content }, { context: this.view_context, rmWhitespace: true });
+  }
 
   /**
    * Inserts selected text from a suggestion modal into the chat input.
