@@ -6,7 +6,8 @@
     "streaming": true,
     "actions": true,
     "fetch_models": true,
-    "default_model": "gpt-3.5-turbo"
+    "default_model": "gpt-3.5-turbo",
+    "signup_url": "https://platform.openai.com/api-keys"
   },
   "google_gemini": {
     "description": "Google Gemini",
@@ -18,7 +19,8 @@
     "actions": true,
     "adapter": "Gemini",
     "fetch_models": true,
-    "default_model": "gemini-1.0-pro"
+    "default_model": "gemini-1.0-pro",
+    "signup_url": "https://ai.google.dev/"
   },
   "open_router": {
     "description": "Open Router",
@@ -26,7 +28,8 @@
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "streaming": true,
     "fetch_models": true,
-    "default_model": "mistralai/mistral-7b-instruct:free"
+    "default_model": "mistralai/mistral-7b-instruct:free",
+    "signup_url": "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys"
   },
   "cohere": {
     "description": "Cohere Command-R",
@@ -35,7 +38,8 @@
     "streaming": false,
     "adapter": "Cohere",
     "fetch_models": true,
-    "default_model": "command-r"
+    "default_model": "command-r",
+    "signup_url": "https://dashboard.cohere.com/welcome/register?redirect_uri=%2Fapi-keys"
   },
   "anthropic": {
     "description": "Anthropic Claude",
@@ -50,7 +54,8 @@
     "adapter": "Anthropic",
     "actions": true,
     "fetch_models": true,
-    "default_model": "claude-3-sonnet-20240229"
+    "default_model": "claude-3-sonnet-20240229",
+    "signup_url": "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
   },
   "custom_local": {
     "model_name": "custom_local",
