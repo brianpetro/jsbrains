@@ -191,7 +191,8 @@ class SmartEntities extends Collection {
   nearest(vec, filter={}) {
     if(!vec) return console.log("no vec");
     const {
-      results_count = 20,
+      // results_count = 20,
+      results_count = 50,
     } = filter;
     const nearest = this.filter(filter)
       .reduce((acc, item) => {

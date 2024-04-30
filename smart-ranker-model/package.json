@@ -1,0 +1,33 @@
+{
+  "name": "smart-ranker-model",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "Universal Re-Rankers Interface",
+  "main": "smart_ranker_model.js",
+  "scripts": {
+    "test": "npx ava --verbose test.js"
+  },
+  "keywords": [
+    "embeddings",
+    "transformers",
+    "local",
+    "models",
+    "API"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/js-brains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "devDependencies": {
+    "ava": "^6.0.1",
+    "dotenv": "^16.3.1"
+  },
+  "dependencies": {
+    "@xenova/transformers": "latest"
+  }
+}

@@ -25,7 +25,9 @@
     "smart-chats",
     "smart-chunks",
     "smart-collections",
-    "smart-embed-model"
+    "smart-entities",
+    "smart-embed-model",
+    "smart-ranker-model"
   ],
   "devDependencies": {
     "dotenv": "^16.4.5",
