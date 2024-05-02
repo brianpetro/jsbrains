@@ -27,6 +27,7 @@
     "smart-collections",
     "smart-entities",
     "smart-embed-model",
+    "smart-instruct-model",
     "smart-ranker-model"
   ],
   "devDependencies": {
