@@ -46,30 +46,6 @@ class SmartChatMD extends SmartChat {
    */
   from_chatml(chatml) { return chat_ml_to_markdown(chatml); }
 
-  /**
-   * Parses a user message to handle special syntax like mentions and converts them into system messages.
-   * @param {string} content - The user message content.
-   * @returns {Promise<string>} The processed content with mentions handled.
-   */
-  async parse_user_message(content) {
-    // DO: decided: should this be moved to new_user_message()??? Partially as sc-context???
-    if (content.includes("@\"")) {
-      const mention_pattern = /@\"([^"]+)\"/;
-      const mention = content.match(mention_pattern)[1];
-      // get note with name mention and add to system message prior to user message
-      const tfile = this.env.system_prompts.find(file => file.basename === mention);
-      const note_content = await this.env.plugin.brain.cached_read(tfile);
-      const system_msg = {
-        role: "system",
-        content: note_content,
-      };
-      // remove mention from user message
-      content = content.replace(mention_pattern, "").trim();
-      // add system message
-      await this.add_message(system_msg);
-    }
-    return content;
-  }
 }
 
 exports.SmartChatMD = SmartChatMD;

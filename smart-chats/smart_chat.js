@@ -72,7 +72,7 @@ class SmartChat {
     const messages = await this.get_messages();
     const html = await Promise.all(messages.map(async msg => {
       if(!msg.content) return '';
-      if(msg.role === 'system') return '';
+      if(msg.role === 'system') return await this.env.chat_ui.get_system_message_html(msg);
       return await this.env.chat_ui.get_message_html(msg.role, msg.content);
     }));
     return html.join('');

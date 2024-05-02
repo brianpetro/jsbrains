@@ -176,12 +176,13 @@ class SmartChatsUI {
   async new_message(content, role = "assistant", append_last = false) {
     // if dotdotdot interval is set, then clear it
     if (this.dotdotdot_interval) {
+      if(!this.last_msg) this.message_container.insertAdjacentHTML("beforeend", await this.get_message_html(role, content));
       clearInterval(this.dotdotdot_interval);
       this.dotdotdot_interval = null;
       this.last_msg_content.innerHTML = ''; // clear last message
       this.last_msg.dataset.content = "";
     }
-    if(!this.last_msg.dataset.content) this.last_msg.dataset.content = "";
+    if(this.last_msg && !this.last_msg.dataset.content) this.last_msg.dataset.content = "";
     if (append_last) {
       this.last_msg_content.innerHTML += content;
       this.last_msg.dataset.content += content;
@@ -210,6 +211,20 @@ class SmartChatsUI {
   async get_message_html(role, content) {
     if(Array.isArray(content)) content = message_content_array_to_markdown(content);
     return await this.render(this.templates.smart_chat_msg, { role, content }, { context: this.view_context, rmWhitespace: true });
+  }
+
+  async get_system_message_html(msg) {
+    let { content, role } = msg;
+    if(content.includes('```sc-system')) {
+      content = content.replace(/```sc-system|```/g, "").trim();
+      content = "system prompts: " + content.split('\n').filter(ln => ln.trim()).join(', ');
+    }
+    if(content.includes('```sc-context')) {
+      content = content.replace(/```sc-context|```/g, "").trim();
+      content = "context: " + content.split('\n').filter(ln => ln.trim()).join(', ');
+      if(content.length > 100) content = content.substring(0, 100) + "...";
+    }
+    return await this.render(this.templates.smart_chat_system_msg, { content, role }, { context: this.view_context, rmWhitespace: true });
   }
 
   /**

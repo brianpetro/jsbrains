@@ -129,7 +129,7 @@ class SmartChatModel {
           }] });
           const tool_handler = this.get_tool_handler(tool_name);
           if(!tool_handler) return console.error(`Tool ${tool_name} not found`);
-          const tool_output = await tool_handler(tool_call_content);
+          const tool_output = await tool_handler(this.env, tool_call_content);
           if(tool_output) {
             await this.current.add_tool_output(tool_name, tool_output);
             return this.complete({});
