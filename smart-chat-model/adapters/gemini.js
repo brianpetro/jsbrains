@@ -161,6 +161,8 @@ function chatml_to_gemini(opts) {
       }
     ]
   };
+  const system_instructions = opts.messages.filter(msg => msg.role === 'system' && !msg.content.includes('---BEGIN'));
+  if(system_instructions.length > 0) body.systemInstruction = { parts: system_instructions.map(msg => ({ text: msg.content })) };
   if(opts.tools){
     body.tools = [{
       function_declarations: opts.tools.map(tool => ({

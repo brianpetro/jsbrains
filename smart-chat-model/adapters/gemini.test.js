@@ -22,6 +22,7 @@ const safetySettings = [
 test('converts chatML to Gemini format with system message merged', t => {
   const input = {
     messages: [
+      { role: 'system', content: 'Write like a leprechaun' },
       { role: 'system', content: '---BEGIN NOTE---\nSystem message\n---END NOTE---' },
       { role: 'user', content: 'User message' }
     ],
@@ -47,7 +48,8 @@ test('converts chatML to Gemini format with system message merged', t => {
       stopSequences: ['stop'],
       candidate_count: 2,
     },
-    safetySettings
+    safetySettings,
+    systemInstruction: { parts: [{ text: 'Write like a leprechaun' }] }
   };
   const result = chatml_to_gemini(input);
   t.deepEqual(result, expected);
