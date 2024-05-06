@@ -96,45 +96,6 @@ class SmartChatsUI {
   add_chat_input_listeners() {
     const chat_input = this.container.querySelector(".sc-chat-form");
     const textarea = chat_input.querySelector("textarea");
-    this.brackets_ct = 0;
-    this.prevent_input = false;
-    chat_input.addEventListener("keyup", (e) => {
-      if (["[", "/", "@"].indexOf(e.key) === -1) return; // skip if key is not [ or / or @
-      const caret_pos = textarea.selectionStart;
-      // if key is open square bracket
-      if (e.key === "[") {
-        // if previous char is [
-        if (textarea.value[caret_pos - 2] === "[") {
-          // open file suggestion modal
-          this.open_file_suggestion_modal();
-          return;
-        }
-      } else {
-        this.brackets_ct = 0;
-      }
-      // if / is pressed
-      if (e.key === "/") {
-        // get caret position
-        // if this is first char or previous char is space
-        if (textarea.value.length === 1 || textarea.value[caret_pos - 2] === " ") {
-          // open folder suggestion modal
-          this.open_folder_suggestion_modal();
-          return;
-        }
-      }
-      // if @ is pressed
-      if (e.key === "@") {
-        // console.log("caret_pos", caret_pos);
-        // get caret position
-        // if this is first char or previous char is space
-        if (textarea.value.length === 1 || textarea.value[caret_pos - 2] === " ") {
-          // open system prompt suggestion modal
-          this.open_system_prompt_modal();
-          return;
-        }
-      }
-
-    });
     chat_input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && e.shiftKey) {
         e.preventDefault();
