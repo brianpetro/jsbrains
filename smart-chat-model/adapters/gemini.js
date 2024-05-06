@@ -130,10 +130,27 @@ function chatml_to_gemini(opts) {
   const body = {
     contents: messages
       .filter(msg => msg.role !== 'system') // filter out system messages
-      .map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : msg.role,
-        parts: Array.isArray(msg.content) ? [{text: msg.content.filter(c => c.type === 'text').map(c => c.text).join('\n')}] : [{ text: msg.content }]
-      })),
+      .map(msg => {
+        const content = {};
+        content.role = msg.role === 'assistant' ? 'model' : msg.role;
+        content.parts = !Array.isArray(msg.content) ? [{text: msg.content}] : msg.content.map(c => {
+          if(c.type === 'text'){
+            return {text: c.text};
+          }
+          if(c.type === 'image_url'){
+            const image_url = c.image_url.url;
+            let mime_type = image_url.split(":")[1].split(";")[0];
+            if(mime_type === 'image/jpg') mime_type = 'image/jpeg';
+            return {inline_data: {mime_type: mime_type, data: image_url.split(",")[1]}};
+          }
+        });
+        return content;
+        ({
+          role: msg.role === 'assistant' ? 'model' : msg.role,
+          parts: Array.isArray(msg.content) ? [{text: msg.content.filter(c => c.type === 'text').map(c => c.text).join('\n')}] : [{ text: msg.content }]
+        })
+      })
+    ,
     generationConfig: {
       temperature: opts.temperature || 0.9,
       topK: opts.topK || 1,

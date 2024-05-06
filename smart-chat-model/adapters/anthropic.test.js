@@ -163,9 +163,9 @@ test('handles message content as an array', t => {
 
   const expected = {
     messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', content: 'Hi!' },
-      { role: 'user', content: 'How are you?' }
+      { role: 'user', content: [{type: 'text', text: 'Hello'}] },
+      { role: 'assistant', content: [{type: 'text', text: 'Hi!'}] },
+      { role: 'user', content: [{type: 'text', text: 'How are you?'}] }
     ],
     model: 'test-model',
     max_tokens: 100,
@@ -176,3 +176,34 @@ test('handles message content as an array', t => {
   const result = chatml_to_anthropic(input);
   t.deepEqual(result, expected);
 });
+
+test('should handle image_url', t => {
+  const input = {
+    messages: [
+      { role: 'user', content: [
+        {type: 'text', text: 'Transcribe this image' },
+        {type: 'image_url', image_url: {url: 'data:image/jpg;base64,Base64 image'}}
+      ]}
+    ],
+    model: 'test-model',
+    max_tokens: 100,
+    temperature: 0.5
+  };
+  const expected = {
+    messages: [
+      { role: 'user', content: [
+        {type: 'text', text: 'Transcribe this image'},
+        {type: 'image', source: {
+          type: 'base64',
+          media_type: 'image/jpeg',
+          data: 'Base64 image'
+        }}
+      ]}
+    ],
+    model: 'test-model',
+    max_tokens: 100,
+    temperature: 0.5
+  };
+  t.deepEqual(chatml_to_anthropic(input), expected);
+})
+

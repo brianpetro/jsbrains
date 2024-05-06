@@ -18,6 +18,14 @@ const safetySettings = [
     threshold: "BLOCK_NONE"
   }
 ];
+const generationConfig = {
+  temperature: 0.9,
+  topK: 1,
+  topP: 1,
+  maxOutputTokens: 2048,
+  stopSequences: [],
+  candidate_count: 1,
+};
 
 test('converts chatML to Gemini format with system message merged', t => {
   const input = {
@@ -41,12 +49,13 @@ test('converts chatML to Gemini format with system message merged', t => {
       }
     ],
     generationConfig: {
+      ...generationConfig,
       temperature: 0.5,
-      topK: 10,
-      topP: 0.8,
       maxOutputTokens: 100,
       stopSequences: ['stop'],
       candidate_count: 2,
+      topK: 10,
+      topP: 0.8
     },
     safetySettings,
     systemInstruction: { parts: [{ text: 'Write like a leprechaun' }] }
@@ -69,14 +78,7 @@ test('handles input without system messages correctly', t => {
         parts: [{ text: 'User message' }]
       }
     ],
-    generationConfig: {
-      temperature: 0.5,
-      topK: 1,
-      topP: 1,
-      maxOutputTokens: 2048,
-      stopSequences: [],
-      candidate_count: 1,
-    },
+    generationConfig: {...generationConfig, temperature: 0.5},
     safetySettings
   };
   const result = chatml_to_gemini(input);
@@ -116,14 +118,7 @@ test('should handle tools', t => {
         parts: [{ text: 'Hello\nUse the "lookup" tool!' }]
       }
     ],
-    generationConfig: {
-      temperature: 0.5,
-      topK: 1,
-      topP: 1,
-      maxOutputTokens: 100,
-      stopSequences: [],
-      candidate_count: 1,
-    },
+    generationConfig: {...generationConfig, temperature: 0.5, maxOutputTokens: 100},
     safetySettings,
     tools: [{
       function_declarations: [{
@@ -179,16 +174,39 @@ test('handles message content as an array', t => {
         parts: [{ text: 'User message 2' }]
       }
     ],
-    generationConfig: {
-      temperature: 0.5,
-      topK: 1,
-      topP: 1,
-      maxOutputTokens: 2048,
-      stopSequences: [],
-      candidate_count: 1,
-    },
+    generationConfig: {...generationConfig, temperature: 0.5},
     safetySettings
   };
   const result = chatml_to_gemini(input);
   t.deepEqual(result, expected);
 });
+
+test('should handle images', t => {
+  const input = {
+    messages: [
+      { role: 'user', content: [
+        {type: 'text', text: 'Transcribe this image' },
+        {type: 'image_url', image_url: {url: 'data:image/jpg;base64,Base64 image'}}
+      ]}
+    ]
+  };
+  const expected = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: 'Transcribe this image' },
+          { inline_data: {
+            mime_type: 'image/jpeg',
+            data: 'Base64 image'
+          }}
+        ]
+      }
+    ],
+    generationConfig,
+    safetySettings
+  };
+  const result = chatml_to_gemini(input);
+  t.deepEqual(result, expected);
+})
+

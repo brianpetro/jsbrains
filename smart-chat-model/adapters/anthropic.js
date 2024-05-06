@@ -79,7 +79,15 @@ function chatml_to_anthropic(opts) {
     .map(m => {
       if(typeof m.content === 'string') return { role: m.role, content: m.content };
       if(Array.isArray(m.content)){
-        const content = m.content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+        const content = m.content.map(c => {
+          if(c.type === 'text') return {type: 'text', text: c.text};
+          if(c.type === 'image_url'){
+            const image_url = c.image_url.url;
+            let media_type = image_url.split(":")[1].split(";")[0];
+            if(media_type === 'image/jpg') media_type = 'image/jpeg';
+            return {type: 'image', source: {type: 'base64', media_type: media_type, data: image_url.split(",")[1]}};
+          }
+        });
         return { role: m.role, content };
       }
       return m;
