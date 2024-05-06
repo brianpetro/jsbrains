@@ -13,7 +13,9 @@ async function fetch_open_router_models() {
         key: model.id,
         max_input_tokens: model.context_length,
         description: model.name,
-        actions: model.description.includes('tool use') || model.description.includes('function call')
+        actions: model.description.includes('tool use') || model.description.includes('function call'),
+        multimodal: model.architecture.modality === 'multimodal',
+        raw: model
       }))
     ;
   } catch (error) {

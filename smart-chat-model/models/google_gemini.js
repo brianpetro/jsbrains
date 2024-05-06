@@ -18,7 +18,9 @@ async function fetch_google_gemini_models(api_key) {
           key: model.name.split('/').pop(),
           max_input_tokens: model.inputTokenLimit,
           max_output_tokens: model.maxOutputTokens,
-          description: model.description
+          description: model.description,
+          multimodal: model.name.includes('vision') || model.description.includes('multimodal'),
+          raw: model
         };
         return out;
       });

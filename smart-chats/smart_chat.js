@@ -173,8 +173,9 @@ class SmartChat {
    * @returns {Promise<void>}
    */
   async new_user_message(content){
-    content = await this.parse_user_message(content);
-    if(typeof this.env?.chat_ui?.new_user_message === 'function') await this.env.chat_ui.new_user_message(content); // UI/UX
+    const og_content = content;
+    content = await this.parse_user_message(content); // first in case throws compatibility error
+    if(typeof this.env?.chat_ui?.new_user_message === 'function') await this.env.chat_ui.new_user_message(og_content); // UI/UX
     if(typeof this.env?.actions?.new_user_message === 'function') await this.env.actions.new_user_message(content); // context-retrieval (adds preceding system message if necessary)
     if(typeof this.chats?.new_user_message === 'function') await this.chats.new_user_message(content); // add additional logic here (chat-format-agnostic)
     await this.add_message({role: 'user', content});

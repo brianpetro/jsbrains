@@ -378,6 +378,7 @@ class SmartChatModel {
   get max_input_tokens() { return this.config.max_input_tokens; }
   get max_output_tokens() { return this.config.max_output_tokens; }
   get model_name() { return this.config.model_name || this.config.default_model; }
+  get multimodal() { return typeof this.adapter?.multimodal !== 'undefined' ? this.adapter.multimodal : this.config.multimodal; }
 }
 exports.SmartChatModel = SmartChatModel;
 

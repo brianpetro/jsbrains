@@ -156,6 +156,7 @@ class SmartChatsUI {
     abort_button.addEventListener("click", () => {
       // abort current response
       this.env.chat_model.stop_stream();
+      this.clear_streaming_ux();
     });
     const button = this.container.querySelector("#sc-send-button");
     // add event listener to button
@@ -321,5 +322,14 @@ class SmartChatsUI {
       this.active_elm = null;
     }
   }
+
+  /**
+   * Update/set text in chat_input
+   */
+  set_chat_input_text(text){
+    const textarea = this.container.querySelector(".sc-chat-form textarea");
+    textarea.value = text;
+  }
 }
 exports.SmartChatsUI = SmartChatsUI;
+

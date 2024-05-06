@@ -3,23 +3,26 @@ async function fetch_anthropic_models() {
   return [{
     "key": "claude-3-opus-20240229",
     "model_name": "claude-3-opus-20240229",
-    "description": "Anthropic's Claude model",
+    "description": "Anthropic's Claude Opus",
     "max_input_tokens": 200000,
     "max_output_tokens": 4000,
+    "multimodal": true
   },
   {
     key: "claude-3-sonnet-20240229",
     "model_name": "claude-3-sonnet-20240229",
-    "description": "Anthropic's Sonnet model",
+    "description": "Anthropic's Claude Sonnet",
     "max_input_tokens": 200000,
     "max_output_tokens": 4000,
+    "multimodal": true
   },
   {
     key: "claude-3-haiku-20240307",
     "model_name": "claude-3-haiku-20240307",
-    "description": "Anthropic's Haiku model",
+    "description": "Anthropic's Claude Haiku",
     "max_input_tokens": 200000,
     "max_output_tokens": 4000,
+    "multimodal": true
   }];
 }
 exports.fetch_anthropic_models = fetch_anthropic_models;

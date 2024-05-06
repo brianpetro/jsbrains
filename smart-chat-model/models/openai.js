@@ -67,6 +67,10 @@ const model_context = {
     "context": 128000,
     "max_out": 4096
   },
+  "gpt-4-turbo-2024-04-09": {
+    "context": 128000,
+    "max_out": 4096
+  },
   "gpt-4-turbo-preview": {
     "context": 128000,
     "max_out": 4096
@@ -95,7 +99,11 @@ async function fetch_openai_models(api_key) {
     return data.data
       .filter(model => model.id.startsWith('gpt-') && !model.id.includes('-instruct'))
       .map(model => {
-        const out = {model_name: model.id, key: model.id};
+        const out = {
+          model_name: model.id, 
+          key: model.id,
+          multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo')
+        };
         if(model_context[model.id]) {
           out.max_input_tokens = model_context[model.id].context;
           out.description = `context: ${model_context[model.id].context}, output: ${model_context[model.id].max_out}`;
