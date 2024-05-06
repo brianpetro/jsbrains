@@ -28,7 +28,7 @@
   },
   "text-embedding-3-small": {
     "model_name": "text-embedding-3-small",
-    "batch_size": 50,
+    "batch_size": 10,
     "dims": 1536,
     "max_tokens": 8191,
     "name": "OpenAI Text-3 Small",
@@ -38,7 +38,7 @@
   },
   "text-embedding-3-large": {
     "model_name": "text-embedding-3-large",
-    "batch_size": 50,
+    "batch_size": 10,
     "dims": 3072,
     "max_tokens": 8191,
     "name": "OpenAI Text-3 Large",
@@ -58,7 +58,7 @@
   },
   "text-embedding-3-large-256": {
     "model_name": "text-embedding-3-large",
-    "batch_size": 50,
+    "batch_size": 10,
     "dims": 256,
     "max_tokens": 8191,
     "name": "OpenAI Text-3 Large - 256",
@@ -68,7 +68,7 @@
   },
   "text-embedding-ada-002": {
     "model_name": "text-embedding-ada-002",
-    "batch_size": 50,
+    "batch_size": 10,
     "dims": 1536,
     "max_tokens": 8191,
     "name": "OpenAI Ada",
