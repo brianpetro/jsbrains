@@ -107,11 +107,11 @@ class ApiAdapter extends Adapter {
   prepare_embed_input(embed_input) {
     const tokens_ct = this.count_tokens(embed_input);
     if(tokens_ct < this.max_tokens) return embed_input;
-    console.log(`tokens_ct: ${tokens_ct} (max: ${this.max_tokens})`);
+    // console.log(`tokens_ct: ${tokens_ct} (max: ${this.max_tokens})`);
     const reduce_rt = (tokens_ct - this.max_tokens) / tokens_ct;
-    console.log(`reduce_rt: ${reduce_rt}`);
+    // console.log(`reduce_rt: ${reduce_rt}`);
     embed_input = embed_input.slice(0, embed_input.length - Math.floor(embed_input.length * reduce_rt) - 100);
-    console.log(`truncated input: ${embed_input.length}`);
+    // console.log(`truncated input: ${embed_input.length}`);
     return this.prepare_embed_input(embed_input);
   }
 
