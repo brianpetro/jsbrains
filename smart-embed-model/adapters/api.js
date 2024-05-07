@@ -173,7 +173,7 @@ class ApiAdapter extends Adapter {
   parse_response(resp) {
     return resp.data.map(item => ({
       vec: item.embedding,
-      tokens: resp.usage.total_tokens / resp.data.length
+      tokens: resp.usage.total_tokens
     }));
   }
 
