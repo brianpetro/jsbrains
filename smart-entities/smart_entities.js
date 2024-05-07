@@ -276,9 +276,14 @@ class SmartNotes extends SmartEntities {
         }
         const note = this.get(files[i].path);
         if(!note) batch.push(this.create_or_update({ path: files[i].path }));
-        if(note && note.meta_changed){
-          note.data.embedding = {};
-          batch.push(this.create_or_update({ path: files[i].path }));
+        else{
+          if(note.meta_changed){
+            note.data.embedding = {};
+            batch.push(this.create_or_update({ path: files[i].path }));
+          }else if(this.env.smart_blocks?.smart_embed){
+            // console.log(`Importing blocks`);
+            batch.push(this.env.smart_blocks.import(note, { show_notice: false }));
+          }
         }
       }
       await Promise.all(batch);
@@ -495,7 +500,7 @@ class SmartBlock extends SmartEntity {
   }
   // SmartChunk: text, length, path
   update_data(data) {
-    if(!this.is_new){
+    if(!this.is_new || (this.vec?.length !== this.collection.smart_embed.dims)){
       // length returned by SmartMarkdown
       if(this.data.length !== data.length) this.data.embedding = {}; // clear embedding
     }
