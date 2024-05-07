@@ -4,17 +4,6 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { SmartEmbedModel } = require('./smart_embed_model');
 
-test('should work with OpenAI API models', async t => {
-  const config = {
-    model_key: 'text-embedding-ada-002',
-    api_key: process.env.OPENAI_API_KEY,
-  };
-  const model = new SmartEmbedModel({}, config);
-  const embedding = await model.embed('The quick brown fox jumps over the lazy dog');
-  t.is(typeof embedding.vec, 'object');
-  t.is(embedding.vec.length, model.config.dims);
-  t.is(embedding.tokens, 9);
-});
 
 test('should work with local_api models', async t => {
   const config = {

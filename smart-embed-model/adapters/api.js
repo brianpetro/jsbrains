@@ -1,4 +1,6 @@
 const { Adapter } = require("./adapter");
+const { Tiktoken } = require('js-tiktoken/lite')
+const cl100k_base = require("../cl100k_base");
 
 /**
  * ApiAdapter is the base class for all API adapters.
@@ -14,8 +16,12 @@ class ApiAdapter extends Adapter {
    * @param {string} input - The input to count tokens for.
    * @returns {Promise<number>} The number of tokens in the input.
    */
-  async count_tokens(input) { return this.estimate_tokens(input); }
-
+  count_tokens(input) {
+    if(!this.enc) this.enc = new Tiktoken(cl100k_base);
+    const tokens = this.enc.encode(input).length;
+    return tokens;
+  }
+  
   /**
    * Estimates the number of tokens in the input.
    * @param {string|object} input - The input to estimate tokens for.
@@ -98,7 +104,16 @@ class ApiAdapter extends Adapter {
    * @param {string} embed_input - The input to prepare.
    * @returns {string} The prepared embed input.
    */
-  prepare_embed_input(embed_input) { return (embed_input.length > this.max_chars) ? embed_input.slice(0, this.max_chars) : embed_input; }
+  prepare_embed_input(embed_input) {
+    const tokens_ct = this.count_tokens(embed_input);
+    if(tokens_ct < this.max_tokens) return embed_input;
+    console.log(`tokens_ct: ${tokens_ct} (max: ${this.max_tokens})`);
+    const reduce_rt = (tokens_ct - this.max_tokens) / tokens_ct;
+    console.log(`reduce_rt: ${reduce_rt}`);
+    embed_input = embed_input.slice(0, embed_input.length - Math.floor(embed_input.length * reduce_rt) - 100);
+    console.log(`truncated input: ${embed_input.length}`);
+    return this.prepare_embed_input(embed_input);
+  }
 
   /**
    * Prepares the request body for embedding.
@@ -188,7 +203,6 @@ class ApiAdapter extends Adapter {
       // handle fallback to fetch (allows for overwriting in child classes)
       const resp = this.request_adapter ? await this.request_adapter({url: this.endpoint, ...req}) : await fetch(this.endpoint, req);
       const resp_json = await this.get_resp_json(resp);
-      // console.log(resp_json);
       if(this.is_error(resp_json)) return await this.handle_request_err(resp_json, req, retries);
       return resp_json;
     } catch (error) {
@@ -204,25 +218,22 @@ class ApiAdapter extends Adapter {
    * @returns {Promise<object|null>} The response JSON or null if an error persists.
    */
   async handle_request_err(error, req, retries) {
-    // console.log(req);
-    // console.log(error);
-    // parse {message: "This model's maximum context length is 8192 tokens, however you requested 13776 tokens (13776 in your prompt; 0 for the completion). Please reduce your prompt; or completion length."
-    error = error.error;
-    if(error.message?.includes("maximum context length is")) {
-      const max_len = parseInt(error.message.split("length is ")[1].split("tokens")[0].trim());
-      const requested_len = parseInt(error.message.split("requested")[1].split("tokens")[0].trim());
-      console.log(`max context length: ${max_len}, requested: ${requested_len}`);
-      const body = JSON.parse(req.body);
-      const longest_len = Math.max(...body.input.map(item => item.length));
-      const longest_i = body.input.findIndex(i => i.length === longest_len);
-      // reduce the longest input by the same ratio as the requested length to the max length (10 requested, 8 max, reduce longest by 20% to 8)
-      const reduce_factor = (requested_len - max_len) / requested_len;
-      // console.log(`reduce factor: ${reduce_factor}`);
-      body.input[longest_i] = body.input[longest_i].slice(0, Math.floor(reduce_factor * longest_len) - (500 * retries));
-      console.log(`truncated input: ${body.input[longest_i].length}`);
-      req.body = JSON.stringify(body);
-      return await this.request(req, retries + 1);
-    }
+    // error = error.error || error;
+    // if(error.message?.includes("maximum context length is")) {
+    //   const max_len = parseInt(error.message.split("length is ")[1].split("tokens")[0].trim());
+    //   const requested_len = parseInt(error.message.split("requested")[1].split("tokens")[0].trim());
+    //   console.log(`max context length: ${max_len}, requested: ${requested_len}`);
+    //   const body = JSON.parse(req.body);
+    //   const longest_len = Math.max(...body.input.map(item => item.length));
+    //   const longest_i = body.input.findIndex(i => i.length === longest_len);
+    //   // reduce the longest input by the same ratio as the requested length to the max length (10 requested, 8 max, reduce longest by 20% to 8)
+    //   const reduce_factor = (requested_len - max_len) / requested_len;
+    //   // console.log(`reduce factor: ${reduce_factor}`);
+    //   body.input[longest_i] = body.input[longest_i].slice(0, longest_len - Math.floor(reduce_factor * longest_len) - (100 * retries));
+    //   console.log(`truncated input: ${body.input[longest_i].length}`);
+    //   req.body = JSON.stringify(body);
+    //   return await this.request(req, retries + 1);
+    // }
     if (error.status === 429 && retries < 3) {
       const backoff = Math.pow(retries + 1, 2); // exponential backoff
       console.log(`Retrying request (429) in ${backoff} seconds...`);

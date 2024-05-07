@@ -7,7 +7,7 @@
   "main": "smart_embed_model.js",
   "scripts": {
     "build": "node build_web.js",
-    "test": "npx ava --verbose test.js"
+    "test": "npx ava --verbose"
   },
   "keywords": [
     "embeddings",
@@ -30,6 +30,6 @@
     "esbuild": "^0.19.11"
   },
   "dependencies": {
-    "@xenova/transformers": "latest"
+    "js-tiktoken": "^1.0.11"
   }
 }

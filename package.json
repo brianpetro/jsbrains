@@ -20,18 +20,7 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "homepage": "https://jsbrains.org",
-  "workspaces": [
-    "smart-chat-model",
-    "smart-chats",
-    "smart-chunks",
-    "smart-collections",
-    "smart-entities",
-    "smart-embed-model",
-    "smart-instruct-model",
-    "smart-ranker-model"
-  ],
   "devDependencies": {
-    "dotenv": "^16.4.5",
     "jsdoc": "^4.0.2"
   }
 }
