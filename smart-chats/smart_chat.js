@@ -8,12 +8,13 @@
  * @param {string} [data=''] - Initial data for the chat session, typically in a structured format.
  */
 class SmartChat {
-  constructor(env, key, data='') {
+  constructor(env, key, data='', adapter=null) {
     this.env = env;
     this.chats = this.env.chats;
     this.key = key;
     this.data = data;
     this.scope = {};
+    if(adapter) this.adapter = new adapter(this);
     // exported for convenience (unnecessary??? may load the chats directly)
     if(this.chats) this.chats.items[this.key] = this;
   }
@@ -188,7 +189,10 @@ class SmartChat {
    * 
    * @returns {string} The file type, default is 'json'.
    */
-  get file_type() { return 'json'; }
+  get file_type() {
+    if(this.adapter?.file_type) return this.adapter.file_type;
+    return 'json';
+  }
 
   /**
    * Converts the provided data into a ChatML object. This method should be overridden in subclasses.
@@ -196,7 +200,10 @@ class SmartChat {
    * @param {string} data - The data to convert.
    * @returns {Object} The ChatML object.
    */
-  to_chatml(data) { return data; }
+  to_chatml(data) {
+    if(typeof this.adapter?.to_chatml === 'function') return this.adapter.to_chatml(data);
+    return data;
+  }
 
   /**
    * Converts a ChatML object back into a string or suitable format for storage. This method should be overridden in subclasses.
@@ -204,7 +211,10 @@ class SmartChat {
    * @param {Object} data - The ChatML object to convert.
    * @returns {string} The string or formatted data.
    */
-  from_chatml(data) { return data; }
+  from_chatml(data) {
+    if(typeof this.adapter?.from_chatml === 'function') return this.adapter.from_chatml(data);
+    return data;
+  }
 
   /**
    * Parses the user message content before adding it to the chat. This method can be overridden to include custom parsing logic.
