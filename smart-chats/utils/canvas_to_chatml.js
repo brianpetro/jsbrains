@@ -1,9 +1,10 @@
 const { add_content_to_message } = require("./add_content_to_message");
 
 function canvas_to_chatml(canvas) {
+  if(typeof canvas === 'string' && canvas.trim()) canvas = JSON.parse(canvas);
   const chat_ml = { messages: [] };
 
-  canvas.nodes.forEach(node => {
+  canvas.nodes?.forEach(node => {
     let current_role = node.id.split('-')[0]; // Assuming the role is the prefix of the id
     let curr_msg = {
       role: current_role,

@@ -19,9 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-const { SmartChatMD } = require("./smart_chat_md");
 const { SmartChat } = require("./smart_chat");
-
 /**
  * Class representing a manager for smart chat conversations.
  * It handles the creation, loading, saving, and management of chat conversations in various formats.
@@ -36,13 +34,9 @@ class SmartChats {
     this.env = env;
     this.folder = 'smart-chats';
     this.items = {};
-    this.formats = {
-      md: SmartChatMD,
-      json: SmartChat,
-    };
     this.default_file_type = 'md';
-    // merge opts into this
-    Object.assign(this, opts);
+    this.chat_class = SmartChat;
+    Object.assign(this, opts); // merge opts into this (adapter)
   }
 
   /**
@@ -53,9 +47,13 @@ class SmartChats {
       await this.current.save();
       this.current = null;
     }
-    this.current = this.file_format.create(this.env);
-    console.log(this.current);
+    this.current = this.create_chat();
+    console.log({current: this.current});
     await this.env.chat_ui.init();
+  }
+  create_chat(opts={}) {
+    if(!opts.file_type) opts.file_type = this.default_file_type;
+    return this.chat_class.create(this.env, opts);
   }
 
   /**
@@ -67,8 +65,7 @@ class SmartChats {
     const convos = await this.get_conversation_ids_and_file_types();
     // initiate each as smart_conversation instance
     convos.forEach(([conversation_id, file_type]) => {
-      if(!this.formats[file_type]) console.log('Unsupported file type', [conversation_id, file_type]);
-      this.items[conversation_id] = this.formats[file_type].create(this.env, conversation_id);
+      this.items[conversation_id] = this.create_chat({key: conversation_id, file_type});
     });
   }
 
@@ -82,16 +79,11 @@ class SmartChats {
     let chat = this.items[key];
     if(!chat){
       console.log('Creating new conversation');
-      chat = this.file_format.create(this.env, key, chat_ml);
+      chat = this.create_chat(key, chat_ml);
     }
     await chat.save(chat_ml);
   }
 
-  /**
-   * Getter for the file format based on the default file type.
-   * @returns {Object} The chat format class.
-   */
-  get file_format() { return this.formats[this.default_file_type]; }
 
   /**
    * Retrieves conversation IDs and their corresponding file types from the filesystem.
@@ -120,4 +112,3 @@ class SmartChats {
 }
 exports.SmartChats = SmartChats;
 exports.SmartChat = SmartChat;
-exports.SmartChatMD = SmartChatMD;

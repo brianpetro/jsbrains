@@ -7,14 +7,20 @@
  * @param {string} key - The unique identifier for the chat session.
  * @param {string} [data=''] - Initial data for the chat session, typically in a structured format.
  */
+const SmartChatAdapters = require('./adapters');
 class SmartChat {
-  constructor(env, key, data='', adapter=null) {
+  constructor(env, opts={}) {
+    let {
+      key='UNTITLED CHAT ' + get_file_date_string(),
+      data='',
+      file_type=null,
+    } = opts;
     this.env = env;
     this.chats = this.env.chats;
     this.key = key;
     this.data = data;
     this.scope = {};
-    if(adapter) this.adapter = new adapter(this);
+    if(file_type) this.adapter = new SmartChatAdapters[file_type](this);
     // exported for convenience (unnecessary??? may load the chats directly)
     if(this.chats) this.chats.items[this.key] = this;
   }
@@ -28,9 +34,8 @@ class SmartChat {
    * @param {string} [data=''] - Initial data for the chat session.
    * @returns {SmartChat} A new instance of SmartChat.
    */
-  static create(env, key=null, data='') {
-    if(!key) key = 'UNTITLED CHAT ' + get_file_date_string();
-    const chat = new this(env, key, data);
+  static create(env, opts={}) {
+    const chat = new this(env, opts);
     return chat;
   }
 
@@ -123,7 +128,10 @@ class SmartChat {
    * 
    * @returns {Promise<void>}
    */
-  async save() { return await this.chats.save(this.file_path, this.data); }
+  async save() {
+    if(typeof this.adapter?.save === 'function') return await this.adapter.save();
+    return await this.chats.save(this.file_path, this.data);
+  }
 
   /**
    * Deletes the chat session file from the file system.
@@ -145,7 +153,9 @@ class SmartChat {
    * @returns {Promise<string>} The loaded data.
    */
   async load() {
-    if(!await this.exists()) return this.data = '';
+    if(!(await this.exists())){
+      return this.data = '';
+    }
     return this.data = await this.chats.read(this.file_path);
   }
 
