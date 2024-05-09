@@ -268,10 +268,29 @@ class SmartNotes extends SmartEntities {
   async import(files, opts= {}) {
     try{
       let batch = [];
+      const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
       for(let i = 0; i < files.length; i++){
         if(batch.length % 10 === 0){
           this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${files.length} files`], { timeout: 0 });
-          await Promise.all(batch);
+          
+          // Promise.race to handle timeout
+          const batchPromise = Promise.all(batch);
+          const timeoutPromise = new Promise((resolve, reject) => {
+            setTimeout(() => {
+              reject(new Error('Batch processing timed out'));
+            }, timeoutDuration);
+          });
+
+          try {
+            await Promise.race([batchPromise, timeoutPromise]);
+          } catch (error) {
+            console.error('Batch processing error:', error);
+            // log files paths that were in batch via files
+            const files_in_batch = files.slice(i - batch.length, i);
+            console.log(files_in_batch.map(file => file.path));
+            // Handle timeout or other errors here
+          }
+
           batch = [];
         }
         const note = this.get(files[i].path);
@@ -281,12 +300,27 @@ class SmartNotes extends SmartEntities {
             note.data.embedding = {};
             batch.push(this.create_or_update({ path: files[i].path }));
           }else if(this.env.smart_blocks?.smart_embed){
-            // console.log(`Importing blocks`);
             batch.push(this.env.smart_blocks.import(note, { show_notice: false }));
           }
         }
       }
-      await Promise.all(batch);
+
+      // Final batch processing outside the loop
+      if (batch.length > 0) {
+        const batchPromise = Promise.all(batch);
+        const timeoutPromise = new Promise((resolve, reject) => {
+          setTimeout(() => {
+            reject(new Error('Final batch processing timed out'));
+          }, timeoutDuration);
+        });
+
+        try {
+          await Promise.race([batchPromise, timeoutPromise]);
+        } catch (error) {
+          console.error('Final batch processing error:', error);
+        }
+      }
+
       this.env.main.notices.remove('initial scan progress');
       this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Done importing Smart Notes.`], { timeout: 3000 });
       this.ensure_embeddings();
@@ -563,6 +597,8 @@ class SmartBlock extends SmartEntity {
 }
 
 async function create_hash(text) {
+  // if text length greater than 100000, truncate
+  if(text.length > 100000) text = text.substring(0, 100000);
   const msgUint8 = new TextEncoder().encode(text.trim()); // encode as (utf-8) Uint8Array
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8); // hash the message
   const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
