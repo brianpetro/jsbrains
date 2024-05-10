@@ -58,12 +58,10 @@
     "signup_url": "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
   },
   "custom_local": {
-    "model_name": "custom_local",
     "description": "Custom Local (OpenAI format)",
     "type": "API"
   },
   "custom_api": {
-    "model_name": "custom_api",
     "description": "Custom API (OpenAI format)",
     "type": "API"
   }

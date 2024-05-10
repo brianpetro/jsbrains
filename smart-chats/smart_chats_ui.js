@@ -278,9 +278,9 @@ class SmartChatsUI {
     if (this.dotdotdot_interval) {
       clearInterval(this.dotdotdot_interval);
       this.dotdotdot_interval = null;
-      // remove parent of active_elm
-      this.active_elm.parentElement.remove();
-      this.active_elm = null;
+      if(['.', '..', '...'].includes(this.last_msg_content.innerHTML.trim())){
+        this.last_msg.parentElement.remove();
+      }
     }
   }
 
@@ -290,6 +290,12 @@ class SmartChatsUI {
   set_chat_input_text(text){
     const textarea = this.container.querySelector(".sc-chat-form textarea");
     textarea.value = text;
+  }
+
+  undo_last_message(){
+    if(this.dotdotdot_interval) this.clear_streaming_ux();
+    this.last_msg.parentElement.remove();
+    this.env.chats.current.remove_last_message();
   }
 }
 exports.SmartChatsUI = SmartChatsUI;

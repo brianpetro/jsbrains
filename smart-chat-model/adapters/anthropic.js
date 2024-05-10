@@ -74,9 +74,36 @@ exports.AnthropicAdapter = AnthropicAdapter;
  * @returns {Object} - The Anthropic object
  */
 function chatml_to_anthropic(opts) {
+  let tool_counter = 0;
   const messages = opts.messages
     .filter(msg => msg.role !== 'system')
     .map(m => {
+      if(m.role === 'tool'){
+        return { role: 'user', content: [
+          {
+            type: 'tool_result',
+            tool_use_id: `tool-${tool_counter}`,
+            content: m.content
+          }
+        ]};
+      }
+      if(m.role === 'assistant' && m.tool_calls){
+        tool_counter++;
+        const out = {
+          role: m.role, 
+          content: m.tool_calls.map(c => ({
+            type: 'tool_use',
+            id: `tool-${tool_counter}`,
+            name: c.function.name,
+            input: (typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : c.function.arguments
+          }))
+        };
+        if(m.content){
+          if(typeof m.content === 'string') out.content.push({type: 'text', text: m.content});
+          else m.content.forEach(c => out.content.push(c));
+        }
+        return out;
+      }
       if(typeof m.content === 'string') return { role: m.role, content: m.content };
       if(Array.isArray(m.content)){
         const content = m.content.map(c => {
@@ -93,7 +120,7 @@ function chatml_to_anthropic(opts) {
       return m;
     })
   ;
-  const { model, max_tokens, temperature, tools, } = opts;
+  const { model, max_tokens, temperature, tools, tool_choice } = opts;
   // DO: handled better (Smart Connections specific)
   // get index of last system message
   const last_system_idx = opts.messages.findLastIndex(msg => msg.role === 'system' && msg.content.includes('---BEGIN'));
@@ -114,11 +141,13 @@ function chatml_to_anthropic(opts) {
       description: tool.function.description,
       input_schema: tool.function.parameters,
     }));
-    // add "Use the ${tool.name} tool" to the last user message
-    const tool_prompt = `Use the "${out.tools[0].name}" tool!`;
-    const last_user_idx = out.messages.findLastIndex(msg => msg.role === 'user');
-    out.messages[last_user_idx].content += '\n' + tool_prompt;
-    out.system = `Required: use the "${out.tools[0].name}" tool!`;
+    if(tool_choice?.type === 'function'){
+      // add "Use the ${tool.name} tool" to the last user message
+      const tool_prompt = `Use the "${tool_choice.function.name}" tool!`;
+      const last_user_idx = out.messages.findLastIndex(msg => msg.role === 'user');
+      out.messages[last_user_idx].content += '\n' + tool_prompt;
+      out.system = `Required: use the "${tool_choice.function.name}" tool!`;
+    }
   }
   // DO: handled better (Smart Connections specific)
   // if system message exists prior to last_system_idx AND does not include "---BEGIN" then add to body.system

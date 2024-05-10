@@ -96,6 +96,12 @@ class SmartChat {
     await this.update(chat_ml);
   }
 
+  async remove_last_message(){
+    const chat_ml = await this.get_chat_ml();
+    chat_ml.messages.pop();
+    await this.update(chat_ml);
+  }
+
   /**
    * Adds output from a tool to the chat session as a message.
    * 
