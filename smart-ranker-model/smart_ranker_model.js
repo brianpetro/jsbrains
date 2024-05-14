@@ -33,6 +33,9 @@ class SmartRankerModel {
   async rank(query, documents) {
     return this.adapter.rank(query, documents);
   }
+  async init() {
+    if(typeof this.adapter.init === 'function') await this.adapter.init();
+  }
 }
 exports.SmartRankerModel = SmartRankerModel;
 
