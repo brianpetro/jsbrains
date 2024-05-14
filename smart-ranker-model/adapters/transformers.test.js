@@ -62,3 +62,17 @@ test('mxbai-rerank-xsmall-v1 rank function returns expected results', async t =>
   t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
+// Xenova/bge-reranker-base
+test('bge-reranker-base rank function returns expected results', async t => {
+  const model_key = 'Xenova/bge-reranker-base';
+  t.timeout(30000);
+  const model = new SmartRankerModel({}, {adapter: "Transformers", model_key, quantized: true});
+  await model.init();
+  const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
+  console.log({response});
+  t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
+  const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
+  console.log({response2});
+  t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
+});
+
