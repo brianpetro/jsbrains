@@ -575,7 +575,7 @@ class SmartBlock extends SmartEntity {
   get folder() { return this.data.path.split("/").slice(0, -1).join("/"); }
   get is_block() { this.data.path.includes("#"); }
   get is_gone() {
-    if(this.env.smart_notes.unembedded_items.length) return false; // note not gone if any notes are unembedded (prevent erroneous delete)
+    // if(this.env.smart_notes.unembedded_items.length) return false; // note not gone if any notes are unembedded (prevent erroneous delete)
     if(!this.note) return true;
     if(this.note.is_gone) return true;
     if(!this.note.last_history.blocks[this.key]) return true;
