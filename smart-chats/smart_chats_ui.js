@@ -96,23 +96,7 @@ class SmartChatsUI {
   add_chat_input_listeners() {
     const chat_input = this.container.querySelector(".sc-chat-form");
     const textarea = chat_input.querySelector("textarea");
-    chat_input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.shiftKey) {
-        e.preventDefault();
-        if (this.prevent_input) {
-          this.show_notice("Wait until current response is finished.");
-          return;
-        }
-        // get text from textarea
-        let user_input = textarea.value;
-        // clear textarea
-        textarea.value = "";
-        // initiate response from assistant
-        this.env.chats.current.new_user_message(user_input);
-      }
-      textarea.style.height = 'auto';
-      textarea.style.height = (textarea.scrollHeight) + 'px';
-    });
+    chat_input.addEventListener("keydown", this.key_down_handler.bind(this));
     const abort_button = this.container.querySelector("#sc-abort-button");
     abort_button.addEventListener("click", () => {
       // abort current response
@@ -122,18 +106,34 @@ class SmartChatsUI {
     const button = this.container.querySelector("#sc-send-button");
     // add event listener to button
     button.addEventListener("click", () => {
-      if (this.prevent_input) {
-        this.show_notice("Wait until current response is finished.");
-        return;
-      }
-      // get text from textarea
-      let user_input = textarea.value;
-      // clear textarea
-      textarea.value = "";
-      // initiate response from assistant
-      this.env.chats.current.new_user_message(user_input);
+      this.handle_send();
+      // refocus chat input
+      textarea.focus();
     });
   }
+  key_down_handler(e) {
+    if (e.key === "Enter" && e.shiftKey) {
+      e.preventDefault();
+      this.handle_send();
+    }
+  }
+  handle_send() {
+    const chat_input = this.container.querySelector(".sc-chat-form");
+    const textarea = chat_input.querySelector("textarea");
+    if (this.prevent_input) {
+      this.show_notice("Wait until current response is finished.");
+      return;
+    }
+    // get text from textarea
+    let user_input = textarea.value;
+    // clear textarea
+    textarea.value = "";
+    // initiate response from assistant
+    this.env.chats.current.new_user_message(user_input);
+    textarea.style.height = 'auto';
+    textarea.style.height = (textarea.scrollHeight) + 'px';
+  }
+
   // render message
   async new_message(content, role = "assistant", append_last = false) {
     // if dotdotdot interval is set, then clear it
