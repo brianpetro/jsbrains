@@ -45,6 +45,7 @@ class ApiAdapter extends Adapter {
     console.log(error);
     return null;
   }
+  async rank(query, documents){ /* OVERRIDE */ }
 }
 exports.ApiAdapter = ApiAdapter;
 

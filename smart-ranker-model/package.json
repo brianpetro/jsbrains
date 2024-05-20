@@ -6,7 +6,7 @@
   "description": "Universal Re-Rankers Interface",
   "main": "smart_ranker_model.js",
   "scripts": {
-    "test": "npx ava --verbose test.js"
+    "test": "npx ava --verbose"
   },
   "keywords": [
     "embeddings",
@@ -29,5 +29,10 @@
   },
   "dependencies": {
     "@xenova/transformers": "latest"
+  },
+  "ava": {
+    "files": [
+      "**/*.test.js"
+    ]
   }
 }
