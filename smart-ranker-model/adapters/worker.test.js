@@ -42,6 +42,11 @@ test.beforeEach(async t => {
   await t.context.workerAdapter.init();
 });
 
+test.afterEach(async t => {
+  t.context.workerAdapter = null;
+  console.log('after each');
+});
+
 test('rank function returns expected results for query 1', async t => {
   const { workerAdapter } = t.context;
 
