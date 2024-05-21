@@ -1,70 +1,59 @@
 const test = require('ava');
 const { WorkerAdapter } = require('./worker');
 
-test.beforeEach(t => {
-  t.context = {
-    main: {
-      config: {
-        worker_config: {
-          adapter: 'Transformers',
-          model_key: 'Xenova/bge-reranker-base',
-          quantized: true
-        }
+// Test data
+const query = "Organic skincare products for sensitive skin";
+const documents = [
+  "Eco-friendly kitchenware for modern homes",
+  "Biodegradable cleaning supplies for eco-conscious consumers",
+  "Organic cotton baby clothes for sensitive skin",
+  "Natural organic skincare range for sensitive skin",
+  "Tech gadgets for smart homes: 2024 edition",
+  "Sustainable gardening tools and compost solutions",
+  "Sensitive skin-friendly facial cleansers and toners",
+  "Organic food wraps and storage solutions",
+  "All-natural pet food for dogs with allergies",
+  "Yoga mats made from recycled materials",
+];
+const expected_top = "Natural organic skincare range for sensitive skin";
+
+const query2 = "What is the capital of the United States?";
+const docs2 = [
+  "Carson City is the capital city of the American state of Nevada.",
+  "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.",
+  "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
+  "Capital punishment (the death penalty) has existed in the United States since before the United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states."
+];
+const expected_top2 = "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.";
+
+test.beforeEach(async t => {
+  t.context.workerAdapter = new WorkerAdapter({
+    config: {
+      worker_config: {
+        adapter: 'Transformers',
+        model_key: 'Xenova/bge-reranker-base',
+        quantized: true
       }
     }
+  });
+  t.context.workerAdapter.main = {
+    config: t.context.config
   };
+  await t.context.workerAdapter.init();
 });
 
-test.serial('WorkerAdapter initializes worker and sends config', async t => {
-  const workerAdapter = new WorkerAdapter(t.context.main);
-  await workerAdapter.init();
+test('rank function returns expected results for query 1', async t => {
+  const { workerAdapter } = t.context;
 
-  // Mock the Worker class
-  const worker = workerAdapter.worker;
-  worker.postMessage = (message) => {
-    t.is(message.type, 'config');
-    t.deepEqual(message.config, t.context.main.config.worker_config);
-  };
-
-
-  await workerAdapter.rank('query', ['doc1', 'doc2']);
-  t.pass();
+  const rankedDocuments = await workerAdapter.rank(query, documents);
+  console.log({ rankedDocuments });
+  t.is(documents[rankedDocuments[0].corpus_id], expected_top, 'The top document should correctly identify the best organic skincare product for sensitive skin');
 });
 
-test.serial('WorkerAdapter sends rank message and receives ranked documents', async t => {
-  const workerAdapter = new WorkerAdapter(t.context.main);
-  await workerAdapter.init();
+test('rank function returns expected results for query 2', async t => {
+  const { workerAdapter } = t.context;
 
-  // Mock the Worker class
-  const worker = workerAdapter.worker;
-  worker.postMessage = (message) => {
-    if (message.type === 'rank') {
-      t.is(message.query, 'query');
-      t.deepEqual(message.documents, ['doc1', 'doc2']);
-    }
-  };
-
-
-  const ranked_documents = await workerAdapter.rank('query', ['doc1', 'doc2']);
-  t.deepEqual(ranked_documents, ['doc2', 'doc1']);
+  const rankedDocuments = await workerAdapter.rank(query2, docs2);
+  console.log({ rankedDocuments });
+  t.is(docs2[rankedDocuments[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital of the United States');
 });
-
-test.serial('WorkerAdapter handles worker initialization only once', async t => {
-  const workerAdapter = new WorkerAdapter(t.context.main);
-  await workerAdapter.init();
-
-  // Mock the Worker class
-  const worker = workerAdapter.worker;
-  let init_count = 0;
-  worker.postMessage = (message) => {
-    if (message.type === 'config') {
-      init_count++;
-    }
-  };
-
-
-  await workerAdapter.rank('query', ['doc1', 'doc2']);
-  await workerAdapter.rank('query', ['doc1', 'doc2']);
-  t.is(init_count, 1);
-});
-

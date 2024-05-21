@@ -1,40 +1,34 @@
 const { Adapter } = require("./adapter");
-// load Worker from worker_threads if environment is node, otherwise load Worker from window
-const { Worker } = (typeof window !== 'undefined') ? window : require('worker_threads');
 
 class WorkerAdapter extends Adapter {
-  // initiates a worker containing SmartRankerModel instance
-  // rank function posts a message to the worker with the query and documents
-  // and waits for the worker to return the ranked documents
-  async init(){
-    if(!this.worker){
-      this.worker = new Worker("./worker_model.js");
-      // send config to worker
+  async init() {
+    if (!this.worker) {
+      this.worker = create_worker('./worker_script.js');
       this.worker.postMessage({
-        type: "config",
-        config: this.main.config.worker_config
+        type: 'init',
+        config: this.worker_config
       });
-      // wait for worker to be ready
+
       await new Promise((resolve) => {
         this.worker.on('message', (data) => {
-          if(data.type === "ready"){
+          if (data.status === 'ready') {
             resolve();
           }
         });
       });
     }
   }
-  async rank(query, documents){
-    // send query and documents to worker
+
+  async rank(query, documents) {
     this.worker.postMessage({
-      type: "rank",
+      type: 'rank',
       query: query,
       documents: documents
     });
-    // wait for worker to return ranked documents
+
     const ranked_documents = await new Promise((resolve) => {
       this.worker.on('message', (data) => {
-        if(data.type === "ranked_documents"){
+        if (data.type === 'ranked_documents') {
           resolve(data.ranked_documents);
         }
       });
@@ -44,3 +38,51 @@ class WorkerAdapter extends Adapter {
 }
 
 exports.WorkerAdapter = WorkerAdapter;
+
+let Worker;
+const is_node = typeof window === 'undefined';
+
+if (is_node) {
+  const { Worker: NodeWorker } = require('worker_threads');
+  Worker = NodeWorker;
+} else {
+  Worker = window.Worker;
+}
+
+function create_worker(worker_script) {
+  if (is_node) {
+    return create_node_worker(worker_script);
+  } else {
+    return create_browser_worker(worker_script);
+  }
+}
+
+function create_node_worker(worker_script) {
+  try {
+    const worker = new Worker(worker_script);
+
+    worker.onerror = (error) => {
+      console.error('Worker error:', error);
+    };
+
+    return worker;
+  } catch (error) {
+    console.error('Failed to create Node.js worker:', error);
+    throw error;
+  }
+}
+
+function create_browser_worker(worker_script) {
+  try {
+    const worker = new Worker(worker_script);
+
+    worker.onerror = (error) => {
+      console.error('Worker error:', error);
+    };
+
+    return worker;
+  } catch (error) {
+    console.error('Failed to create browser worker:', error);
+    throw error;
+  }
+}
