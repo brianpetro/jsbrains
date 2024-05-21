@@ -43,6 +43,7 @@ test.beforeEach(async t => {
 });
 
 test.afterEach(async t => {
+  await t.context.workerAdapter.worker.terminate();
   t.context.workerAdapter = null;
   console.log('after each');
 });

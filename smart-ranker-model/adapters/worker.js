@@ -88,10 +88,11 @@ class Adapter {
     Object.assign(this, main.config); // Copy config to this
   }
 }
+import { env, AutoTokenizer, AutoModelForSequenceClassification } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
 class TransformersAdapter extends Adapter {
     async init() {
       console.log('TransformersAdapter initializing');
-      const { env, AutoTokenizer, AutoModelForSequenceClassification } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@latest');
+      // const { env, AutoTokenizer, AutoModelForSequenceClassification } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@latest');
       console.log('Transformers loaded');
       env.allowLocalModels = false;
       const model_id = this.model_key;
@@ -157,25 +158,6 @@ async function handle_incoming_data(data) {
 }
 
 if (typeof self !== 'undefined') {
-  // // service worker script
-  // self.addEventListener("fetch", (event) => {
-  //   event.respondWith(
-  //     (async () => {
-  //       let request, cache, response;
-  //       request = event.request;
-  //       cache = await caches.open("transformers-cache");
-  //       response = await cache.match(request);
-  //       if (response) return response;
-
-  //       response = await fetch(request);
-  //       if (response.status === 200 && !request.url.match(/onnx$|json$/)) {
-  //         // cache files other than onnx and json (cached by transformers.js)
-  //         cache.put(request, response.clone());
-  //       }
-  //       return response;
-  //     })(),
-  //   );
-  // });
   // Browser environment
   self.onmessage = async function(event) {
     const data = event.data;
@@ -213,7 +195,7 @@ function create_node_worker(worker_script) {
 function create_browser_worker(worker_script_string) {
   try {
     const blob = new Blob([worker_script_string], { type: 'application/javascript' });
-    const worker = new Worker(URL.createObjectURL(blob));
+    const worker = new Worker(URL.createObjectURL(blob), { type: 'module', name: 'smart-ranker-model' });
 
     worker.onerror = (error) => {
       console.error('Worker error:', error);
