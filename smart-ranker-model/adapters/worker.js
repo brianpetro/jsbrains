@@ -88,13 +88,14 @@ class Adapter {
     Object.assign(this, main.config); // Copy config to this
   }
 }
-import { env, AutoTokenizer, AutoModelForSequenceClassification } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
+// import { env, AutoTokenizer, AutoModelForSequenceClassification } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
 class TransformersAdapter extends Adapter {
     async init() {
       console.log('TransformersAdapter initializing');
-      // const { env, AutoTokenizer, AutoModelForSequenceClassification } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@latest');
+      const { env, AutoTokenizer, AutoModelForSequenceClassification } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@latest');
       console.log('Transformers loaded');
       env.allowLocalModels = false;
+      // env.backends.onnx.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0-esmtest.20240513-a16cd2bd21/dist/";
       const model_id = this.model_key;
       if(this.quantized) {
         console.log('Quantized model loading');
@@ -195,7 +196,8 @@ function create_node_worker(worker_script) {
 function create_browser_worker(worker_script_string) {
   try {
     const blob = new Blob([worker_script_string], { type: 'application/javascript' });
-    const worker = new Worker(URL.createObjectURL(blob), { type: 'module', name: 'smart-ranker-model' });
+    // const worker = new Worker(URL.createObjectURL(blob), { type: 'module', name: 'smart-ranker-model' });
+    const worker = new Worker(URL.createObjectURL(blob), { name: 'smart-ranker-model' });
 
     worker.onerror = (error) => {
       console.error('Worker error:', error);
