@@ -132,6 +132,7 @@ class SmartChatModel {
           const tool_output = await tool_handler(this.env, tool_call_content);
           if(tool_output) {
             await this.current.add_tool_output(tool_name, tool_output);
+            this.current.tool_choice = 'none'; // prevent subsequent fx_call from preventing completion
             return this.complete({});
           }
         }else{
