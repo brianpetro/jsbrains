@@ -15,24 +15,37 @@ test.before(async t => {
   };
   const opts = {adapter: 'markdown'};
   const smart_chunks = new SmartChunks(env, opts);
-  const parsed = await smart_chunks.parse(mock_entity);
   t.context = {
     md,
     mock_entity,
     env,
     opts,
     smart_chunks,
-    parsed,
     expected
   }
 });
-test('v1 should return the expected blocks', t => {
+const TEST_TIMES = 100;
+test.serial('v1 should return the expected blocks', t => {
   const parsed = (new SmartMarkdown({})).parse({content: t.context.md, file_path: t.context.mock_entity.file_path});
   // fs.writeFileSync(path.join(__dirname, '../test_env/test_markdown.json'), JSON.stringify(parsed, null, 2));
   t.deepEqual(parsed.blocks, t.context.expected.blocks);
+  const start = new Date();
+  // run ten times
+  for (let i = 0; i < TEST_TIMES; i++) {
+    (new SmartMarkdown({})).parse({content: t.context.md, file_path: t.context.mock_entity.file_path});
+  }
+  const end = new Date();
+  console.log(`Time taken (old): ${end - start}ms`);
 });
-test('should return the expected blocks', t => {
-  t.deepEqual(t.context.parsed.blocks, t.context.expected.blocks);
+test.serial('should return the expected blocks', async t => {
+  const parsed = await t.context.smart_chunks.parse(t.context.mock_entity);
+  t.deepEqual(parsed.blocks, t.context.expected.blocks);
+  const start = new Date();
+  for (let i = 0; i < TEST_TIMES; i++) {
+    await t.context.smart_chunks.parse(t.context.mock_entity);
+  }
+  const end = new Date();
+  console.log(`Time taken (new): ${end - start}ms`);
 });
 
 
