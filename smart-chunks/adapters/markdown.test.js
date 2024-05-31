@@ -28,6 +28,7 @@ test.before(async t => {
 });
 test('v1 should return the expected blocks', t => {
   const parsed = (new SmartMarkdown({})).parse({content: t.context.md, file_path: t.context.mock_entity.file_path});
+  // fs.writeFileSync(path.join(__dirname, '../test_env/test_markdown.json'), JSON.stringify(parsed, null, 2));
   t.deepEqual(parsed.blocks, t.context.expected.blocks);
 });
 test('should return the expected blocks', t => {

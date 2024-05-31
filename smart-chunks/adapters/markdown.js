@@ -3,7 +3,7 @@ class MarkdownAdapter {
     return {
       excluded_headings: null,
       embed_input_max_chars: 1000,
-      embed_input_min_chars: 50,
+      embed_input_min_chars: 10,
       skip_blocks_with_headings_only: false,
     };
   }
@@ -17,93 +17,138 @@ class MarkdownAdapter {
   async parse(entity) {
     const content = await entity.get_content();
     const file_path = entity.file_path;
-    const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path) + ": ";
-    const output = content.split('\n').reduce((acc, line, i, arr) => {
-      if(this.is_heading(line) && (!acc.curr_level || !this.opts.multi_heading_blocks || (this.heading_level(line) <= acc.curr_level) || (acc.curr.length > this.opts.embed_input_max_chars))){
-        this.output_block(acc);
-        acc.curr_level = this.heading_level(line);
-        acc.current_headers = acc.current_headers.filter(header => header.level < acc.curr_level);
-        acc.current_headers.push({ header: line.replace(/#/g, '').trim(), level: acc.curr_level });
-        acc.start_line = i;
-        acc.curr = file_breadcrumbs;
-        acc.curr += acc.current_headers.map(header => header.header).join(' > ');
-        acc.block_headings = "#" + acc.current_headers.map(header => header.header).join('#');
-        this.handle_duplicate_headings(acc);
-        acc.block_headings_list.push(acc.block_headings);
-        acc.block_path = file_path + acc.block_headings;
-        acc.curr_heading = line.replace(/#/g, '').trim();
-        return acc;
+    const file_breadcrumbs = file_path_to_breadcrumbs(file_path) + ": ";
+
+    const output = content.split('\n').reduce((accumulator, line, index, array) => {
+      if (is_heading(line) && should_process_block(accumulator, line, this.opts)) {
+        process_and_store_block(accumulator, this.opts);
+        update_accumulator_for_heading(accumulator, line, file_breadcrumbs, file_path, index);
+        handle_duplicate_headings(accumulator);
+        return accumulator;
       }
-      if(this.is_content_line(line)){
-        if(acc.curr.indexOf("\n") === -1) acc.curr += ":";
-        acc.curr += "\n" + line;
-        acc.curr_line = i;
+
+      if (is_content_line(line)) {
+        update_accumulator_for_content_line(accumulator, line, index);
       }
-      if (i === arr.length - 1) this.output_block(acc);
-      return acc;
-    }, { block_headings: '', block_headings_list: [], block_path: file_path + "#", curr: file_breadcrumbs, current_headers: [], blocks: [], log: [], start_line: 0, curr_line: 0, curr_heading: null });
-    return {
-      ...output,
-      file_path: file_path,
-      block_headings: undefined,
-      block_headings_list: undefined,
-      block_path: undefined,
-      curr: undefined,
-      current_headers: undefined,
-    };
-  }
 
-  file_path_to_breadcrumbs(file_path) {
-    return file_path.replace('.md', '').split('/').map(crumb => crumb.trim()).filter(crumb => crumb !== '').join(' > ');
-  }
+      if (index === array.length - 1) process_and_store_block(accumulator, this.opts);
+      return accumulator;
+    }, initialize_accumulator(file_path, file_breadcrumbs));
 
-  is_heading(line) {
-    return line.startsWith('#') && (['#', ' '].indexOf(line[1]) > -1);
-  }
-
-  heading_level(line) {
-    return line.split('#').length - 1;
-  }
-
-  is_content_line(line) {
-    if (['- ', '- [ ] '].indexOf(line) > -1) return false;
-    return true;
-  }
-
-  handle_duplicate_headings(acc) {
-    if (!acc.block_headings_list.includes(acc.block_headings)) return;
-    let count = 1;
-    const uniqueHeadings = new Set(acc.block_headings_list);
-    while (uniqueHeadings.has(`${acc.block_headings}{${count}}`)) { count++; }
-    acc.block_headings = `${acc.block_headings}{${count}}`;
-  }
-
-  output_block(acc) {
-    const { embed_input_max_chars, embed_input_min_chars } = this.opts;
-    if(acc.curr.indexOf("\n") === -1) return acc.log.push(`Skipping empty block: ${acc.curr}`);
-    if(!this.validate_heading(acc.block_headings)) return acc.log.push(`Skipping excluded heading: ${acc.block_headings}`);
-    if(acc.curr.length > embed_input_max_chars) acc.curr = acc.curr.substring(0, embed_input_max_chars);
-    const breadcrumbs_length = acc.curr.indexOf("\n") + 1;
-    const block_length = acc.curr.length - breadcrumbs_length;
-    if(block_length < embed_input_min_chars) return acc.log.push(`Skipping block shorter than min length: ${acc.curr}`);
-    if(this.opts.skip_blocks_with_headings_only){
-      const block_lines = acc.curr.split('\n');
-      const block_headings = block_lines.slice(1).filter(line => this.is_heading(line));
-      if(block_headings.length === block_lines.length - 1) return acc.log.push(`Skipping block with only headings: ${acc.curr}`);
-    }
-    acc.blocks.push({
-      text: acc.curr.trim(),
-      path: acc.block_path,
-      length: block_length,
-      heading: acc.curr_heading,
-      lines: [acc.start_line, acc.curr_line],
-    });
-  }
-
-  validate_heading(headings) {
-    return !!!this.opts.excluded_headings?.some(exclusion => headings.indexOf(exclusion) > -1);
+    return finalize_output(output, file_path);
   }
 }
 
-exports.MarkdownAdapter = MarkdownAdapter;
+// Converts file path to breadcrumb string
+function file_path_to_breadcrumbs(file_path) {
+  return file_path.replace('.md', '').split('/').map(crumb => crumb.trim()).filter(crumb => crumb !== '').join(' > ');
+}
 
+// Checks if the line is a heading
+function is_heading(line) {
+  return line.startsWith('#') && (['#', ' '].includes(line[1]));
+}
+
+// Returns the heading level of the line
+function heading_level(line) {
+  return line.split('#').length - 1;
+}
+
+// Checks if the line is a content line (not a list item)
+function is_content_line(line) {
+  return !['- ', '- [ ] '].includes(line);
+}
+
+// Handles duplicate headings by appending a count
+function handle_duplicate_headings(accumulator) {
+  let heading_key = `${accumulator.block_headings}`;
+  let count = 1;
+
+  while (accumulator.block_headings_list.includes(heading_key)) {
+    heading_key = `${accumulator.block_headings.replace(/{\d+}$/, '')}{${count}}`;
+    count++;
+  }
+  
+  accumulator.block_headings_list.push(heading_key);
+  accumulator.block_headings = heading_key;
+  accumulator.block_path = accumulator.block_path.replace(/#.*/, '') + heading_key;
+}
+
+// Processes and stores a block if it meets the criteria
+function process_and_store_block(accumulator, opts) {
+  const { embed_input_max_chars, embed_input_min_chars } = opts;
+  if (accumulator.curr.indexOf("\n") === -1) return accumulator.log.push(`Skipping empty block: ${accumulator.curr}`);
+  if (!validate_heading(accumulator.block_headings, opts.excluded_headings)) return accumulator.log.push(`Skipping excluded heading: ${accumulator.block_headings}`);
+  if (accumulator.curr.length > embed_input_max_chars) accumulator.curr = accumulator.curr.substring(0, embed_input_max_chars);
+
+  const breadcrumbs_length = accumulator.curr.indexOf("\n") + 1;
+  const block_length = accumulator.curr.length - breadcrumbs_length;
+
+  if (block_length < embed_input_min_chars) return accumulator.log.push(`Skipping block shorter than min length: ${accumulator.curr}`);
+  if (opts.skip_blocks_with_headings_only) {
+    const block_lines = accumulator.curr.split('\n');
+    const block_headings = block_lines.slice(1).filter(line => is_heading(line));
+    if (block_headings.length === block_lines.length - 1) return accumulator.log.push(`Skipping block with only headings: ${accumulator.curr}`);
+  }
+
+  accumulator.blocks.push({
+    text: accumulator.curr.trim(),
+    path: accumulator.block_path,
+    length: block_length,
+    heading: accumulator.curr_heading,
+    lines: [accumulator.start_line, accumulator.curr_line],
+  });
+}
+
+// Validates if the heading should be included based on the excluded headings
+function validate_heading(headings, excluded_headings) {
+  return !excluded_headings?.some(exclusion => headings.includes(exclusion));
+}
+
+// Initializes the accumulator object
+function initialize_accumulator(file_path, file_breadcrumbs) {
+  return {
+    block_headings: '',
+    block_headings_list: [],
+    block_path: file_path + "#",
+    curr: file_breadcrumbs,
+    current_headers: [],
+    blocks: [],
+    log: [],
+    start_line: 0,
+    curr_line: 0,
+    curr_heading: null
+  };
+}
+
+// Finalizes the output by removing unnecessary properties
+function finalize_output(output, file_path) {
+  const { block_headings, block_headings_list, block_path, curr, current_headers, ...final_output } = output;
+  return { ...final_output, file_path: file_path };
+}
+
+// Checks if a block should be processed based on the current state and options
+function should_process_block(accumulator, line, opts) {
+  return !accumulator.curr_level || !opts.multi_heading_blocks || (heading_level(line) <= accumulator.curr_level) || (accumulator.curr.length > opts.embed_input_max_chars);
+}
+
+// Updates the accumulator for a heading line
+function update_accumulator_for_heading(accumulator, line, file_breadcrumbs, file_path, index) {
+  accumulator.curr_level = heading_level(line);
+  accumulator.current_headers = accumulator.current_headers.filter(header => header.level < accumulator.curr_level);
+  accumulator.current_headers.push({ header: line.replace(/#/g, '').trim(), level: accumulator.curr_level });
+  accumulator.start_line = index;
+  accumulator.curr = file_breadcrumbs + accumulator.current_headers.map(header => header.header).join(' > ');
+  accumulator.block_headings = "#" + accumulator.current_headers.map(header => header.header).join('#');
+  accumulator.block_path = file_path + accumulator.block_headings;
+  accumulator.curr_heading = line.replace(/#/g, '').trim();
+}
+
+// Updates the accumulator for a content line
+function update_accumulator_for_content_line(accumulator, line, index) {
+  if (accumulator.curr.indexOf("\n") === -1) accumulator.curr += ":";
+  accumulator.curr += "\n" + line;
+  accumulator.curr_line = index;
+}
+
+exports.MarkdownAdapter = MarkdownAdapter;

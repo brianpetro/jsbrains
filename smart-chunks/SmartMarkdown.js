@@ -14,7 +14,7 @@ class SmartMarkdown {
     return {
       excluded_headings: null, // comma separated list of headings to exclude
       embed_input_max_chars: 1000, // max length of block
-      embed_input_min_chars: 50, // min length of block
+      embed_input_min_chars: 10, // min length of block
       skip_blocks_with_headings_only: false, // skip blocks that only contain headings
     };
   }
