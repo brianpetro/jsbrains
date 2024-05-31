@@ -1,0 +1,94 @@
+{
+  "blocks": [
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 2: Basic Concepts > Subsection 2.1: Definition:\nSmart Chunks are used for optimizing chunks for embeddings.",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 2: Basic Concepts#Subsection 2.1: Definition",
+      "length": 62,
+      "heading": "Subsection 2.1: Definition",
+      "lines": [
+        6,
+        8
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 2: Basic Concepts > Subsection 2.2: Usage:\nTo use Smart Chunks, include the following:\r\n- Parser per entity type\r\n- Dynamic settings page generation",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 2: Basic Concepts#Subsection 2.2: Usage",
+      "length": 108,
+      "heading": "Subsection 2.2: Usage",
+      "lines": [
+        9,
+        13
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 3: Advanced Topics > Subsection 3.1: Configuration:\nConfiguration options can be found in `options.json`.",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 3: Advanced Topics#Subsection 3.1: Configuration",
+      "length": 56,
+      "heading": "Subsection 3.1: Configuration",
+      "lines": [
+        15,
+        17
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 3: Advanced Topics > Subsection 3.2: Custom Collections:\nCustom collections can be created from multiple parsing configurations.",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 3: Advanced Topics#Subsection 3.2: Custom Collections",
+      "length": 74,
+      "heading": "Subsection 3.2: Custom Collections",
+      "lines": [
+        18,
+        20
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 4: Examples > Subsection 4.1: Example 1:\nHere is an example of a Smart Chunk:\r\n- `[Smart Chunk](example-smart-chunk.md)`",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 4: Examples#Subsection 4.1: Example 1",
+      "length": 82,
+      "heading": "Subsection 4.1: Example 1",
+      "lines": [
+        22,
+        25
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 4: Examples > Subsection 4.2: Example 2:\nAnother example with more details:\r\n- `[Detailed Smart Chunk](detailed-smart-chunk.md)`",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 4: Examples#Subsection 4.2: Example 2",
+      "length": 90,
+      "heading": "Subsection 4.2: Example 2",
+      "lines": [
+        26,
+        29
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Section 5: Conclusion:\nIn conclusion, Smart Chunks enhance text processing efficiency and accuracy.",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Section 5: Conclusion",
+      "length": 79,
+      "heading": "Section 5: Conclusion",
+      "lines": [
+        30,
+        32
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Tasks:\n- [ ] Test markdown for Smart Chunks parser\r\n- [ ] Improve implementation similar to chatml-to-format tests\r\n- [ ] Configure smart block parsing",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Tasks",
+      "length": 147,
+      "heading": "Tasks",
+      "lines": [
+        33,
+        37
+      ]
+    },
+    {
+      "text": "test_env > test_markdown: Smart Chunks Test Document > Metadata:\n- value:: 1000\r\n- related:: [[🧩 Smart Chats]]\r\n- link:: [GitHub](https://github.com/brianpetro/smart-chunks)",
+      "path": "test_env/test_markdown.md#Smart Chunks Test Document#Metadata",
+      "length": 109,
+      "heading": "Metadata",
+      "lines": [
+        38,
+        41
+      ]
+    }
+  ]
+}
