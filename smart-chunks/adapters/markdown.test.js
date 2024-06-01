@@ -73,3 +73,32 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v2 blocks'
   // const end = new Date();
   // console.log(`Time taken (new): ${end - start}ms`);
 });
+
+const {is_end_of_block} = require('../adapters/markdown');
+const test_md = `Start
+is end of block
+# Heading 1
+Not end of block
+Content 1
+
+- List item
+  - not end of block
+  - not end of block
+  - is end of block
+- is end of block
+- not end of block
+  - not end of block
+  - is end of block
+- not end of block
+- not end of block
+- is end of block`;
+test('is_end_of_block should return end of block', async t => {
+  const lines = test_md.split('\n');
+  t.true(is_end_of_block(lines, 1));
+  t.true(is_end_of_block(lines, 9));
+  t.true(is_end_of_block(lines, 10));
+  t.true(is_end_of_block(lines, 13));
+  t.false(is_end_of_block(lines, 14));
+  t.false(is_end_of_block(lines, 15));
+  t.true(is_end_of_block(lines, 16));
+});

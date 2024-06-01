@@ -134,7 +134,8 @@ class SmartMarkdown {
    * @returns {Object} An object containing parsed blocks and other metadata.
    */
   parse({ content, file_path='' }) {
-    const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path) + ": "; // add ":" to indicate beginning of heading breadcrumbs
+    // const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path) + ": "; // add ":" to indicate beginning of heading breadcrumbs
+    const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path); // add ":" to indicate beginning of heading breadcrumbs
     // if is excalidraw file, block for 'Text Elements' heading only
     if(file_path.endsWith('.excalidraw.md')) {
       const excalidraw_block = this.get_block_from_path(file_path + "#Text Elements", content).replace('\n%%', '');
@@ -161,7 +162,7 @@ class SmartMarkdown {
           acc.current_headers.push({ header: line.replace(/#/g, '').trim(), level: acc.curr_level }); // add header and level to current headers array, trim the header to remove "#" and any trailing spaces
           acc.start_line = i; // set the start line
           acc.curr = file_breadcrumbs; // initialize the block breadcrumbs with file.path the current headers
-          acc.curr += acc.current_headers.map(header => header.header).join(' > ');
+          if(acc.current_headers.length > 0) acc.curr += ": " + acc.current_headers.map(header => header.header).join(' > ');
           acc.block_headings = "#" + acc.current_headers.map(header => header.header).join('#');
           this.handle_duplicate_headings(acc);
           acc.block_headings_list.push(acc.block_headings);
@@ -212,8 +213,10 @@ class SmartMarkdown {
     if(acc.curr.indexOf("\n") === -1) return acc.log.push(`Skipping empty block: ${acc.curr}`); // indicated by no newlines in block
     if(!this.validate_heading(acc.block_headings)) return acc.log.push(`Skipping excluded heading: ${acc.block_headings}`);
     if(acc.curr.length > embed_input_max_chars) acc.curr = acc.curr.substring(0, embed_input_max_chars); // trim block to max length
+    const pcs = acc.curr.split('\n');
+    const block_length = pcs.slice(1).join('\n').trim().length;
     const breadcrumbs_length = acc.curr.indexOf("\n") + 1; // breadcrumbs length (first line of block)
-    const block_length = acc.curr.length - breadcrumbs_length;
+    // const block_length = acc.curr.length - breadcrumbs_length;
     if(block_length < embed_input_min_chars) return acc.log.push(`Skipping block shorter than min length: ${acc.curr}`); // skip if block is shorter than min length
     if(this.config.skip_blocks_with_headings_only){ // skip if all lines are headings (except first line which is breadcrumbs)
       const block_lines = acc.curr.split('\n');
