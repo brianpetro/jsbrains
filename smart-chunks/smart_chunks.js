@@ -10,11 +10,25 @@ class SmartChunks {
   normalize_adapter_input(adapter) { return adapter?.toLowerCase(); }
 
   async parse(entity, opts={}) {
-    const adapter = opts.adapter ? 
-      new adapters[this.normalize_adapter_input(opts.adapter)]({env: this.env, opts: opts}) :
-      this.adapter
-    ;
+    const adapter = this.get_adapter(opts);
     return await adapter.parse(entity);
+  }
+  get_adapter(opts) {
+    return opts.adapter ?
+      new adapters[this.normalize_adapter_input(opts.adapter)]({ env: this.env, opts: opts }) :
+      this.adapter;
+  }
+
+  // returns original block content
+  async get_block_from_path(path, entity, opts={}) {
+    const adapter = this.get_adapter(opts);
+    const {blocks} = await adapter.parse(entity);
+    const block = blocks.find(block => block.path === path);
+    if (!block) {
+      throw new Error(`Block not found at path ${path}`);
+    }
+    return (await entity.get_content()).split('\n').slice(block.lines[0], block.lines[1]).join('\n');
   }
 }
 exports.SmartChunks = SmartChunks;
+
