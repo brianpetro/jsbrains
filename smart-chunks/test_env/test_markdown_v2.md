@@ -1,5 +1,7 @@
 ---
 has: frontmatter
+tags:
+  - contains_generated_content
 formatted: in various ways
 ---
 
@@ -14,3 +16,26 @@ formatted: in various ways
   - consectetur adipiscing elit 2
 - no nesting should be added to block with other no-nesting
 - another one
+
+## heading block 1
+![[October 27th, 2022#heading 1]]
+same block
+
+## heading block 2
+next block
+
+### Observations from working on Question 1
+
+- safety
+- user-centric and inclusive design
+- inter-disciplinary collaboration
+
+**"Lorem ipsum dolor sit amet" mindset:** This aligns with ATIH's focus on "consectetur adipiscing elit"... (really long single line should be parsed as a single block... lorem ipsum dolor sit amet consectetur adipiscing elit... lorem ipsum dolor sit amet consectetur adipiscing elit... lorem ipsum dolor sit amet consectetur adipiscing elit...)
+
+**Lessons learned from aircraft and rocket design:** Responsible Tech principle of learning from past advancements.
+
+**Cockpit design and cognitive load:** User-centered design and human-computer interaction.
+---
+Treated as new block
+---
+Another block

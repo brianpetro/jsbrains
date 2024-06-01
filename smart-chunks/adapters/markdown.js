@@ -6,6 +6,7 @@ class MarkdownAdapter {
       embed_input_min_chars: 10,
       skip_blocks_with_headings_only: false,
       multi_heading_blocks: false,
+      min_length_for_single_line_blocks: 300,
     };
   }
 
@@ -40,7 +41,7 @@ class MarkdownAdapter {
           front_matter += line + '\n';
         } else {
           this.update_acc(acc, line, file_breadcrumbs, file_path, index);
-          if (is_end_of_block(lines, index) && this.should_process_block(acc, line)) {
+          if (is_end_of_block(lines, index, this.opts) && this.should_process_block(acc, line)) {
             this.handle_duplicate_headings(acc);
             this.process_and_store_block(acc);
           }
@@ -89,11 +90,11 @@ class MarkdownAdapter {
     }
 
     acc.blocks.push({
-      text: acc.curr.trim(),
       path: acc.block_path,
-      length: block_length,
       heading: acc.curr_heading,
+      length: block_length,
       lines: [acc.start_line, acc.curr_line],
+      text: acc.curr.trim(),
     });
 
     acc.curr = "";
@@ -150,12 +151,15 @@ class MarkdownAdapter {
     acc.block_path = acc.file_path + heading_key;
   }
 }
-function is_end_of_block(lines, index) {
+function is_end_of_block(lines, index, opts) {
   const line = lines[index];
+  if(line.length > opts.min_length_for_single_line_blocks) return true;
   const next_line = lines[index + 1];
   if(typeof next_line === 'undefined') return true;
   if(is_heading(next_line)) return true;
   if(is_nested_list_item(line) && is_top_level_list_item(next_line)) return true;
+  if(next_line.length > opts.min_length_for_single_line_blocks) return true;
+  if(next_line.trim() === '---') return true;
   const next_next_line = lines[index + 2];
   if(!next_next_line) return false;
   if(is_list_item(line) && is_top_level_list_item(next_line) && is_nested_list_item(next_next_line)) return true;
@@ -184,7 +188,7 @@ function get_heading_level(line) {
 }
 
 function is_content_line(line) {
-  return !is_list_item(line) && !is_heading(line) && line.trim().length > 0;
+  return !is_list_item(line) && !is_heading(line) && line.trim().length > 0 && line.trim() !== '---';
 }
 
 function is_list_item(line) {
