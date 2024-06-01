@@ -20,8 +20,22 @@ class MarkdownAdapter {
     const file_breadcrumbs = convert_file_path_to_breadcrumbs(file_path) + ": ";
     const accumulator = initialize_accumulator(file_path, file_breadcrumbs);
 
-    content.split('\n').reduce((accumulator, line, index, array) => {
-      if (is_heading(line) && this.should_process_block(accumulator, line)) {
+    const lines = content.split('\n');
+    let in_front_matter = false;
+    let front_matter = '';
+
+    lines.reduce((accumulator, line, index, array) => {
+      if ((in_front_matter || index === 0) && (line.trim() === '---')) {
+        if (!in_front_matter) {
+          in_front_matter = true;
+          front_matter = file_breadcrumbs.slice(0, -2) + ' > meta:\n';
+        } else {
+          in_front_matter = false;
+          this.store_front_matter_block(accumulator, front_matter, index);
+        }
+      } else if (in_front_matter) {
+        front_matter += line + '\n';
+      } else if (is_heading(line) && this.should_process_block(accumulator, line)) {
         this.process_and_store_block(accumulator);
         this.update_accumulator_for_heading(accumulator, line, file_breadcrumbs, file_path, index);
         this.handle_duplicate_headings(accumulator);
@@ -37,6 +51,16 @@ class MarkdownAdapter {
     }, accumulator);
 
     return finalize_output(accumulator, file_path);
+  }
+
+  store_front_matter_block(accumulator, front_matter, index) {
+    accumulator.blocks.push({
+      text: front_matter.trim(),
+      path: accumulator.block_path,
+      length: front_matter.length,
+      heading: null,
+      lines: [0, index],
+    });
   }
 
   should_process_block(accumulator, line) {
@@ -159,3 +183,4 @@ function finalize_output(output, file_path) {
 }
 
 exports.MarkdownAdapter = MarkdownAdapter;
+

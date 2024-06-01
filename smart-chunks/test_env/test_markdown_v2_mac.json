@@ -1,0 +1,44 @@
+{
+  "blocks": [
+    {
+      "path": "test_env/test_markdown_v2.md#",
+      "text": "test_env > test_markdown_v2 > meta:\nhas: frontmatter\nformatted: in various ways",
+      "length": 80,
+      "heading": null,
+      "lines": [
+        0,
+        3
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v2: :\n- has FIRST list with nested list items\n  - lorem ipsum\n  - dolor sit amet\n  - consectetur adipiscing elit\n  - sed do eiusmod tempor incididunt ut labore et dolore magna aliqua\n  - Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat\n  - Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur\n  - Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
+      "path": "test_env/test_markdown_v2.md#",
+      "length": 400,
+      "heading": null,
+      "lines": [
+        5,
+        13
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v2: :\n- has SECOND list with nested list items\n  - lorem ipsum\n  - dolor sit amet\n  - consectetur adipiscing elit\n  - sed do eiusmod tempor incididunt ut labore et dolore magna aliqua\n  - Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat\n  - Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore",
+      "path": "test_env/test_markdown_v2.md#",
+      "length": 300,
+      "heading": null,
+      "lines": [
+        14,
+        22
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v2: :\n- alongside list items with no nesting\n- no nesting should be added to block with other no-nesting\n- another one",
+      "path": "test_env/test_markdown_v2.md#",
+      "length": 50,
+      "heading": null,
+      "lines": [
+        23,
+        23
+      ]
+    }
+  ]
+}

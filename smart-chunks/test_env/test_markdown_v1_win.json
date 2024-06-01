@@ -1,0 +1,224 @@
+{
+  "blocks": [
+    {
+      "text": "test_env > test_markdown_v1: :\nPre-heading text",
+      "path": "test_env/test_markdown_v1.md#",
+      "length": 19,
+      "heading": null,
+      "lines": [
+        0,
+        1
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 1:\nlorem ipsum 1",
+      "path": "test_env/test_markdown_v1.md#test 1",
+      "length": 16,
+      "heading": "test 1",
+      "lines": [
+        2,
+        4
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 1 > test 1a:\nlorem ipsum 1a",
+      "path": "test_env/test_markdown_v1.md#test 1#test 1a",
+      "length": 17,
+      "heading": "test 1a",
+      "lines": [
+        5,
+        7
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 1 > test 1b:\nlorem ipsum 1b",
+      "path": "test_env/test_markdown_v1.md#test 1#test 1b",
+      "length": 17,
+      "heading": "test 1b",
+      "lines": [
+        8,
+        10
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 1 > test 1b > test 1b1:\nlorem ipsum 1b1",
+      "path": "test_env/test_markdown_v1.md#test 1#test 1b#test 1b1",
+      "length": 18,
+      "heading": "test 1b1",
+      "lines": [
+        11,
+        13
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 2:\nlorem ipsum 2",
+      "path": "test_env/test_markdown_v1.md#test 2",
+      "length": 16,
+      "heading": "test 2",
+      "lines": [
+        14,
+        16
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 2 > test 2a:\nlorem ipsum 2a",
+      "path": "test_env/test_markdown_v1.md#test 2#test 2a",
+      "length": 17,
+      "heading": "test 2a",
+      "lines": [
+        17,
+        19
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 2 > test 2a > test 2aa:\nlorem ipsum 2aa",
+      "path": "test_env/test_markdown_v1.md#test 2#test 2a#test 2aa",
+      "length": 18,
+      "heading": "test 2aa",
+      "lines": [
+        20,
+        22
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 2 > test 2a > test 2ab:\nlorem ipsum 2ab",
+      "path": "test_env/test_markdown_v1.md#test 2#test 2a#test 2ab",
+      "length": 18,
+      "heading": "test 2ab",
+      "lines": [
+        23,
+        25
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 3:\nlorem ipsum 3",
+      "path": "test_env/test_markdown_v1.md#test 3",
+      "length": 16,
+      "heading": "test 3",
+      "lines": [
+        26,
+        28
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 3 > test 3a:\nlorem ipsum 3a",
+      "path": "test_env/test_markdown_v1.md#test 3#test 3a",
+      "length": 17,
+      "heading": "test 3a",
+      "lines": [
+        29,
+        31
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: test 1:\nshould add bracket to block path for second occurrence of heading",
+      "path": "test_env/test_markdown_v1.md#test 1{1}",
+      "length": 68,
+      "heading": "test 1",
+      "lines": [
+        36,
+        38
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 1: Introduction:\nThis is the introduction section.",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 1: Introduction",
+      "length": 36,
+      "heading": "Section 1: Introduction",
+      "lines": [
+        41,
+        43
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 2: Basic Concepts > Subsection 2.1: Definition:\nSmart Chunks are used for optimizing chunks for embeddings.",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 2: Basic Concepts#Subsection 2.1: Definition",
+      "length": 62,
+      "heading": "Subsection 2.1: Definition",
+      "lines": [
+        45,
+        47
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 2: Basic Concepts > Subsection 2.2: Usage:\nTo use Smart Chunks, include the following:\r\n- Parser per entity type\r\n- Dynamic settings page generation",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 2: Basic Concepts#Subsection 2.2: Usage",
+      "length": 108,
+      "heading": "Subsection 2.2: Usage",
+      "lines": [
+        48,
+        52
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 3: Advanced Topics > Subsection 3.1: Configuration:\nConfiguration options can be found in `options.json`.",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 3: Advanced Topics#Subsection 3.1: Configuration",
+      "length": 56,
+      "heading": "Subsection 3.1: Configuration",
+      "lines": [
+        54,
+        56
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 3: Advanced Topics > Subsection 3.2: Custom Collections:\nCustom collections can be created from multiple parsing configurations.",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 3: Advanced Topics#Subsection 3.2: Custom Collections",
+      "length": 74,
+      "heading": "Subsection 3.2: Custom Collections",
+      "lines": [
+        57,
+        59
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 4: Examples > Subsection 4.1: Example 1:\nHere is an example of a Smart Chunk:\r\n- `[Smart Chunk](example-smart-chunk.md)`",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 4: Examples#Subsection 4.1: Example 1",
+      "length": 82,
+      "heading": "Subsection 4.1: Example 1",
+      "lines": [
+        61,
+        64
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 4: Examples > Subsection 4.2: Example 2:\nAnother example with more details:\r\n- `[Detailed Smart Chunk](detailed-smart-chunk.md)`",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 4: Examples#Subsection 4.2: Example 2",
+      "length": 90,
+      "heading": "Subsection 4.2: Example 2",
+      "lines": [
+        65,
+        68
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Section 5: Conclusion:\nIn conclusion, Smart Chunks enhance text processing efficiency and accuracy.",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Section 5: Conclusion",
+      "length": 79,
+      "heading": "Section 5: Conclusion",
+      "lines": [
+        69,
+        71
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Tasks:\n- [ ] Test markdown for Smart Chunks parser\r\n- [ ] Improve implementation similar to chatml-to-format tests\r\n- [ ] Configure smart block parsing",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Tasks",
+      "length": 147,
+      "heading": "Tasks",
+      "lines": [
+        72,
+        76
+      ]
+    },
+    {
+      "text": "test_env > test_markdown_v1: Smart Chunks Test Document > Metadata:\n- value:: 1000\r\n- related:: [[🧩 Smart Chats]]\r\n- link:: [GitHub](https://github.com/brianpetro/smart-chunks)",
+      "path": "test_env/test_markdown_v1.md#Smart Chunks Test Document#Metadata",
+      "length": 109,
+      "heading": "Metadata",
+      "lines": [
+        77,
+        80
+      ]
+    }
+  ]
+}
