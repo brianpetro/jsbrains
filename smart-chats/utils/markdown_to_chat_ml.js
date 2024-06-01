@@ -27,7 +27,7 @@ function markdown_to_chat_ml(markdown) {
         tool_name = line.substring(3).trim();
         // return early if tool_name is not a valid tool
         if (tool_name === 'md') return;
-        if (['js', 'javascript', 'dataview'].includes(tool_name)) return add_content_to_message(curr_msg, line);
+        if (['js', 'javascript', 'dataview', 'dataviewjs'].includes(tool_name)) return add_content_to_message(curr_msg, line);
         if (['sc-context', 'sc-system'].includes(tool_name)) return add_content_to_message(curr_msg, line);
         if (curr_msg.role === 'tool') return;
         // add tool call to current message
@@ -40,7 +40,7 @@ function markdown_to_chat_ml(markdown) {
             arguments: ''
           }
         });
-      } else if (['sc-context', 'sc-system', 'md', 'javascript', 'js', 'dataview'].includes(tool_name)) {
+      } else if (['sc-context', 'sc-system', 'md', 'javascript', 'js', 'dataview', 'dataviewjs'].includes(tool_name)) {
         add_content_to_message(curr_msg, line);
       }
     } else if ((line.trim() !== '') && curr_msg) {

@@ -87,6 +87,7 @@ function is_tool_call(role, tool_name) {
     'js',
     'javascript',
     'dataview',
+    'dataviewjs',
     'html', 
     'css', 
     'scss', 
