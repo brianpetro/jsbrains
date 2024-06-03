@@ -37,5 +37,24 @@ next block
 **Cockpit design and cognitive load:** User-centered design and human-computer interaction.
 ---
 Treated as new block
+Should clear headings
 ---
 Another block
+
+
+## Another heading
+
+1. First item
+2. Second item
+3. Third item
+
+## Yet Another Heading
+
+1. First item
+2. Second item
+3. Third item
+   1. Child item 1
+   2. Child item 2
+   3. Child item 3
+4. Fourth item
+5. Fifth item

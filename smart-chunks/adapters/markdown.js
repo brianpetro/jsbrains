@@ -1,3 +1,7 @@
+const { is_list_item, is_nested_list_item, is_top_level_list_item } = require("../utils/is_list_item");
+const { is_end_of_block } = require("../utils/is_end_of_block");
+const { is_heading } = require("../utils/is_heading");
+
 class MarkdownAdapter {
   static get defaults() {
     return {
@@ -25,17 +29,16 @@ class MarkdownAdapter {
 
       const lines = content.split('\n');
       let in_front_matter = false;
-      let front_matter = '';
+      let front_matter = file_breadcrumbs + ":\n";
 
       lines.reduce((acc, line, index) => {
         acc.curr_line = index;
         if ((in_front_matter || index === 0) && line.trim() === '---') {
           in_front_matter = !in_front_matter;
           if (!in_front_matter) {
+            this.handle_duplicate_headings(acc);
             this.store_front_matter_block(acc, front_matter, index);
             acc.start_line = index + 1;
-          } else {
-            front_matter = file_breadcrumbs + ":\n";
           }
         } else if (in_front_matter) {
           front_matter += line + '\n';
@@ -45,6 +48,13 @@ class MarkdownAdapter {
             this.handle_duplicate_headings(acc);
             this.process_and_store_block(acc);
           }
+        }
+        if (line.trim() === '---') {
+          acc.start_line = index + 1;
+          acc.curr_heading = null;
+          acc.block_headings = "#";
+          acc.block_path = file_path + "#";
+          acc.current_headers = [];
         }
         return acc;
       }, acc);
@@ -151,20 +161,6 @@ class MarkdownAdapter {
     acc.block_path = acc.file_path + heading_key;
   }
 }
-function is_end_of_block(lines, index, opts) {
-  const line = lines[index];
-  if(line.length > opts.min_length_for_single_line_blocks) return true;
-  const next_line = lines[index + 1];
-  if(typeof next_line === 'undefined') return true;
-  if(is_heading(next_line)) return true;
-  if(is_nested_list_item(line) && is_top_level_list_item(next_line)) return true;
-  if(next_line.length > opts.min_length_for_single_line_blocks) return true;
-  if(next_line.trim() === '---') return true;
-  const next_next_line = lines[index + 2];
-  if(!next_next_line) return false;
-  if(is_list_item(line) && is_top_level_list_item(next_line) && is_nested_list_item(next_next_line)) return true;
-  return false;
-}
 function init_curr(acc, file_breadcrumbs) {
   const bc = [file_breadcrumbs];
   if (acc.current_headers.length > 0) {
@@ -179,29 +175,12 @@ function convert_file_path_to_breadcrumbs(file_path) {
   return file_path.replace('.md', '').split('/').map(crumb => crumb.trim()).filter(crumb => crumb !== '').join(' > ');
 }
 
-function is_heading(line) {
-  return line.startsWith('#') && ['#', ' '].includes(line[1]);
-}
-
 function get_heading_level(line) {
   return line.split('#').length - 1;
 }
 
 function is_content_line(line) {
   return !is_list_item(line) && !is_heading(line) && line.trim().length > 0 && line.trim() !== '---';
-}
-
-function is_list_item(line) {
-  const check_string = line.trim();
-  return ['- ', '* ', '+ ', '- [ ] ', '- [x] '].some(prefix => check_string.startsWith(prefix));
-}
-
-function is_nested_list_item(line) {
-  return (line.startsWith(' ') || line.startsWith('\t')) && is_list_item(line);
-}
-
-function is_top_level_list_item(line) {
-  return !is_nested_list_item(line) && is_list_item(line);
 }
 
 function initialize_acc(file_path, file_breadcrumbs) {
@@ -225,7 +204,4 @@ function finalize_output(output, file_path) {
   return { ...final_output, file_path: file_path };
 }
 
-module.exports = {
-  MarkdownAdapter,
-  is_end_of_block,
-};
+exports.MarkdownAdapter = MarkdownAdapter;

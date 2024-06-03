@@ -11,7 +11,7 @@
       ]
     },
     {
-      "path": "test_env/test_markdown_v2.md#",
+      "path": "test_env/test_markdown_v2.md#{1}",
       "heading": null,
       "length": 108,
       "lines": [
@@ -21,7 +21,7 @@
       "text": "test_env > test_markdown_v2:\n- FIRST list with nested list items\n  - lorem ipsum 1\n  - dolor sit amet 1\n  - consectetur adipiscing elit 1"
     },
     {
-      "path": "test_env/test_markdown_v2.md#{1}",
+      "path": "test_env/test_markdown_v2.md#{2}",
       "heading": null,
       "length": 38,
       "lines": [
@@ -31,7 +31,7 @@
       "text": "test_env > test_markdown_v2:\n- alongside list items with no nesting"
     },
     {
-      "path": "test_env/test_markdown_v2.md#{2}",
+      "path": "test_env/test_markdown_v2.md#{3}",
       "heading": null,
       "length": 109,
       "lines": [
@@ -41,7 +41,7 @@
       "text": "test_env > test_markdown_v2:\n- SECOND list with nested list items\n  - lorem ipsum 2\n  - dolor sit amet 2\n  - consectetur adipiscing elit 2"
     },
     {
-      "path": "test_env/test_markdown_v2.md#{3}",
+      "path": "test_env/test_markdown_v2.md#{4}",
       "heading": null,
       "length": 73,
       "lines": [
@@ -101,30 +101,70 @@
       "text": "test_env > test_markdown_v2: heading block 2 > Observations from working on Question 1:\n**Lessons learned from aircraft and rocket design:** Responsible Tech principle of learning from past advancements.\n**Cockpit design and cognitive load:** User-centered design and human-computer interaction."
     },
     {
-      "path": "test_env/test_markdown_v2.md#heading block 2#Observations from working on Question 1{3}",
-      "heading": "Observations from working on Question 1",
-      "length": 20,
+      "path": "test_env/test_markdown_v2.md#{5}",
+      "heading": null,
+      "length": 42,
       "lines": [
-        37,
-        38
+        38,
+        39
       ],
-      "text": "test_env > test_markdown_v2: heading block 2 > Observations from working on Question 1:\nTreated as new block"
+      "text": "test_env > test_markdown_v2:\nTreated as new block\nShould clear headings"
     },
     {
-      "path": "test_env/test_markdown_v2.md#heading block 2#Observations from working on Question 1{4}",
-      "heading": "Observations from working on Question 1",
+      "path": "test_env/test_markdown_v2.md#{6}",
+      "heading": null,
       "length": 13,
       "lines": [
-        39,
-        40
+        41,
+        43
       ],
-      "text": "test_env > test_markdown_v2: heading block 2 > Observations from working on Question 1:\nAnother block"
+      "text": "test_env > test_markdown_v2:\nAnother block"
+    },
+    {
+      "path": "test_env/test_markdown_v2.md#Another heading",
+      "heading": "Another heading",
+      "length": 42,
+      "lines": [
+        44,
+        49
+      ],
+      "text": "test_env > test_markdown_v2: Another heading:\n1. First item\n2. Second item\n3. Third item"
+    },
+    {
+      "path": "test_env/test_markdown_v2.md#Yet Another Heading",
+      "heading": "Yet Another Heading",
+      "length": 28,
+      "lines": [
+        50,
+        53
+      ],
+      "text": "test_env > test_markdown_v2: Yet Another Heading:\n1. First item\n2. Second item"
+    },
+    {
+      "path": "test_env/test_markdown_v2.md#Yet Another Heading{1}",
+      "heading": "Yet Another Heading",
+      "length": 70,
+      "lines": [
+        54,
+        57
+      ],
+      "text": "test_env > test_markdown_v2: Yet Another Heading:\n3. Third item\n   1. Child item 1\n   2. Child item 2\n   3. Child item 3"
+    },
+    {
+      "path": "test_env/test_markdown_v2.md#Yet Another Heading{2}",
+      "heading": "Yet Another Heading",
+      "length": 28,
+      "lines": [
+        58,
+        59
+      ],
+      "text": "test_env > test_markdown_v2: Yet Another Heading:\n4. Fourth item\n5. Fifth item"
     }
   ],
   "log": [],
-  "start_line": 41,
-  "curr_line": 40,
-  "curr_heading": "Observations from working on Question 1",
+  "start_line": 60,
+  "curr_line": 59,
+  "curr_heading": "Yet Another Heading",
   "file_path": "test_env/test_markdown_v2.md",
-  "curr_level": 3
+  "curr_level": 2
 }
