@@ -2,7 +2,6 @@ const { SmartMarkdown } = require('../SmartMarkdown');
 // get win or mac
 const platform = process.platform === 'win32' ? 'win' : 'mac';
 
-const { MarkdownAdapter } = require('./markdown');
 const { SmartChunks } = require('../smart_chunks');
 const fs = require('fs');
 const path = require('path');
