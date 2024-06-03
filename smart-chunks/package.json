@@ -6,7 +6,7 @@
   "description": "Smart Chunks are intelligently designed to maximize their value as inputs into embedding models.",
   "main": "smart-chunks.js",
   "scripts": {
-    "test": "npx ava --verbose test"
+    "test": "npx ava --verbose"
   },
   "repository": {
     "type": "git",
@@ -24,5 +24,10 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "ava": "^6.0.1"
+  },
+  "ava": {
+    "files": [
+      "**/*.test.js"
+    ]
   }
 }
