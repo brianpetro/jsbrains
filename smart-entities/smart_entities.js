@@ -23,19 +23,20 @@ const { Collection } = require("smart-collections/Collection"); // npm
 const { CollectionItem } = require("smart-collections/CollectionItem"); // npm
 const { SmartEmbedModel } = require('smart-embed-model');
 class SmartEntities extends Collection {
-  constructor(env) {
-    super(env);
+  constructor(env, opts) {
+    super(env, opts);
     this.env = env; // env is the brain (brain is Deprecated)
     this._pause_embeddings = false; // used to pause ensure_embeddings
   }
-  async _save() { await this.LTM._save(); } // async b/c Obsidian API is async
+  async _save() { await this.adapter._save_queue(); } // async b/c Obsidian API is async
   replacer(key, value) { // JSON.stringify replacer
     if(value instanceof this.item_type){
       if(!value.validate_save()){
         console.log("Invalid block, skipping save: ", value.data);
         return undefined; // skip if invalid
       }
-      if(value.data.embedding.vec && value.data.text) value.data.text = undefined; // clear text if embedding exists
+      // if(value.data.embedding.vec && value.data.text) value.data.text = undefined; // clear text if embedding exists
+      if(value.data.embeddings?.[this.embed_model]?.vec && value.data.text) value.data.text = undefined; // clear text if embedding exists
       return value.data;
     }
     return super.replacer(key, value);
@@ -45,17 +46,9 @@ class SmartEntities extends Collection {
       this.smart_embed.unload();
       delete this.smart_embed;
     }
-    if(this.smart_embed_container){
-      const iframe = this.smart_embed_container.querySelector('iframe');
-      if (!iframe) return;
-      // DO: improve remove of event listeners
-      iframe.srcdoc = '';
-      iframe.parentNode.removeChild(iframe);
-      this.smart_embed_container.remove();
-    }
   }
   async load() {
-    await this.LTM.load(); // MUST RUN BEFORE SMART EMBED async b/c Obsidian API is async
+    await super.load(); // MUST RUN BEFORE SMART EMBED async b/c Obsidian API is async
     console.log(this);
     console.log(this.env);
     await this.load_smart_embed();
@@ -150,7 +143,7 @@ class SmartEntities extends Collection {
         this._pause_embeddings = false;
         const restart_btn = {text: "Restart", callback: () => this.ensure_embeddings() };
         this.env.main.notices.show('restart embedding', [`Embedding ${this.collection_name}...`, `Paused at ${i} / ${unembedded_items.length} ${this.collection_name}`, performance_notice_msg], { timeout: 0, button: restart_btn});
-        this.LTM._save(true); // save immediately, overwrites existing file
+        this.adapter._save_queue(); // save immediately, overwrites existing file
         this.is_embedding = false;
         return;
       }
@@ -164,7 +157,7 @@ class SmartEntities extends Collection {
       // console.log("resp: ", resp);
       items.forEach(item => {
         item._embed_input = null; // clear _embed_input cache after embedding
-        item.changed = true; // mark as changed
+        item.queue_save();
       });
       total_tokens += resp.reduce((acc, item) => acc + item.tokens, 0);
       time_elapsed = Date.now() - time_start;
@@ -172,7 +165,7 @@ class SmartEntities extends Collection {
       // console.log(items.filter(i => !i.vec).map(item => item));
       if(i && (i % 500 === 0)){
         // console.log(unembedded_items[i]);
-        await this.LTM._save();
+        await this.adapter._save_queue();
       }
       // console.log("done i: ", i);
     }
@@ -181,7 +174,7 @@ class SmartEntities extends Collection {
     // console.log(unembedded_items.map(i => i.key));
     this.env.main.notices.remove('embedding progress');
     this.env.main.notices.show('done embedding', [`Embedding ${this.collection_name}...`, `Done creating ${embedded_ct} embeddings.`], { timeout: 10000 });
-    if(unembedded_items.length) this.LTM._save();
+    if(unembedded_items.length) this.adapter._save_queue();
     this.is_embedding = false;
     return true;
   }
@@ -191,13 +184,13 @@ class SmartEntities extends Collection {
   nearest(vec, filter={}) {
     if(!vec) return console.log("no vec");
     const {
-      // results_count = 20,
-      results_count = 50,
+      results_count = 50, // DO: default configured in settings
     } = filter;
     const nearest = this.filter(filter)
       .reduce((acc, item) => {
-        if(!item.data.embedding?.vec) return acc; // skip if no vec
-        item.sim = cos_sim(vec, item.data.embedding.vec);
+        if(!item.vec) return acc; // skip if no vec
+        item.score = cos_sim(vec, item.vec);
+        item.sim = item.score; // DEPRECATED alias
         top_acc(acc, item, results_count); // update acc
         return acc;
       }, { min: 0, items: new Set() })
@@ -212,7 +205,8 @@ class SmartEntity extends CollectionItem {
     return {
       data: {
         path: null,
-        embedding: {},
+        embeddings: {}, // contains keys per model
+        embedding: {}, // DEPRECATED
       },
     };
   }
@@ -229,17 +223,28 @@ class SmartEntity extends CollectionItem {
   async get_content() {} // override in child class
   async get_embed_input() {} // override in child class
   // getters
-  get ajson() { return `${JSON.stringify(this.key)}: ${JSON.stringify(this.data)}`; }
   get embed_link() { return `![[${this.data.path}]]`; }
-  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[^a-zA-Z0-9]/g, '_').replace(".md", ""); }
+  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
   get name() { return (!this.env.main.settings.show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get path() { return this.data.path; }
-  get tokens() { return this.data.embedding.tokens; }
-  get vec() { return this.data.embedding.vec; }
+  get tokens() { return this.data.embeddings[this.embed_model]?.tokens; }
+  get embed_model() { return this.collection.smart_embed_model; }
+  get vec() { return this.data?.embeddings?.[this.embed_model]?.vec; }
+  get embedding() { return this.data.embeddings?.[this.embed_model]; }
   // setters
-  set error(error) { this.data.embedding.error = error; }
-  set tokens(tokens) { this.data.embedding.tokens = tokens; }
-  set vec(vec) { this.data.embedding.vec = vec; }
+  set embedding(embedding) {
+    if(!this.data.embeddings) this.data.embeddings = {};
+    this.data.embeddings[this.embed_model] = embedding;
+  }
+  set error(error) { this.data.embeddings[this.embed_model].error = error; }
+  set tokens(tokens) {
+    if(!this.embedding) this.embedding = {};
+    this.embedding.tokens = tokens;
+  }
+  set vec(vec) {
+    if(!this.embedding) this.embedding = {};
+    this.data.embeddings[this.embed_model].vec = vec;
+  }
 }
 // COSINE SIMILARITY
 function cos_sim(vector1, vector2) {
@@ -269,10 +274,10 @@ class SmartNotes extends SmartEntities {
     try{
       let batch = [];
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
-      for(let i = 0; i < files.length; i++){
+      let i = 0;
+      for(i = 0; i < files.length; i++){
         if(batch.length % 10 === 0){
           this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${files.length} files`], { timeout: 0 });
-          
           // Promise.race to handle timeout
           const batchPromise = Promise.all(batch);
           const timeoutPromise = new Promise((resolve, reject) => {
@@ -280,7 +285,6 @@ class SmartNotes extends SmartEntities {
               reject(new Error('Batch processing timed out'));
             }, timeoutDuration);
           });
-
           try {
             await Promise.race([batchPromise, timeoutPromise]);
           } catch (error) {
@@ -290,14 +294,14 @@ class SmartNotes extends SmartEntities {
             console.log(files_in_batch.map(file => file.path));
             // Handle timeout or other errors here
           }
-
           batch = [];
         }
         const note = this.get(files[i].path);
         if(!note) batch.push(this.create_or_update({ path: files[i].path }));
         else{
           if(note.meta_changed){
-            note.data.embedding = {};
+            console.log("note meta changed: ", note);
+            note.data.embeddings = {};
             batch.push(this.create_or_update({ path: files[i].path }));
           }else if(this.env.smart_blocks?.smart_embed){
             batch.push(this.env.smart_blocks.import(note, { show_notice: false }));
@@ -307,6 +311,7 @@ class SmartNotes extends SmartEntities {
 
       // Final batch processing outside the loop
       if (batch.length > 0) {
+        this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${files.length} files`], { timeout: 0 });
         const batchPromise = Promise.all(batch);
         const timeoutPromise = new Promise((resolve, reject) => {
           setTimeout(() => {
@@ -338,6 +343,7 @@ class SmartNotes extends SmartEntities {
     }
   }
   async prune(override = false) {
+    const start = Date.now();
     const remove = [];
     const items_w_vec = Object.entries(this.items).filter(([key, note]) => note.vec);
     const total_items_w_vec = items_w_vec.length;
@@ -369,10 +375,10 @@ class SmartNotes extends SmartEntities {
     }
     console.log(remove);
     const remove_ratio = remove.length / total_items_w_vec;
+    console.log(`Pruning: Found ${remove.length} Smart Notes in ${Date.now() - start}ms`);
     if((override && (remove_ratio < 0.5)) || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio*100)}%) Note-level Embeddings?`)){
       this.delete_many(remove);
-      this.LTM._save(true); // save if not override
-      console.log(`Pruned ${remove.length} Smart Notes`);
+      this.adapter._save_queue();
     }
   }
   get current_note() { return this.get(this.env.main.app.workspace.getActiveFile().path); }
@@ -392,13 +398,16 @@ class SmartNote extends SmartEntity {
     const hash = await create_hash(content); // update hash
     if(hash !== this.last_history?.hash){
       this.data.history.push({ blocks: {}, mtime: this.t_file.stat.mtime, size: this.t_file.stat.size, hash }); // add history entry
-      this.data.embedding = {}; // clear embedding
+      this.data.embedding = {}; // clear embedding (DEPRECATED)
+      this.data.embeddings = {}; // clear embeddings
     }else{
       this.last_history.mtime = this.t_file.stat.mtime; // update mtime
       this.last_history.size = this.t_file.stat.size; // update size
     }
     this.env.smart_blocks.import(this, { show_notice: false });
+    this.queue_save();
   }
+  async get_content() { return await this.env.cached_read(this.t_file); }
   async get_embed_input() {
     if(typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
     const content = await this.get_content(); // get content from file
@@ -419,24 +428,29 @@ class SmartNote extends SmartEntity {
       this.env.main.notices.show('no embedding found', `No embeddings found for ${this.name}.`, { confirm: start_embedding_btn });
       return results;
     }
+    const smart_view_filter = this.env.plugin.settings.smart_view_filter;
+    const filter = {};
+    if(smart_view_filter?.include_exclude){
+      filter.exclude_key_starts_with_any = [this.key];
+      if(smart_view_filter?.exclude_filter) filter.exclude_key_starts_with_any.push(smart_view_filter.exclude_filter);
+      if(smart_view_filter?.include_filter) filter.key_starts_with = smart_view_filter.include_filter;
+    } else {
+      filter.exclude_key_starts_with = this.key;
+    }
     if(this.vec && this.median_block_vec && this.env.smart_blocks.smart_embed && this.collection.smart_embed){
-      const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, { exclude_key_starts_with: this.key });
-      const nearest_notes = this.env.smart_notes.nearest(this.vec, { exclude_key_starts_with: this.key });
-      results = nearest_blocks
-        .map(block => {
-          const note = nearest_notes.find(note => note.key === block.note_key);
-          if(!note) block.score = block.sim;
-          else block.score = (block.sim + note.sim) / 2;
-          return block;
-        })
+      console.log("FIND v1")
+      const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
+      const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter);
+      results = nearest_blocks.concat(nearest_notes)
         // sort by item.score descending
         .sort((a, b) => {
           if(a.score === b.score) return 0;
           return (a.score > b.score) ? -1 : 1;
         })
       ;
-    }else if(this.median_block_vec && this.env.smart_blocks.smart_embed){
-      const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, { exclude_key_starts_with: this.key });
+    }else if(this.median_block_vec && this.env.smart_blocks.smart_embed){ // IS THIS EVER CALLED?
+      console.log("FIND v2")
+      const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter);
       // re-rank: sort by block note median block vec sim
       results = nearest_blocks
         .map(block => {
@@ -447,6 +461,9 @@ class SmartNote extends SmartEntity {
           block.score = (block.sim + cos_sim(this.median_block_vec, block.note.median_block_vec)) / 2;
           return block;
         })
+      ;
+      const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
+      results = results.concat(nearest_notes)
         // sort by item.score descending
         .sort((a, b) => {
           if(a.score === b.score) return 0;
@@ -454,12 +471,9 @@ class SmartNote extends SmartEntity {
         })
       ;
     }else if(this.vec && this.collection.smart_embed){
-      const nearest_notes = this.env.smart_notes.nearest(this.vec, { exclude_key_starts_with: this.key });
+      console.log("FIND v3")
+      const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
       results = nearest_notes
-        .map(note => {
-          note.score = note.sim;
-          return note;
-        })
         // sort by item.score descending
         .sort((a, b) => {
           if(a.score === b.score) return 0;
@@ -471,12 +485,20 @@ class SmartNote extends SmartEntity {
   }
   open() { this.env.main.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
-  get block_vecs() { return this.blocks.map(block => block.data.embedding.vec).filter(vec => vec); } // filter out blocks without vec
+  get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
   get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get meta_changed() {
     if(!this.last_history) return true;
-    return (this.last_history.mtime !== this.t_file.stat.mtime) && (this.last_history.size !== this.t_file.stat.size);
+    if((this.last_history?.mtime || 0) < this.t_file.stat.mtime){
+      const size_diff = Math.abs(this.last_history.size - this.t_file.stat.size);
+      console.log("mtime changed: ", this.last_history, this.t_file);
+      const size_diff_ratio = size_diff / this.last_history.size;
+      console.log("size diff ratio: ", size_diff_ratio);
+      if(size_diff_ratio > 0.03) return true; // if size diff greater than 5% of last_history.size, assume file changed
+    }
+    // return (this.last_history.mtime !== this.t_file.stat.mtime) && (this.last_history.size !== this.t_file.stat.size);
+    return false;
   }
   get is_canvas() { return this.data.path.endsWith("canvas"); }
   get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
@@ -486,23 +508,33 @@ class SmartNote extends SmartEntity {
   get median_block_vec() { return this._median_block_vec ? this._median_block_vec : this._median_block_vec = this.block_vecs[0]?.map((val, i) => this.block_vecs.map(vec => vec[i]).sort()[Math.floor(this.block_vecs.length / 2)]); }
   get note_name() { return this.path.split("/").pop().replace(".md", ""); }
   get t_file() { return this.env.get_tfile(this.data.path); }
+  // v2.2
+  get ajson() {
+    return [
+      super.ajson,
+      ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
+    ].join("\n");
+  }
+  get file_path() { return this.data.path; }
+  get file_type() { return this.t_file.extension; }
 }
 class SmartBlocks extends SmartEntities {
   async import(note) {
     try{
-      const note_path = note.data.path;
-      const note_content = await note.get_content();
-      const { blocks } = this.env.smart_markdown.parse({ content: note_content, file_path: note_path });
+      const { blocks } = await this.env.smart_chunks.parse(note);
       blocks.forEach(block => {
         const item = this.create_or_update(block);
         note.last_history.blocks[item.key] = true;
       });
+      // const full_block = this.create_or_update({ path: note_path, text: note_content });
+      // note.last_history.blocks[full_block.key] = true;
     }catch(e){
       console.log("error parsing blocks for note: ", note.key);
       console.log(e);
     }
   }
   async prune(override = false) {
+    const start = Date.now();
     const remove = [];
     const total_items_w_vec = this.embedded_items.length;
     // console.log("total_items_w_vec: ", total_items_w_vec);
@@ -514,11 +546,11 @@ class SmartBlocks extends SmartEntities {
       if(block.is_gone) remove.push(key); // remove if expired
     }
     const remove_ratio = remove.length / total_items_w_vec;
+    console.log(`Pruning: Found ${remove.length} SmartBlocks in ${Date.now() - start}ms`);
     if((override && (remove_ratio < 0.5)) || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio*100)}%) Block-level embeddings?`)){
       this.delete_many(remove);
-      if(!override) this.LTM._save(true); // save if not override
+      if(!override) this.adapter._save_queue();
     }
-    console.log(`Pruned ${remove.length} SmartBlocks.`);
   }
 }
 class SmartBlock extends SmartEntity {
@@ -536,9 +568,12 @@ class SmartBlock extends SmartEntity {
   update_data(data) {
     if(!this.is_new || (this.vec?.length !== this.collection.smart_embed.dims)){
       // length returned by SmartMarkdown
-      if(this.data.length !== data.length) this.data.embedding = {}; // clear embedding
+      if(this.data.length !== data.length) this.data.embedding = {}; // clear embedding (DEPRECATED)
+      if(this.data.length !== data.length) this.data.embeddings = {}; // clear embeddings
     }
-    if(!this.data.embedding?.vec) this._embed_input += data.text; // store text for embedding
+    // if(!this.data.embedding?.vec) this._embed_input += data.text; // store text for embedding (DEPRECATED)
+    if(!this.vec) this._embed_input += data.text; // store text for embedding
+
     delete data.text; // clear data.text to prevent saving text
     super.update_data(data);
     return true;
@@ -549,10 +584,17 @@ class SmartBlock extends SmartEntity {
     this.note.last_history.blocks[this.key] = true; // add block key to note history entry
   }
   async get_content() {
-    const note_content = await this.note?.get_content();
-    if(!note_content) return null;
-    const block_content = this.env.smart_markdown.get_block_from_path(this.data.path, note_content);
-    return block_content;
+    // const note_content = await this.note?.get_content();
+    // if(!note_content) return null;
+    // const block_content = this.env.smart_markdown.get_block_from_path(this.data.path, note_content);
+    if(!this.note) return null;
+    try{
+      const block_content = await this.env.smart_chunks.get_block_from_path(this.data.path, this.note);
+      return block_content;
+    }catch(e){
+      console.log("error getting block content for ", this.data.path, ": ", e);
+      return "BLOCK NOT FOUND";
+    }
   }
   async get_embed_input() {
     if(typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
@@ -573,11 +615,9 @@ class SmartBlock extends SmartEntity {
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get lines() { return { start: this.data.lines[0], end: this.data.lines[1] } };
   get folder() { return this.data.path.split("/").slice(0, -1).join("/"); }
-  get is_block() { this.data.path.includes("#"); }
+  get is_block() { return this.data.path.includes("#"); }
   get is_gone() {
-    // if(this.env.smart_notes.unembedded_items.length) return false; // note not gone if any notes are unembedded (prevent erroneous delete)
-    if(!this.note) return true;
-    if(this.note.is_gone) return true;
+    if(!this.note?.t_file) return true; // gone if missing entity or file
     if(!this.note.last_history.blocks[this.key]) return true;
     return false;
   }
@@ -594,6 +634,8 @@ class SmartBlock extends SmartEntity {
   get note_name() { return this.note_key.split("/").pop().replace(".md", ""); }
   // backwards compatibility (DEPRECATED)
   get link() { return this.data.path; }
+  get line_start() { return this.data.lines[0]; }
+  get line_end() { return this.data.lines[1]; }
 }
 
 async function create_hash(text) {
