@@ -11,23 +11,28 @@ class Collection {
    * Constructs a new Collection instance.
    * @param {Object} env - The environment context containing configurations and adapters.
    */
-  constructor(env) {
+  constructor(env, opts = {}) {
     this.env = env;
-    this.brain = this.env; // DEPRECATED: use env instead of brain
+    // this.brain = this.env; // DEPRECATED: use env instead of brain
     this.config = this.env.config;
     this.items = {};
-    this.LTM = this.env.ltm_adapter.wake_up(this, this.env.ltm_adapter);
+    this.opts = opts;
+    if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
+    this.save_queue = {};
   }
 
+  // STATIC METHODS
   /**
    * Loads a collection based on the environment and optional configuration.
    * @param {Object} env - The environment context.
    * @param {Object} [config={}] - Optional configuration for the collection.
    * @returns {Promise<Collection>|Collection} The loaded collection instance.
    */
-  static load(env, config = {}) {
-    const { custom_collection_name } = config;
-    env[this.collection_name] = new this(env);
+  static load(env, opts = {}) {
+    if(typeof opts.adapter_class?.load === 'function') return opts.adapter_class.load(env, opts);
+    // if no static load method in adapter_class, load collection as normal
+    const { custom_collection_name } = opts;
+    env[this.collection_name] = new this(env, opts);
     if (custom_collection_name) {
       env[this.collection_name].collection_name = custom_collection_name;
       env.collections[custom_collection_name] = this.constructor;
@@ -39,46 +44,12 @@ class Collection {
     return env[this.collection_name];
   }
   /**
-   * Merges default configurations from all classes in the inheritance chain.
+   * Gets the collection name derived from the class name.
+   * @return {String} The collection name.
    */
-  merge_defaults() {
-    let current_class = this.constructor;
-    while (current_class) { // merge collection config into item config
-      const col_conf = this.config?.collections?.[current_class.collection_name];
-      Object.entries((typeof col_conf === 'object') ? col_conf : {})
-        .forEach(([key, value]) => this[key] = value)
-      ;
-      current_class = Object.getPrototypeOf(current_class);
-    }
-    // console.log(Object.keys(this));
-  }
+  static get collection_name() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
 
-  /**
-   * Saves the current state of the collection.
-   */
-  save() { this.LTM.save(); }
-
-  /**
-   * Loads the collection state.
-   */
-  load() { this.LTM.load(); }
-
-  /**
-   * Revives items from a serialized state.
-   * @param {string} key - The key of the item.
-   * @param {*} value - The serialized item value.
-   * @returns {CollectionItem|*} The revived item or the original value if not an object.
-   */
-  reviver(key, value) {
-    if (typeof value !== 'object' || value === null) return value; // skip non-objects, quick return
-    if (value.class_name) return new (this.env.item_types[value.class_name])(this.env, value);
-    return value;
-  }
-  replacer(key, value) {
-    if (value instanceof this.item_type) return value.data;
-    if (value instanceof CollectionItem) return value.ref;
-    return value;
-  }
+  // INSTANCE METHODS
 
   /**
    * Creates or updates an item in the collection based on the provided data.
@@ -187,14 +158,12 @@ class Collection {
    * @param {String[]} keys - The keys of the items to delete.
    */
   delete_many(keys = []) {
-    keys.forEach((key) => delete this.items[key]);
+    // keys.forEach((key) => delete this.items[key]);
+    keys.forEach((key) => {
+      this.items[key].delete();
+    });
   }
   // CONVENIENCE METHODS (namespace getters)
-  /**
-   * Gets the collection name derived from the class name.
-   * @return {String} The collection name.
-   */
-  static get collection_name() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
   /**
    * Gets or sets the collection name. If a name is set, it overrides the default name.
    * @param {String} name - The new collection name.
@@ -221,6 +190,86 @@ class Collection {
    * @return {Function} The item type constructor.
    */
   get item_type() { return this.env.item_types[this.item_class_name]; }
+
+  /**
+   * Gets the data path from the environment.
+   * @returns {string} The data path.
+   */
+  get data_path() { return this.env.data_path + '/multi'; }
+
+  // ADAPTER METHODS
+  /**
+   * Saves the current state of the collection.
+   */
+  async save() {
+    if(typeof this.adapter?.save === 'function') {
+      await this.adapter.save();
+      this.save_queue = {};
+    }
+    else console.warn("No save method found in adapter");
+  }
+  save_sync() {
+    if(typeof this.adapter?.save_sync === 'function') {
+      this.adapter.save_sync();
+      this.save_queue = {};
+    }
+    else console.warn("No save_sync method found in adapter");
+  }
+
+  /**
+   * Loads the collection state.
+   */
+  async load() {
+    if(typeof this.adapter?.load === 'function') return await this.adapter.load();
+    else console.warn("No load method found in adapter");
+  }
+  load_sync() {
+    if(typeof this.adapter?.load_sync === 'function') return this.adapter.load_sync();
+    else console.warn("No load_sync method found in adapter");
+  }
+
+  // BACKWARD COMPATIBILITY
+  get LTM() { return this.adapter; }
+
+  // UTILITY METHODS
+  /**
+   * Merges default configurations from all classes in the inheritance chain for Collection types; 
+   * e.g. EntityCollection, NoteCollection, etc.
+   */
+  merge_defaults() {
+    let current_class = this.constructor;
+    while (current_class) { // merge collection config into item config
+      const col_conf = this.config?.collections?.[current_class.collection_name];
+      Object.entries((typeof col_conf === 'object') ? col_conf : {})
+        .forEach(([key, value]) => this[key] = value)
+      ;
+      current_class = Object.getPrototypeOf(current_class);
+    }
+    // console.log(Object.keys(this));
+  }
+
+
+
+  // CHOPPING BLOCK
+  // May be moved to adapter class or removed
+
+  /**
+   * Revives items from a serialized state.
+   * @param {string} key - The key of the item.
+   * @param {*} value - The serialized item value.
+   * @returns {CollectionItem|*} The revived item or the original value if not an object.
+   */
+  reviver(key, value) {
+    if (typeof value !== 'object' || value === null) return value; // skip non-objects, quick return
+    if (value.class_name) return new (this.env.item_types[value.class_name])(this.env, value);
+    return value;
+  }
+  replacer(key, value) {
+    if (value instanceof this.item_type) return value.data;
+    if (value instanceof CollectionItem) return value.ref;
+    return value;
+  }
+
 }
 exports.Collection = Collection;
 

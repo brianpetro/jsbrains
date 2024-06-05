@@ -1,3 +1,4 @@
+// DEPRECATED: replaced by SmartEnv in JSBrains root
 const { LongTermMemory: LTM } = require('./long_term_memory.js');
 // ORCHESTRATOR CLASS
 class SmartEnv {

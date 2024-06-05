@@ -32,6 +32,13 @@ class CollectionItem {
     this.config = this.env?.config;
     this.merge_defaults();
     if (data) this.data = data;
+    // only keep this.embeddings[this.embed_model], remove other embeddings
+    if (this.data.embeddings) {
+      for (let key in this.data.embeddings) {
+        if (key !== this.embed_model) delete this.data.embeddings[key];
+      }
+      if(this.data.embedding) delete this.data.embedding;
+    }
     if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
@@ -96,8 +103,10 @@ class CollectionItem {
       return console.error("Invalid save: ", { data: this.data, stack: new Error().stack });
     }
     this.collection.set(this); // set entity in collection
+    this.queue_save();
     this.collection.save(); // save collection
   }
+  queue_save() { this.collection.save_queue[this.key] = true; }
 
   /**
    * Validates the item's data before saving.
@@ -113,7 +122,12 @@ class CollectionItem {
   /**
    * Deletes the item from its collection.
    */
-  delete() { this.collection.delete(this.key); }
+  delete() {
+    this.deleted = true;
+    this.queue_save();
+    // this.data = undefined;
+    // delete this.collection.items[this.key];
+  }
 
   // functional filter (returns true or false) for filtering items in collection; called by collection class
   /**
@@ -126,12 +140,14 @@ class CollectionItem {
       exclude_key,
       exclude_keys = exclude_key ? [exclude_key] : [],
       exclude_key_starts_with,
+      exclude_key_starts_with_any,
       key_ends_with,
       key_starts_with,
       key_starts_with_any,
     } = opts;
     if (exclude_keys?.includes(this.key)) return false;
     if (exclude_key_starts_with && this.key.startsWith(exclude_key_starts_with)) return false;
+    if (exclude_key_starts_with_any && exclude_key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
     if (key_ends_with && !this.key.endsWith(key_ends_with)) return false;
     if (key_starts_with && !this.key.startsWith(key_starts_with)) return false;
     if (key_starts_with_any && !key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
