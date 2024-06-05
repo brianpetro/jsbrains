@@ -30,13 +30,13 @@ class TransformersIframeConnector extends TransformersAdapter {
     this.running_init = false;
     this.window.tokenizer = this.tokenizer;
     console.log(await this.embed("test"));
-    this.window.parent.postMessage({ type: "model_loaded", data: true }, "*"); // post message to parent that model is loaded
+    this.window.postMessage({ type: "model_loaded", data: true }, "*"); // post message to parent that model is loaded
     this.window.addEventListener("message", this.handle_ipc.bind(this), false);
   }
   async handle_ipc(event) {
     if (event.data.type == "smart_embed") this.embed_handler(event.data);
-    // if (event.data.type == "smart_embed_batch") this.embed_batch_handler(event.data.embed_input);
     if (event.data.type == "smart_embed_token_ct") this.count_tokens_handler(event.data.embed_input);
+    if (event.data.type == "smart_embed_unload") await this.unload();
   }
   async embed_handler(event_data) {
     const { embed_input, handler_id } = event_data;
@@ -76,6 +76,14 @@ class TransformersIframeConnector extends TransformersAdapter {
       count: output
     };
     this.window.postMessage(send_data, "*");
+  }
+  async unload() {
+    try {
+      await this.model?.dispose();
+    } catch (error) {
+      console.warn("Failed to unload SmartEmbedTransformersWebAdapter:", error);
+    }
+    this.window.postMessage({ type: "smart_embed_unloaded", unloaded: true }, "*");
   }
 }
 exports.TransformersIframeConnector = TransformersIframeConnector;

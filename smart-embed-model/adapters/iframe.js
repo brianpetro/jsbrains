@@ -11,8 +11,7 @@ class IframeAdapter extends Adapter {
   }
   unload() {
     console.log("SmartEmbedTransformersWebAdapter Unloading");
-    this.remove_frame();
-    this.frame = null;
+    this.frame?.contentWindow?.postMessage({ type: "smart_embed_unload" }, "*");
     this.output = {};
     this.response_handlers = {};
   }
@@ -25,20 +24,28 @@ class IframeAdapter extends Adapter {
       this.frame.style.height = "0";
       // this.frame.id = this.container_id;
       this.frame_loaded = new Promise(resolve => this.frame.onload = resolve); // wait for iframe to load
-      const model_loaded = new Promise(resolve => {
-        window.addEventListener("message", event => {
-          if (event.data.type === "model_loaded"){
-            console.log("Model Loaded: " + this.model_name);
-            resolve();
+      const model_loaded = new Promise(async (resolve, reject) => {
+        const startTime = Date.now();
+        const timeout = 30000; // 30 seconds timeout
+        while(!this.loaded) {
+          if (Date.now() - startTime > timeout) {
+            break;
           }
-        }, { once: true, capture: false });
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        if (this.loaded) {
+          resolve(true);
+        } else {
+          reject(false);
+        }
       });
       this.frame.srcdoc = this.iframe_script;
       this.container.appendChild(this.frame);
       await this.frame_loaded; // wait for iframe to load
+      this.bound_handler = this.handle_iframe_messages.bind(this);
+      this.frame.contentWindow.addEventListener("message", this.bound_handler, false);
       this.frame.contentWindow.postMessage({ type: "init", model_config: {...this.main.config, container: null} }, "*"); // send init message to iframe
       await model_loaded; // wait for model to load
-      this.frame.contentWindow.addEventListener("message", this.handle_iframe_messages.bind(this), false);
     }
     // console.log(await this.request_embedding("test"));
     console.log("SmartEmbedTransformersWebAdapter Connected");
@@ -112,6 +119,14 @@ class IframeAdapter extends Adapter {
         handler({ error: null, data: event.data });
         delete this.response_handlers[event.data.handler_id || event.data.text];
       }
+    } else if (event.data.type === "smart_embed_unloaded") {
+      console.log("SmartEmbedTransformersWebAdapter Unloaded");
+      this.frame.contentWindow.removeEventListener("message", this.bound_handler);
+      this.remove_frame();
+      this.frame = null;
+    } else if (event.data.type === "model_loaded") {
+      console.log("Model Loaded: " + this.model_name);
+      this.loaded = true;
     }
   }
 }

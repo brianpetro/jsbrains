@@ -95,6 +95,10 @@ class TransformersAdapter extends Adapter {
     const { input_ids } = await this.tokenizer(text);
     return input_ids.data.length; // Return the number of tokens
   }
+
+  async unload() {
+    await this.model.dispose();
+  }
 }
 
 exports.TransformersAdapter = TransformersAdapter;

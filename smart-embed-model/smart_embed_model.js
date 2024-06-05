@@ -94,6 +94,12 @@ class SmartEmbedModel {
     // Default batch embedding logic here if no adapter or adapter lacks the method
   }
 
+  async unload() {
+    if (this.adapter && typeof this.adapter.unload === 'function') {
+      await this.adapter.unload();
+    }
+  }
+
   /**
    * Get the configured batch size for embedding.
    * @returns {number} The batch size.
