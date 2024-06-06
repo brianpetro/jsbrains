@@ -566,7 +566,7 @@ class SmartBlock extends SmartEntity {
   }
   // SmartChunk: text, length, path
   update_data(data) {
-    if(!this.is_new || (this.vec?.length !== this.collection.smart_embed.dims)){
+    if(!this.is_new || (this.vec?.length !== this.collection.smart_embed?.dims)){
       // length returned by SmartMarkdown
       if(this.data.length !== data.length) this.data.embedding = {}; // clear embedding (DEPRECATED)
       if(this.data.length !== data.length) this.data.embeddings = {}; // clear embeddings

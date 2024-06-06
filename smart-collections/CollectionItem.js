@@ -195,5 +195,11 @@ class CollectionItem {
    * @returns {string} The sequence key.
    */
   get seq_key() { return this.key; } // used for building sequence keys
+
+  /**
+   * Retrieves string representation of the item, including its key and data.
+   * @returns {string} A string representing the item.
+   */
+  get ajson() { return `${JSON.stringify(this.key)}: ${JSON.stringify(this.data)}`; }
 }
 exports.CollectionItem = CollectionItem;
