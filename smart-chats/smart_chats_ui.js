@@ -94,9 +94,9 @@ class SmartChatsUI {
    * Adds input listeners to the chat form for handling special keys and sending messages.
    */
   add_chat_input_listeners() {
-    const chat_input = this.container.querySelector(".sc-chat-form");
-    const textarea = chat_input.querySelector("textarea");
+    const chat_input = this.container.querySelector(".sc-chat-form textarea");
     chat_input.addEventListener("keydown", this.key_down_handler.bind(this));
+    // add event listeners to buttons
     const abort_button = this.container.querySelector("#sc-abort-button");
     abort_button.addEventListener("click", () => {
       // abort current response
@@ -104,8 +104,10 @@ class SmartChatsUI {
       this.clear_streaming_ux();
     });
     const button = this.container.querySelector("#sc-send-button");
-    // add event listener to button
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (e) => {
+      // get container with .sc-chat-form from target
+      const chat_input = e.target.closest(".sc-chat-form");
+      const textarea = chat_input.querySelector("textarea");
       this.handle_send();
       // refocus chat input
       textarea.focus();
@@ -117,6 +119,7 @@ class SmartChatsUI {
       this.handle_send();
     }
   }
+  key_up_handler(e) { }
   handle_send() {
     const chat_input = this.container.querySelector(".sc-chat-form");
     const textarea = chat_input.querySelector("textarea");
