@@ -3,6 +3,7 @@ const { Adapter } = require("./adapter");
 class TransformersAdapter extends Adapter {
   async init() {
     const { env, pipeline, AutoTokenizer } = await import('@xenova/transformers');
+    // env.backends.onnx.wasm.numThreads = 30;
     env.allowLocalModels = false;
     this.model = await pipeline('feature-extraction', this.model_name, { quantized: true, max_length: this.max_tokens });
     // this.model = await pipeline('feature-extraction', this.model_name, { quantized: false });
