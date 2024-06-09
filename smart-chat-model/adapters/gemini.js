@@ -192,8 +192,8 @@ function chatml_to_gemini(opts) {
       if(opts.tool_choice !== 'auto'){
         if(opts.model.includes('1.5-pro')){ // mode=ANY only on 1.5-pro
           body.tool_config = {
-            mode: "ANY",
             function_calling_config: {
+              mode: "ANY",
               allowed_function_names: opts.tools.map(tool => tool.function.name),
             }
           };
