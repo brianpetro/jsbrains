@@ -412,7 +412,9 @@ class SmartNote extends SmartEntity {
     if(typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
     const content = await this.get_content(); // get content from file
     const breadcrumbs = this.data.path.split("/").join(" > ").replace(".md", "");
-    this._embed_input = `${breadcrumbs}:\n${content}`;
+    const max_tokens = this.collection.smart_embed.max_tokens; // prevent loading too much content
+    // console.log("max_tokens: ", max_tokens);
+    this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 10);
     return this._embed_input;
   }
   find_connections() {
