@@ -21,7 +21,6 @@
 
 const { Collection } = require("smart-collections/Collection"); // npm
 const { CollectionItem } = require("smart-collections/CollectionItem"); // npm
-const { SmartEmbedModel } = require('smart-embed-model');
 class SmartEntities extends Collection {
   constructor(env, opts) {
     super(env, opts);
@@ -53,10 +52,12 @@ class SmartEntities extends Collection {
     console.log(this.env);
     await this.load_smart_embed();
   }
+  get SmartEmbedModel() { return this.env.modules.SmartEmbedModel; }
   async load_smart_embed() {
+    if(!this.SmartEmbedModel) return console.log("SmartEmbedModel must be included in the `env.modules` property");
     // console.log("Loading SmartEmbed for " + this.collection_name + " Model: " + this.smart_embed_model);
     if(this.smart_embed_model === "None") return; // console.log("SmartEmbed disabled for ", this.collection_name);
-    if(this.env.smart_embed_active_models[this.smart_embed_model] instanceof SmartEmbedModel){
+    if(this.env.smart_embed_active_models[this.smart_embed_model] instanceof this.SmartEmbedModel){
       this.smart_embed = this.env.smart_embed_active_models[this.smart_embed_model];
       console.log("SmartEmbed already loaded for " + this.collection_name + ": Model: " + this.smart_embed_model);
     }else{
@@ -74,7 +75,7 @@ class SmartEntities extends Collection {
           // console.log(sc_local);
           if(sc_local.status === 200) {
             console.log('Local Smart Connect server found');
-            this.smart_embed = await SmartEmbedModel.create(this.env, {...model, request_adapter: request_adapter, adapter: 'local_api', local_endpoint: 'http://localhost:37421/embed_batch'});
+            this.smart_embed = await this.SmartEmbedModel.create(this.env, {...model, request_adapter: request_adapter, adapter: 'local_api', local_endpoint: 'http://localhost:37421/embed_batch'});
             return;
           }
         }catch(err){
@@ -83,16 +84,16 @@ class SmartEntities extends Collection {
         if(this.env.local_model_type === 'Web'){
           this.model_key += '_web'; // model registry name
           if(this.smart_embed) console.log(`Existing WebAdapter for ${this.collection_name} model: ${this.smart_embed_model}`);
-          else this.smart_embed = await SmartEmbedModel.create(this.env, {...model, adapter: 'iframe', container: this.smart_embed_container});
+          else this.smart_embed = await this.SmartEmbedModel.create(this.env, {...model, adapter: 'iframe', container: this.smart_embed_container});
         }else{
           this.model_key += '_node'; // model registry name
           if(this.smart_embed) console.log(`Existing NodeAdapter for ${this.collection_name} model: ${this.smart_embed_model}`); // Check if a connection for this model already exists
-          else this.smart_embed = await SmartEmbedModel.create(this.env, {...model, adapter: 'transformers'});
+          else this.smart_embed = await this.SmartEmbedModel.create(this.env, {...model, adapter: 'transformers'});
         }
       } else { // is API model
         this.model_key += '_api'; // model registry name
         if(this.smart_embed) console.log(`Existing ApiAdapter for ${this.collection_name} model: ${this.smart_embed_model}`); // Check if a connection for this model already exists
-        else this.smart_embed = await SmartEmbedModel.create(this.env, {...model, request_adapter: this.env.main.obsidian?.requestUrl, api_key: this.config.api_key});
+        else this.smart_embed = await this.SmartEmbedModel.create(this.env, {...model, request_adapter: this.env.main.obsidian?.requestUrl, api_key: this.config.api_key});
       }
     }
   }
