@@ -1,5 +1,6 @@
 // merge two objects, overwriting existing properties with new_obj properties
-function deep_merge(existing, new_obj) {
+function ajson_merge(existing, new_obj) {
+  if(new_obj === null) return null;
   for (const key in new_obj) {
     if (Array.isArray(existing[key]) && Array.isArray(new_obj[key])) {
       // // Check if the first element of the array is also an array, indicating nested arrays
@@ -27,7 +28,7 @@ function deep_merge(existing, new_obj) {
       existing[key] = new_obj[key];
     } else if (isObject(existing[key]) && isObject(new_obj[key])) {
       // Recursively merge objects
-      existing[key] = deep_merge(existing[key], new_obj[key]);
+      existing[key] = ajson_merge(existing[key], new_obj[key]);
     } else {
       // Directly set the value for non-object and non-array types
       existing[key] = new_obj[key];
@@ -39,5 +40,5 @@ function deep_merge(existing, new_obj) {
 function isObject(obj) {
   return obj && typeof obj === 'object' && !Array.isArray(obj);
 }
-exports.deep_merge = deep_merge;
+exports.ajson_merge = ajson_merge;
 

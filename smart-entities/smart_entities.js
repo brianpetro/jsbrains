@@ -552,7 +552,7 @@ class SmartBlocks extends SmartEntities {
     console.log(`Pruning: Found ${remove.length} SmartBlocks in ${Date.now() - start}ms`);
     if((override && (remove_ratio < 0.5)) || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio*100)}%) Block-level embeddings?`)){
       this.delete_many(remove);
-      if(!override) this.adapter._save_queue();
+      this.adapter._save_queue();
     }
   }
 }

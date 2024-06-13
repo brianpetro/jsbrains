@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const { SmartCollectionsAdapter } = require('./adapter.js');
-const { deep_merge } = require('../utils/ajson_merge.js');
+const { ajson_merge } = require('../utils/ajson_merge.js');
 /**
  * Adapter for file system that handles multiple .ajson files.
  */
@@ -49,7 +49,7 @@ class FsAdapter extends SmartCollectionsAdapter {
             .split('\n')
             .reduce((acc, line) => {
               const parsed = JSON.parse(`{${line}}`);
-              return deep_merge(acc, parsed);
+              return ajson_merge(acc, parsed);
             }, {});
           let main_item = null;
           let updated_content = '';

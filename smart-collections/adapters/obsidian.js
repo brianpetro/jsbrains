@@ -1,5 +1,5 @@
 const { SmartCollectionsAdapter } = require('./adapter.js');
-const { deep_merge } = require('../utils/ajson_merge.js');
+const { ajson_merge } = require('../utils/ajson_merge.js');
 /**
  * Adapter for Obsidian that handles multiple .ajson files.
  */
@@ -29,40 +29,56 @@ class ObsidianAdapter extends SmartCollectionsAdapter {
     const start = Date.now();
     if(!(await this.exists(this.data_path))) await this.mkdir(this.data_path);
     const files = (await this.list(this.data_path)).files; // List all files in the directory
+    const vault_paths = this.main.env.all_files.reduce((acc, file) => {
+      acc[file.path] = file;
+      return acc;
+    }, {});
+    const item_types = Object.keys(this.env.item_types);
     for (const file_path of files) {
+      let source_is_deleted = false;
       try {
         if (file_path.endsWith('.ajson')) { // Ensure it's an .ajson file
           const content = (await this.read(file_path)).trim();
           const data = content
             .split('\n')
             .reduce((acc, line) => {
-              // if(line.endsWith(',')) line = line.slice(0, -1); // DEPRECATED: should not be necessary
               const parsed = JSON.parse(`{${line}}`);
-              // future: parse key to allow dot notation
-              return deep_merge(acc, parsed);
+              if(Object.values(parsed)[0] === null){
+                if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
+                return acc;
+              }
+              return ajson_merge(acc, parsed);
             }, {})
           ;
           // const data = JSON.parse(`{${content.startsWith(',\n') ? content.slice(1) : content}}`);
-          let main_item = null;
-          let updated_content = '';
-          Object.entries(data).forEach(([key, value]) => {
-            if(!value) return; // handle null values (deleted)
+          let main_entity;
+          Object.entries(data).forEach(([ajson_key, value]) => {
+            let is_main_entity = false;
+            if(ajson_key.includes("AI computer")) console.log(ajson_key, value); // TEMP
+            if(!value || source_is_deleted) return; // handle null values (deleted)
+            let entity_key;
             let class_name = value.class_name; // DEPRECATED (moved to key so that multiple entities from different classes can have the same key)
-            if(key.includes(":") && key.split(":")[0] in this.env.item_types){
-              class_name = key.split(":").shift();
-              key = key.split(":").slice(1).join(":");
+            if(ajson_key.includes(":") && item_types.includes(ajson_key.split(":")[0])){
+              class_name = ajson_key.split(":").shift();
+              entity_key = ajson_key.split(":").slice(1).join(":"); // key is file path
+            }else entity_key = ajson_key; // DEPRECATED: remove this
+            if(!entity_key.includes("#")){ // if no #, it's a source item (i.e. Note, not block)
+              is_main_entity = true;
+              if(!vault_paths[entity_key]){ // if not in vault path, it's a deleted item
+                source_is_deleted = true;
+                return;
+              }
             }
-            updated_content += `${JSON.stringify(class_name + ":" + key)}: ${JSON.stringify(value)}\n`;
             const entity = new (this.env.item_types[class_name])(this.env, value);
-            this.env[entity.collection_name].items[key] = entity;
-            if(!key.includes("#")) main_item = entity;
+            this.env[entity.collection_name].items[entity_key] = entity;
+            if(is_main_entity) main_entity = entity;
           });
-          updated_content = updated_content.trim();
-          if(!main_item) await this.remove(file_path);
-          else if(updated_content !== content) {
-            // console.log("data: ", data);
-            await this.write(file_path, updated_content);
-            // console.log("Updated file: " + file_path);
+          if(source_is_deleted) await this.remove(file_path);
+          else{
+            if(main_entity.ajson !== content) {
+              await this.write(file_path, main_entity.ajson);
+              // console.log("Updated file: " + file_path);
+            }
           }
         }
       } catch (err) {
@@ -101,8 +117,10 @@ class ObsidianAdapter extends SmartCollectionsAdapter {
       if(!ajson && (await this.exists(item_file_path))){
         await this.remove(item_file_path);
         delete this.main.items[key];
+        console.log("Deleted item: " + key);
+      } else {
+        await this.append(item_file_path, '\n' + ajson);
       }
-      else await this.append(item_file_path, '\n' + ajson);
     } catch (err) {
       if(err.message.includes("ENOENT")) return; // already deleted
       console.warn("Error saving collection item: ", key);

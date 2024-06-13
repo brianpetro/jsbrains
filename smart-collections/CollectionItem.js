@@ -200,6 +200,9 @@ class CollectionItem {
    * Retrieves string representation of the item, including its key and data.
    * @returns {string} A string representing the item.
    */
-  get ajson() { return `${JSON.stringify(this.key)}: ${JSON.stringify(this.data)}`; }
+  get ajson() { return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? null : JSON.stringify(this.data)}`; }
+
+  get ajson_key() { return this.constructor.name + ":" + this.key; }
 }
+
 exports.CollectionItem = CollectionItem;
