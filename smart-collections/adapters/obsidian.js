@@ -52,34 +52,42 @@ class ObsidianAdapter extends SmartCollectionsAdapter {
           ;
           // const data = JSON.parse(`{${content.startsWith(',\n') ? content.slice(1) : content}}`);
           let main_entity;
-          Object.entries(data).forEach(([ajson_key, value]) => {
-            let is_main_entity = false;
-            if(ajson_key.includes("AI computer")) console.log(ajson_key, value); // TEMP
-            if(!value || source_is_deleted) return; // handle null values (deleted)
-            let entity_key;
-            let class_name = value.class_name; // DEPRECATED (moved to key so that multiple entities from different classes can have the same key)
-            if(ajson_key.includes(":") && item_types.includes(ajson_key.split(":")[0])){
-              class_name = ajson_key.split(":").shift();
-              entity_key = ajson_key.split(":").slice(1).join(":"); // key is file path
-            }else entity_key = ajson_key; // DEPRECATED: remove this
-            if(!entity_key.includes("#")){ // if no #, it's a source item (i.e. Note, not block)
-              is_main_entity = true;
-              if(!vault_paths[entity_key]){ // if not in vault path, it's a deleted item
-                source_is_deleted = true;
-                return;
+          Object.entries(data)
+            // // sort  by no # in key first, then by # in key
+            // .sort(([ajson_key, value], [ajson_key2, value2]) => {
+            //   if(ajson_key.includes("#") && !ajson_key2.includes("#")) return 1;
+            //   if(!ajson_key.includes("#") && ajson_key2.includes("#")) return -1;
+            //   return 0;
+            // })
+            .forEach(([ajson_key, value]) => {
+              let is_main_entity = false;
+              if(ajson_key.includes("AI computer")) console.log(ajson_key, value); // TEMP
+              if(!value || source_is_deleted) return; // handle null values (deleted)
+              let entity_key;
+              let class_name = value.class_name; // DEPRECATED (moved to key so that multiple entities from different classes can have the same key)
+              if(ajson_key.includes(":") && item_types.includes(ajson_key.split(":")[0])){
+                class_name = ajson_key.split(":").shift();
+                entity_key = ajson_key.split(":").slice(1).join(":"); // key is file path
+              }else entity_key = ajson_key; // DEPRECATED: remove this
+              if(!entity_key.includes("#")){ // if no #, it's a source item (i.e. Note, not block)
+                is_main_entity = true;
+                if(!vault_paths[entity_key]){ // if not in vault path, it's a deleted item
+                  source_is_deleted = true;
+                  return;
+                }
               }
-            }
-            const entity = new (this.env.item_types[class_name])(this.env, value);
-            this.env[entity.collection_name].items[entity_key] = entity;
-            if(is_main_entity) main_entity = entity;
-          });
+              const entity = new (this.env.item_types[class_name])(this.env, value);
+              this.env[entity.collection_name].items[entity_key] = entity;
+              if(is_main_entity) main_entity = entity;
+            })
+          ;
           if(source_is_deleted) await this.remove(file_path);
-          else{
+          else if(main_entity){
             if(main_entity.ajson !== content) {
               await this.write(file_path, main_entity.ajson);
               // console.log("Updated file: " + file_path);
             }
-          }
+          }else console.warn("Main entity not found for file: " + file_path);
         }
       } catch (err) {
         console.log("Error loading file: " + file_path);

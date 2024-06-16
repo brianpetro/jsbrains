@@ -138,6 +138,12 @@ class SmartEntities extends Collection {
     let time_elapsed = 0;
     let tokens_per_sec = 0;
     for(let i = 0; i < unembedded_items.length; i += batch_size) {
+      // set timeout to set is_embedding to false if it takes too long
+      clearTimeout(this.is_embedding_timeout);
+      this.is_embedding_timeout = setTimeout(() => {
+        this.is_embedding = false;
+        console.log("embedding timeout");
+      }, 60000);
       // console.log("i: ", i);
       if(this._pause_embeddings) {
         // console.log("pause_embeddings");
@@ -155,6 +161,11 @@ class SmartEntities extends Collection {
       const items = unembedded_items.slice(i, i + batch_size);
       await Promise.all(items.map(async item => await item.get_embed_input())); // make sure all items have embed_input (in cache for call by embed_batch)
       const resp = await this.smart_embed.embed_batch(items);
+      if(resp.error){
+        console.log("error embedding batch: ", resp.error);
+        this.is_embedding = false;
+        return false;
+      }
       // console.log("resp: ", resp);
       items.forEach(item => {
         item._embed_input = null; // clear _embed_input cache after embedding
