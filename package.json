@@ -22,5 +22,15 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "jsdoc": "^4.0.2"
-  }
+  },
+  "workspaces": [
+    "smart-chat-model",
+    "smart-chats",
+    "smart-chunks",
+    "smart-collections",
+    "smart-embed-model",
+    "smart-entities",
+    "smart-instruct-model",
+    "smart-ranker-model"
+  ]
 }
