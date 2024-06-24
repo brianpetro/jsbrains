@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: smart-chats/smart_chat.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: smart-chats/smart_chat.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Represents a chat session within a SmartChat environment, handling the creation,
+ * manipulation, and storage of chat data in a structured format (ChatML).
+ * 
+ * @class
+ * @param {SmartEnv} env - The SmartChat environment object which provides context and utilities.
+ * @param {string} key - The unique identifier for the chat session.
+ * @param {string} [data=''] - Initial data for the chat session, typically in a structured format.
+ */
+const SmartChatAdapters = require('./adapters');
+class SmartChat {
+  constructor(env, opts={}) {
+    let {
+      key='UNTITLED CHAT ' + get_file_date_string(),
+      data='',
+      file_type=null,
+    } = opts;
+    this.env = env;
+    this.chats = this.env.chats;
+    this.key = key;
+    this.data = data;
+    this.scope = {};
+    if(file_type) this.adapter = new SmartChatAdapters[file_type](this);
+    // exported for convenience (unnecessary??? may load the chats directly)
+    if(this.chats) this.chats.items[this.key] = this;
+  }
+
+  /**
+   * Factory method to create a new SmartChat instance with a unique key or a default one.
+   * 
+   * @static
+   * @param {SmartEnv} env - The SmartChat environment object.
+   * @param {string} [key=null] - Optional key for the chat session. If not provided, a default is generated.
+   * @param {string} [data=''] - Initial data for the chat session.
+   * @returns {SmartChat} A new instance of SmartChat.
+   */
+  static create(env, opts={}) {
+    const chat = new this(env, opts);
+    return chat;
+  }
+
+  /**
+   * Computes the file path for the current chat session based on its key and file type.
+   * 
+   * @returns {string} The file path for the chat session.
+   */
+  get file_path() { return `${this.chats.folder}/${this.key}.${this.file_type}`; }
+
+  /**
+   * Returns the name (key) of the chat session.
+   * 
+   * @returns {string} The key of the chat session.
+   */
+  get name() { return this.key; }
+
+  /**
+   * Renames the current chat session and updates the storage references.
+   * 
+   * @param {string} new_id - The new identifier for the chat session.
+   * @returns {Promise&lt;void>}
+   */
+  async rename(new_id) {
+    // console.log('renaming', this.key, new_id);
+    if (this.key === new_id) return;
+    if(await this.exists()) await this.delete();
+    delete this.chats.items[this.key];
+    this.key = new_id;
+    this.chats.items[this.key] = this;
+    await this.save();
+  }
+
+  /**
+   * Retrieves all messages from the chat session and converts them to HTML format.
+   * 
+   * @returns {Promise&lt;string>} A string containing all messages in HTML format.
+   */
+  async get_messages_html(){
+    const messages = await this.get_messages();
+    const html = await Promise.all(messages.map(async msg => {
+      if(!msg.content) return '';
+      if(msg.role === 'system') return await this.env.chat_ui.get_system_message_html(msg);
+      return await this.env.chat_ui.get_message_html(msg.role, msg.content);
+    }));
+    return html.join('');
+  }
+
+  /**
+   * Adds a new message to the chat session.
+   * 
+   * @param {Object} [msg={}] - The message object to add.
+   * @returns {Promise&lt;void>}
+   */
+  async add_message(msg={}){
+    const chat_ml = await this.get_chat_ml();
+    chat_ml.messages.push(msg);
+    await this.update(chat_ml);
+  }
+
+  async remove_last_message(){
+    const chat_ml = await this.get_chat_ml();
+    chat_ml.messages.pop();
+    await this.update(chat_ml);
+  }
+
+  /**
+   * Adds output from a tool to the chat session as a message.
+   * 
+   * @param {string} tool_name - The name of the tool.
+   * @param {*} tool_output - The output from the tool.
+   * @returns {Promise&lt;void>}
+   */
+  async add_tool_output(tool_name, tool_output){
+    if(typeof this.env.actions.parse_tool_output === 'function'){
+      const message = await this.env.actions.parse_tool_output(tool_name, tool_output);
+      if(message) return await this.add_message(message);
+    }
+    await this.add_message({role: 'tool', tool_call_id: tool_name, content: JSON.stringify(tool_output)});
+  }
+
+  // file-type specific parsing and formatting overrides
+  /**
+   * Updates the chat session data with the provided ChatML object and saves it.
+   * 
+   * @param {Object} chat_ml - The ChatML object to update the session with.
+   * @returns {Promise&lt;void>}
+   */
+  async update(chat_ml){
+    this.data = this.from_chatml(chat_ml);
+    await this.save();
+  }
+
+  /**
+   * Saves the current chat session data to the file system.
+   * 
+   * @returns {Promise&lt;void>}
+   */
+  async save() {
+    if(typeof this.adapter?.save === 'function') return await this.adapter.save();
+    return await this.chats.save(this.file_path, this.data);
+  }
+
+  /**
+   * Deletes the chat session file from the file system.
+   * 
+   * @returns {Promise&lt;void>}
+   */
+  async delete() { return await this.chats.delete(this.file_path); }
+
+  /**
+   * Checks if the chat session file exists in the file system.
+   * 
+   * @returns {Promise&lt;boolean>} True if the file exists, false otherwise.
+   */
+  async exists() { return await this.chats.exists(this.file_path); }
+
+  /**
+   * Loads the chat session data from the file system.
+   * 
+   * @returns {Promise&lt;string>} The loaded data.
+   */
+  async load() {
+    if(!(await this.exists())){
+      return this.data = '';
+    }
+    return this.data = await this.chats.read(this.file_path);
+  }
+
+  /**
+   * Retrieves the ChatML object from the current session data.
+   * 
+   * @returns {Promise&lt;Object>} The ChatML object.
+   */
+  async get_chat_ml() {
+    await this.load();
+    const chat_ml = this.to_chatml(this.data);
+    return chat_ml;
+  }
+
+  /**
+   * Retrieves all messages from the ChatML object of the current session.
+   * 
+   * @returns {Promise&lt;Array>} An array of message objects.
+   */
+  async get_messages() { return (await this.get_chat_ml()).messages; }
+
+  /**
+   * Processes a new user message, updates UI/UX, and adds it to the chat session.
+   * 
+   * @param {string} content - The content of the user message.
+   * @returns {Promise&lt;void>}
+   */
+  async new_user_message(content){
+    const og_content = content;
+    content = await this.parse_user_message(content); // first in case throws compatibility error
+    if(typeof this.env?.chat_ui?.new_user_message === 'function') await this.env.chat_ui.new_user_message(og_content); // UI/UX
+    if(typeof this.env?.actions?.new_user_message === 'function') await this.env.actions.new_user_message(content); // context-retrieval (adds preceding system message if necessary)
+    if(typeof this.chats?.new_user_message === 'function') await this.chats.new_user_message(content); // add additional logic here (chat-format-agnostic)
+    await this.add_message({role: 'user', content});
+    await this.env.chat_model.complete({});
+  }
+
+  // Override these for file-type specific parsing and formatting in subclasses
+  /**
+   * Returns the file type for the chat session, used in file operations.
+   * 
+   * @returns {string} The file type, default is 'json'.
+   */
+  get file_type() {
+    if(this.adapter?.file_type) return this.adapter.file_type;
+    return 'json';
+  }
+
+  /**
+   * Converts the provided data into a ChatML object. This method should be overridden in subclasses.
+   * 
+   * @param {string} data - The data to convert.
+   * @returns {Object} The ChatML object.
+   */
+  to_chatml(data) {
+    if(typeof this.adapter?.to_chatml === 'function') return this.adapter.to_chatml(data);
+    return data;
+  }
+
+  /**
+   * Converts a ChatML object back into a string or suitable format for storage. This method should be overridden in subclasses.
+   * 
+   * @param {Object} data - The ChatML object to convert.
+   * @returns {string} The string or formatted data.
+   */
+  from_chatml(data) {
+    if(typeof this.adapter?.from_chatml === 'function') return this.adapter.from_chatml(data);
+    return data;
+  }
+
+  /**
+   * Parses the user message content before adding it to the chat. This method can be overridden to include custom parsing logic.
+   * 
+   * @param {string} content - The content to parse.
+   * @returns {Promise&lt;string>} The parsed content.
+   */
+  async parse_user_message(content) { return content; }
+}
+function get_file_date_string() { return new Date().toISOString().replace(/(T|:|\..*)/g, " ").trim(); }
+exports.SmartChat = SmartChat;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 21:51:49 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
