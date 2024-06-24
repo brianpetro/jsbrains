@@ -1,6 +1,6 @@
 {
   "name": "jsbrains",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A collection of smart modules for building brains in JavaScript.",
   "main": "index.js",
   "repository": {
