@@ -102,8 +102,53 @@ exports.AnthropicAdapter = AnthropicAdapter;
  * @returns {Object} - The Anthropic object
  */
 function chatml_to_anthropic(opts) {
-  const messages = opts.messages.filter(msg => msg.role !== 'system');
-  const { model, max_tokens, temperature, tools, } = opts;
+  let tool_counter = 0;
+  const messages = opts.messages
+    .filter(msg => msg.role !== 'system')
+    .map(m => {
+      if(m.role === 'tool'){
+        return { role: 'user', content: [
+          {
+            type: 'tool_result',
+            tool_use_id: `tool-${tool_counter}`,
+            content: m.content
+          }
+        ]};
+      }
+      if(m.role === 'assistant' &amp;&amp; m.tool_calls){
+        tool_counter++;
+        const out = {
+          role: m.role, 
+          content: m.tool_calls.map(c => ({
+            type: 'tool_use',
+            id: `tool-${tool_counter}`,
+            name: c.function.name,
+            input: (typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : c.function.arguments
+          }))
+        };
+        if(m.content){
+          if(typeof m.content === 'string') out.content.push({type: 'text', text: m.content});
+          else m.content.forEach(c => out.content.push(c));
+        }
+        return out;
+      }
+      if(typeof m.content === 'string') return { role: m.role, content: m.content };
+      if(Array.isArray(m.content)){
+        const content = m.content.map(c => {
+          if(c.type === 'text') return {type: 'text', text: c.text};
+          if(c.type === 'image_url'){
+            const image_url = c.image_url.url;
+            let media_type = image_url.split(":")[1].split(";")[0];
+            if(media_type === 'image/jpg') media_type = 'image/jpeg';
+            return {type: 'image', source: {type: 'base64', media_type: media_type, data: image_url.split(",")[1]}};
+          }
+        });
+        return { role: m.role, content };
+      }
+      return m;
+    })
+  ;
+  const { model, max_tokens, temperature, tools, tool_choice } = opts;
   // DO: handled better (Smart Connections specific)
   // get index of last system message
   const last_system_idx = opts.messages.findLastIndex(msg => msg.role === 'system' &amp;&amp; msg.content.includes('---BEGIN'));
@@ -124,10 +169,13 @@ function chatml_to_anthropic(opts) {
       description: tool.function.description,
       input_schema: tool.function.parameters,
     }));
-    // add "Use the ${tool.name} tool" to the last user message
-    const tool_prompt = `Use the "${out.tools[0].name}" tool!`;
-    const last_user_idx = out.messages.findLastIndex(msg => msg.role === 'user');
-    out.messages[last_user_idx].content += '\n' + tool_prompt;
+    if(tool_choice?.type === 'function'){
+      // add "Use the ${tool.name} tool" to the last user message
+      const tool_prompt = `Use the "${tool_choice.function.name}" tool!`;
+      const last_user_idx = out.messages.findLastIndex(msg => msg.role === 'user');
+      out.messages[last_user_idx].content += '\n' + tool_prompt;
+      out.system = `Required: use the "${tool_choice.function.name}" tool!`;
+    }
   }
   // DO: handled better (Smart Connections specific)
   // if system message exists prior to last_system_idx AND does not include "---BEGIN" then add to body.system
@@ -147,13 +195,13 @@ exports.chatml_to_anthropic = chatml_to_anthropic;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChatUI.html">SmartChatUI</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Apr 17 2024 18:32:36 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 21:30:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -54,12 +54,20 @@ class CollectionItem {
    * @param {Object} brain - The central storage or context.
    * @param {Object|null} data - Initial data for the item.
    */
-  constructor(brain, data = null) {
-    this.brain = brain;
-    this.config = this.brain?.config;
+  constructor(env, data = null) {
+    this.env = env;
+    this.brain = this.env; // DEPRECATED
+    this.config = this.env?.config;
     this.merge_defaults();
     if (data) this.data = data;
-    this.data.class_name = this.constructor.name;
+    // only keep this.embeddings[this.embed_model], remove other embeddings
+    if (this.data.embeddings) {
+      for (let key in this.data.embeddings) {
+        if (key !== this.embed_model) delete this.data.embeddings[key];
+      }
+      if(this.data.embedding) delete this.data.embedding;
+    }
+    if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
   /**
@@ -123,8 +131,10 @@ class CollectionItem {
       return console.error("Invalid save: ", { data: this.data, stack: new Error().stack });
     }
     this.collection.set(this); // set entity in collection
+    this.queue_save();
     this.collection.save(); // save collection
   }
+  queue_save() { this.collection.save_queue[this.key] = true; }
 
   /**
    * Validates the item's data before saving.
@@ -140,7 +150,12 @@ class CollectionItem {
   /**
    * Deletes the item from its collection.
    */
-  delete() { this.collection.delete(this.key); }
+  delete() {
+    this.deleted = true;
+    this.queue_save();
+    // this.data = undefined;
+    // delete this.collection.items[this.key];
+  }
 
   // functional filter (returns true or false) for filtering items in collection; called by collection class
   /**
@@ -153,12 +168,14 @@ class CollectionItem {
       exclude_key,
       exclude_keys = exclude_key ? [exclude_key] : [],
       exclude_key_starts_with,
+      exclude_key_starts_with_any,
       key_ends_with,
       key_starts_with,
       key_starts_with_any,
     } = opts;
     if (exclude_keys?.includes(this.key)) return false;
     if (exclude_key_starts_with &amp;&amp; this.key.startsWith(exclude_key_starts_with)) return false;
+    if (exclude_key_starts_with_any &amp;&amp; exclude_key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
     if (key_ends_with &amp;&amp; !this.key.endsWith(key_ends_with)) return false;
     if (key_starts_with &amp;&amp; !this.key.startsWith(key_starts_with)) return false;
     if (key_starts_with_any &amp;&amp; !key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
@@ -181,13 +198,13 @@ class CollectionItem {
    * Retrieves the collection name for the instance, either from data or the class method.
    * @returns {string} The collection name.
    */
-  get collection_name() { return this.data.collection_name ? this.data.collection_name : this.constructor.collection_name; }
+  get collection_name() { return this.data.collection_name ? this.data.collection_name : collection_instance_name_from(this.data.class_name || this.constructor.name); }
 
   /**
    * Retrieves the collection this item belongs to.
    * @returns {Object} The collection object.
    */
-  get collection() { return this.brain[this.collection_name]; }
+  get collection() { return this.env[this.collection_name]; }
 
   /**
    * Retrieves or generates the key for this item.
@@ -206,7 +223,16 @@ class CollectionItem {
    * @returns {string} The sequence key.
    */
   get seq_key() { return this.key; } // used for building sequence keys
+
+  /**
+   * Retrieves string representation of the item, including its key and data.
+   * @returns {string} A string representing the item.
+   */
+  get ajson() { return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? null : JSON.stringify(this.data)}`; }
+
+  get ajson_key() { return this.constructor.name + ":" + this.key; }
 }
+
 exports.CollectionItem = CollectionItem;</code></pre>
         </article>
     </section>
@@ -217,13 +243,13 @@ exports.CollectionItem = CollectionItem;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChatUI.html">SmartChatUI</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Apr 17 2024 18:32:36 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 21:30:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

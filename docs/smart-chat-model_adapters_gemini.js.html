@@ -120,13 +120,13 @@ class GeminiAdapter {
    * Getter for the standard API endpoint with the API key appended.
    * @returns {string} The formatted endpoint URL for non-streaming requests.
    */
-  get endpoint() { return this.model.config.endpoint + "?key=" + this.model.api_key; }
+  get endpoint() { return this.model.config.endpoint.replace('MODEL_NAME', this.model.model_name) + "?key=" + this.model.api_key; }
 
   /**
    * Getter for the streaming API endpoint with the API key appended.
    * @returns {string} The formatted endpoint URL for streaming requests.
    */
-  get endpoint_streaming() { return this.model.config.endpoint_streaming + "?key=" + this.model.api_key; }
+  get endpoint_streaming() { return this.model.config.endpoint_streaming.replace('MODEL_NAME', this.model.model_name) + "?key=" + this.model.api_key; }
 }
 exports.GeminiAdapter = GeminiAdapter;
 
@@ -158,10 +158,27 @@ function chatml_to_gemini(opts) {
   const body = {
     contents: messages
       .filter(msg => msg.role !== 'system') // filter out system messages
-      .map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : msg.role,
-        parts: [{ text: msg.content }]
-      })),
+      .map(msg => {
+        const content = {};
+        content.role = msg.role === 'assistant' ? 'model' : msg.role;
+        content.parts = !Array.isArray(msg.content) ? [{text: msg.content}] : msg.content.map(c => {
+          if(c.type === 'text'){
+            return {text: c.text};
+          }
+          if(c.type === 'image_url'){
+            const image_url = c.image_url.url;
+            let mime_type = image_url.split(":")[1].split(";")[0];
+            if(mime_type === 'image/jpg') mime_type = 'image/jpeg';
+            return {inline_data: {mime_type: mime_type, data: image_url.split(",")[1]}};
+          }
+        });
+        return content;
+        ({
+          role: msg.role === 'assistant' ? 'model' : msg.role,
+          parts: Array.isArray(msg.content) ? [{text: msg.content.filter(c => c.type === 'text').map(c => c.text).join('\n')}] : [{ text: msg.content }]
+        })
+      })
+    ,
     generationConfig: {
       temperature: opts.temperature || 0.9,
       topK: opts.topK || 1,
@@ -189,6 +206,8 @@ function chatml_to_gemini(opts) {
       }
     ]
   };
+  const system_instructions = opts.messages.filter(msg => msg.role === 'system' &amp;&amp; !msg.content.includes('---BEGIN'));
+  if(system_instructions.length > 0) body.systemInstruction = { parts: system_instructions.map(msg => ({ text: msg.content })) };
   if(opts.tools){
     body.tools = [{
       function_declarations: opts.tools.map(tool => ({
@@ -197,14 +216,31 @@ function chatml_to_gemini(opts) {
         parameters: tool.function.parameters,
       }))
     }];
-    body.tool_config = {
-      function_calling_config: {
-        mode: "ANY"
+    if(opts.tool_choice){
+      if(opts.tool_choice !== 'auto'){
+        if(opts.model.includes('1.5-pro')){ // mode=ANY only on 1.5-pro
+          body.tool_config = {
+            function_calling_config: {
+              mode: "ANY",
+              allowed_function_names: opts.tools.map(tool => tool.function.name),
+            }
+          };
+        }else{ // handles 1.0 and 1.5-flash
+          // body.system_instruction = {
+          body.systemInstruction = {
+            role: 'user',
+            parts: [
+              {
+                text: `IMPORTANT: You must use the "${body.tools[0].function_declarations[0].name}" function tool!`
+              }
+            ]
+          };
+          const tool_prompt = `IMPORTANT: You must use the "${body.tools[0].function_declarations[0].name}" function tool!`;
+          const last_user_idx = body.contents.findLastIndex(msg => msg.role === 'user');
+          body.contents[last_user_idx].parts[0].text += '\n\n' + tool_prompt;
+        }
       }
-    };
-    const tool_prompt = `Use the "${body.tools[0].function_declarations[0].name}" tool!`;
-    const last_user_idx = body.contents.findLastIndex(msg => msg.role === 'user');
-    body.contents[last_user_idx].parts[0].text += '\n' + tool_prompt;
+    }
   }
   return body;
 }
@@ -218,13 +254,13 @@ exports.chatml_to_gemini = chatml_to_gemini;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChatUI.html">SmartChatUI</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Apr 17 2024 18:32:36 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 21:30:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

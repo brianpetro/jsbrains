@@ -42,7 +42,7 @@ class SmartMarkdown {
     return {
       excluded_headings: null, // comma separated list of headings to exclude
       embed_input_max_chars: 1000, // max length of block
-      embed_input_min_chars: 50, // min length of block
+      embed_input_min_chars: 10, // min length of block
       skip_blocks_with_headings_only: false, // skip blocks that only contain headings
     };
   }
@@ -162,7 +162,8 @@ class SmartMarkdown {
    * @returns {Object} An object containing parsed blocks and other metadata.
    */
   parse({ content, file_path='' }) {
-    const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path) + ": "; // add ":" to indicate beginning of heading breadcrumbs
+    // const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path) + ": "; // add ":" to indicate beginning of heading breadcrumbs
+    const file_breadcrumbs = this.file_path_to_breadcrumbs(file_path); // add ":" to indicate beginning of heading breadcrumbs
     // if is excalidraw file, block for 'Text Elements' heading only
     if(file_path.endsWith('.excalidraw.md')) {
       const excalidraw_block = this.get_block_from_path(file_path + "#Text Elements", content).replace('\n%%', '');
@@ -189,7 +190,7 @@ class SmartMarkdown {
           acc.current_headers.push({ header: line.replace(/#/g, '').trim(), level: acc.curr_level }); // add header and level to current headers array, trim the header to remove "#" and any trailing spaces
           acc.start_line = i; // set the start line
           acc.curr = file_breadcrumbs; // initialize the block breadcrumbs with file.path the current headers
-          acc.curr += acc.current_headers.map(header => header.header).join(' > ');
+          if(acc.current_headers.length > 0) acc.curr += ": " + acc.current_headers.map(header => header.header).join(' > ');
           acc.block_headings = "#" + acc.current_headers.map(header => header.header).join('#');
           this.handle_duplicate_headings(acc);
           acc.block_headings_list.push(acc.block_headings);
@@ -240,8 +241,10 @@ class SmartMarkdown {
     if(acc.curr.indexOf("\n") === -1) return acc.log.push(`Skipping empty block: ${acc.curr}`); // indicated by no newlines in block
     if(!this.validate_heading(acc.block_headings)) return acc.log.push(`Skipping excluded heading: ${acc.block_headings}`);
     if(acc.curr.length > embed_input_max_chars) acc.curr = acc.curr.substring(0, embed_input_max_chars); // trim block to max length
+    const pcs = acc.curr.split('\n');
+    const block_length = pcs.slice(1).join('\n').trim().length;
     const breadcrumbs_length = acc.curr.indexOf("\n") + 1; // breadcrumbs length (first line of block)
-    const block_length = acc.curr.length - breadcrumbs_length;
+    // const block_length = acc.curr.length - breadcrumbs_length;
     if(block_length &lt; embed_input_min_chars) return acc.log.push(`Skipping block shorter than min length: ${acc.curr}`); // skip if block is shorter than min length
     if(this.config.skip_blocks_with_headings_only){ // skip if all lines are headings (except first line which is breadcrumbs)
       const block_lines = acc.curr.split('\n');
@@ -310,13 +313,13 @@ exports.SmartMarkdown = SmartMarkdown;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChatUI.html">SmartChatUI</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Apr 17 2024 18:32:36 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 21:30:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

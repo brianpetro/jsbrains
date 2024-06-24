@@ -27,6 +27,8 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>const { SmartChat } = require("./smart_chat");
+const { chat_ml_to_markdown } = require("./utils/chat_ml_to_markdown");
+const { markdown_to_chat_ml } = require("./utils/markdown_to_chat_ml");
 
 /**
  * Extends SmartChat to handle markdown-specific functionalities.
@@ -72,153 +74,11 @@ class SmartChatMD extends SmartChat {
    */
   from_chatml(chatml) { return chat_ml_to_markdown(chatml); }
 
-  /**
-   * Parses a user message to handle special syntax like mentions and converts them into system messages.
-   * @param {string} content - The user message content.
-   * @returns {Promise&lt;string>} The processed content with mentions handled.
-   */
-  async parse_user_message(content) {
-    // DO: decided: should this be moved to new_user_message()??? Partially as sc-context???
-    if (content.includes("@\"")) {
-      const mention_pattern = /@\"([^"]+)\"/;
-      const mention = content.match(mention_pattern)[1];
-      // get note with name mention and add to system message prior to user message
-      const tfile = this.env.system_prompts.find(file => file.basename === mention);
-      const note_content = await this.env.plugin.brain.cached_read(tfile);
-      const system_msg = {
-        role: "system",
-        content: note_content,
-      };
-      // remove mention from user message
-      content = content.replace(mention_pattern, "").trim();
-      // add system message
-      await this.add_message(system_msg);
-    }
-    return content;
-  }
 }
 
-/**
- * Convert a ChatML object to a markdown string
- * @param {Object} chat_ml - The ChatML object
- * @description This function converts a ChatML object to a markdown string. It converts tool calls to markdown code blocks.
- * @returns {string} - The markdown string
- */
-function chat_ml_to_markdown(chat_ml) {
-  console.log('chat_ml');
-  console.log(chat_ml);
-  let markdown = '';
-  let has_md = false;
-  chat_ml.messages.forEach(msg => {
-    if(msg.role &amp;&amp; msg.content) {
-      markdown += `##### ${msg.role}\n`;
-      if(msg.role === 'tool'){
-        console.log(msg);
-        markdown += "```";
-        if(msg.tool_call_id) markdown += `${msg.tool_call_id}\n`;
-        if(msg.content) markdown += `${msg.content}\n`;
-        markdown += "```\n\n";
-      // DO: is this no longer necessary since sc_actions.parse_tool_output is used? 
-      }else if(msg.content.indexOf('---BEGIN NOTE') > -1){
-        markdown += "```sc-context";
-        // parse links from lines that start with ---BEGIN NOTE
-        const lines = msg.content.split('\n').filter(line => line.trim().length &amp;&amp; line.startsWith('---BEGIN NOTE') &amp;&amp; line.indexOf('[[') > -1);
-        lines.forEach(line => {
-          // between [[ and ]]
-          const link = line.substring(line.indexOf('[[') + 2, line.indexOf(']]'));
-          if(link) markdown += `\n${link}`;
-        });
-        markdown += "\n```\n\n";
-      }else if(msg.content.indexOf('#') === 0 || msg.content.indexOf('\n#') > -1){ // content has markdown
-        markdown += "```md";
-        const content = msg.content.replace(/\n[`]{3}/g, '\n\\```');
-        markdown += `\n${content}`;
-        markdown += "\n```\n\n";
-      }else markdown += `${msg.content}\n\n`;
-    }
-    if(msg.tool_calls) {
-      msg.tool_calls.forEach(tool_call => {
-        markdown += `##### assistant\n`;
-        markdown += `\`\`\`${tool_call?.function?.name}`;
-        try{
-          markdown += `\n${JSON.stringify(JSON.parse(tool_call?.function?.arguments))}`;
-        }catch(err){
-          markdown += `\n${tool_call?.function?.arguments}`;
-        }
-        markdown += "\n```\n\n";
-      });
-    }
-  });
-  return markdown.trim();
-}
-
-/**
- * Converts a markdown string to a ChatML object. It converts markdown code blocks to tool calls.
- * @param {string} markdown - The markdown string to convert.
- * @returns {Object} The ChatML object representing the markdown.
- */
-function markdown_to_chat_ml(markdown) {
-  const lines = markdown.split('\n');
-  const chat_ml = { messages: [] };
-  let current_role = '';
-  let tool_name = null;
-  let curr_msg = null;
-  let is_code_block = false;
-  lines.forEach(line => {
-    if(tool_name &amp;&amp; curr_msg.role === "tool") curr_msg.tool_call_id = tool_name;
-    if (line.startsWith('##### ') &amp;&amp; !is_code_block) {
-      tool_name = null;
-      if(curr_msg) add_message(curr_msg, chat_ml);
-      current_role = line.substring(6).trim();
-      curr_msg = {
-        role: current_role,
-      };
-    } else if (line.startsWith('```')) {
-      is_code_block = !is_code_block;
-      if(line.trim().length > 5 &amp;&amp; line.trim().indexOf(' ') &lt; 0) {
-        tool_name = line.substring(3).trim();
-        // return early if tool_name is not a valid tool
-        if(tool_name === 'md') return;
-        if(['js', 'javascript'].includes(tool_name)) return add_content(curr_msg, line);
-        if(tool_name === 'sc-context') return add_content(curr_msg, line);
-        if(curr_msg.role === 'tool') return;
-        // add tool call to current message
-        if(!curr_msg.tool_calls) curr_msg.tool_calls = [];
-        curr_msg.tool_calls.push({
-          id: tool_name,
-          type: 'function',
-          function: {
-            name: tool_name,
-            arguments: ''
-          }
-        });
-      }else if(['sc-context', 'md', 'javascript', 'js'].includes(tool_name)) {
-        add_content(curr_msg, line);
-      }
-    } else if ((line.trim() !== '') &amp;&amp; curr_msg) {
-      if(tool_name &amp;&amp; curr_msg.tool_calls) curr_msg.tool_calls[curr_msg.tool_calls.length - 1].function.arguments += line;
-      else add_content(curr_msg, line);
-    }
-  });
-  if(curr_msg) add_message(curr_msg, chat_ml);
-  return chat_ml;
-}
 exports.SmartChatMD = SmartChatMD;
 exports.chat_ml_to_markdown = chat_ml_to_markdown;
-exports.markdown_to_chat_ml = markdown_to_chat_ml;
-
-function add_message(curr_msg, chat_ml) {
-  if (curr_msg.content) curr_msg.content = curr_msg.content.trim();
-  chat_ml.messages.push({ ...curr_msg });
-}
-
-function add_content(curr_msg, line) {
-  if(!curr_msg.content) curr_msg.content = '';
-  if(line.startsWith('\\```')) line = line.substring(1);
-  curr_msg.content += line + '\n';
-}
-
-</code></pre>
+exports.markdown_to_chat_ml = markdown_to_chat_ml;</code></pre>
         </article>
     </section>
 
@@ -228,13 +88,13 @@ function add_content(curr_msg, line) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="SmartChat.html">SmartChat</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChatUI.html">SmartChatUI</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Apr 17 2024 18:32:36 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 21:30:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
