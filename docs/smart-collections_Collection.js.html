@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: smart-collections/Collection.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: smart-collections/Collection.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { CollectionItem } = require('./CollectionItem');
+const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
+const helpers = require('./helpers');
+const { deep_merge, } = helpers;
+
+/**
+ * Base class representing a collection of items with various methods to manipulate and retrieve these items.
+ */
+class Collection {
+  /**
+   * Constructs a new Collection instance.
+   * @param {Object} env - The environment context containing configurations and adapters.
+   */
+  constructor(env, opts = {}) {
+    this.env = env;
+    // this.brain = this.env; // DEPRECATED: use env instead of brain
+    this.config = this.env.config;
+    this.items = {};
+    this.opts = opts;
+    if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
+    this.save_queue = {};
+  }
+
+  // STATIC METHODS
+  /**
+   * Loads a collection based on the environment and optional configuration.
+   * @param {Object} env - The environment context.
+   * @param {Object} [config={}] - Optional configuration for the collection.
+   * @returns {Promise&lt;Collection>|Collection} The loaded collection instance.
+   */
+  static load(env, opts = {}) {
+    if(typeof opts.adapter_class?.load === 'function') return opts.adapter_class.load(env, opts);
+    // if no static load method in adapter_class, load collection as normal
+    const { custom_collection_name } = opts;
+    env[this.collection_name] = new this(env, opts);
+    if (custom_collection_name) {
+      env[this.collection_name].collection_name = custom_collection_name;
+      env.collections[custom_collection_name] = this.constructor;
+    }
+    env[this.collection_name].merge_defaults();
+    // return promise if async
+    if (env[this.collection_name].load instanceof AsyncFunction) return env[this.collection_name].load().then(() => env[this.collection_name]);
+    else env[this.collection_name].load();
+    return env[this.collection_name];
+  }
+  /**
+   * Gets the collection name derived from the class name.
+   * @return {String} The collection name.
+   */
+  static get collection_name() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+
+  // INSTANCE METHODS
+
+  /**
+   * Creates or updates an item in the collection based on the provided data.
+   * @param {Object} data - The data to create or update an item.
+   * @returns {Promise&lt;CollectionItem>|CollectionItem} The newly created or updated item.
+   */
+  create_or_update(data = {}) {
+    const existing = this.find_by(data);
+    const item = existing ? existing : new this.item_type(this.env);
+    item.is_new = !!!existing;
+    const changed = item.update_data(data); // handles this.data
+    if (existing &amp;&amp; !changed) return existing; // if existing item and no changes, return existing item (no need to save)
+    if (item.validate_save()) this.set(item); // make it available in collection (if valid)
+
+    // dynamically handle async init functions
+    if (item.init instanceof AsyncFunction) return new Promise((resolve, reject) => { item.init(data).then(() => resolve(item)); });
+    item.init(data); // handles functions that involve other items
+    return item;
+  }
+
+  /**
+   * Finds an item in the collection that matches the given data.
+   * @param {Object} data - The criteria used to find the item.
+   * @returns {CollectionItem|null} The found item or null if not found.
+   */
+  find_by(data) {
+    if(data.key) return this.get(data.key);
+    const temp = new this.item_type(this.env);
+    const temp_data = JSON.parse(JSON.stringify(data, temp.update_data_replacer));
+    deep_merge(temp.data, temp_data); // deep merge data
+    return temp.key ? this.get(temp.key) : null;
+  }
+  // READ
+  /**
+   * Filters the items in the collection based on the provided options.
+   * @param {Object} opts - The options used to filter the items.
+   * @return {CollectionItem[]} The filtered items.
+   */
+  filter(opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(opts)).map(([key, item]) => item); }
+  /**
+   * Retrieves items from the collection based on the provided strategy and options.
+   * @param {Function[]} strategy - The strategy used to retrieve the items.
+   * @param {Object} opts - The options used to retrieve the items.
+   * @return {CollectionItem[]} The retrieved items.
+   * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
+   */
+  async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
+  /**
+   * Retrieves a single item from the collection based on the provided strategy and options.
+   * @param {String} key - The key of the item to retrieve.
+   * @return {CollectionItem} The retrieved item.
+   */
+  get(key) { return this.items[key]; }
+  /**
+   * Retrieves multiple items from the collection based on the provided keys.
+   * @param {String[]} keys - The keys of the items to retrieve.
+   * @return {CollectionItem[]} The retrieved items.
+   */
+  get_many(keys = []) {
+    if (Array.isArray(keys)) return keys.map((key) => this.get(key));
+    console.error("get_many called with non-array keys: ", keys);
+  }
+  /**
+   * Retrieves a random item from the collection based on the provided options.
+   * @param {Object} opts - The options used to retrieve the item.
+   * @return {CollectionItem} The retrieved item.
+   */
+  get_rand(opts = null) {
+    if (opts) {
+      const filtered = this.filter(opts);
+      return filtered[Math.floor(Math.random() * filtered.length)];
+    }
+    return this.items[this.keys[Math.floor(Math.random() * this.keys.length)]];
+  }
+  // UPDATE
+  /**
+   * Adds or updates an item in the collection.
+   * @param {CollectionItem} item - The item to add or update.
+   */
+  set(item) {
+    if (!item.key) throw new Error("Item must have key property");
+    this.items[item.key] = item;
+  }
+  /**
+   * Updates multiple items in the collection based on the provided keys and data.
+   * @param {String[]} keys - The keys of the items to update.
+   * @param {Object} data - The data to update the items with.
+   */
+  update_many(keys = [], data = {}) { this.get_many(keys).forEach((item) => item.update_data(data)); }
+  // DESTROY
+  /**
+   * Clears all items from the collection.
+   */
+  clear() {
+    this.items = {};
+  }
+  /**
+   * Deletes an item from the collection based on its key.
+   * @param {String} key - The key of the item to delete.
+   */
+  delete(key) {
+    delete this.items[key];
+  }
+  /**
+   * Deletes multiple items from the collection based on their keys.
+   * @param {String[]} keys - The keys of the items to delete.
+   */
+  delete_many(keys = []) {
+    // keys.forEach((key) => delete this.items[key]);
+    keys.forEach((key) => {
+      this.items[key].delete();
+    });
+  }
+  // CONVENIENCE METHODS (namespace getters)
+  /**
+   * Gets or sets the collection name. If a name is set, it overrides the default name.
+   * @param {String} name - The new collection name.
+   */
+  get collection_name() { return (this._collection_name) ? this._collection_name : this.constructor.collection_name; }
+  set collection_name(name) { this._collection_name = name; }
+  /**
+   * Gets the keys of the items in the collection.
+   * @return {String[]} The keys of the items.
+   */
+  get keys() { return Object.keys(this.items); }
+  /**
+   * Gets the class name of the item type the collection manages.
+   * @return {String} The item class name.
+   */
+  get item_class_name() { return this.constructor.name.slice(0, -1).replace(/(ie)$/g, 'y'); } // remove 's' from end of name &amp; if name ends in 'ie', replace with 'y'
+  /**
+   * Gets the name of the item type the collection manages, derived from the class name.
+   * @return {String} The item name.
+   */
+  get item_name() { return this.item_class_name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+  /**
+   * Gets the constructor of the item type the collection manages.
+   * @return {Function} The item type constructor.
+   */
+  get item_type() { return this.env.item_types[this.item_class_name]; }
+
+  /**
+   * Gets the data path from the environment.
+   * @returns {string} The data path.
+   */
+  get data_path() { return this.env.data_path + '/multi'; }
+
+  // ADAPTER METHODS
+  /**
+   * Saves the current state of the collection.
+   */
+  async save() {
+    if(typeof this.adapter?.save === 'function') {
+      await this.adapter.save();
+      this.save_queue = {};
+    }
+    else console.warn("No save method found in adapter");
+  }
+  save_sync() {
+    if(typeof this.adapter?.save_sync === 'function') {
+      this.adapter.save_sync();
+      this.save_queue = {};
+    }
+    else console.warn("No save_sync method found in adapter");
+  }
+
+  /**
+   * Loads the collection state.
+   */
+  async load() {
+    if(typeof this.adapter?.load === 'function') return await this.adapter.load();
+    else console.warn("No load method found in adapter");
+  }
+  load_sync() {
+    if(typeof this.adapter?.load_sync === 'function') return this.adapter.load_sync();
+    else console.warn("No load_sync method found in adapter");
+  }
+
+  // BACKWARD COMPATIBILITY
+  get LTM() { return this.adapter; }
+
+  // UTILITY METHODS
+  /**
+   * Merges default configurations from all classes in the inheritance chain for Collection types; 
+   * e.g. EntityCollection, NoteCollection, etc.
+   */
+  merge_defaults() {
+    let current_class = this.constructor;
+    while (current_class) { // merge collection config into item config
+      const col_conf = this.config?.collections?.[current_class.collection_name];
+      Object.entries((typeof col_conf === 'object') ? col_conf : {})
+        .forEach(([key, value]) => this[key] = value)
+      ;
+      current_class = Object.getPrototypeOf(current_class);
+    }
+    // console.log(Object.keys(this));
+  }
+
+
+
+  // CHOPPING BLOCK
+  // May be moved to adapter class or removed
+
+  /**
+   * Revives items from a serialized state.
+   * @param {string} key - The key of the item.
+   * @param {*} value - The serialized item value.
+   * @returns {CollectionItem|*} The revived item or the original value if not an object.
+   */
+  reviver(key, value) {
+    if (typeof value !== 'object' || value === null) return value; // skip non-objects, quick return
+    if (value.class_name) return new (this.env.item_types[value.class_name])(this.env, value);
+    return value;
+  }
+  replacer(key, value) {
+    if (value instanceof this.item_type) return value.data;
+    if (value instanceof CollectionItem) return value.ref;
+    return value;
+  }
+
+}
+exports.Collection = Collection;
+
+/**
+ * Sequentially executes an array of asynchronous functions, passing the result of each function
+ * as the input to the next, along with an optional options object.
+ * 
+ * @param {Function[]} funcs - An array of functions to execute sequentially (may be async functions).
+ * @param {*} initial_value - The initial value to pass to the first function in the array.
+ * @param {Object} opts - Optional parameters to pass to each function.
+ * @returns {*} The final value after all functions have been executed.
+ * @throws {Error} Throws an error if any function in the array is not actually a function or if an async function throws an error.
+ */
+async function sequential_async_processor(funcs, initial_value, opts = {}) {
+  let value = initial_value;
+  for (const func of funcs) {
+    // Ensure each element is a function before attempting to call it
+    if (typeof func !== 'function') {
+      throw new TypeError('All elements in async_functions array must be functions');
+    }
+    try {
+      value = await func(value, opts);
+    } catch (error) {
+      // console.error("Error encountered during sequential processing:", error);
+      throw error; // Rethrow to halt execution, or handle differently if continuation is desired
+    }
+  }
+
+  return value;
+}
+exports.sequential_async_processor = sequential_async_processor;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 22:11:44 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
