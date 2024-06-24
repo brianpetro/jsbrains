@@ -1,4 +1,4 @@
-name: Generate JSDoc
+name: Generate JSDoc and Deploy to GitHub Pages
 
 on:
   push:
@@ -26,3 +26,17 @@ jobs:
 
     - name: Generate JSDoc
       run: npx jsdoc -c jsdoc.json
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: generate-docs
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
