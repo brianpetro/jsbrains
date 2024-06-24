@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: smart-chats/smart_chats.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: smart-chats/smart_chats.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// Copyright (c) Brian Joseph Petro
+
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
+
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+const { SmartChat } = require("./smart_chat");
+/**
+ * Class representing a manager for smart chat conversations.
+ * It handles the creation, loading, saving, and management of chat conversations in various formats.
+ */
+class SmartChats {
+  /**
+   * Creates an instance of SmartChats.
+   * @param {Object} env - The environment context, used across the chat system.
+   * @param {Object} [opts={}] - Optional parameters to configure the SmartChats instance.
+   */
+  constructor(env, opts={}) {
+    this.env = env;
+    this.folder = 'smart-chats';
+    this.items = {};
+    this.default_file_type = 'md';
+    this.chat_class = SmartChat;
+    Object.assign(this, opts); // merge opts into this (adapter)
+  }
+
+  /**
+   * Creates a new chat instance and initializes the chat UI.
+   */
+  async new() {
+    if (this.current) {
+      await this.current.save();
+      this.current = null;
+    }
+    this.current = this.create_chat();
+    console.log({current: this.current});
+    await this.env.chat_ui.init();
+  }
+  create_chat(opts={}) {
+    if(!opts.file_type) opts.file_type = this.default_file_type;
+    return this.chat_class.create(this.env, opts);
+  }
+
+  /**
+   * Loads all conversations from the filesystem and initializes them.
+   */
+  async load_all() {
+    if(!await this.exists(this.folder)) await this.create_folder(this.folder);
+    // load all conversations from file system
+    const convos = await this.get_conversation_ids_and_file_types();
+    // initiate each as smart_conversation instance
+    convos.forEach(([conversation_id, file_type]) => {
+      this.items[conversation_id] = this.create_chat({key: conversation_id, file_type});
+    });
+  }
+
+  /**
+   * Saves a chat conversation by its key.
+   * If the chat does not exist, it creates a new one.
+   * @param {string} key - The key identifier for the chat.
+   * @param {string} chat_ml - The chat content in markup language.
+   */
+  async save(key, chat_ml) {
+    let chat = this.items[key];
+    if(!chat){
+      console.log('Creating new conversation');
+      chat = this.create_chat(key, chat_ml);
+    }
+    await chat.save(chat_ml);
+  }
+
+
+  /**
+   * Retrieves conversation IDs and their corresponding file types from the filesystem.
+   * @returns {Promise&lt;Array&lt;Array&lt;string>>>} An array of conversation IDs and file types.
+   */
+  async get_conversation_ids_and_file_types(){
+    console.log("get_conversation_ids_and_file_types");
+    const folder = await this.list(this.folder);
+    console.log(folder);
+    const files = folder.files.map((file) => {
+      const file_type = file.split(".").pop();
+      const conversation_id = file.replace(this.folder + "/", "").replace("." + file_type, "");
+      return [conversation_id, file_type];
+    });
+    return files; // return array of arrays: [[conversation_id, file_type], ...]
+  }
+
+  // Platform-specific methods to be overridden in subclasses or instances
+  async open(conversation_id) {}
+  async load(path) {  }
+  async save(path, file_content) {  }
+  async delete(path) {  }
+  async exists(path) {  }
+  async create_folder(path) {  }
+  async list(path) {  }
+}
+exports.SmartChats = SmartChats;
+exports.SmartChat = SmartChat;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="LongTermMemory.html">LongTermMemory</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsAJSON.html">ObsAJSON</a></li><li><a href="ObsMultiAJSON.html">ObsMultiAJSON</a></li><li><a href="ObsidianAJSON.html">ObsidianAJSON</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="ScMultiAJSON.html">ScMultiAJSON</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jun 24 2024 22:10:15 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
