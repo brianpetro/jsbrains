@@ -2,7 +2,7 @@
   "name": "smart-chat-model",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "no-nonsense adapter for Anthropic Claude, Google Gemini, Cohere & more with OpenAI style API interface.",
   "main": "smart_chat_model.js",
   "scripts": {
