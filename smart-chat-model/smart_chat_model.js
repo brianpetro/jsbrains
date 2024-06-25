@@ -132,6 +132,7 @@ class SmartChatModel {
           const tool_handler = this.get_tool_handler(tool_name);
           if(!tool_handler) {
             console.warn(`Tool ${tool_name} not found, returning tool_call_content`);
+            console.log({tool_call_content});
             return tool_call_content;
           }
           const tool_output = await tool_handler(this.env, tool_call_content);
@@ -164,7 +165,7 @@ class SmartChatModel {
    * @param {string} tool_name - The name of the tool for which the handler is to be retrieved.
    * @returns {Function} The handler function for the specified tool.
    */
-  get_tool_handler(tool_name) { return this.env.actions.actions[tool_name].handler; }
+  get_tool_handler(tool_name) { return this.env.actions?.actions?.[tool_name]?.handler; }
 
   /**
    * Extracts the tool call information from a JSON response. This method supports adapter-specific logic.
