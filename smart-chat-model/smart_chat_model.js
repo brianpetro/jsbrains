@@ -83,7 +83,7 @@ class SmartChatModel {
       messages: (await this.current?.get_chat_ml())?.messages || [],
       ...opts,
     };
-    if(opts.stream !== false && this.config.streaming && !this.current.tool_choice) opts.stream = true; // no streaming if tool_choice is set
+    if(opts.stream !== false && this.config.streaming && !this.current?.tool_choice) opts.stream = true; // no streaming if tool_choice is set
     else opts.stream = false;
     opts = await this.request_middlewares(JSON.parse(JSON.stringify(opts)));
     const req = {
