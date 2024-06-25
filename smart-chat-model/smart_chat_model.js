@@ -115,20 +115,25 @@ class SmartChatModel {
       // if is tool_call, handle tool_call and return
       const tool_call = this.get_tool_call(resp_json);
       if(tool_call){
-        this.env.chats.current.tool_choice = null; // IMPORTANT: prevent infinite loop
+        if(this.env.chats?.current?.tool_choice) this.env.chats.current.tool_choice = null; // IMPORTANT: prevent infinite loop
         // if (this.current.tool_choice !== "auto") this.current.tool_choice = null; // remove tool_choice from current if not auto (prevent infinite loop)
         const tool_name = this.get_tool_name(tool_call);
         const tool_call_content = this.get_tool_call_content(tool_call);
         const tool = body.tools.find((t) => t.function.name === tool_name); // platform-agnostic
         if(is_valid_tool_call(tool, tool_call_content)){
-          await this.current.add_message({ role: 'assistant', tool_calls: [{
-            function: {
-              name: tool_name,
-              arguments: JSON.stringify(tool_call_content),
-            }
-          }] });
+          if(typeof this.current?.add_message === 'function'){
+            await this.current.add_message({ role: 'assistant', tool_calls: [{
+              function: {
+                name: tool_name,
+                arguments: JSON.stringify(tool_call_content),
+              }
+            }]});
+          }
           const tool_handler = this.get_tool_handler(tool_name);
-          if(!tool_handler) return console.error(`Tool ${tool_name} not found`);
+          if(!tool_handler) {
+            console.warn(`Tool ${tool_name} not found, returning tool_call_content`);
+            return tool_call_content;
+          }
           const tool_output = await tool_handler(this.env, tool_call_content);
           if(tool_output) {
             await this.current.add_tool_output(tool_name, tool_output);
