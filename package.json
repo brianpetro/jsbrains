@@ -28,7 +28,6 @@
     "smart-chats",
     "smart-chunks",
     "smart-collections",
-    "smart-embed-model",
     "smart-entities",
     "smart-instruct-model",
     "smart-ranker-model"

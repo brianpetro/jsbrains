@@ -11,7 +11,7 @@ async function fetch_anthropic_models() {
     },
     {
       key: "claude-3-5-sonnet-20240620",
-      "model_name": "claude-3-sonnet-20240229",
+      "model_name": "claude-3.5-sonnet-20240620",
       "description": "Anthropic's Claude Sonnet",
       "max_input_tokens": 200000,
       "max_output_tokens": 4000,
