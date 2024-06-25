@@ -1,0 +1,9 @@
+  <%= stringVar %> <!-- Extract: stringVar -->
+  <%= numberVar %> <!-- Extract: numberVar -->
+  <%= booleanVar %> <!-- Extract: booleanVar -->
+  <% for (var i = 0; i < arrayVar.length; i++) { %>
+    <%= arrayVar[i] %> <!-- Extract: arrayVar[i] -->
+  <% } %>
+  <%= objectVar.key %> <!-- Extract: objectVar.key -->
+  <%- rawVar %> <!-- Extract: rawVar -->
+  <%_ trimmedVar _%> <!-- Extract: trimmedVar -->
