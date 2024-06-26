@@ -27,10 +27,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export class SmartTemplates {
-  constructor(env = {}, adapter = null) {
+  constructor(env = {}, opts = {}) {
     this.env = env;
-    this.adapter = adapter;
+    this.opts = opts;
+    this.adapter = opts.adapter || null;
   }
+  get request_adapter() { return this.opts.request_adapter || null; }
   get settings() { return this.env.settings; }
   get var_prompts() { return this.settings.smart_templates?.var_prompts || {}; }
   get api_key() { return this.settings.smart_templates?.api_key || process.env.OPENAI_API_KEY; }
@@ -130,7 +132,8 @@ export class SmartTemplates {
     console.log(functionCallRequest);
 
     // Use SmartChatModel to get replacement values
-    const chatModel = new SmartChatModel(this.env, 'openai', this.model_config);
+    const chatModel = new SmartChatModel(this.env, this.chat_model_platform_key, this.model_config);
+    if(this.request_adapter) chatModel._request_adapter = this.request_adapter;
     const replacementValues = await chatModel.complete(functionCallRequest);
     console.log(replacementValues);
 
@@ -140,4 +143,5 @@ export class SmartTemplates {
     return ejs.render(templateContent, mergedContext);
   }
   get model_config() { return this.env.settings?.smart_templates?.model_config || {api_key: this.api_key}; }
+  get chat_model_platform_key() { return this.env.settings?.smart_templates?.chat_model_platform_key || this.env.settings?.chat_model_platform_key || 'openai'; }
 }
