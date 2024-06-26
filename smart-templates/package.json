@@ -2,7 +2,7 @@
   "name": "smart-templates",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Smart templates for generating content with AI.",
   "main": "smart_templates.js",
   "keywords": [
