@@ -362,8 +362,12 @@ class SmartChatModel {
     }
   }
   async get_models() {
+    if(!this.api_key){
+      console.warn(`No API key found for ${this.platform_key}. Cannot retrieve models.`);
+      return [];
+    }
     // const fx_name = this.plugin.settings.chat_model_platform_key;
-    if(this.api_key && this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
+    if(this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
       const models = await fetch_models[this.platform_key](this.api_key);
       if(models) {
         // sort alphabetically by model name
