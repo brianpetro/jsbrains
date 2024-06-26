@@ -1,4 +1,22 @@
 {
+  "name": "smart-templates",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "Smart templates for generating content with AI.",
+  "main": "smart_templates.js",
+  "keywords": [
+    "templates",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/js-brains/issues"
+  },
+  "homepage": "https://jsbrains.org",
   "dependencies": {
     "ava": "^6.1.3",
     "dotenv": "^16.4.5",
