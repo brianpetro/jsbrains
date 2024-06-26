@@ -49,7 +49,15 @@ class SmartChatModel {
     if(this.config.adapter) this.adapter = new adapters[this.config.adapter](this);
     console.log(this.adapter);
   }
-  static get models() { return platforms; }
+  static get models() { return platforms; } // DEPRECATED (confusing name)
+  // 
+  static get platforms() {
+    return Object.keys(platforms).map(key => ({
+      key,
+      ...platforms[key],
+    }));
+  }
+  get platform() { return platforms[this.platform_key]; }
   get default_opts() {
     return {
       temperature: 0.3,
@@ -355,7 +363,7 @@ class SmartChatModel {
   }
   async get_models() {
     // const fx_name = this.plugin.settings.chat_model_platform_key;
-    if(this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
+    if(this.api_key && this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
       const models = await fetch_models[this.platform_key](this.api_key);
       if(models) {
         // sort alphabetically by model name
