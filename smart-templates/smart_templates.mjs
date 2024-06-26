@@ -21,7 +21,7 @@
 
 import ejs from 'ejs';
 import fs from 'fs';
-import { SmartChatModel } from './smart-chat-model/smart_chat_model.js';
+import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -86,7 +86,7 @@ export class SmartTemplates {
       type: "function",
       function: {
         name: "generate_content",
-        description: "Generate content based on the user's input",
+        description: "Generate content based on the CONTEXT.",
         parameters: {
           type: "object",
           properties,
@@ -113,7 +113,7 @@ export class SmartTemplates {
       messages: [
         {
           role: 'user',
-          content: JSON.stringify(context)
+          content: `---CONTEXT---\n${context}\n---END CONTEXT---`,
         }
       ],
       tools: [
@@ -130,9 +130,7 @@ export class SmartTemplates {
     console.log(functionCallRequest);
 
     // Use SmartChatModel to get replacement values
-    const chatModel = new SmartChatModel(this.env, 'openai', {
-      api_key: this.api_key,
-    });
+    const chatModel = new SmartChatModel(this.env, 'openai', this.model_config);
     const replacementValues = await chatModel.complete(functionCallRequest);
     console.log(replacementValues);
 
@@ -141,4 +139,5 @@ export class SmartTemplates {
 
     return ejs.render(templateContent, mergedContext);
   }
+  get model_config() { return this.env.settings?.smart_templates?.model_config || {api_key: this.api_key}; }
 }
