@@ -31,26 +31,35 @@ export class SmartTemplates {
     this.env = env;
     this.opts = opts;
     this.adapter = opts.adapter || null;
+    this.read_adapter = opts.read_adapter || fs.promises.readFile;
   }
   get request_adapter() { return this.opts.request_adapter || null; }
   get settings() { return this.env.settings; }
   get var_prompts() { return this.settings.smart_templates?.var_prompts || {}; }
   get api_key() { return this.settings.smart_templates?.api_key || process.env.OPENAI_API_KEY; }
-
-  // EJS template base syntax engine
-  get_template(pointer) {
-    if (this.adapter && typeof this.adapter.get_template === 'function') {
-      return this.adapter.get_template(pointer);
-    }
-    if (typeof pointer === 'string' && pointer.trim().endsWith('.ejs')) {
-      return this.load_template(pointer);
-    }
-    return pointer;
+  get file_types() {
+    return [
+      ...(this.adapter ? this.adapter.file_types : []),
+      'ejs',
+    ];
   }
 
-  load_template(pointer) {
+  // EJS template base syntax engine
+  async get_template(template) {
+    if(typeof this.adapter?.get_template === 'function') return this.adapter.get_template(template);
+    if(typeof template !== 'string') throw new Error('Template must be a string');
+    if (!template.includes('\n') && this.file_types.includes(template.split('.').pop())) {
+      template = await this.load_template(template);
+    }
+    if (this.adapter && typeof this.adapter.convert_to_ejs === 'function') {
+      template = this.adapter.convert_to_ejs(template);
+    }
+    return template;
+  }
+
+  async load_template(pointer) {
     try {
-      return fs.readFileSync(pointer, 'utf8');
+      return await this.read_adapter(pointer);
     } catch (error) {
       console.error(`Error loading template from ${pointer}:`, error);
       return '';
@@ -58,11 +67,11 @@ export class SmartTemplates {
   }
 
   // Get variables from EJS template
-  get_variables(pointer) {
+  async get_variables(pointer) {
     if (this.adapter && typeof this.adapter.get_variables === 'function') {
       return this.adapter.get_variables(pointer);
     }
-    const template = this.get_template(pointer);
+    const template = await this.get_template(pointer);
     const regex = /<%[-_=]?\s*=?\s*([\w.]+(\[\w+])?)\s*[-_]?%>/g;
     const variables = [];
     let match;
@@ -75,11 +84,11 @@ export class SmartTemplates {
     return variables;
   }
 
-  get_function_call(pointer) {
+  async get_function_call(template) {
     if (this.adapter && typeof this.adapter.get_function_call === 'function') {
-      return this.adapter.get_function_call(pointer);
+      return this.adapter.get_function_call(template);
     }
-    const variables = this.get_variables(pointer);
+    const variables = await this.get_variables(template);
     const properties = variables.reduce((acc, variable) => {
       acc[variable.name] = { type: 'string', description: variable.prompt || 'TODO' };
       return acc;
@@ -99,7 +108,7 @@ export class SmartTemplates {
   }
 
   // Get view data using the function call output
-  get_view_data(output) {
+  async get_view_data(output) {
     if (this.adapter && typeof this.adapter.get_view_data === 'function') {
       return this.adapter.get_view_data(output);
     }
@@ -108,7 +117,7 @@ export class SmartTemplates {
 
   // Render template with context and options
   async render(template, context, opts = {}) {
-    const templateContent = this.get_template(template);
+    const templateContent = await this.get_template(template);
     const mergedContext = { ...context, ...opts };
 
     const functionCallRequest = {
@@ -119,7 +128,7 @@ export class SmartTemplates {
         }
       ],
       tools: [
-        this.get_function_call(template)
+        await this.get_function_call(template)
       ],
       tool_choice: {
         type: 'function',

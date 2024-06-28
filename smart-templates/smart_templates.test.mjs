@@ -2,7 +2,7 @@ import test from 'ava';
 import { SmartTemplates } from './smart_templates.mjs';
 import { SmartChatModel } from './smart-chat-model/smart_chat_model.js';
 
-const template_pointer = './template.ejs';
+const template_pointer = './template.test.ejs';
 const settings = {
   smart_templates: {
     var_prompts: {
@@ -28,8 +28,8 @@ SmartChatModel.prototype.complete = async function() {
 
 // Test cases
 
-test('extract variable names and prompts from EJS template', t => {
-  const variables = smart_templates.get_variables(template_pointer);
+test('extract variable names and prompts from EJS template', async t => {
+  const variables = await smart_templates.get_variables(template_pointer);
   t.deepEqual(variables, [
     { name: 'stringVar', prompt: 'String Variable Prompt' },
     { name: 'numberVar', prompt: 'Number Variable Prompt' },
@@ -41,29 +41,58 @@ test('extract variable names and prompts from EJS template', t => {
   ]);
 });
 
-test('get function call OpenAPI spec', t => {
-  const functionCallSpec = smart_templates.get_function_call(template_pointer);
+test('get function call returns tool call spec', async t => {
+  const functionCallSpec = await smart_templates.get_function_call(template_pointer);
   t.truthy(functionCallSpec);
-  t.is(functionCallSpec.openapi, '3.1.0');
-  t.is(functionCallSpec.paths['/call-this'].post.requestBody.content['application/json'].schema.type, 'object');
-  t.deepEqual(functionCallSpec.paths['/call-this'].post.requestBody.content['application/json'].schema.properties, {
-    stringVar: { type: 'string', description: 'String Variable Prompt' },
-    numberVar: { type: 'string', description: 'Number Variable Prompt' },
-    booleanVar: { type: 'string', description: 'Boolean Variable Prompt' },
-    arrayVar: { type: 'string', description: 'Array Variable Prompt' },
-    objectVar: { type: 'string', description: 'Object Variable Prompt' },
-    rawVar: { type: 'string', description: 'Raw Variable Prompt' },
-    trimmedVar: { type: 'string', description: 'Trimmed Variable Prompt' }
+  t.deepEqual(functionCallSpec, {
+    function: {
+      description: 'Generate content based on the CONTEXT.',
+      name: 'generate_content',
+      parameters: {
+        properties: {
+          stringVar: {
+            type: 'string',
+            description: 'String Variable Prompt'
+          },
+          numberVar: {
+            type: 'string',
+            description: 'Number Variable Prompt'
+          },
+          booleanVar: {
+            type: 'string',
+            description: 'Boolean Variable Prompt'
+          },
+          arrayVar: {
+            type: 'string',
+            description: 'Array Variable Prompt'
+          },
+          objectVar: {
+            type: 'string',
+            description: 'Object Variable Prompt'
+          },
+          rawVar: {
+            type: 'string',
+            description: 'Raw Variable Prompt'
+          },
+          trimmedVar: {
+            type: 'string',
+            description: 'Trimmed Variable Prompt'
+          }
+        },
+        required: [
+          'stringVar',
+          'numberVar',
+          'booleanVar',
+          'arrayVar',
+          'objectVar',
+          'rawVar',
+          'trimmedVar'
+        ],
+        type: 'object'
+      },
+    },
+    type: 'function'
   });
-  t.deepEqual(functionCallSpec.paths['/call-this'].post.requestBody.content['application/json'].schema.required, [
-    'stringVar',
-    'numberVar',
-    'booleanVar',
-    'arrayVar',
-    'objectVar',
-    'rawVar',
-    'trimmedVar'
-  ]);
 });
 
 test('render template with context and options', async t => {

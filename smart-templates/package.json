@@ -23,6 +23,6 @@
     "ejs": "^3.1.10"
   },
   "scripts": {
-    "test": "npx ava --verbose"
+    "test": "npx ava --verbose adapters/ smart_templates.test.mjs"
   }
 }
