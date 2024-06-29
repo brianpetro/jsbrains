@@ -190,19 +190,13 @@ function chatml_to_gemini(opts) {
     }];
     if(opts.tool_choice){
       if(opts.tool_choice !== 'auto'){
-        if(opts.model.includes('1.5')){ // mode=ANY only on 1.5-pro
+        if(opts.model.includes('1.5') || opts.model.includes('flash')){ // mode=ANY and system instructions available in 1.5-pro and 1.5-flash
           body.tool_config = {
             function_calling_config: {
               mode: "ANY",
               allowed_function_names: opts.tools.map(tool => tool.function.name),
             }
           };
-        }else{ // system instructions and function config not available in 1.0
-          const tool_prompt = `IMPORTANT: You must use the "${body.tools[0].function_declarations[0].name}" function tool!`;
-          const last_user_idx = body.contents.findLastIndex(msg => msg.role === 'user');
-          body.contents[last_user_idx].parts[0].text += '\n\n' + tool_prompt;
-        }
-        if(opts.model.includes('flash')){
           body.systemInstruction = {
             role: 'user',
             parts: [
@@ -211,6 +205,10 @@ function chatml_to_gemini(opts) {
               }
             ]
           };
+        }else{ // system instructions and function config not available in 1.0
+          const tool_prompt = `IMPORTANT: You must use the "${body.tools[0].function_declarations[0].name}" function tool!`;
+          const last_user_idx = body.contents.findLastIndex(msg => msg.role === 'user');
+          body.contents[last_user_idx].parts[0].text += '\n\n' + tool_prompt;
         }
       }
     }
