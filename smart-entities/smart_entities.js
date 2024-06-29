@@ -137,19 +137,23 @@ class SmartEntities extends Collection {
     let time_start = Date.now();
     let time_elapsed = 0;
     let tokens_per_sec = 0;
+    let last_notice_ts = Date.now();
     for(let i = 0; i < unembedded_items.length; i += batch_size) {
       // console.log("i: ", i);
       if(this._pause_embeddings) {
         // console.log("pause_embeddings");
+        this.is_embedding = false;
         this._pause_embeddings = false;
         const restart_btn = {text: "Restart", callback: () => this.ensure_embeddings() };
         this.env.main.notices.show('restart embedding', [`Embedding ${this.collection_name}...`, `Paused at ${i} / ${unembedded_items.length} ${this.collection_name}`, performance_notice_msg], { timeout: 0, button: restart_btn});
         this.adapter._save_queue(); // save immediately, overwrites existing file
-        this.is_embedding = false;
         return;
       }
-      if(i % 10 === 0){
-        const pause_btn = {text: "Pause", callback: () => this.pause_embedding(), stay_open: true};
+      // if divisible by 100 or last shown more than one minute ago
+      if(i % 200 === 0 || (Date.now() - last_notice_ts > 60000)){
+        last_notice_ts = Date.now();
+        // const pause_btn = {text: "Pause", callback: () => this.pause_embedding(), stay_open: true};
+        const pause_btn = {text: "Pause", callback: this.pause_embedding.bind(this), stay_open: true};
         this.env.main.notices.show('embedding progress', [`Embedding ${this.collection_name}...`, `Progress: ${i} / ${unembedded_items.length} ${this.collection_name}`, `${tokens_per_sec} tokens/sec`, performance_notice_msg], { timeout: 0, button: pause_btn, immutable: true});
       }
       const items = unembedded_items.slice(i, i + batch_size);
