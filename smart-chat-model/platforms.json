@@ -19,7 +19,7 @@
     "actions": true,
     "adapter": "Gemini",
     "fetch_models": true,
-    "default_model": "gemini-1.0-pro",
+    "default_model": "gemini-1.5-pro",
     "signup_url": "https://ai.google.dev/"
   },
   "open_router": {
