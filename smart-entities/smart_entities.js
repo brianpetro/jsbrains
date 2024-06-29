@@ -276,8 +276,8 @@ exports.cos_sim = cos_sim;
 // DO: Extract to separate files
 class SmartNotes extends SmartEntities {
   async import(files, opts= {}) {
+    let batch = [];
     try{
-      let batch = [];
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
       let i = 0;
       for(i = 0; i < files.length; i++){
@@ -335,8 +335,8 @@ class SmartNotes extends SmartEntities {
       this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Done importing Smart Notes.`], { timeout: 3000 });
       this.ensure_embeddings();
     }catch(e){
-      console.log("error importing blocks");
-      console.log(e);
+      console.warn("error importing notes: ", e);
+      console.warn({batch});
     }
   }
   async ensure_embeddings(show_notice = false) {
