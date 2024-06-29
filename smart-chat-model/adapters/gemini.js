@@ -205,11 +205,11 @@ function chatml_to_gemini(opts) {
               }
             ]
           };
-        }else{ // system instructions and function config not available in 1.0
-          const tool_prompt = `IMPORTANT: You must use the "${body.tools[0].function_declarations[0].name}" function tool!`;
-          const last_user_idx = body.contents.findLastIndex(msg => msg.role === 'user');
-          body.contents[last_user_idx].parts[0].text += '\n\n' + tool_prompt;
         }
+        // system instructions and function config not available in 1.0
+        const tool_prompt = `IMPORTANT: You must use the "${body.tools[0].function_declarations[0].name}" function tool!`;
+        const last_user_idx = body.contents.findLastIndex(msg => msg.role === 'user');
+        body.contents[last_user_idx].parts[0].text += '\n\n' + tool_prompt;
       }
     }
   }
