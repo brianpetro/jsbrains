@@ -8,10 +8,12 @@ const path = require('path');
 const test = require('ava');
 const expected_v1 = require(`../test_env/test_markdown_v1_${platform}.json`); // ensures backwards compatibility
 const expected_v2 = require(`../test_env/test_markdown_v2_${platform}.json`); // implements new features
+const expected_v2b = require(`../test_env/test_markdown_v2b_${platform}.json`); // implements new features
 
 test.before(async t => {
   const md_v1 = fs.readFileSync(path.join(__dirname, '../test_env/test_markdown_v1.md'), 'utf8');
   const md_v2 = fs.readFileSync(path.join(__dirname, '../test_env/test_markdown_v2.md'), 'utf8');
+  const md_v2b = fs.readFileSync(path.join(__dirname, '../test_env/test_markdown_v2b.md'), 'utf8');
   const env = {};
   // mock_entity_v1 is the old way of doing things
   const mock_entity_v1 = {
@@ -23,6 +25,10 @@ test.before(async t => {
     get_content: async () => md_v2,
     file_path: 'test_env/test_markdown_v2.md'
   };
+  const mock_entity_v2b = {
+    get_content: async () => md_v2b,
+    file_path: 'test_env/test_markdown_v2b.md'
+  };
   const opts = {adapter: 'markdown'};
   const smart_chunks = new SmartChunks(env, opts);
   t.context = {
@@ -30,11 +36,13 @@ test.before(async t => {
     md_v2,
     mock_entity_v1,
     mock_entity_v2,
+    mock_entity_v2b,
     env,
     opts,
     smart_chunks,
     expected_v1,
-    expected_v2
+    expected_v2,
+    expected_v2b
   }
 });
 const TEST_TIMES = 100;
@@ -65,10 +73,19 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v2 blocks'
   const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2);
   // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2_${platform}.json`), JSON.stringify(parsed, null, 2));
   t.deepEqual(parsed.blocks, t.context.expected_v2.blocks);
+  t.is(parsed.blocks.length, 16);
   // const start = new Date();
   // for (let i = 0; i < TEST_TIMES; i++) {
   //   await t.context.smart_chunks.parse(t.context.mock_entity_v2);
   // }
   // const end = new Date();
   // console.log(`Time taken (new): ${end - start}ms`);
+});
+
+// test increasing min embed input length should prevent frontmatter block from being individual block
+test.serial('frontmatter shorter than min_embed_input_length should not be included as individual block', async t => {
+  const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2b);
+  // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2b_${platform}.json`), JSON.stringify(parsed, null, 2));
+  t.deepEqual(parsed.blocks, t.context.expected_v2b.blocks);
+  t.is(parsed.blocks.length, 15);
 });

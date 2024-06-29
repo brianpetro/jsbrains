@@ -67,10 +67,15 @@ class MarkdownAdapter {
   }
 
   store_front_matter_block(acc, front_matter, index) {
+    const embed_input_len = front_matter.split('\n').slice(1).join('\n').trim().length;
+    if (embed_input_len < this.opts.embed_input_min_chars) {
+      acc.log.push(`Skipping frontmatter block: ${embed_input_len} characters shorter than min length ${this.opts.embed_input_min_chars}`);
+      return;
+    }
     acc.blocks.push({
       text: front_matter.trim(),
       path: acc.block_path,
-      length: front_matter.length,
+      length: embed_input_len,
       heading: null,
       lines: [0, index],
     });

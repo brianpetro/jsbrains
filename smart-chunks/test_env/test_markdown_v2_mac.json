@@ -3,7 +3,7 @@
     {
       "text": "test_env > test_markdown_v2:\nhas: frontmatter\ntags:\n  - contains_generated_content\nformatted: in various ways",
       "path": "test_env/test_markdown_v2.md#",
-      "length": 110,
+      "length": 80,
       "heading": null,
       "lines": [
         0,
