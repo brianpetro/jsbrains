@@ -31,6 +31,15 @@ export class SmartTemplates {
     this.env = env;
     this.opts = opts;
     this.adapter = opts.adapter || null;
+    this.file_type_adapters = {};
+    if(opts.file_type_adapters) {
+      for(const adapter_class of opts.file_type_adapters) {
+        const adapter = new adapter_class(this);
+        for(const file_type of adapter.file_types) {
+          this.file_type_adapters[file_type] = adapter;
+        }
+      }
+    }
     this.read_adapter = opts.read_adapter || fs.promises.readFile;
   }
   get request_adapter() { return this.opts.request_adapter || null; }
@@ -39,21 +48,25 @@ export class SmartTemplates {
   get api_key() { return this.settings.smart_templates?.api_key || process.env.OPENAI_API_KEY; }
   get file_types() {
     return [
-      ...(this.adapter ? this.adapter.file_types : []),
+      ...Object.keys(this.file_type_adapters),
       'ejs',
     ];
   }
-
+  get_adapter_by(file_type){ return this.file_type_adapters[file_type]; }
   // EJS template base syntax engine
-  async get_template(template) {
-    if(typeof this.adapter?.get_template === 'function') return this.adapter.get_template(template);
+  async get_template(template, file_type = null) {
     if(typeof template !== 'string') throw new Error('Template must be a string');
+    const adapter = this.get_adapter_by(file_type || template.split('.').pop());
+    console.log('adapter', adapter);
+    if(typeof adapter?.get_template === 'function') return await adapter.get_template(template);
     if (!template.includes('\n') && this.file_types.includes(template.split('.').pop())) {
       template = await this.load_template(template);
     }
-    if (this.adapter && typeof this.adapter.convert_to_ejs === 'function') {
-      template = this.adapter.convert_to_ejs(template);
+    console.log('template', template);
+    if (typeof adapter?.convert_to_ejs === 'function') {
+      template = adapter.convert_to_ejs(template);
     }
+    console.log('template', template);
     return template;
   }
 
@@ -97,7 +110,7 @@ export class SmartTemplates {
       type: "function",
       function: {
         name: "generate_content",
-        description: "Generate content based on the CONTEXT.",
+        description: "Generate arguments based on the CONTEXT.",
         parameters: {
           type: "object",
           properties,

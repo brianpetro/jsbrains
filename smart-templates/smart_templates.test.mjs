@@ -1,6 +1,6 @@
 import test from 'ava';
 import { SmartTemplates } from './smart_templates.mjs';
-import { SmartChatModel } from './smart-chat-model/smart_chat_model.js';
+import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
 
 const template_pointer = './template.test.ejs';
 const settings = {
@@ -46,7 +46,7 @@ test('get function call returns tool call spec', async t => {
   t.truthy(functionCallSpec);
   t.deepEqual(functionCallSpec, {
     function: {
-      description: 'Generate content based on the CONTEXT.',
+      description: 'Generate arguments based on the CONTEXT.',
       name: 'generate_content',
       parameters: {
         properties: {
