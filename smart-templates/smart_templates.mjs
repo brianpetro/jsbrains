@@ -164,6 +164,10 @@ export class SmartTemplates {
 
     return ejs.render(templateContent, mergedContext);
   }
-  get model_config() { return this.env.settings?.smart_templates?.model_config || {api_key: this.api_key}; }
+  get model_config() {
+    if(this.env.settings?.smart_templates?.[this.chat_model_platform_key]) return this.env.settings.smart_templates[this.chat_model_platform_key];
+    if(this.env.settings?.[this.chat_model_platform_key]) return this.env.settings[this.chat_model_platform_key];
+    return {api_key: this.api_key};
+  }
   get chat_model_platform_key() { return this.env.settings?.smart_templates?.chat_model_platform_key || this.env.settings?.chat_model_platform_key || 'openai'; }
 }
