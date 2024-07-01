@@ -1,0 +1,20 @@
+{
+  "name": "smart-environment",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Implements Smart Environment best practices.",
+  "main": "smart_env.js",
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/js-brains/issues"
+  },
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "homepage": "https://jsbrains.org"
+}
