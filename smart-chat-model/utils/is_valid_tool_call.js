@@ -70,7 +70,9 @@ function is_valid_tool_call(tool, tool_call_content) {
   });
   // check if all required keys are present
   tool.function.parameters.required?.forEach(key => {
-    if (!tool_call_content[key]) throw new Error(`Invalid tool call: missing required key ${key}`);
+    // if (!tool_call_content[key]) throw new Error(`Invalid tool call: missing required key ${key}`);
+    if (typeof tool_call_content[key] === 'undefined') throw new Error(`Invalid tool call: missing required key ${key}`);
+    if (tool_call_content[key] === '') console.warn(`Empty value for required key ${key}`);
   });
   return true;
 }
