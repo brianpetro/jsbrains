@@ -22,14 +22,16 @@
 class SmartSettings {
   constructor(env, container, template_name = "smart_settings") {
     this.env = env;
-    this.main = this.env.plugin;
-    this.plugin = this.main; // DEPRECATED
-    this.settings = this.plugin.settings;
+    this.main = this.env.plugin; // DEPRECATED in favor of snake_case name of plugin class
+    this.plugin = this.main; // DEPRECATED in favor of main
+    // this.settings = this.plugin.settings;
     this.container = container;
     this.template_name = template_name;
     this.ejs = this.env.ejs;
-    this.templates = this.env.templates;
+    this.views = this.env.views;
+    this.templates = this.env.templates; // DEPRECATED in favor of views
   }
+  get settings() { return this.main.settings; }
   async render() {
     const view_data = (typeof this.get_view_data === "function") ? await this.get_view_data() : this.view_data;
     this.render_template(view_data);
@@ -44,18 +46,18 @@ class SmartSettings {
     console.log("saving setting: " + setting);
     if (setting.includes(".")) {
       let parts = setting.split(".");
-      let obj = this.plugin.settings;
+      let obj = this.main.settings;
       for (let i = 0; i < parts.length - 1; i++) {
         if (!obj[parts[i]]) obj[parts[i]] = {};
         obj = obj[parts[i]];
       }
       obj[parts[parts.length - 1]] = (typeof value === "string") ? value.trim() : value;
     } else {
-      this.plugin.settings[setting] = (typeof value === "string") ? value.trim() : value;
+      this.main.settings[setting] = (typeof value === "string") ? value.trim() : value;
     }
-    await this.plugin.save_settings(true);
+    await this.main.save_settings(true);
     console.log("saved settings");
-    console.log(this.plugin.settings);
+    console.log(this.main.settings);
   }
   render_components() {
     this.container.querySelectorAll(".setting-component").forEach(elm => {
@@ -145,14 +147,16 @@ class SmartSettings {
   get_setting(setting) {
     if (setting.includes(".")) {
       let parts = setting.split(".");
-      let obj = this.plugin.settings;
+      // let obj = this.plugin.settings;
+      let obj = this.settings;
       for (let part of parts.slice(0, -1)) {
         if (obj[part] === undefined) return this.plugin.constructor.defaults[setting]; // Fallback to default if path is broken
         obj = obj[part];
       }
       return obj[parts[parts.length - 1]] ?? this.plugin.constructor.defaults[setting];
     } else {
-      return this.plugin.settings[setting] ?? this.plugin.constructor.defaults[setting];
+      // return this.plugin.settings[setting] ?? this.plugin.constructor.defaults[setting];
+      return this.settings[setting] ?? this.plugin.constructor.defaults[setting];
     }
   }
   // override in subclass (required)
