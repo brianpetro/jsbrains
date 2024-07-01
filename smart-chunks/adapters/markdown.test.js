@@ -1,14 +1,11 @@
 const { SmartMarkdown } = require('../SmartMarkdown');
-// get win or mac
-const platform = process.platform === 'win32' ? 'win' : 'mac';
-
 const { SmartChunks } = require('../smart_chunks');
 const fs = require('fs');
 const path = require('path');
 const test = require('ava');
-const expected_v1 = require(`../test_env/test_markdown_v1_${platform}.json`); // ensures backwards compatibility
-const expected_v2 = require(`../test_env/test_markdown_v2_${platform}.json`); // implements new features
-const expected_v2b = require(`../test_env/test_markdown_v2b_${platform}.json`); // implements new features
+const expected_v1 = require(`../test_env/test_markdown_v1.json`); // ensures backwards compatibility
+const expected_v2 = require(`../test_env/test_markdown_v2.json`); // implements new features
+const expected_v2b = require(`../test_env/test_markdown_v2b.json`); // implements new features
 
 test.before(async t => {
   const md_v1 = fs.readFileSync(path.join(__dirname, '../test_env/test_markdown_v1.md'), 'utf8');
@@ -85,7 +82,11 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v2 blocks'
 // test increasing min embed input length should prevent frontmatter block from being individual block
 test.serial('frontmatter shorter than min_embed_input_length should not be included as individual block', async t => {
   const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2b);
+  const expected_blocks = t.context.expected_v2b.blocks.map(block => {
+    block.text = block.text.replace(/\r\n/g, '\n');
+    return block;
+  });
   // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2b_${platform}.json`), JSON.stringify(parsed, null, 2));
-  t.deepEqual(parsed.blocks, t.context.expected_v2b.blocks);
+  t.deepEqual(parsed.blocks, expected_blocks);
   t.is(parsed.blocks.length, 15);
 });
