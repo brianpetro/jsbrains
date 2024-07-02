@@ -275,7 +275,7 @@ exports.cos_sim = cos_sim;
 
 // DO: Extract to separate files
 class SmartNotes extends SmartEntities {
-  async import(files, opts= {}) {
+  async import(files=[], opts= {}) {
     let batch = [];
     try{
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
@@ -429,7 +429,7 @@ class SmartNote extends SmartEntity {
       const start_embedding_btn = {
         text: "Start embedding",
         callback: () => {
-          this.collection.import().then(() => this.env.main.view.render_nearest(this));
+          this.collection.import([this.t_file]).then(() => this.env.main.view.render_nearest(this));
         }
       };
       this.env.main.notices.show('no embedding found', `No embeddings found for ${this.name}.`, { confirm: start_embedding_btn });
@@ -502,7 +502,7 @@ class SmartNote extends SmartEntity {
       if((this.last_history?.mtime || 0) < this.t_file.stat.mtime){
         const size_diff = Math.abs(this.last_history.size - this.t_file.stat.size);
         console.log("mtime changed: ", this.last_history, this.t_file);
-        const size_diff_ratio = size_diff / this.last_history.size;
+        const size_diff_ratio = size_diff / (this.last_history.size || 1);
         console.log("size diff ratio: ", size_diff_ratio);
         if(size_diff_ratio > 0.03) return true; // if size diff greater than 5% of last_history.size, assume file changed
       }
