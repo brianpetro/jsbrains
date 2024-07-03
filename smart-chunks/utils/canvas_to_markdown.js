@@ -46,7 +46,7 @@ function canvas_to_markdown(canvas) {
     markdown += '\n';
   });
 
-  return markdown.trim();
+  return markdown.trim().replace(/\r\n/g, '\n');
 }
 
 function find_parent_group(node, groups) {

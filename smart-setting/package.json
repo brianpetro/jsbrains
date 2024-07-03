@@ -1,0 +1,19 @@
+{
+  "name": "smart-setting",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.1",
+  "description": "Minimal dependency renderer for settings components designed for Smart Environments.",
+  "main": "smart_settings.mjs",
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/js-brains/issues"
+  },
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "homepage": "https://jsbrains.org"
+}

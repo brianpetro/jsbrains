@@ -1,7 +1,7 @@
 # Smart Chat Model
 Used to integrate OpenAI GPT-4, Antrhopic Claude, Google Gemini & Cohere Command-r in [Smart Connections](https://github.com/brianpetro/obsidian-smart-connections).
 
-Try the [demo](https://brianpetro.github.io/jsbrains/sample-web) or browse the [demo code here](https://github.com/brianpetro/jsbrains/tree/main/docs/sample-web.html).
+Try the [demo](https://brianpetro.github.io/jsbrains/sample-web) or browse the [demo code here](https://github.com/brianpetro/jsbrains/tree/main/assets/sample-web.html).
 
 [![Smart Chat Model Demo](https://brianpetro.github.io/jsbrains/sample-web.gif)](https://brianpetro.github.io/jsbrains/sample-web)
 

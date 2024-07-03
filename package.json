@@ -1,6 +1,6 @@
 {
   "name": "jsbrains",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A collection of smart modules for building brains in JavaScript.",
   "main": "index.js",
   "repository": {
@@ -22,5 +22,14 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "jsdoc": "^4.0.2"
-  }
+  },
+  "workspaces": [
+    "smart-chat-model",
+    "smart-chats",
+    "smart-chunks",
+    "smart-collections",
+    "smart-entities",
+    "smart-instruct-model",
+    "smart-ranker-model"
+  ]
 }

@@ -1,0 +1,160 @@
+{
+  "blocks": [
+    {
+      "path": "test_env/test_markdown_v2b.md#{1}",
+      "heading": null,
+      "length": 108,
+      "lines": [
+        3,
+        7
+      ],
+      "text": "test_env > test_markdown_v2b:\n- FIRST list with nested list items\n  - lorem ipsum 1\n  - dolor sit amet 1\n  - consectetur adipiscing elit 1"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#{2}",
+      "heading": null,
+      "length": 38,
+      "lines": [
+        8,
+        8
+      ],
+      "text": "test_env > test_markdown_v2b:\n- alongside list items with no nesting"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#{3}",
+      "heading": null,
+      "length": 109,
+      "lines": [
+        9,
+        12
+      ],
+      "text": "test_env > test_markdown_v2b:\n- SECOND list with nested list items\n  - lorem ipsum 2\n  - dolor sit amet 2\n  - consectetur adipiscing elit 2"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#{4}",
+      "heading": null,
+      "length": 73,
+      "lines": [
+        13,
+        15
+      ],
+      "text": "test_env > test_markdown_v2b:\n- no nesting should be added to block with other no-nesting\n- another one"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#heading block 1",
+      "heading": "heading block 1",
+      "length": 44,
+      "lines": [
+        16,
+        19
+      ],
+      "text": "test_env > test_markdown_v2b: heading block 1:\n![[October 27th, 2022#heading 1]]\nsame block"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#heading block 2",
+      "heading": "heading block 2",
+      "length": 10,
+      "lines": [
+        20,
+        22
+      ],
+      "text": "test_env > test_markdown_v2b: heading block 2:\nnext block"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#heading block 2#Observations from working on Question 1",
+      "heading": "Observations from working on Question 1",
+      "length": 79,
+      "lines": [
+        23,
+        28
+      ],
+      "text": "test_env > test_markdown_v2b: heading block 2 > Observations from working on Question 1:\n- safety\n- user-centric and inclusive design\n- inter-disciplinary collaboration"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#heading block 2#Observations from working on Question 1{1}",
+      "heading": "Observations from working on Question 1",
+      "length": 345,
+      "lines": [
+        29,
+        29
+      ],
+      "text": "test_env > test_markdown_v2b: heading block 2 > Observations from working on Question 1:\n**\"Lorem ipsum dolor sit amet\" mindset:** This aligns with ATIH's focus on \"consectetur adipiscing elit\"... (really long single line should be parsed as a single block... lorem ipsum dolor sit amet consectetur adipiscing elit... lorem ipsum dolor sit amet consectetur adipiscing elit... lorem ipsum dolor sit amet consectetur adipiscing elit...)"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#heading block 2#Observations from working on Question 1{2}",
+      "heading": "Observations from working on Question 1",
+      "length": 207,
+      "lines": [
+        30,
+        33
+      ],
+      "text": "test_env > test_markdown_v2b: heading block 2 > Observations from working on Question 1:\n**Lessons learned from aircraft and rocket design:** Responsible Tech principle of learning from past advancements.\n**Cockpit design and cognitive load:** User-centered design and human-computer interaction."
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#{5}",
+      "heading": null,
+      "length": 42,
+      "lines": [
+        35,
+        36
+      ],
+      "text": "test_env > test_markdown_v2b:\nTreated as new block\nShould clear headings"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#{6}",
+      "heading": null,
+      "length": 13,
+      "lines": [
+        38,
+        40
+      ],
+      "text": "test_env > test_markdown_v2b:\nAnother block"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#Another heading",
+      "heading": "Another heading",
+      "length": 42,
+      "lines": [
+        41,
+        46
+      ],
+      "text": "test_env > test_markdown_v2b: Another heading:\n1. First item\n2. Second item\n3. Third item"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#Yet Another Heading",
+      "heading": "Yet Another Heading",
+      "length": 28,
+      "lines": [
+        47,
+        50
+      ],
+      "text": "test_env > test_markdown_v2b: Yet Another Heading:\n1. First item\n2. Second item"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#Yet Another Heading{1}",
+      "heading": "Yet Another Heading",
+      "length": 70,
+      "lines": [
+        51,
+        54
+      ],
+      "text": "test_env > test_markdown_v2b: Yet Another Heading:\n3. Third item\n   1. Child item 1\n   2. Child item 2\n   3. Child item 3"
+    },
+    {
+      "path": "test_env/test_markdown_v2b.md#Yet Another Heading{2}",
+      "heading": "Yet Another Heading",
+      "length": 28,
+      "lines": [
+        55,
+        56
+      ],
+      "text": "test_env > test_markdown_v2b: Yet Another Heading:\n4. Fourth item\n5. Fifth item"
+    }
+  ],
+  "log": [],
+  "start_line": 57,
+  "curr_line": 56,
+  "curr_heading": "Yet Another Heading",
+  "file_path": "test_env/test_markdown_v2b.md",
+  "curr_level": 2
+}

@@ -137,6 +137,7 @@ class SmartEntities extends Collection {
     let time_start = Date.now();
     let time_elapsed = 0;
     let tokens_per_sec = 0;
+    let last_notice_ts = Date.now();
     for(let i = 0; i < unembedded_items.length; i += batch_size) {
       // set timeout to set is_embedding to false if it takes too long
       clearTimeout(this.is_embedding_timeout);
@@ -147,15 +148,18 @@ class SmartEntities extends Collection {
       // console.log("i: ", i);
       if(this._pause_embeddings) {
         // console.log("pause_embeddings");
+        this.is_embedding = false;
         this._pause_embeddings = false;
         const restart_btn = {text: "Restart", callback: () => this.ensure_embeddings() };
         this.env.main.notices.show('restart embedding', [`Embedding ${this.collection_name}...`, `Paused at ${i} / ${unembedded_items.length} ${this.collection_name}`, performance_notice_msg], { timeout: 0, button: restart_btn});
         this.adapter._save_queue(); // save immediately, overwrites existing file
-        this.is_embedding = false;
         return;
       }
-      if(i % 10 === 0){
-        const pause_btn = {text: "Pause", callback: () => this.pause_embedding(), stay_open: true};
+      // if divisible by 100 or last shown more than one minute ago
+      if(i % 200 === 0 || (Date.now() - last_notice_ts > 60000)){
+        last_notice_ts = Date.now();
+        // const pause_btn = {text: "Pause", callback: () => this.pause_embedding(), stay_open: true};
+        const pause_btn = {text: "Pause", callback: this.pause_embedding.bind(this), stay_open: true};
         this.env.main.notices.show('embedding progress', [`Embedding ${this.collection_name}...`, `Progress: ${i} / ${unembedded_items.length} ${this.collection_name}`, `${tokens_per_sec} tokens/sec`, performance_notice_msg], { timeout: 0, button: pause_btn, immutable: true});
       }
       const items = unembedded_items.slice(i, i + batch_size);
@@ -282,9 +286,9 @@ exports.cos_sim = cos_sim;
 
 // DO: Extract to separate files
 class SmartNotes extends SmartEntities {
-  async import(files, opts= {}) {
+  async import(files=[], opts= {}) {
+    let batch = [];
     try{
-      let batch = [];
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
       let i = 0;
       for(i = 0; i < files.length; i++){
@@ -342,8 +346,8 @@ class SmartNotes extends SmartEntities {
       this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Done importing Smart Notes.`], { timeout: 3000 });
       this.ensure_embeddings();
     }catch(e){
-      console.log("error importing blocks");
-      console.log(e);
+      console.warn("error importing notes: ", e);
+      console.warn({batch});
     }
   }
   async ensure_embeddings(show_notice = false) {
@@ -436,7 +440,7 @@ class SmartNote extends SmartEntity {
       const start_embedding_btn = {
         text: "Start embedding",
         callback: () => {
-          this.collection.import().then(() => this.env.main.view.render_nearest(this));
+          this.collection.import([this.t_file]).then(() => this.env.main.view.render_nearest(this));
         }
       };
       this.env.main.notices.show('no embedding found', `No embeddings found for ${this.name}.`, { confirm: start_embedding_btn });
@@ -503,16 +507,22 @@ class SmartNote extends SmartEntity {
   get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get meta_changed() {
-    if(!this.last_history) return true;
-    if((this.last_history?.mtime || 0) < this.t_file.stat.mtime){
-      const size_diff = Math.abs(this.last_history.size - this.t_file.stat.size);
-      console.log("mtime changed: ", this.last_history, this.t_file);
-      const size_diff_ratio = size_diff / this.last_history.size;
-      console.log("size diff ratio: ", size_diff_ratio);
-      if(size_diff_ratio > 0.03) return true; // if size diff greater than 5% of last_history.size, assume file changed
+    try{
+      if(!this.last_history) return true;
+      if(!this.t_file) return true;
+      if((this.last_history?.mtime || 0) < this.t_file.stat.mtime){
+        const size_diff = Math.abs(this.last_history.size - this.t_file.stat.size);
+        console.log("mtime changed: ", this.last_history, this.t_file);
+        const size_diff_ratio = size_diff / (this.last_history.size || 1);
+        console.log("size diff ratio: ", size_diff_ratio);
+        if(size_diff_ratio > 0.03) return true; // if size diff greater than 5% of last_history.size, assume file changed
+      }
+      // return (this.last_history.mtime !== this.t_file.stat.mtime) && (this.last_history.size !== this.t_file.stat.size);
+      return false;
+    }catch(e){
+      console.warn("error getting meta changed for ", this.data.path, ": ", e);
+      return true;
     }
-    // return (this.last_history.mtime !== this.t_file.stat.mtime) && (this.last_history.size !== this.t_file.stat.size);
-    return false;
   }
   get is_canvas() { return this.data.path.endsWith("canvas"); }
   get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }

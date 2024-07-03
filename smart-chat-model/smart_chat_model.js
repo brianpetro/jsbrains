@@ -49,7 +49,15 @@ class SmartChatModel {
     if(this.config.adapter) this.adapter = new adapters[this.config.adapter](this);
     console.log(this.adapter);
   }
-  static get models() { return platforms; }
+  static get models() { return platforms; } // DEPRECATED (confusing name)
+  // 
+  static get platforms() {
+    return Object.keys(platforms).map(key => ({
+      key,
+      ...platforms[key],
+    }));
+  }
+  get platform() { return platforms[this.platform_key]; }
   get default_opts() {
     return {
       temperature: 0.3,
@@ -83,7 +91,7 @@ class SmartChatModel {
       messages: (await this.current?.get_chat_ml())?.messages || [],
       ...opts,
     };
-    if(opts.stream !== false && this.config.streaming && !this.current.tool_choice) opts.stream = true; // no streaming if tool_choice is set
+    if(opts.stream !== false && this.config.streaming && !this.current?.tool_choice) opts.stream = true; // no streaming if tool_choice is set
     else opts.stream = false;
     opts = await this.request_middlewares(JSON.parse(JSON.stringify(opts)));
     const req = {
@@ -115,20 +123,26 @@ class SmartChatModel {
       // if is tool_call, handle tool_call and return
       const tool_call = this.get_tool_call(resp_json);
       if(tool_call){
-        this.env.chats.current.tool_choice = null; // IMPORTANT: prevent infinite loop
+        if(this.env.chats?.current?.tool_choice) this.env.chats.current.tool_choice = null; // IMPORTANT: prevent infinite loop
         // if (this.current.tool_choice !== "auto") this.current.tool_choice = null; // remove tool_choice from current if not auto (prevent infinite loop)
         const tool_name = this.get_tool_name(tool_call);
         const tool_call_content = this.get_tool_call_content(tool_call);
         const tool = body.tools.find((t) => t.function.name === tool_name); // platform-agnostic
         if(is_valid_tool_call(tool, tool_call_content)){
-          await this.current.add_message({ role: 'assistant', tool_calls: [{
-            function: {
-              name: tool_name,
-              arguments: JSON.stringify(tool_call_content),
-            }
-          }] });
+          if(typeof this.current?.add_message === 'function'){
+            await this.current.add_message({ role: 'assistant', tool_calls: [{
+              function: {
+                name: tool_name,
+                arguments: JSON.stringify(tool_call_content),
+              }
+            }]});
+          }
           const tool_handler = this.get_tool_handler(tool_name);
-          if(!tool_handler) return console.error(`Tool ${tool_name} not found`);
+          if(!tool_handler) {
+            console.warn(`Tool ${tool_name} not found, returning tool_call_content`);
+            console.log({tool_call_content});
+            return tool_call_content;
+          }
           const tool_output = await tool_handler(this.env, tool_call_content);
           if(tool_output) {
             await this.current.add_tool_output(tool_name, tool_output);
@@ -159,7 +173,7 @@ class SmartChatModel {
    * @param {string} tool_name - The name of the tool for which the handler is to be retrieved.
    * @returns {Function} The handler function for the specified tool.
    */
-  get_tool_handler(tool_name) { return this.env.actions.actions[tool_name].handler; }
+  get_tool_handler(tool_name) { return this.env.actions?.actions?.[tool_name]?.handler; }
 
   /**
    * Extracts the tool call information from a JSON response. This method supports adapter-specific logic.
@@ -348,6 +362,10 @@ class SmartChatModel {
     }
   }
   async get_models() {
+    if(!this.api_key){
+      console.warn(`No API key found for ${this.platform_key}. Cannot retrieve models.`);
+      return [];
+    }
     // const fx_name = this.plugin.settings.chat_model_platform_key;
     if(this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
       const models = await fetch_models[this.platform_key](this.api_key);

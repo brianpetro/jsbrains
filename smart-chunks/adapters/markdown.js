@@ -67,10 +67,16 @@ class MarkdownAdapter {
   }
 
   store_front_matter_block(acc, front_matter, index) {
+    const text = (front_matter.includes('\r\n') ? front_matter.replace(/\r\n/g, '\n') : front_matter).trim();
+    const embed_input_len = text.split('\n').slice(1).join('\n').trim().length;
+    if (embed_input_len < this.opts.embed_input_min_chars) {
+      acc.log.push(`Skipping frontmatter block: ${embed_input_len} characters shorter than min length ${this.opts.embed_input_min_chars}`);
+      return;
+    }
     acc.blocks.push({
-      text: front_matter.trim(),
+      text,
       path: acc.block_path,
-      length: front_matter.length,
+      length: embed_input_len,
       heading: null,
       lines: [0, index],
     });
@@ -91,20 +97,22 @@ class MarkdownAdapter {
       acc.curr = acc.curr.substring(0, embed_input_max_chars);
     }
     acc.curr = acc.curr.trim();
-
-    const block_length = acc.curr.split('\n').slice(1).join('\n').trim().length;
+    
+    const text = (acc.curr.includes('\r\n') ? acc.curr.replace(/\r\n/g, '\n') : acc.curr).trim();
+    const block_length = text.split('\n').slice(1).join('\n').trim().length;
 
     if (block_length < embed_input_min_chars) {
       acc.log.push(`Skipping block shorter than min length: ${acc.curr}`);
       return;
     }
+    
 
     acc.blocks.push({
       path: acc.block_path,
       heading: acc.curr_heading,
       length: block_length,
       lines: [acc.start_line, acc.curr_line],
-      text: acc.curr.trim(),
+      text,
     });
 
     acc.curr = "";
