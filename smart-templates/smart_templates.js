@@ -43,6 +43,14 @@ export class SmartTemplates {
     this.read_adapter = opts.read_adapter || fs.promises.readFile;
     this._templates = {};
   }
+  static async load(env, opts = {}) {
+    env.smart_templates = new SmartTemplates(env, opts);
+    await env.smart_templates.init();
+    return env.smart_templates;
+  }
+  async init() {
+    // RESERVED
+  }
   get request_adapter() { return this.opts.request_adapter || null; }
   get settings() { return this.env.settings; }
   get var_prompts() { return this.settings.smart_templates?.var_prompts || {}; }
@@ -167,7 +175,7 @@ export class SmartTemplates {
     return ejs.render(templateContent, mergedContext);
   }
   get model_config() {
-    if(this.env.settings?.smart_templates?.[this.chat_model_platform_key]) return this.env.settings.smart_templates[this.chat_model_platform_key];
+    if(this.env.smart_templates_plugin?.settings?.[this.chat_model_platform_key]) return this.env.smart_templates_plugin.settings[this.chat_model_platform_key];
     if(this.env.settings?.[this.chat_model_platform_key]) return this.env.settings[this.chat_model_platform_key];
     return {api_key: this.api_key};
   }
