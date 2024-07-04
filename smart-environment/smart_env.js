@@ -21,16 +21,21 @@
 
 class SmartEnv {
   constructor(main, opts={}) {
-    this[camel_case_to_snake_case(this.constructor.name)] = main; // ex. smart_connections_plugin
+    const main_name = camel_case_to_snake_case(main.constructor.name);
+    this[main_name] = main; // ex. smart_connections_plugin
+    this.mains = [main_name];
     this.main = main; // DEPRECATED in favor of main class name converted to snake case
     this.plugin = this.main; // DEPRECATED in favor of main
     Object.assign(this, opts);
+    console.log(this);
   }
   static create(main, opts={}) {
     const global_ref = opts.global_ref || window || global;
     const existing_smart_env = global_ref.smart_env;
-    if(existing_smart_env instanceof SmartEnv) {
-      existing_smart_env[camel_case_to_snake_case(this.name)] = main;
+    if(existing_smart_env) {
+      const main_name = camel_case_to_snake_case(main.constructor.name);
+      existing_smart_env[main_name] = main;
+      existing_smart_env.mains.push(main_name);
       Object.keys(opts).forEach(key => {
         if(typeof opts[key] === 'object'){
           if(Array.isArray(opts[key])){
@@ -51,13 +56,25 @@ class SmartEnv {
       });
       // add methods from this class to the existing smart env
       Object.getOwnPropertyNames(this.constructor.prototype).forEach(name => {
-        if(name !== 'constructor'){
+        if(!['constructor', 'caller', 'callee', 'arguments'].includes(name)){
           existing_smart_env[name] = this[name];
         }
       });
-      return existing_smart_env;
+      global_ref.smart_env = existing_smart_env;
+    }else {
+      global_ref.smart_env = new this(main, opts);
     }
-    return new SmartEnv(main, opts);
+    return global_ref.smart_env;
+  }
+  get settings() {
+    const settings = {};
+    this.mains.forEach(main => {
+      if(!settings[main]) settings[main] = {};
+      Object.keys(this[main].settings || {}).forEach(setting => {
+        settings[main][setting] = this[main].settings[setting];
+      });
+    });
+    return settings;
   }
 }
 export { SmartEnv };
