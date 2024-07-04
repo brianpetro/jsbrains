@@ -32,6 +32,7 @@ class SmartSettings {
     this.templates = this.env.templates; // DEPRECATED in favor of views
   }
   get settings() { return this.main.settings; }
+  set settings(settings) { this.main.settings = settings; }
   async render() {
     const view_data = (typeof this.get_view_data === "function") ? await this.get_view_data() : this.view_data;
     this.render_template(view_data);
@@ -46,18 +47,18 @@ class SmartSettings {
     console.log("saving setting: " + setting);
     if (setting.includes(".")) {
       let parts = setting.split(".");
-      let obj = this.main.settings;
+      let obj = this.settings;
       for (let i = 0; i < parts.length - 1; i++) {
         if (!obj[parts[i]]) obj[parts[i]] = {};
         obj = obj[parts[i]];
       }
       obj[parts[parts.length - 1]] = (typeof value === "string") ? value.trim() : value;
     } else {
-      this.main.settings[setting] = (typeof value === "string") ? value.trim() : value;
+      this.settings[setting] = (typeof value === "string") ? value.trim() : value;
     }
     await this.main.save_settings(true);
     console.log("saved settings");
-    console.log(this.main.settings);
+    console.log(this.settings);
   }
   render_components() {
     this.container.querySelectorAll(".setting-component").forEach(elm => {
