@@ -22,3 +22,7 @@ Key principles:
 - Prioritize user agency, privacy and oversight
 
 Smart Environment enables individuals and teams to leverage the power of AI while maintaining control over their data and workflows. Designed for extensibility, it provides a framework for integrating AI capabilities into your existing tools and processes.
+
+## `env`
+
+![](../assets/Smart%20Env%20env%20property.png)
