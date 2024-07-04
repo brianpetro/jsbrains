@@ -54,16 +54,11 @@ class SmartEnv {
           existing_smart_env[key] = opts[key];
         }
       });
-      // add methods from this class to the existing smart env
-      Object.getOwnPropertyNames(this.constructor.prototype).forEach(name => {
-        if(!['constructor', 'caller', 'callee', 'arguments'].includes(name)){
-          existing_smart_env[name] = this[name];
-        }
-      });
       global_ref.smart_env = existing_smart_env;
     }else {
       global_ref.smart_env = new this(main, opts);
     }
+    main.env = global_ref.smart_env;
     return global_ref.smart_env;
   }
   get settings() {
