@@ -41,6 +41,7 @@ export class SmartTemplates {
       }
     }
     this.read_adapter = opts.read_adapter || fs.promises.readFile;
+    this._templates = {};
   }
   get request_adapter() { return this.opts.request_adapter || null; }
   get settings() { return this.env.settings; }
@@ -56,6 +57,7 @@ export class SmartTemplates {
   // EJS template base syntax engine
   async get_template(template, file_type = null) {
     if(typeof template !== 'string') throw new Error('Template must be a string');
+    if(this._templates[template]) template = this._templates[template];
     const adapter = this.get_adapter_by(file_type || template.split('.').pop());
     console.log('adapter', adapter);
     if(typeof adapter?.get_template === 'function') return await adapter.get_template(template);
@@ -170,4 +172,11 @@ export class SmartTemplates {
     return {api_key: this.api_key};
   }
   get chat_model_platform_key() { return this.env.settings?.smart_templates?.chat_model_platform_key || this.env.settings?.chat_model_platform_key || 'openai'; }
+  add_template(path) {
+    const file_name = path.split('/').pop().split('.').shift();
+    this._templates[file_name] = path;
+  }
+  get templates() {
+    return Object.keys(this._templates);
+  }
 }
