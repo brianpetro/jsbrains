@@ -63,59 +63,44 @@ class ObsidianAdapter extends SmartCollectionsAdapter {
     }, {});
     const item_types = Object.keys(this.env.item_types);
     for (const file_path of files) {
+      if(!file_path.endsWith('.ajson')) continue; // ensure it's an .ajson file
       let source_is_deleted = false;
       try {
-        if (file_path.endsWith('.ajson')) { // Ensure it's an .ajson file
-          const content = (await this.read(file_path)).trim();
-          const data = content
-            .split('\n')
-            .reduce((acc, line) => {
-              const parsed = JSON.parse(`{${line}}`);
-              if(Object.values(parsed)[0] === null){
-                if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
-                return acc;
-              }
-              return ajson_merge(acc, parsed);
-            }, {})
-          ;
-          // const data = JSON.parse(`{${content.startsWith(',\n') ? content.slice(1) : content}}`);
-          let main_entity;
-          Object.entries(data)
-            // // sort  by no # in key first, then by # in key
-            // .sort(([ajson_key, value], [ajson_key2, value2]) => {
-            //   if(ajson_key.includes("#") &amp;&amp; !ajson_key2.includes("#")) return 1;
-            //   if(!ajson_key.includes("#") &amp;&amp; ajson_key2.includes("#")) return -1;
-            //   return 0;
-            // })
-            .forEach(([ajson_key, value]) => {
-              let is_main_entity = false;
-              if(ajson_key.includes("AI computer")) console.log(ajson_key, value); // TEMP
-              if(!value || source_is_deleted) return; // handle null values (deleted)
-              let entity_key;
-              let class_name = value.class_name; // DEPRECATED (moved to key so that multiple entities from different classes can have the same key)
-              if(ajson_key.includes(":") &amp;&amp; item_types.includes(ajson_key.split(":")[0])){
-                class_name = ajson_key.split(":").shift();
-                entity_key = ajson_key.split(":").slice(1).join(":"); // key is file path
-              }else entity_key = ajson_key; // DEPRECATED: remove this
-              if(!entity_key.includes("#")){ // if no #, it's a source item (i.e. Note, not block)
-                is_main_entity = true;
-                if(!vault_paths[entity_key]){ // if not in vault path, it's a deleted item
-                  source_is_deleted = true;
-                  return;
-                }
-              }
-              const entity = new (this.env.item_types[class_name])(this.env, value);
-              this.env[entity.collection_name].items[entity_key] = entity;
-              if(is_main_entity) main_entity = entity;
-            })
-          ;
-          if(source_is_deleted) await this.remove(file_path);
-          else if(main_entity){
-            if(main_entity.ajson !== content) {
-              await this.write(file_path, main_entity.ajson);
-              // console.log("Updated file: " + file_path);
+        const content = (await this.read(file_path)).trim();
+        const data = content
+          .split('\n')
+          .reduce((acc, line) => {
+            const parsed = JSON.parse(`{${line}}`);
+            if(Object.values(parsed)[0] === null){
+              if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
+              return acc;
             }
-          }else console.warn("Main entity not found for file: " + file_path);
+            return ajson_merge(acc, parsed);
+          }, {})
+        ;
+        let main_entity;
+        Object.entries(data)
+          .forEach(([ajson_key, value]) => {
+            if(!value || source_is_deleted) return; // handle null values (deleted)
+            let entity_key;
+            let class_name = value.class_name; // DEPRECATED (moved to key so that multiple entities from different classes can have the same key)
+            if(ajson_key.includes(":") &amp;&amp; item_types.includes(ajson_key.split(":")[0])){
+              class_name = ajson_key.split(":").shift();
+              entity_key = ajson_key.split(":").slice(1).join(":"); // key is file path
+            }else entity_key = ajson_key; // DEPRECATED: remove this
+            const check_path = entity_key.includes("#") ? entity_key.split("#")[0] : entity_key;
+            if(!vault_paths[check_path]){ // if not in vault path, it's a deleted item
+              source_is_deleted = true;
+              return;
+            }
+            const entity = new (this.env.item_types[class_name])(this.env, value);
+            this.env[entity.collection_name].items[entity_key] = entity;
+            if(!entity_key.includes("#")) main_entity = entity;
+          })
+        ;
+        if(source_is_deleted || !main_entity) await this.remove(file_path);
+        else if(main_entity.ajson !== content) {
+          await this.write(file_path, main_entity.ajson);
         }
       } catch (err) {
         console.log("Error loading file: " + file_path);
@@ -211,7 +196,7 @@ exports.ObsidianAdapter = ObsidianAdapter;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Jul 04 2024 12:37:05 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Jul 04 2024 13:27:33 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
