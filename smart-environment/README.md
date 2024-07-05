@@ -23,7 +23,13 @@ Key principles:
 
 Smart Environment enables individuals and teams to leverage the power of AI while maintaining control over their data and workflows. Designed for extensibility, it provides a framework for integrating AI capabilities into your existing tools and processes.
 
-## `global_ref`
+## interface
+### `static async create(main, opts={})`
+- detects if `global_ref.smart_env` exists
+    - creates `global_ref.smart_env` if not
+    - returns `global_ref.smart_env`
+
+#### `opts={}`
 - `global_ref` specified in constructor
     - must be object
         - defaults to `window || global`
