@@ -23,6 +23,13 @@ Key principles:
 
 Smart Environment enables individuals and teams to leverage the power of AI while maintaining control over their data and workflows. Designed for extensibility, it provides a framework for integrating AI capabilities into your existing tools and processes.
 
+## `global_ref`
+- `global_ref` specified in constructor
+    - must be object
+        - defaults to `window || global`
+    - sets `smart_env` property
+
+
 ## `env`
 
 ![](../assets/Smart%20Env%20env%20property.png)
