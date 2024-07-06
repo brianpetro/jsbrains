@@ -6,8 +6,7 @@
   "description": "Smart Chunks are intelligently designed to maximize their value as inputs into embedding models.",
   "main": "smart-chunks.js",
   "scripts": {
-    "test": "npx ava adapters/javascript.test.js --verbose",
-    "test-temp": "npx ava --verbose"
+    "test": "npx ava --verbose"
   },
   "repository": {
     "type": "git",

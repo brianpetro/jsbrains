@@ -65,6 +65,10 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v1 blocks'
   // const end = new Date();
   // console.log(`Time taken (new): ${end - start}ms`);
 });
+test.serial('SmartChunks (MarkdownAdapter) should return the expected outlinks', async t => {
+  const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v1);
+  t.deepEqual(parsed.outlinks, t.context.expected_v1.outlinks);
+});
 // test the new features
 test.serial('SmartChunks (MarkdownAdapter) should return the expected v2 blocks', async t => {
   const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2);

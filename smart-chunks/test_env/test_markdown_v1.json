@@ -237,6 +237,16 @@
   "file_path": "test_env/test_markdown_v1.md",
   "outlinks": [
     {
+      "title": "Smart Chunk",
+      "target": "example-smart-chunk.md",
+      "line": 64
+    },
+    {
+      "title": "Detailed Smart Chunk",
+      "target": "detailed-smart-chunk.md",
+      "line": 68
+    },
+    {
       "title": "🧩 Smart Chats",
       "target": "🧩 Smart Chats",
       "line": 80
