@@ -40,3 +40,16 @@ test('should parse add function lines (first line includes comments prior to the
 test('should parse subtract function lines (first line includes comments prior to the code block)', (t) => {
   t.deepEqual(t.context.result.blocks[2].lines, t.context.expected.blocks[2].lines);
 });
+
+test('should parse text for class block', (t) => {
+  const expected_text = t.context.js_content.split('\n').slice(t.context.expected.blocks[0].lines[0]-1, t.context.expected.blocks[0].lines[1]).join('\n');
+  t.is(t.context.result.blocks[0].text, expected_text);
+});
+test('should parse text for add function block', (t) => {
+  const expected_text = t.context.js_content.split('\n').slice(t.context.expected.blocks[1].lines[0]-1, t.context.expected.blocks[1].lines[1]).join('\n');
+  t.is(t.context.result.blocks[1].text, expected_text);
+});
+test('should parse text for subtract function block', (t) => {
+  const expected_text = t.context.js_content.split('\n').slice(t.context.expected.blocks[2].lines[0]-1, t.context.expected.blocks[2].lines[1]).join('\n');
+  t.is(t.context.result.blocks[2].text, expected_text);
+});

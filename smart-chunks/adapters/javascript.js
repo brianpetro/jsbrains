@@ -14,7 +14,8 @@ class JavaScriptAdapter {
         if (current_block !== null && open_brackets === 0) {
           blocks.push({
             path: current_block,
-            lines: [block_start, index - 1]
+            lines: [block_start, index - 1],
+            text: lines.slice(block_start, index).join('\n')
           });
         }
 
@@ -38,7 +39,8 @@ class JavaScriptAdapter {
       if (current_block !== null && open_brackets === 0) {
         blocks.push({
           path: current_block,
-          lines: [block_start, index]
+          lines: [block_start, index],
+          text: lines.slice(block_start, index + 1).join('\n')
         });
         current_block = null;
       }
@@ -47,7 +49,8 @@ class JavaScriptAdapter {
     if (current_block !== null) {
       blocks.push({
         path: current_block,
-        lines: [block_start, lines.length - 1]
+        lines: [block_start, lines.length - 1],
+        text: lines.slice(block_start).join('\n')
       });
     }
 
@@ -57,6 +60,7 @@ class JavaScriptAdapter {
         const next_line = lines[block.lines[1] + 1].trim();
         if (next_line === '' || next_line.startsWith('*') || next_line.startsWith('//') || next_line.startsWith('*/')) {
           block.lines[1]++;
+          block.text += '\n' + lines[block.lines[1]];
         } else {
           break;
         }
@@ -77,9 +81,11 @@ class JavaScriptAdapter {
     blocks.forEach(block => {
       if (lines[block.lines[1] - 1].trim() === '') {
         block.lines[1]--;
+        block.text = block.text.split('\n').slice(0, -1).join('\n');
       }
       if (lines[block.lines[0] - 1].trim() === '') {
         block.lines[0]++;
+        block.text = block.text.split('\n').slice(1).join('\n');
       }
     });
 
