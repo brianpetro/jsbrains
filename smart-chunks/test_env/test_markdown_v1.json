@@ -234,5 +234,17 @@
   "curr_line": 80,
   "curr_heading": "Metadata",
   "curr_level": 2,
-  "file_path": "test_env/test_markdown_v1.md"
+  "file_path": "test_env/test_markdown_v1.md",
+  "outlinks": [
+    {
+      "title": "🧩 Smart Chats",
+      "target": "🧩 Smart Chats",
+      "line": 80
+    },
+    {
+      "title": "GitHub",
+      "target": "https://github.com/brianpetro/smart-chunks",
+      "line": 81
+    }
+  ]
 }

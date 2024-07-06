@@ -17,7 +17,7 @@ class Book {
      * Get the book's title.
      * @return {string} The title of the book.
      */
-    getTitle() {
+    get_title() {
         return this.title;
     }
 
@@ -25,7 +25,7 @@ class Book {
      * Get the book's author.
      * @return {string} The author of the book.
      */
-    getAuthor() {
+    get_author() {
         return this.author;
     }
 }
