@@ -136,6 +136,7 @@ class SmartSettings {
         setting_elm.addTextArea(textarea => {
           textarea.setValue(this.get_setting(setting));
           textarea.onChange(async (value) => this.handle_on_change(setting, value, elm));
+          if (elm.dataset.maxLength) textarea.inputEl.maxLength = elm.dataset.maxLength;
         });
       }
       if (elm.dataset.disabled) setting_elm.setDisabled(true);
