@@ -19,6 +19,10 @@ class MyCollectionItem extends CollectionItem { ... };
 - It includes methods for creating, updating, reading, and deleting items within the collection.
 - The class also supports saving and loading the collection data from disk. 
 - Additionally, it provides convenience methods for accessing information about the collection and its items.
+- Represents a collection of items.
+- Methods: create, update, read, delete.
+- Supports saving/loading data from disk.
+- Convenience methods for collection information.
 
 ### Collection Items
 
@@ -26,6 +30,9 @@ class MyCollectionItem extends CollectionItem { ... };
 - It encapsulates the data and behavior associated with an item.
 - The class includes methods for updating and saving the item's data, as well as initializing and parsing the item.
 - These classes are part of a JavaScript library or application that utilizes collections of items and provides a convenient interface for managing and manipulating them.
+- Represents an item within a collection.
+- Encapsulates data and behavior of an item.
+- Methods: update, save, initialize, parse.
 
 ## about
 Smart Collections was built for the [Smart Connections](https://smartconnections.app) Obsidian plugin and [Smart Predictions Framework](https://wfhbrian.com/).

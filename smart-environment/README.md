@@ -20,6 +20,7 @@ Key principles:
 - Orchestrate modular Smart Modules
 - Complement and enhance foundation models
 - Prioritize user agency, privacy and oversight
+- Loads collections (wake-up)
 
 Smart Environment enables individuals and teams to leverage the power of AI while maintaining control over their data and workflows. Designed for extensibility, it provides a framework for integrating AI capabilities into your existing tools and processes.
 
