@@ -550,7 +550,8 @@ class SmartNote extends SmartEntity {
 class SmartBlocks extends SmartEntities {
   async import(note) {
     try{
-      const { blocks } = await this.env.smart_chunks.parse(note);
+      const { blocks, outlinks } = await this.env.smart_chunks.parse(note);
+      note.data.outlinks = outlinks;
       blocks.forEach(block => {
         const item = this.create_or_update(block);
         note.last_history.blocks[item.key] = true;
