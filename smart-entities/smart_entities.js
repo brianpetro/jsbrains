@@ -292,6 +292,11 @@ class SmartNotes extends SmartEntities {
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
       let i = 0;
       for(i = 0; i < files.length; i++){
+        // if file size greater than 1MB skip
+        if(files[i].stat.size > 1000000){
+          console.log("skipping large file: ", files[i].path);
+          continue;
+        }
         if(batch.length % 10 === 0){
           this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${files.length} files`], { timeout: 0 });
           // Promise.race to handle timeout
