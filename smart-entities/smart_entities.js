@@ -460,6 +460,15 @@ class SmartNote extends SmartEntity {
     } else {
       filter.exclude_key_starts_with = this.key;
     }
+    if(smart_view_filter?.exclude_inlinks && this.env.links[this.data.path]){
+      if(!Array.isArray(filter.exclude_key_starts_with_any)) filter.exclude_key_starts_with_any = [];
+      filter.exclude_key_starts_with_any = filter.exclude_key_starts_with_any.concat(Object.keys(this.env.links[this.data.path] || {}));
+    }
+    if(smart_view_filter?.exclude_outlinks && this.env.links[this.data.path]){
+      if(!Array.isArray(filter.exclude_key_starts_with_any)) filter.exclude_key_starts_with_any = [];
+      filter.exclude_key_starts_with_any = filter.exclude_key_starts_with_any.concat(this.outlink_paths);
+    }
+    console.log("filter: ", filter);
     if(this.vec && this.median_block_vec && this.env.smart_blocks.smart_embed && this.collection.smart_embed){
       console.log("FIND v1")
       const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
@@ -546,12 +555,27 @@ class SmartNote extends SmartEntity {
   }
   get file_path() { return this.data.path; }
   get file_type() { return this.t_file.extension; }
+  get outlink_paths() {
+    return (this.data.outlinks || [])
+      .filter(link => !link.target.startsWith("http"))
+      .map(link => {
+        const link_path = this.env.plugin.app.metadataCache.getFirstLinkpathDest(link.target, this.file_path)?.path;
+        return link_path;
+      })
+      .filter(link_path => link_path)
+    ;
+  }
 }
 class SmartBlocks extends SmartEntities {
   async import(note) {
     try{
       const { blocks, outlinks } = await this.env.smart_chunks.parse(note);
       note.data.outlinks = outlinks;
+      if(!this.env.links) this.env.links = {};
+      for(const link_path of note.outlink_paths){
+        if(!this.env.links[link_path]) this.env.links[link_path] = {};
+        this.env.links[link_path][note.key] = true;
+      }
       blocks.forEach(block => {
         const item = this.create_or_update(block);
         note.last_history.blocks[item.key] = true;
