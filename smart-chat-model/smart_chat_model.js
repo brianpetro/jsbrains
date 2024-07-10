@@ -47,7 +47,7 @@ class SmartChatModel {
     this._request_adapter = null;
     this.platforms = platforms;
     if(this.config.adapter) this.adapter = new adapters[this.config.adapter](this);
-    console.log(this.adapter);
+    if(this.adapter) console.log(this.adapter);
   }
   static get models() { return platforms; } // DEPRECATED (confusing name)
   // 

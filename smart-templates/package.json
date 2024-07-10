@@ -24,6 +24,12 @@
     "ejs": "^3.1.10"
   },
   "scripts": {
-    "test": "npx ava --verbose adapters/ smart_templates.test.mjs"
+    "test": "npx ava --verbose"
+  },
+  "ava": {
+    "files": [
+      "smart_templates.test.js",
+      "**/*.test.mjs"
+    ]
   }
 }

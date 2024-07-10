@@ -67,22 +67,27 @@ export class SmartTemplates {
     if(typeof template !== 'string') throw new Error('Template must be a string');
     if(this._templates[template]) template = this._templates[template];
     const adapter = this.get_adapter_by(file_type || template.split('.').pop());
-    console.log('adapter', adapter);
+    // console.log('adapter', adapter);
     if(typeof adapter?.get_template === 'function') return await adapter.get_template(template);
     if (!template.includes('\n') && this.file_types.includes(template.split('.').pop())) {
       template = await this.load_template(template);
     }
-    console.log('template', template);
+    // console.log('template', template);
     if (typeof adapter?.convert_to_ejs === 'function') {
       template = adapter.convert_to_ejs(template);
     }
-    console.log('template', template);
+    // console.log('template', template);
     return template;
   }
 
   async load_template(pointer) {
     try {
-      return await this.read_adapter(pointer);
+      let template = await this.read_adapter(pointer);
+      // if is buffer, convert to string
+      if (Buffer.isBuffer(template)) {
+        template = template.toString();
+      }
+      return template;
     } catch (error) {
       console.error(`Error loading template from ${pointer}:`, error);
       return '';
@@ -91,12 +96,15 @@ export class SmartTemplates {
 
   // Get variables from EJS template
   async get_variables(pointer) {
-    if (this.adapter && typeof this.adapter.get_variables === 'function') {
-      return this.adapter.get_variables(pointer);
+    let variables = [];
+    // console.log('adapter', this.adapter);
+    const file_type = pointer.split('.').pop();
+    const adapter = this.get_adapter_by(file_type);
+    if (adapter && typeof adapter.get_variables === 'function') {
+      return await adapter.get_variables(pointer);
     }
     const template = await this.get_template(pointer);
     const regex = /<%[-_=]?\s*=?\s*([\w.]+(\[\w+])?)\s*[-_]?%>/g;
-    const variables = [];
     let match;
     while ((match = regex.exec(template)) !== null) {
       const variable = match[1];
@@ -161,13 +169,13 @@ export class SmartTemplates {
       },
       stream: false
     };
-    console.log(functionCallRequest);
+    // console.log(functionCallRequest);
 
     // Use SmartChatModel to get replacement values
     const chatModel = new SmartChatModel(this.env, this.chat_model_platform_key, this.model_config);
     if(this.request_adapter) chatModel._request_adapter = this.request_adapter;
     const replacementValues = await chatModel.complete(functionCallRequest);
-    console.log(replacementValues);
+    // console.log(replacementValues);
 
     // Merge replacement values into context
     Object.assign(mergedContext, replacementValues);

@@ -1,5 +1,5 @@
 import test from 'ava';
-import { SmartTemplates } from './smart_templates.mjs';
+import { SmartTemplates } from './smart_templates.js';
 import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
 
 const template_pointer = './template.test.ejs';
@@ -37,7 +37,7 @@ test('extract variable names and prompts from EJS template', async t => {
     { name: 'arrayVar', prompt: 'Array Variable Prompt' },
     { name: 'objectVar', prompt: 'Object Variable Prompt' },
     { name: 'rawVar', prompt: 'Raw Variable Prompt' },
-    { name: 'trimmedVar', prompt: 'Trimmed Variable Prompt' }
+    { name: 'trimmedVar', prompt: 'Trimmed Variable Prompt' },
   ]);
 });
 
