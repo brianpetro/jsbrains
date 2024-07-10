@@ -32,7 +32,7 @@ export function convert_to_ejs(content) {
   const regex = /{{\s*"([^"]+)"\s*}}/g;
   const matches = content.match(regex);
   // for each match, replace with var_<match>
-  matches.forEach((match, index) => {
+  matches?.forEach((match, index) => {
     content = content.replace(match, `<%- var_${index + 1} %>`);
   });
   return content.replace(/{{\s*(\w+)\s*}}/g, '<%- $1 %>');
