@@ -1,4 +1,4 @@
-import { MarkdownAdapter } from './markdown.mjs';
+import { MarkdownAdapter } from './markdown.js';
 import test from 'ava';
 import { SmartTemplates } from '../smart_templates.js';
 import fs from 'node:fs';

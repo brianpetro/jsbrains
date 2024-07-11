@@ -19,10 +19,9 @@ export class MarkdownAdapter {
         variables.push({ name: `var_${i++}`, prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1').trim() });
       } else {
         let name = match.replace(/{{\s*=?\s*([\w\s.-]+(\[\w+])?)\s*}}/g, '$1').trim();
-        name = name.replace(/[-\s]/g, '_'); // Replace hyphens and spaces with underscores
-        const prompt_key = name.replace(/_/g, ' '); // Replace underscores with spaces
-        const prompt = (this.main.var_prompts[prompt_key]?.prompt || prompt_key + ' prompt').trim();
-        variables.push({ name, prompt });
+        const prompt_key = name.replace(/[-\s]/g, '_'); // Replace hyphens and spaces with underscores
+        const prompt = (this.main.var_prompts[prompt_key]?.prompt || name + ' prompt').trim();
+        variables.push({ name: prompt_key, prompt });
       }
     });
     return variables;

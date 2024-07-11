@@ -29,7 +29,7 @@
   "ava": {
     "files": [
       "smart_templates.test.js",
-      "**/*.test.mjs"
+      "**/*.test.js"
     ]
   }
 }
