@@ -30,7 +30,7 @@ export class SmartTemplates {
   constructor(env = {}, opts = {}) {
     this.env = env;
     this.opts = opts;
-    this.adapter = opts.adapter || null;
+    this.adapter = opts.adapter || null; // DEPRECATED: in favor of file_type_adapters
     this.file_type_adapters = {};
     if(opts.file_type_adapters) {
       for(const adapter_class of opts.file_type_adapters) {
