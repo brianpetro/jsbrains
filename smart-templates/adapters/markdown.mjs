@@ -11,15 +11,17 @@ export class MarkdownAdapter {
       template = await this.main.load_template(template);
     }
     const variables = [];
-    const regex = /{{\s*([\w\s"]+)\s*}}/gi;
+    const regex = /{{\s*([\w\s"-]+)\s*}}/gi;
     const matches = template.match(regex);
     var i = 1;
     matches.forEach((match, index) => {
-      if(match.includes('"')) {
-        variables.push({ name: `var_${i++}`, prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1') });
-      }else{
-        const name = match.replace(/{{\s*=?\s*([\w.]+(\[\w+])?)\s*}}/g, '$1');
-        const prompt = this.main.var_prompts[name]?.prompt || null;
+      if (match.includes('"')) {
+        variables.push({ name: `var_${i++}`, prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1').trim() });
+      } else {
+        let name = match.replace(/{{\s*=?\s*([\w\s.-]+(\[\w+])?)\s*}}/g, '$1').trim();
+        name = name.replace(/[-\s]/g, '_'); // Replace hyphens and spaces with underscores
+        const prompt_key = name.replace(/_/g, ' '); // Replace underscores with spaces
+        const prompt = (this.main.var_prompts[prompt_key]?.prompt || prompt_key + ' prompt').trim();
         variables.push({ name, prompt });
       }
     });
@@ -35,5 +37,7 @@ export function convert_to_ejs(content) {
   matches?.forEach((match, index) => {
     content = content.replace(match, `<%- var_${index + 1} %>`);
   });
-  return content.replace(/{{\s*(\w+)\s*}}/g, '<%- $1 %>');
+  // replace mustache syntax with EJS syntax
+  content = content.replace(/{{\s*([\w\s-]+)\s*}}/g, (match, p1) => `<%- ${p1.trim().replace(/[\s-]+/g, '_')} %>`);
+  return content;
 }
