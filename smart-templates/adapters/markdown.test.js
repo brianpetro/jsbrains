@@ -36,3 +36,8 @@ test('extract variable names and prompts from EJS template', async t => {
     { name: 'with_hyphen', prompt: 'with hyphen prompt' },
   ]);
 });
+test('should handle templates with no variables', async t => {
+  const smart_templates = new MarkdownAdapter();
+  const variables = await smart_templates.get_variables('\n\n\n');
+  t.deepEqual(variables, []);
+});

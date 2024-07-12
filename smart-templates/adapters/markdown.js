@@ -14,7 +14,7 @@ export class MarkdownAdapter {
     const regex = /{{\s*([\w\s"-]+)\s*}}/gi;
     const matches = template.match(regex);
     var i = 1;
-    matches.forEach((match, index) => {
+    matches?.forEach((match, index) => {
       if (match.includes('"')) {
         variables.push({ name: `var_${i++}`, prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1').trim() });
       } else {
