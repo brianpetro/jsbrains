@@ -124,7 +124,7 @@ class SmartSettings {
               if (!confirm(confirmation_message)) return;
             }
             if (elm.dataset.href) window.open(elm.dataset.href);
-            if (elm.dataset.callback) this[elm.dataset.callback](setting);
+            if (elm.dataset.callback) this[elm.dataset.callback](setting, null, elm);
           });
         });
       } else if (elm.dataset.type === "toggle") {
