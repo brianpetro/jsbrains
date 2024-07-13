@@ -16,7 +16,11 @@ export class MarkdownAdapter {
     var i = 1;
     matches?.forEach((match, index) => {
       if (match.includes('"')) {
-        variables.push({ name: `var_${i++}`, prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1').trim() });
+        variables.push({
+          name: `var_${i++}`,
+          prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1').trim(),
+          inline: true
+        });
       } else {
         let name = match.replace(/{{\s*=?\s*([\w\s.-]+(\[\w+])?)\s*}}/g, '$1').trim();
         const prompt_key = name.replace(/[-\s]/g, '_'); // Replace hyphens and spaces with underscores

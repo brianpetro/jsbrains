@@ -30,8 +30,8 @@ test('extract variable names and prompts from EJS template', async t => {
   t.deepEqual(variables, [
     { name: 'name', prompt: 'name prompt' },
     { name: 'count', prompt: 'count prompt' },
-    { name: 'var_1', prompt: 'manually added' },
-    { name: 'var_2', prompt: 'manually added 2' },
+    { name: 'var_1', prompt: 'manually added', inline: true },
+    { name: 'var_2', prompt: 'manually added 2', inline: true },
     { name: 'with_space', prompt: 'with space prompt' },
     { name: 'with_hyphen', prompt: 'with hyphen prompt' },
   ]);
