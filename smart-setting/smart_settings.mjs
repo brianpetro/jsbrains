@@ -18,17 +18,17 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+import ejs from "ejs";
 class SmartSettings {
-  constructor(env, container, template_name = "smart_settings") {
+  constructor(env, container, opts = { template_name: "smart_settings" }) {
     this.env = env;
     this.main = this.env.plugin; // DEPRECATED in favor of snake_case name of plugin class
     this.plugin = this.main; // DEPRECATED in favor of main
-    // this.settings = this.plugin.settings;
     this.container = container;
-    this.template_name = template_name;
-    this.ejs = this.env.ejs;
-    this.views = this.env.views;
+    if(typeof opts === 'string') opts = { template_name: opts }; // DEPRECATED handling
+    this.template_name = opts.template_name;
+    this.ejs = this.env.ejs || ejs;
+    this.views = opts.views || this.env.views;
     this.templates = this.env.templates; // DEPRECATED in favor of views
   }
   get settings() { return this.main.settings; }
