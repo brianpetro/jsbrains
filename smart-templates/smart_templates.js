@@ -20,11 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import ejs from 'ejs';
-import fs from 'fs';
 import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export class SmartTemplates {
   constructor(env = {}, opts = {}) {
@@ -40,7 +36,8 @@ export class SmartTemplates {
         }
       }
     }
-    this.read_adapter = opts.read_adapter || fs.promises.readFile;
+    if(opts.read_adapter) this.read_adapter = opts.read_adapter;
+    else throw new Error('opts.read_adapter is required (ex. fs.promises.readFile)');
     this._templates = {};
   }
   static async load(env, opts = {}) {
@@ -54,7 +51,7 @@ export class SmartTemplates {
   get request_adapter() { return this.opts.request_adapter || null; }
   get settings() { return this.env.settings; }
   get var_prompts() { return this.settings.smart_templates?.var_prompts || {}; }
-  get api_key() { return this.settings.smart_templates?.api_key || process.env.OPENAI_API_KEY; }
+  get api_key() { return this.settings.smart_templates?.api_key; }
   get file_types() {
     return [
       ...Object.keys(this.file_type_adapters),

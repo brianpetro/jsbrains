@@ -15,5 +15,8 @@
   "scripts": {
     "test": "npx ava --verbose"
   },
+  "dependencies": {
+    "ejs": "file:../ejs.min"
+  },
   "homepage": "https://jsbrains.org"
 }
