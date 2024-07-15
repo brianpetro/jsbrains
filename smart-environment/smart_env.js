@@ -21,18 +21,21 @@
 
 class SmartEnv {
   constructor(main, opts={}) {
+    console.log("SmartEnv constructor");
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main; // ex. smart_connections_plugin
     this.mains = [main_name];
     this.main = main; // DEPRECATED in favor of main class name converted to snake case
     this.plugin = this.main; // DEPRECATED in favor of main
     Object.assign(this, opts);
-    console.log(this);
+    // console.log(this);
+    console.log("SmartEnv constructed");
   }
   static create(main, opts={}) {
     const global_ref = opts.global_ref || window || global;
     const existing_smart_env = global_ref.smart_env;
     if(existing_smart_env) {
+      console.log("existing_smart_env");
       const main_name = camel_case_to_snake_case(main.constructor.name);
       existing_smart_env[main_name] = main;
       existing_smart_env.mains.push(main_name);
@@ -56,7 +59,9 @@ class SmartEnv {
       });
       global_ref.smart_env = existing_smart_env;
     }else {
+      console.log("new smart_env");
       global_ref.smart_env = new this(main, opts);
+      console.log("new smart_env added to global_ref");
     }
     main.env = global_ref.smart_env;
     return global_ref.smart_env;

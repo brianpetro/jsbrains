@@ -42,12 +42,13 @@ class SmartChatModel {
       ...(platforms[platform_key] || {}),
       ...model_config, // override default platform config
     }
+    console.log(JSON.stringify(this.config));
     this.platform_key = platform_key;
     this.active_stream = null;
     this._request_adapter = null;
     this.platforms = platforms;
     if(this.config.adapter) this.adapter = new adapters[this.config.adapter](this);
-    if(this.adapter) console.log(this.adapter);
+    if(this.adapter) console.log("has chat model adapter");
   }
   static get models() { return platforms; } // DEPRECATED (confusing name)
   // 
@@ -368,7 +369,7 @@ class SmartChatModel {
     }
     // const fx_name = this.plugin.settings.chat_model_platform_key;
     if(this.platforms[this.platform_key]?.fetch_models && typeof fetch_models[this.platform_key] === "function"){
-      const models = await fetch_models[this.platform_key](this.api_key);
+      const models = await fetch_models[this.platform_key](this.api_key, this._request_adapter);
       if(models) {
         // sort alphabetically by model name
         models.sort((a, b) => a.model_name.localeCompare(b.model_name));

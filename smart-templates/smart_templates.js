@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import ejs from 'ejs';
+import ejs from './ejs.min.cjs';
 import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
 
 export class SmartTemplates {
@@ -80,13 +80,13 @@ export class SmartTemplates {
   async load_template(pointer) {
     try {
       let template = await this.read_adapter(pointer);
-      // if is buffer, convert to string
-      if (Buffer.isBuffer(template)) {
-        template = template.toString();
-      }
+      // // if is buffer, convert to string (breaks Obsidian mobile)
+      // if (typeof Buffer?.isBuffer === 'function' && Buffer.isBuffer(template)) {
+      //   template = template.toString();
+      // }
       return template;
     } catch (error) {
-      console.error(`Error loading template from ${pointer}:`, error);
+      console.error(`Error loading template from ${pointer}:`, error.message, error.stack);
       return '';
     }
   }

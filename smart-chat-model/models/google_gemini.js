@@ -1,15 +1,24 @@
-async function fetch_google_gemini_models(api_key) {
+async function fetch_google_gemini_models(api_key, request_adapter=null) {
   if (!api_key) {
     console.error('No API key provided');
     return [];
   }
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + api_key);
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    let data;
+    if(!request_adapter) {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + api_key);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      data = await response.json();
+      console.log('Model data retrieved:', data);
+    }else{
+      const resp = await request_adapter({
+        url: 'https://generativelanguage.googleapis.com/v1beta/models?key=' + api_key,
+      });
+      console.log(JSON.stringify(resp));
+      data = await resp.json;
     }
-    const data = await response.json();
-    console.log('Model data retrieved:', data);
     return data.models
       .filter(model => model.name.startsWith('models/gemini'))
       .map(model => {

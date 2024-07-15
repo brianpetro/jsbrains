@@ -18,10 +18,9 @@
     "url": "https://github.com/brianpetro/js-brains/issues"
   },
   "homepage": "https://jsbrains.org",
-  "dependencies": {
+  "devDependencies": {
     "ava": "^6.1.3",
-    "dotenv": "^16.4.5",
-    "ejs": "file:../ejs.min"
+    "dotenv": "^16.4.5"
   },
   "scripts": {
     "test": "npx ava --verbose"

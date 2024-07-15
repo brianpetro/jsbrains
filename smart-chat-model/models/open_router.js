@@ -1,11 +1,19 @@
-async function fetch_open_router_models() {
+async function fetch_open_router_models(api_key, request_adapter=null) {
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/models');
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    let data;
+    if(!request_adapter) {
+      const response = await fetch('https://openrouter.ai/api/v1/models');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      data = await response.json();
+      console.log('Model data retrieved:', data);
+    }else{
+      const resp = await request_adapter({
+        url: 'https://openrouter.ai/api/v1/models',
+      });
+      data = await resp.json();
     }
-    const data = await response.json();
-    console.log('Model data retrieved:', data);
     return data.data
       // .filter(model => !model.id.includes('instruct'))
       .map(model => ({

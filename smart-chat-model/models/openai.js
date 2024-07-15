@@ -84,22 +84,35 @@ const model_context = {
     "max_out": 8192
   }
 }
-async function fetch_openai_models(api_key) {
+async function fetch_openai_models(api_key, request_adapter=null) {
   if (!api_key) {
     console.error('No API key provided');
     return [];
   }
   try {
-    const response = await fetch('https://api.openai.com/v1/models', {
-      headers: {
-        'Authorization': `Bearer ${api_key}`,
-      },
-    });
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    let data;
+    if(!request_adapter) {
+      console.log('Using fetch');
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${api_key}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      data = await response.json();
+      console.log('Model data retrieved:', data);
+    }else{
+      console.log('Using request adapter');
+      const resp = await request_adapter({
+        url: 'https://api.openai.com/v1/models',
+        headers: {
+          'Authorization': `Bearer ${api_key}`,
+        },
+      });
+      data = await resp.json;
     }
-    const data = await response.json();
-    console.log('Model data retrieved:', data);
     return data.data
       .filter(model => model.id.startsWith('gpt-') && !model.id.includes('-instruct'))
       .map(model => {

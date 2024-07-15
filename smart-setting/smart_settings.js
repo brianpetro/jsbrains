@@ -18,7 +18,7 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-import ejs from "ejs";
+import ejs from "./ejs.min.cjs";
 class SmartSettings {
   constructor(env, container, opts = { template_name: "smart_settings" }) {
     this.env = env;
@@ -42,6 +42,7 @@ class SmartSettings {
     if (!this.template) throw new Error(`Settings template not found.`);
     this.container.empty();
     this.container.innerHTML = this.ejs.render(this.template, view_data || this.view_data, { context: this });
+    console.log("rendered template");
   }
   async update(setting, value) {
     console.log("saving setting: " + setting);
@@ -61,7 +62,10 @@ class SmartSettings {
     console.log(this.settings);
   }
   render_components() {
+    console.log("rendering components");
+    if(!this.main.obsidian.Setting) console.log("missing Obsidian");
     this.container.querySelectorAll(".setting-component").forEach(elm => {
+      console.log("rendering component: " + elm.dataset.setting);
       const setting_elm = new this.main.obsidian.Setting(elm);
       if (elm.dataset.name) setting_elm.setName(elm.dataset.name);
       if (elm.dataset.description) setting_elm.descEl.innerHTML = elm.dataset.description;
@@ -109,6 +113,7 @@ class SmartSettings {
           Object.entries(elm.dataset)
             .filter(([k, v]) => k.startsWith("option"))
             .forEach(([k, v]) => {
+              console.log(JSON.stringify(v));
               const [value, name] = v.split("|");
               dropdown.addOption(value, name || value);
             });
@@ -133,14 +138,17 @@ class SmartSettings {
           toggle.onChange(async (value) => this.handle_on_change(setting, value, elm));
         });
       } else if (elm.dataset.type === "textarea") {
+        console.log("rendering textarea");
         setting_elm.addTextArea(textarea => {
           textarea.setValue(this.get_setting(setting));
           textarea.onChange(async (value) => this.handle_on_change(setting, value, elm));
           if (elm.dataset.maxLength) textarea.inputEl.maxLength = elm.dataset.maxLength;
         });
+        console.log("rendered textarea");
       }
       if (elm.dataset.disabled) setting_elm.setDisabled(true);
     });
+    console.log("rendered components");
   }
   async handle_on_change(setting, value, elm) {
     await this.update(setting, value);

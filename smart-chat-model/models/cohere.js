@@ -3,21 +3,33 @@
 //   --header 'accept: application/json' \
 //   --header "Authorization: bearer $CO_API_KEY"
 
-async function fetch_cohere_models(api_key) {
+async function fetch_cohere_models(api_key, request_adapter=null) {
   if (!api_key) {
     console.error('No API key provided');
     return [];
   }
   try {
-    const response = await fetch('https://api.cohere.ai/v1/models', {
-      headers: {
-        'Authorization': `Bearer ${api_key}`,
-      },
-    });
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    let data;
+    if(!request_adapter) {
+      const response = await fetch('https://api.cohere.ai/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${api_key}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      data = await response.json();
+      console.log('Model data retrieved:', data);
+    }else{
+      const resp = await request_adapter({
+        url: 'https://api.cohere.ai/v1/models',
+        headers: {
+          'Authorization': `Bearer ${api_key}`,
+        },
+      });
+      data = await resp.json;
     }
-    const data = await response.json();
     console.log('Model data retrieved:', data);
     return data.models
       .filter(model => model.name.startsWith('command-'))
