@@ -2,6 +2,8 @@
 
 Welcome to Smart Environment, the efficient, productive, and user-aligned AI-powered ecosystem for personal and professional use. Smart Environment empowers individuals by providing a suite of AI tools in a private, secure, and open-source software package.
 
+- [Intro to Smart Environments video](https://youtu.be/0obRntW8Cto)
+
 ## Key Features
 
 - **Local-first**: Your data stays on your device under your control
