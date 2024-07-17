@@ -12,7 +12,7 @@ async function fetch_open_router_models(api_key, request_adapter=null) {
       const resp = await request_adapter({
         url: 'https://openrouter.ai/api/v1/models',
       });
-      data = await resp.json();
+      data = await resp.json;
     }
     return data.data
       // .filter(model => !model.id.includes('instruct'))
