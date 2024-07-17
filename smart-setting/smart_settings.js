@@ -22,7 +22,7 @@ import ejs from "./ejs.min.cjs";
 class SmartSettings {
   constructor(env, container, opts = { template_name: "smart_settings" }) {
     this.env = env;
-    this.main = this.env.plugin; // DEPRECATED in favor of snake_case name of plugin class
+    this.main = opts.main || this.env.plugin; // DEPRECATED in favor of snake_case name of plugin class
     this.plugin = this.main; // DEPRECATED in favor of main
     this.container = container;
     if(typeof opts === 'string') opts = { template_name: opts }; // DEPRECATED handling
@@ -42,30 +42,32 @@ class SmartSettings {
     if (!this.template) throw new Error(`Settings template not found.`);
     this.container.empty();
     this.container.innerHTML = this.ejs.render(this.template, view_data || this.view_data, { context: this });
-    console.log("rendered template");
+    // console.log("rendered template");
   }
   async update(setting, value) {
     console.log("saving setting: " + setting);
+    let settings = {...this.settings};
     if (setting.includes(".")) {
       let parts = setting.split(".");
-      let obj = this.settings;
+      let obj = settings;
       for (let i = 0; i < parts.length - 1; i++) {
         if (!obj[parts[i]]) obj[parts[i]] = {};
         obj = obj[parts[i]];
       }
       obj[parts[parts.length - 1]] = (typeof value === "string") ? value.trim() : value;
     } else {
-      this.settings[setting] = (typeof value === "string") ? value.trim() : value;
+      settings[setting] = (typeof value === "string") ? value.trim() : value;
     }
+    this.settings = settings;
     await this.main.save_settings(true);
     console.log("saved settings");
-    console.log(this.settings);
+    // console.log(this.settings);
   }
   render_components() {
-    console.log("rendering components");
+    // console.log("rendering components");
     if(!this.main.obsidian.Setting) console.log("missing Obsidian");
     this.container.querySelectorAll(".setting-component").forEach(elm => {
-      console.log("rendering component: " + elm.dataset.setting);
+      // console.log("rendering component: " + elm.dataset.setting);
       const setting_elm = new this.main.obsidian.Setting(elm);
       if (elm.dataset.name) setting_elm.setName(elm.dataset.name);
       if (elm.dataset.description) setting_elm.descEl.innerHTML = elm.dataset.description;
@@ -113,7 +115,6 @@ class SmartSettings {
           Object.entries(elm.dataset)
             .filter(([k, v]) => k.startsWith("option"))
             .forEach(([k, v]) => {
-              console.log(JSON.stringify(v));
               const [value, name] = v.split("|");
               dropdown.addOption(value, name || value);
             });
@@ -138,13 +139,13 @@ class SmartSettings {
           toggle.onChange(async (value) => this.handle_on_change(setting, value, elm));
         });
       } else if (elm.dataset.type === "textarea") {
-        console.log("rendering textarea");
+        // console.log("rendering textarea");
         setting_elm.addTextArea(textarea => {
           textarea.setValue(this.get_setting(setting));
           textarea.onChange(async (value) => this.handle_on_change(setting, value, elm));
           if (elm.dataset.maxLength) textarea.inputEl.maxLength = elm.dataset.maxLength;
         });
-        console.log("rendered textarea");
+        // console.log("rendered textarea");
       }
       if (elm.dataset.disabled) setting_elm.setDisabled(true);
     });
