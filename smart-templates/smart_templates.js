@@ -20,7 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import ejs from './ejs.min.cjs';
-import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
+import { SmartChatModel } from 'smart-chat-model';
 
 export class SmartTemplates {
   constructor(env = {}, opts = {}) {
