@@ -184,7 +184,11 @@ export class SmartTemplates {
     if(this.env.settings?.[this.chat_model_platform_key]) return this.env.settings[this.chat_model_platform_key];
     return {api_key: this.api_key};
   }
-  get chat_model_platform_key() { return this.env.settings?.smart_templates?.chat_model_platform_key || this.env.settings?.chat_model_platform_key || 'openai'; }
+  get chat_model_platform_key() {
+    if(this.env.smart_templates_plugin?.settings?.chat_model_platform_key) return this.env.smart_templates_plugin.settings.chat_model_platform_key;
+    if(this.env.settings?.smart_templates?.chat_model_platform_key) return this.env.settings.smart_templates.chat_model_platform_key;
+    return this.env.settings?.chat_model_platform_key || 'openai';
+  }
   add_template(path) {
     const file_name = path.split('/').pop().split('.').shift();
     this._templates[file_name] = path;
