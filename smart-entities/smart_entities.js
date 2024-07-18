@@ -643,6 +643,11 @@ class SmartBlock extends SmartEntity {
     // const block_content = this.env.smart_markdown.get_block_from_path(this.data.path, note_content);
     if(!this.note) return null;
     try{
+      if(this.has_lines){ // prevents full parsing of note if not needed
+        const all_lines = await this.note.get_content();
+        const block_content = all_lines.split("\n").slice(this.line_start, this.line_end + 1).join("\n");
+        return block_content;
+      }
       const block_content = await this.env.smart_chunks.get_block_from_path(this.data.path, this.note);
       return block_content;
     }catch(e){
@@ -668,6 +673,7 @@ class SmartBlock extends SmartEntity {
   get breadcrumbs() { return this.data.path.split("/").join(" > ").split("#").join(" > ").replace(".md", ""); }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get lines() { return { start: this.data.lines[0], end: this.data.lines[1] } };
+  get has_lines() { return this.data.lines && this.data.lines.length === 2; }
   get folder() { return this.data.path.split("/").slice(0, -1).join("/"); }
   get is_block() { return this.data.path.includes("#"); }
   get is_gone() {
