@@ -43,6 +43,7 @@ test('extract variable names and prompts from EJS template', async t => {
     { name: 'with_hyphen', prompt: 'with hyphen prompt' },
     { name: 'var_3', prompt: 'manually added 3', inline: true },
     { name: 'var_4', prompt: 'manually added 4', inline: true },
+    { name: 'var_5', prompt: 'should work with inline \'apostrophes\' like this', inline: true },
   ]);
 });
 test('should handle templates with no variables', async t => {

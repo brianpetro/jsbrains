@@ -11,7 +11,7 @@ export class MarkdownAdapter {
       template = await this.main.load_template(template);
     }
     const variables = [];
-    const regex = /{{\s*([\w\s"-]+)\s*}}/gi;
+    const regex = /{{\s*([^}]+)\s*}}/gi;
     const matches = template.match(regex);
     var i = 1;
     matches?.forEach((match, index) => {

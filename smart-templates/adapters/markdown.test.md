@@ -5,3 +5,4 @@ Hello {{ name }}! You have {{ count }} new messages.
 {{ with-hyphen }}
 {{ "manually added 3" }}
 {{ "manually added 4" }}
+{{ "should work with inline 'apostrophes' like this" }}
