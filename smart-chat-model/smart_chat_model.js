@@ -129,7 +129,14 @@ class SmartChatModel {
         const tool_name = this.get_tool_name(tool_call);
         const tool_call_content = this.get_tool_call_content(tool_call);
         const tool = body.tools.find((t) => t.function.name === tool_name); // platform-agnostic
-        if(is_valid_tool_call(tool, tool_call_content)){
+        const tool_handler = this.get_tool_handler(tool_name);
+        const valid_tool_call = is_valid_tool_call(tool, tool_call_content);
+        if(!tool_handler || !valid_tool_call) {
+          console.warn(`Tool ${tool_name} not found, returning tool_call_content`);
+          console.log({tool_call_content});
+          return tool_call_content;
+        }
+        if(valid_tool_call){
           if(typeof this.current?.add_message === 'function'){
             await this.current.add_message({ role: 'assistant', tool_calls: [{
               function: {
@@ -137,12 +144,6 @@ class SmartChatModel {
                 arguments: JSON.stringify(tool_call_content),
               }
             }]});
-          }
-          const tool_handler = this.get_tool_handler(tool_name);
-          if(!tool_handler) {
-            console.warn(`Tool ${tool_name} not found, returning tool_call_content`);
-            console.log({tool_call_content});
-            return tool_call_content;
           }
           const tool_output = await tool_handler(this.env, tool_call_content);
           if(tool_output) {
