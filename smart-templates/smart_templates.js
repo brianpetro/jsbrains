@@ -172,7 +172,6 @@ export class SmartTemplates {
     const chatModel = new SmartChatModel(this.env, this.chat_model_platform_key, this.model_config);
     if(this.request_adapter) chatModel._request_adapter = this.request_adapter;
     const replacementValues = await chatModel.complete(functionCallRequest);
-    // console.log(replacementValues);
 
     // Merge replacement values into context
     Object.assign(mergedContext, replacementValues);
