@@ -1,6 +1,7 @@
 import test from 'ava';
 import { SmartTemplates } from './smart_templates.js';
 import { SmartChatModel } from '../smart-chat-model/smart_chat_model.js';
+import fs from 'fs';
 
 const template_pointer = './template.test.ejs';
 const settings = {
@@ -16,7 +17,7 @@ const settings = {
     }
   }
 };
-const smart_templates = new SmartTemplates({ settings });
+const smart_templates = new SmartTemplates({ settings }, {read_adapter: async (path) => await fs.promises.readFile(path, 'utf8')});
 
 // Mock template content
 const mockTemplate = `Hello, <%= stringVar %>! You have <%= numberVar %> new messages.`;

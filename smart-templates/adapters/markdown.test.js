@@ -25,7 +25,14 @@ test('convert_to_ejs replaces mustache syntax with EJS syntax', async t => {
   t.is(ejsTemplate, ejs_template);
 });
 test('extract variable names and prompts from EJS template', async t => {
-  const smart_templates = new SmartTemplates({ settings }, { file_type_adapters: [MarkdownAdapter] });
+  const smart_templates = new SmartTemplates(
+    { settings },
+    {
+      file_type_adapters: [MarkdownAdapter],
+      // bind 'utf8' encoding to fs.readFile
+      read_adapter: async (_path) => await fs.promises.readFile(_path, 'utf8')
+    }
+  );
   const variables = await smart_templates.get_variables('./adapters/markdown.test.md');
   t.deepEqual(variables, [
     { name: 'name', prompt: 'name prompt' },
@@ -34,6 +41,8 @@ test('extract variable names and prompts from EJS template', async t => {
     { name: 'var_2', prompt: 'manually added 2', inline: true },
     { name: 'with_space', prompt: 'with space prompt' },
     { name: 'with_hyphen', prompt: 'with hyphen prompt' },
+    { name: 'var_3', prompt: 'manually added 3', inline: true },
+    { name: 'var_4', prompt: 'manually added 4', inline: true },
   ]);
 });
 test('should handle templates with no variables', async t => {

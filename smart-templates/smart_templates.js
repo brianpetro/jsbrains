@@ -37,7 +37,7 @@ export class SmartTemplates {
       }
     }
     if(opts.read_adapter) this.read_adapter = opts.read_adapter;
-    else throw new Error('opts.read_adapter is required (ex. fs.promises.readFile)');
+    else throw new Error("opts.read_adapter is required (ex. async (path) => await fs.promises.readFile(path, 'utf8'))");
     this._templates = {};
   }
   static async load(env, opts = {}) {
@@ -172,6 +172,18 @@ export class SmartTemplates {
     const chatModel = new SmartChatModel(this.env, this.chat_model_platform_key, this.model_config);
     if(this.request_adapter) chatModel._request_adapter = this.request_adapter;
     const replacementValues = await chatModel.complete(functionCallRequest);
+    Object.entries(replacementValues).forEach(([key, value]) => {
+      if(typeof value !== 'string' && typeof value !== 'number') {
+        console.warn(`Replacement value is not a string or number: `, JSON.stringify(value, null, 2));
+        if(Array.isArray(value)) {
+          replacementValues[key] = value.join('\n');
+          console.log('joined array');
+        } else {
+          replacementValues[key] = JSON.stringify(value);
+          console.log('stringified object');
+        }
+      }
+    });
 
     // Merge replacement values into context
     Object.assign(mergedContext, replacementValues);
