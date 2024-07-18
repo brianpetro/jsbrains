@@ -73,7 +73,7 @@ class MarkdownAdapter {
       acc.outlinks = extract_links(content);
       return finalize_output(acc, file_path);
     } catch (error) {
-      console.error("Error parsing markdown content:", error);
+      console.error("Error parsing markdown content:", entity.file_path, error);
       throw error;
     }
   }
