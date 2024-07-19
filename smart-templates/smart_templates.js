@@ -179,7 +179,7 @@ export class SmartTemplates {
           replacementValues[key] = value.join('\n');
           console.log('joined array');
         } else {
-          replacementValues[key] = JSON.stringify(value);
+          replacementValues[key] = value ? JSON.stringify(value) : '';
           console.log('stringified object');
         }
       }
