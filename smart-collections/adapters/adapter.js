@@ -24,7 +24,10 @@ class SmartCollectionsAdapter {
       acc[file.path] = file;
       return acc;
     }, {});
-    const item_types = Object.keys(this.env.item_types);
+    const item_types = [
+      ...Object.keys(this.env.item_types),
+      'SmartNote', // v1 backward compatibility
+    ];
     for (const file_path of files) {
       if(!file_path.endsWith('.ajson')) continue; // ensure it's an .ajson file
       let source_is_deleted = false;
@@ -56,6 +59,7 @@ class SmartCollectionsAdapter {
               source_is_deleted = true;
               return;
             }
+            if(class_name === 'SmartNote') class_name = 'SmartSource'; // v1 backward compatibility
             const entity = new (this.env.item_types[class_name])(this.env, value);
             this.env[entity.collection_name].items[entity_key] = entity;
             if(!entity_key.includes("#")) main_entity = entity;
