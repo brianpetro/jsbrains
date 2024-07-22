@@ -1,4 +1,4 @@
-import { create_hash } from "./create_hash";
+import { create_hash } from "./create_hash.js";
 import { SmartEntities } from "./SmartEntities.js";
 
 // DO: Extract to separate files

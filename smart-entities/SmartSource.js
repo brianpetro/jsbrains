@@ -1,4 +1,4 @@
-import { create_hash } from "./create_hash";
+import { create_hash } from "./create_hash.js";
 import { cos_sim } from "./cos_sim.js";
 import { SmartEntity } from "./SmartEntity.js";
 

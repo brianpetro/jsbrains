@@ -1,4 +1,4 @@
-import { Collection } from "smart-collections/Collection";
+import { Collection } from "smart-collections/Collection.js";
 import { top_acc } from "./top_acc.js";
 import { cos_sim } from "./cos_sim.js";
 

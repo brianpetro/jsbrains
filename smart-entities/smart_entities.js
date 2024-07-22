@@ -1,11 +1,11 @@
-import { SmartEntity } from "./SmartEntity";
-import { SmartEntities } from "./SmartEntities";
-import { SmartSource } from "./SmartSource";
-import { SmartSources } from "./SmartSources";
-import { SmartBlock } from "./SmartBlock";
-import { SmartBlocks } from "./SmartBlocks";
-import { top_acc } from "./top_acc";
-import { cos_sim } from "./cos_sim";
+import { SmartEntity } from "./SmartEntity.js";
+import { SmartEntities } from "./SmartEntities.js";
+import { SmartSource } from "./SmartSource.js";
+import { SmartSources } from "./SmartSources.js";
+import { SmartBlock } from "./SmartBlock.js";
+import { SmartBlocks } from "./SmartBlocks.js";
+import { top_acc } from "./top_acc.js";
+import { cos_sim } from "./cos_sim.js";
 
 export {
   SmartBlock,
@@ -17,7 +17,4 @@ export {
   // unnecessary?
   top_acc,
   cos_sim,
-  // DEPRECATED
-  SmartSource as SmartNote,
-  SmartSources as SmartNotes,
 }
