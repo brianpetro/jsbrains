@@ -24,7 +24,11 @@ Key principles:
 - Prioritize user agency, privacy and oversight
 - Loads collections (wake-up)
 
+## Architecture
+
 Smart Environment enables individuals and teams to leverage the power of AI while maintaining control over their data and workflows. Designed for extensibility, it provides a framework for integrating AI capabilities into your existing tools and processes.
+
+Singleton pattern is used to ensure that only one instance of Smart Environment is created. This instance is accessible through a global reference, which is either `window` or `global`, depending on the environment.
 
 ## interface
 ### `static async create(main, opts={})`
