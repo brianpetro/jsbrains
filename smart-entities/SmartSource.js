@@ -25,7 +25,7 @@ export class SmartSource extends SmartEntity {
     this.env.smart_blocks.import(this, { show_notice: false });
     this.queue_save();
   }
-  async get_content() { return await this.env.cached_read(this.t_file); }
+  async get_content() { return await this.env.main.read_file(this.data.path); }
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
     const content = await this.get_content(); // get content from file
