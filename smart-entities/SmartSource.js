@@ -138,8 +138,7 @@ export class SmartSource extends SmartEntity {
   get last_history() { return this.data.history.length ? this.data.history[this.data.history.length - 1] : null; }
   get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
   get median_block_vec() { return this._median_block_vec ? this._median_block_vec : this._median_block_vec = this.block_vecs[0]?.map((val, i) => this.block_vecs.map(vec => vec[i]).sort()[Math.floor(this.block_vecs.length / 2)]); }
-  get note_name() { return this.path.split("/").pop().replace(".md", ""); }
-  get t_file() { return this.env.get_tfile(this.data.path); }
+  get t_file() { return this.env.main.get_tfile(this.data.path); } // should be better handled using non-Obsidian API
   // v2.2
   get ajson() {
     return [

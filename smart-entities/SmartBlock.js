@@ -82,11 +82,13 @@ export class SmartBlock extends SmartEntity {
     const next_line = this.data.lines[1] + 1;
     return this.note.blocks?.find(block => next_line === block.data?.lines?.[0]);
   }
-  get note() { return this.env.smart_notes.get(this.note_key); }
-  get note_key() { return this.data.path.split("#")[0]; }
-  get note_name() { return this.note_key.split("/").pop().replace(".md", ""); }
-  // backwards compatibility (DEPRECATED)
-  get link() { return this.data.path; }
   get line_start() { return this.data.lines[0]; }
   get line_end() { return this.data.lines[1]; }
+  get source() { return this.env.smart_sources.get(this.source_key); }
+  get source_key() { return this.data.path.split("#")[0]; }
+  // DEPRECATED since v2
+  get note() { return this.env.smart_notes.get(this.note_key); }
+  get note_key() { return this.data.path.split("#")[0]; }
+  // backwards compatibility (DEPRECATED)
+  get link() { return this.data.path; }
 }
