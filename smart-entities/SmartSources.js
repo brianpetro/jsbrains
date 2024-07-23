@@ -79,7 +79,7 @@ export class SmartSources extends SmartEntities {
     await super.ensure_embeddings(show_notice);
     await this.prune(true);
     if (this.env.smart_blocks?.smart_embed) {
-      await this.env.smart_blocks.ensure_embeddings({ show_notice }); // trigger block-level import
+      await this.env.smart_blocks.ensure_embeddings(show_notice); // trigger block-level import
       await this.env.smart_blocks.prune(true);
     }
   }
