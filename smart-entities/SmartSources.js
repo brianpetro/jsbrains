@@ -5,12 +5,15 @@ import { SmartEntities } from "./SmartEntities.js";
 export class SmartSources extends SmartEntities {
   async import(files = [], opts = {}) {
     let batch = [];
+    // console.log({ files });
     try {
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
       let i = 0;
       for (i = 0; i < files.length; i++) {
         // if file size greater than 1MB skip
-        if (files[i].stat.size > 1000000) {
+        const file_size = files[i].size ?? files[i].stat?.size;
+        if (typeof file_size !== 'number') console.warn("file size is not a number: ", files[i]);
+        if (file_size > 1000000) {
           console.log("skipping large file: ", files[i].path);
           continue;
         }
