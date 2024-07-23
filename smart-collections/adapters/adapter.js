@@ -59,9 +59,10 @@ class SmartCollectionsAdapter {
               source_is_deleted = true;
               return;
             }
+            if(value.class_name === 'SmartNote') value.class_name = "SmartSource"; // v1 backward compatibility (depended on by CollectionItem.collection_name)
             if(class_name === 'SmartNote') class_name = 'SmartSource'; // v1 backward compatibility
             const entity = new (this.env.item_types[class_name])(this.env, value);
-            this.env[entity.collection_name].items[entity_key] = entity;
+            this.add_to_collection(entity);
             if(!entity_key.includes("#")) main_entity = entity;
           })
         ;
@@ -80,6 +81,10 @@ class SmartCollectionsAdapter {
     const end = Date.now(); // log time
     const time = end - start;
     console.log("Loaded collection items in " + time + "ms");
+  }
+
+  add_to_collection(entity) {
+    this.env[entity.collection_name].items[entity.key] = entity;
   }
 
   /**
