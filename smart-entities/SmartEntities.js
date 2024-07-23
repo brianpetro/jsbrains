@@ -57,6 +57,23 @@ export class SmartEntities extends Collection {
           if (sc_local.status === 200) {
             console.log('Local Smart Connect server found');
             this.smart_embed = await this.SmartEmbedModel.create(this.env, { ...model, request_adapter: request_adapter, adapter: 'local_api', local_endpoint: 'http://localhost:37421/embed_batch' });
+            // this.env.smart_sources.import = async (files = null) => {
+            //   const requestUrl = this.env.main.obsidian.requestUrl;
+            //   const resp = await requestUrl({ url: 'http://localhost:37421/import_entities', method: 'POST', body: JSON.stringify({ files }) });
+            //   console.log("import resp: ", resp);
+            //   this.env.main.notices.show('importing from Smart Connect', resp.notice, { timeout: 10000 });
+            //   let follow_up_resp = {};
+            //   while (!follow_up_resp.notice !== ('recently imported')) {
+            //     follow_up_resp = await requestUrl({ url: 'http://localhost:37421/import_entities', method: 'POST', body: JSON.stringify({ files }) });
+            //     this.env.main.notices.remove('importing from Smart Connect');
+            //     this.env.main.notices.show('importing from Smart Connect', follow_up_resp.notice, { timeout: 10000 });
+            //     await new Promise(resolve => setTimeout(resolve, 3000));
+            //     console.log("follow_up_resp: ", follow_up_resp);
+            //   }
+            //   this.env.main.notices.remove('importing from Smart Connect');
+            //   this.env.main.notices.show('imported from Smart Connect', follow_up_resp.notice, { timeout: 10000 });
+            // };
+            // this.env.smart_blocks.import = this.env.smart_sources.import;
             return;
           }
         } catch (err) {
