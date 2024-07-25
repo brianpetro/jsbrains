@@ -87,7 +87,7 @@ export class SmartBlock extends SmartEntity {
   get source() { return this.env.smart_sources.get(this.source_key); }
   get source_key() { return this.data.path.split("#")[0]; }
   // DEPRECATED since v2
-  get note() { return this.env.smart_notes.get(this.note_key); }
+  get note() { return this.source; }
   get note_key() { return this.data.path.split("#")[0]; }
   // backwards compatibility (DEPRECATED)
   get link() { return this.data.path; }
