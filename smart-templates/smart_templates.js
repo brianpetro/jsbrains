@@ -60,10 +60,11 @@ export class SmartTemplates {
   }
   get_adapter_by(file_type){ return this.file_type_adapters[file_type]; }
   // EJS template base syntax engine
-  async get_template(template, file_type = null) {
+  async get_template(template, opts = {}) {
+    console.log('opts', opts);
     if(typeof template !== 'string') throw new Error('Template must be a string');
     if(this._templates[template]) template = this._templates[template];
-    const adapter = this.get_adapter_by(file_type || template.split('.').pop());
+    const adapter = this.get_adapter_by(opts.file_type || template.split('.').pop());
     // console.log('adapter', adapter);
     if(typeof adapter?.get_template === 'function') return await adapter.get_template(template);
     if (!template.includes('\n') && this.file_types.includes(template.split('.').pop())) {
@@ -92,15 +93,15 @@ export class SmartTemplates {
   }
 
   // Get variables from EJS template
-  async get_variables(pointer) {
+  async get_variables(pointer, opts = {}) {
     let variables = [];
     // console.log('adapter', this.adapter);
-    const file_type = pointer.split('.').pop();
+    const file_type = opts.file_type || pointer.split('.').pop();
     const adapter = this.get_adapter_by(file_type);
     if (adapter && typeof adapter.get_variables === 'function') {
-      return await adapter.get_variables(pointer);
+      return await adapter.get_variables(pointer, opts);
     }
-    const template = await this.get_template(pointer);
+    const template = await this.get_template(pointer, opts);
     const regex = /<%[-_=]?\s*=?\s*([\w.]+(\[\w+])?)\s*[-_]?%>/g;
     let match;
     while ((match = regex.exec(template)) !== null) {
@@ -112,11 +113,11 @@ export class SmartTemplates {
     return variables;
   }
 
-  async get_function_call(template) {
+  async get_function_call(template, opts = {}) {
     if (this.adapter && typeof this.adapter.get_function_call === 'function') {
-      return this.adapter.get_function_call(template);
+      return this.adapter.get_function_call(template, opts);
     }
-    const variables = await this.get_variables(template);
+    const variables = await this.get_variables(template, opts);
     const properties = variables.reduce((acc, variable) => {
       acc[variable.name] = { type: 'string', description: variable.prompt || 'TODO' };
       return acc;
@@ -125,7 +126,7 @@ export class SmartTemplates {
       type: "function",
       function: {
         name: "generate_content",
-        description: "Generate arguments based on the CONTEXT.",
+        description: "Generate arguments based on the CONTEXT." + (opts.system_prompt ? ` ${opts.system_prompt}` : ''),
         parameters: {
           type: "object",
           properties,
@@ -145,7 +146,7 @@ export class SmartTemplates {
 
   // Render template with context and options
   async render(template, context, opts = {}) {
-    const templateContent = await this.get_template(template);
+    const templateContent = await this.get_template(template, opts);
     const mergedContext = { ...context, ...opts };
 
     const functionCallRequest = {
@@ -156,7 +157,7 @@ export class SmartTemplates {
         }
       ],
       tools: [
-        await this.get_function_call(template)
+        await this.get_function_call(template, opts)
       ],
       tool_choice: {
         type: 'function',
@@ -166,6 +167,10 @@ export class SmartTemplates {
       },
       stream: false
     };
+    if(opts.system_prompt){
+      functionCallRequest.messages[0].content += `\n---IMPORTANT---\n${opts.system_prompt}\n---END IMPORTANT---`;
+      functionCallRequest.messages.unshift({role: 'system', content: opts.system_prompt});
+    }
     // console.log(functionCallRequest);
 
     // Use SmartChatModel to get replacement values
