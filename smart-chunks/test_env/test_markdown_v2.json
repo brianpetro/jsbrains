@@ -156,9 +156,39 @@
       "length": 28,
       "lines": [
         58,
-        59
+        60
       ],
       "text": "test_env > test_markdown_v2: Yet Another Heading:\n4. Fourth item\n5. Fifth item"
+    },
+    {
+      "heading": "heading with [[link|should parse]]",
+      "length": 32,
+      "lines": [
+        61,
+        63
+      ],
+      "path": "test_env/test_markdown_v2.md#heading with [[link|should parse]]",
+      "text": "test_env > test_markdown_v2: heading with [[link|should parse]]:\nSome text to parse in this block"
+    },
+    {
+      "heading": "heading with [link](http://example.com/should-parse)",
+      "length": 32,
+      "lines": [
+        64,
+        66
+      ],
+      "path": "test_env/test_markdown_v2.md#heading with [link](http://example.com/should-parse)",
+      "text": "test_env > test_markdown_v2: heading with [link](http://example.com/should-parse):\nSome text to parse in this block"
+    },
+    {
+      "heading": "heading with [link](http://example.com/should-parse) and subseqent text",
+      "length": 32,
+      "lines": [
+        67,
+        68
+      ],
+      "path": "test_env/test_markdown_v2.md#heading with [link](http://example.com/should-parse) and subseqent text",
+      "text": "test_env > test_markdown_v2: heading with [link](http://example.com/should-parse) and subseqent text:\nSome text to parse in this block"
     }
   ],
   "log": [],

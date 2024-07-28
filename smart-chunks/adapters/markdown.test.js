@@ -74,7 +74,7 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v2 blocks'
   const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2);
   // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2_${platform}.json`), JSON.stringify(parsed, null, 2));
   t.deepEqual(parsed.blocks, t.context.expected_v2.blocks);
-  t.is(parsed.blocks.length, 16);
+  t.is(parsed.blocks.length, 19);
   // const start = new Date();
   // for (let i = 0; i < TEST_TIMES; i++) {
   //   await t.context.smart_chunks.parse(t.context.mock_entity_v2);

@@ -58,3 +58,12 @@ Another block
    3. Child item 3
 4. Fourth item
 5. Fifth item
+
+# heading with [[link|should parse]]
+Some text to parse in this block
+
+# heading with [link](http://example.com/should-parse)
+Some text to parse in this block
+
+# heading with [link](http://example.com/should-parse) and subseqent text
+Some text to parse in this block
