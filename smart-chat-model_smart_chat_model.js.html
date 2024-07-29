@@ -107,22 +107,45 @@ class SmartChatModel {
    * @param {boolean} render - Flag to determine if the response should be rendered in the UI.
    * @returns {Promise&lt;string|void>} - Returns the chat response content or handles tool outputs recursively. In case of errors, it may return an error message.
    */
-  async complete(opts={}, render=true) {
-    if(!this.base_model_config){
+  async complete(opts = {}, render = true) {
+    const prepared_opts = await this.prepare_options(opts);
+    const request = this.create_request(prepared_opts);
+    
+    try {
+      if (prepared_opts.stream) {
+        return await this.handle_streaming_request(request, render);
+      }
+      return await this.handle_non_streaming_request(request, prepared_opts, render);
+    } catch (err) {
+      return this.handle_error(err, render);
+    }
+  }
+
+  async prepare_options(opts) {
+    if (!this.base_model_config) {
       this.base_model_config = await this.get_base_model_config();
       this.config = {
         ...this.base_model_config,
         ...this.config,
       };
     }
-    opts = {
+
+    const prepared_opts = {
       ...this.default_opts,
       messages: (await this.current?.get_chat_ml())?.messages || [],
       ...opts,
     };
-    if(opts.stream !== false &amp;&amp; this.config.streaming &amp;&amp; !this.current?.tool_choice) opts.stream = true; // no streaming if tool_choice is set
-    else opts.stream = false;
-    opts = await this.request_middlewares(JSON.parse(JSON.stringify(opts)));
+
+    if (prepared_opts.stream !== false &amp;&amp; this.config.streaming &amp;&amp; !this.current?.tool_choice) {
+      prepared_opts.stream = true;
+    } else {
+      prepared_opts.stream = false;
+    }
+
+    return this.request_middlewares(JSON.parse(JSON.stringify(prepared_opts)));
+  }
+
+  create_request(opts) {
     const req = {
       headers: {
         "Content-Type": "application/json",
@@ -130,71 +153,114 @@ class SmartChatModel {
       },
       method: "POST",
     };
-    if (this.config.headers) req.headers = { ...req.headers, ...this.config.headers };
+
+    if (this.config.headers) {
+      req.headers = { ...req.headers, ...this.config.headers };
+    }
+
     if (this.config.api_key_header) {
-      if(this.config.api_key_header !== 'none') req.headers[this.config.api_key_header] = this.api_key;
+      if (this.config.api_key_header !== 'none') {
+        req.headers[this.config.api_key_header] = this.api_key;
+      }
       delete req.headers.Authorization;
     }
-    // body constant stores chatml for later
-    const body = typeof this.env.actions?.prepare_request_body === 'function' ? this.env.actions.prepare_request_body(opts) : { ...opts };
-    // adapter can modify body based on platform
-    req.body = JSON.stringify(typeof this.adapter?.prepare_request_body === 'function' ? this.adapter.prepare_request_body(body) : body);
-    console.log(req);
-    try {
-      if(opts.stream) return await this.stream(req);
-      // HANDLE NON-STREAMING (includes all function calls)
-      const resp_json = await this.request(req);
-      if(resp_json.error) {
-        console.error(resp_json.error);
-        if(render) this.done_handler("*API Error. See console logs for details.*");
-        return;
-      }
-      // if is tool_call, handle tool_call and return
-      const tool_call = this.get_tool_call(resp_json);
-      if(tool_call){
-        if(this.env.chats?.current?.tool_choice) this.env.chats.current.tool_choice = null; // IMPORTANT: prevent infinite loop
-        // if (this.current.tool_choice !== "auto") this.current.tool_choice = null; // remove tool_choice from current if not auto (prevent infinite loop)
-        const tool_name = this.get_tool_name(tool_call);
-        const tool_call_content = this.get_tool_call_content(tool_call);
-        const tool = body.tools.find((t) => t.function.name === tool_name); // platform-agnostic
-        const tool_handler = this.get_tool_handler(tool_name);
-        const valid_tool_call = is_valid_tool_call(tool, tool_call_content);
-        if(!tool_handler || !valid_tool_call) {
-          console.warn(`Tool ${tool_name} not found, returning tool_call_content`);
-          console.log({tool_call_content});
-          return tool_call_content;
-        }
-        if(valid_tool_call){
-          if(typeof this.current?.add_message === 'function'){
-            await this.current.add_message({ role: 'assistant', tool_calls: [{
-              function: {
-                name: tool_name,
-                arguments: JSON.stringify(tool_call_content),
-              }
-            }]});
-          }
-          const tool_output = await tool_handler(this.env, tool_call_content);
-          if(tool_output) {
-            await this.current.add_tool_output(tool_name, tool_output);
-            this.current.tool_choice = 'none'; // prevent subsequent fx_call from preventing completion
-            return this.complete({});
-          }
-        }else{
-          // DO: use tool specs to coerce tool_call to match tool.function.parameters
-          console.error(`Invalid tool call: ${tool_call}`);
-          if(render) this.done_handler("*Invalid tool call. See console logs for details.*");
-          return "*Invalid tool call. See console logs for details.*";
-        }
-      }
 
-      if(render) this.done_handler(this.get_message_content(resp_json));
-      return this.get_message_content(resp_json);
-      // console.log(response);
-    } catch (err) {
-      console.error(err);
-      // new Notice(`Smart Connections API Error :: ${err}`);
+    const body = typeof this.env.actions?.prepare_request_body === 'function' 
+      ? this.env.actions.prepare_request_body(opts) 
+      : { ...opts };
+
+    req.body = JSON.stringify(typeof this.adapter?.prepare_request_body === 'function' 
+      ? this.adapter.prepare_request_body(body) 
+      : body);
+
+    return req;
+  }
+
+  async handle_streaming_request(request, render) {
+    return this.stream(request);
+  }
+
+  async handle_non_streaming_request(request, opts, render) {
+    const resp_json = await this.request(request);
+    
+    if (resp_json.error) {
+      return this.handle_api_error(resp_json.error, render);
+    }
+
+    // if is tool_call, handle tool_call and return
+    const tool_call = this.get_tool_call(resp_json);
+    if (tool_call) {
+      return this.handle_tool_call(tool_call, opts, render);
+    }
+
+    const message_content = this.get_message_content(resp_json);
+    if (render) {
+      this.done_handler(message_content);
+    }
+    return message_content;
+  }
+
+  handle_api_error(error, render) {
+    console.error(error);
+    if (render) {
+      this.done_handler("*API Error. See console logs for details.*");
+    }
+    return "*API Error. See console logs for details.*";
+  }
+
+  async handle_tool_call(tool_call, opts, render) {
+    if (this.env.chats?.current?.tool_choice) {
+      this.env.chats.current.tool_choice = null;
+    }
+
+    const tool_name = this.get_tool_name(tool_call);
+    const tool_call_content = this.get_tool_call_content(tool_call);
+    const tools = opts.tools || [];
+    const tool = tools.find((t) => t.function.name === tool_name);
+    const tool_handler = this.get_tool_handler(tool_name);
+
+    if (!tool_handler || !is_valid_tool_call(tool, tool_call_content)) {
+      return this.handle_invalid_tool_call(tool_name, tool_call_content);
+    }
+
+    await this.add_tool_call_to_chat(tool_name, tool_call_content);
+    const tool_output = await tool_handler(this.env, tool_call_content);
+
+    if (tool_output) {
+      await this.current.add_tool_output(tool_name, tool_output);
+      this.current.tool_choice = 'none'; // prevent subsequent tool calls from preventing completion
+      return this.complete({}); // empty opts
     }
   }
+
+  handle_invalid_tool_call(tool_name, tool_call_content) {
+    console.warn(`Tool ${tool_name} not found or invalid, returning tool_call_content`);
+    console.log({tool_call_content});
+    return tool_call_content;
+  }
+
+  async add_tool_call_to_chat(tool_name, tool_call_content) {
+    if (typeof this.current?.add_message === 'function') {
+      await this.current.add_message({
+        role: 'assistant',
+        tool_calls: [{
+          function: {
+            name: tool_name,
+            arguments: JSON.stringify(tool_call_content),
+          }
+        }]
+      });
+    }
+  }
+
+  handle_error(err, render) {
+    console.error(err);
+    if (render) {
+      this.done_handler("*An error occurred. See console logs for details.*");
+    }
+    return "*An error occurred. See console logs for details.*";
+  }
+
   // HANDLE TOOLS
   /**
    * Retrieves the tool handler function based on the tool name from the environment's actions.
@@ -447,7 +513,7 @@ exports.SmartChatModel = SmartChatModel;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jul 29 2024 20:32:33 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon Jul 29 2024 20:48:09 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
