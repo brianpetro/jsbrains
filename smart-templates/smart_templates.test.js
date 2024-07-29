@@ -43,7 +43,8 @@ test('extract variable names and prompts from EJS template', async t => {
 });
 
 test('get function call returns tool call spec', async t => {
-  const functionCallSpec = await smart_templates.get_function_call(template_pointer);
+  const variables = await smart_templates.get_variables(template_pointer);
+  const functionCallSpec = await smart_templates.get_chatml_tools(variables);
   t.truthy(functionCallSpec);
   t.deepEqual(functionCallSpec, {
     function: {

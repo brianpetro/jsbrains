@@ -81,7 +81,7 @@ export class SmartTemplates {
   async load_template(pointer) {
     try {
       let template = await this.read_adapter(pointer);
-      // // if is buffer, convert to string (breaks Obsidian mobile)
+      // // if is buffer, convert to string (WARNING: breaks Obsidian mobile)
       // if (typeof Buffer?.isBuffer === 'function' && Buffer.isBuffer(template)) {
       //   template = template.toString();
       // }
@@ -113,11 +113,7 @@ export class SmartTemplates {
     return variables;
   }
 
-  async get_function_call(template, opts = {}) {
-    if (this.adapter && typeof this.adapter.get_function_call === 'function') {
-      return this.adapter.get_function_call(template, opts);
-    }
-    const variables = await this.get_variables(template, opts);
+  async get_chatml_tools(variables, opts = {}) {
     const properties = variables.reduce((acc, variable) => {
       acc[variable.name] = { type: 'string', description: variable.prompt || 'TODO' };
       return acc;
@@ -146,8 +142,12 @@ export class SmartTemplates {
 
   // Render template with context and options
   async render(template, context, opts = {}) {
-    const templateContent = await this.get_template(template, opts);
-    const mergedContext = { ...context, ...opts };
+    const template_content = await this.get_template(template, opts);
+    const variables = await this.get_variables(template, opts);
+    const mergedContext = { context, ...opts };
+    variables.forEach(variable => {
+      mergedContext[variable.name] = 'EMPTY';
+    });
 
     const functionCallRequest = {
       messages: [
@@ -157,7 +157,7 @@ export class SmartTemplates {
         }
       ],
       tools: [
-        await this.get_function_call(template, opts)
+        await this.get_chatml_tools(variables, opts)
       ],
       tool_choice: {
         type: 'function',
@@ -193,7 +193,7 @@ export class SmartTemplates {
     // Merge replacement values into context
     Object.assign(mergedContext, replacementValues);
 
-    return ejs.render(templateContent, mergedContext);
+    return ejs.render(template_content, mergedContext);
   }
   get model_config() {
     if(this.env.smart_templates_plugin?.settings?.[this.chat_model_platform_key]) return this.env.smart_templates_plugin.settings[this.chat_model_platform_key];
