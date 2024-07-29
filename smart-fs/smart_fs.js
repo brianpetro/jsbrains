@@ -25,12 +25,48 @@ import { Minimatch } from 'minimatch';
 
 const fsPromises = fs.promises;
 
+/**
+ * SmartFs - Intelligent file system wrapper for Smart Environments
+ * 
+ * @class
+ * @description
+ * SmartFs provides a layer of abstraction over Node.js's native `fs` module,
+ * adding features like automatic `.gitignore` handling and path resolution.
+ * It's designed to work seamlessly with Smart Environments, enhancing file
+ * system operations with additional smart functionality.
+ * 
+ * Key Features:
+ * - Automatic `.gitignore` pattern handling
+ * - Path resolution relative to the environment path
+ * - Wrapping of common `fs` methods with additional smart functionality
+ * - Support for both synchronous and asynchronous operations
+ * 
+ * @example
+ * const env = new SmartEnvironment();
+ * const smartFs = new SmartFs(env);
+ * 
+ * // Use smartFs methods instead of native fs methods
+ * await smartFs.readFile('example.txt');
+ */
 class SmartFs {
+  /**
+   * Create a new SmartFs instance
+   * 
+   * @param {Object} env - The Smart Environment instance
+   * @param {Object} [opts={}] - Optional configuration
+   * @param {string} [opts.env_path] - Custom environment path
+   */
   constructor(env, opts = {}) {
     this.env_path = opts.env_path || env.config.env_path || env.config.vault_path; // vault_path is DEPRECATED
     this.gitignore_patterns = this.#load_gitignore();
   }
 
+  /**
+   * Load .gitignore patterns
+   * 
+   * @private
+   * @returns {Minimatch[]} Array of Minimatch patterns
+   */
   #load_gitignore() {
     const patterns = [];
     const gitignore_path = path.join(this.env_path, '.gitignore');
@@ -46,44 +82,90 @@ class SmartFs {
     patterns.push(new Minimatch('.gitignore'));
     return patterns;
   }
+
+  /**
+   * Add a new ignore pattern
+   * 
+   * @param {string} pattern - The pattern to add
+   */
   add_ignore_pattern(pattern) {
     this.gitignore_patterns.push(new Minimatch(pattern.trim()));
   }
 
+  /**
+   * Check if a path is ignored
+   * 
+   * @param {string} _path - The path to check
+   * @returns {boolean} True if the path is ignored, false otherwise
+   */
   is_ignored(_path) {
     if (!this.gitignore_patterns.length) return false;
     const relative_path = _path.startsWith(this.env_path) ? path.relative(this.env_path, _path) : _path;
     return this.gitignore_patterns.some(pattern => pattern.match(relative_path));
   }
+
+  /**
+   * Resolve a relative path to an absolute path
+   * 
+   * @private
+   * @param {string} rel_path - The relative path to resolve
+   * @returns {string} The resolved absolute path
+   */
   #resolvePath(rel_path) {
     if (rel_path.startsWith(this.env_path)) return rel_path;
-    // console.log({ rel_path, env_path: this.env_path });
     return path.join(this.env_path, rel_path);
   }
 
+  /**
+   * Pre-process a path before operation
+   * 
+   * @param {string} resolved_path - The resolved path
+   * @param {...any} args - Additional arguments
+   * @returns {Array|null} Processed arguments or null if path is ignored
+   */
   pre_process(resolved_path, ...args) {
     if (this.is_ignored(resolved_path)) return null;
     return [resolved_path, ...args];
   }
 
+  /**
+   * Post-process the result of an operation
+   * 
+   * @param {any} returned_value - The value returned by the operation
+   * @returns {any} The post-processed value
+   */
   post_process(returned_value) {
     if (Array.isArray(returned_value) && typeof returned_value[0] === 'string') {
       returned_value = returned_value.filter(r => !this.is_ignored(r));
     }
     return returned_value;
   }
+
+  /**
+   * Process paths before an operation
+   * 
+   * @private
+   * @param {string[]} paths - The paths to process
+   * @returns {string[]|Object[]} Processed paths or error objects
+   */
   #processPaths(paths) {
     return paths.map(path => {
       const resolvedPath = this.#resolvePath(path);
-      // console.log(resolvedPath);
       if (this.is_ignored(resolvedPath)){
-        // console.log(`Path is ignored: ${path}`);
         return { error: `Path is ignored: ${path}` };
       }
       return resolvedPath;
     });
   }
 
+  /**
+   * Wrap an asynchronous fs method
+   * 
+   * @private
+   * @param {Function} method - The method to wrap
+   * @param {number} [path_count=1] - The number of path arguments
+   * @returns {Function} The wrapped method
+   */
   #wrapMethod(method, path_count = 1) {
     return async (...args) => {
       const paths = args.slice(0, path_count);
@@ -96,6 +178,14 @@ class SmartFs {
     };
   }
 
+  /**
+   * Wrap a synchronous fs method
+   * 
+   * @private
+   * @param {Function} method - The method to wrap
+   * @param {number} [path_count=1] - The number of path arguments
+   * @returns {Function} The wrapped method
+   */
   #wrapSyncMethod(method, path_count = 1) {
     return (...args) => {
       const paths = args.slice(0, path_count);
@@ -108,6 +198,7 @@ class SmartFs {
     };
   }
 
+  // Wrapped fs methods
   appendFile = this.#wrapMethod(fsPromises.appendFile);
   appendFileSync = this.#wrapSyncMethod(fs.appendFileSync);
   // exists = this.#wrapMethod(fsPromises.access); // better handled by custom exists method
@@ -135,6 +226,12 @@ class SmartFs {
   writeFile = this.#wrapMethod(fsPromises.writeFile);
   writeFileSync = this.#wrapSyncMethod(fs.writeFileSync);
 
+  /**
+   * Check if a file or directory exists
+   * 
+   * @param {string} rel_path - The relative path to check
+   * @returns {Promise<boolean>} True if the path exists, false otherwise
+   */
   async exists(rel_path) {
     try {
       await fsPromises.access(this.#resolvePath(rel_path));
