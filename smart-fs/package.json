@@ -1,0 +1,37 @@
+{
+  "name": "smart-file-system",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.2",
+  "type": "module",
+  "description": "Smart FS for use with Smart Environments.",
+  "main": "smart_fs.js",
+  "keywords": [
+    "smart-environments",
+    "file-system",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/js-brains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "dependencies": {
+    "minimatch": "^9.0.4"
+  },
+  "devDependencies": {
+    "ava": "^6.1.3",
+    "dotenv": "^16.4.5"
+  },
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "ava": {
+    "files": [
+      "**/*.test.js"
+    ]
+  }
+}
