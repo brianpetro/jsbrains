@@ -61,20 +61,16 @@ export class SmartTemplates {
   get_adapter_by(file_type){ return this.file_type_adapters[file_type]; }
   // EJS template base syntax engine
   async get_template(template, opts = {}) {
-    console.log('opts', opts);
     if(typeof template !== 'string') throw new Error('Template must be a string');
     if(this._templates[template]) template = this._templates[template];
     const adapter = this.get_adapter_by(opts.file_type || template.split('.').pop());
-    // console.log('adapter', adapter);
     if(typeof adapter?.get_template === 'function') return await adapter.get_template(template);
     if (!template.includes('\n') && this.file_types.includes(template.split('.').pop())) {
       template = await this.load_template(template);
     }
-    // console.log('template', template);
     if (typeof adapter?.convert_to_ejs === 'function') {
       template = adapter.convert_to_ejs(template);
     }
-    // console.log('template', template);
     return template;
   }
 
@@ -95,7 +91,6 @@ export class SmartTemplates {
   // Get variables from EJS template
   async get_variables(pointer, opts = {}) {
     let variables = [];
-    // console.log('adapter', this.adapter);
     const file_type = opts.file_type || pointer.split('.').pop();
     const adapter = this.get_adapter_by(file_type);
     if (adapter && typeof adapter.get_variables === 'function') {
@@ -171,7 +166,6 @@ export class SmartTemplates {
       functionCallRequest.messages[0].content += `\n---IMPORTANT---\n${opts.system_prompt}\n---END IMPORTANT---`;
       functionCallRequest.messages.unshift({role: 'system', content: opts.system_prompt});
     }
-    // console.log(functionCallRequest);
 
     // Use SmartChatModel to get replacement values
     const chatModel = new SmartChatModel(this.env, this.chat_model_platform_key, this.model_config);
@@ -182,10 +176,8 @@ export class SmartTemplates {
         console.warn(`Replacement value is not a string or number: `, JSON.stringify(value, null, 2));
         if(Array.isArray(value)) {
           replacementValues[key] = value.join('\n');
-          console.log('joined array');
         } else {
           replacementValues[key] = value ? JSON.stringify(value) : '';
-          console.log('stringified object');
         }
       }
     });
