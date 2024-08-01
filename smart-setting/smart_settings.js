@@ -42,10 +42,8 @@ class SmartSettings {
     if (!this.template) throw new Error(`Settings template not found.`);
     this.container.empty();
     this.container.innerHTML = this.ejs.render(this.template, view_data || this.view_data, { context: this });
-    // console.log("rendered template");
   }
   async update(setting, value) {
-    console.log("saving setting: " + setting);
     let settings = {...this.settings};
     if (setting.includes(".")) {
       let parts = setting.split(".");
@@ -60,14 +58,10 @@ class SmartSettings {
     }
     this.settings = settings;
     await this.main.save_settings(true);
-    console.log("saved settings");
-    // console.log(this.settings);
   }
   render_components() {
-    // console.log("rendering components");
-    if(!this.main.obsidian.Setting) console.log("missing Obsidian");
+    if(!this.main.obsidian.Setting) console.warn("missing Obsidian Setting component");
     this.container.querySelectorAll(".setting-component").forEach(elm => {
-      // console.log("rendering component: " + elm.dataset.setting);
       const setting_elm = new this.main.obsidian.Setting(elm);
       if (elm.dataset.name) setting_elm.setName(elm.dataset.name);
       if (elm.dataset.description) setting_elm.descEl.innerHTML = elm.dataset.description;
@@ -139,17 +133,14 @@ class SmartSettings {
           toggle.onChange(async (value) => this.handle_on_change(setting, value, elm));
         });
       } else if (elm.dataset.type === "textarea") {
-        // console.log("rendering textarea");
         setting_elm.addTextArea(textarea => {
           textarea.setValue(this.get_setting(setting));
           textarea.onChange(async (value) => this.handle_on_change(setting, value, elm));
           if (elm.dataset.maxLength) textarea.inputEl.maxLength = elm.dataset.maxLength;
         });
-        // console.log("rendered textarea");
       }
       if (elm.dataset.disabled) setting_elm.setDisabled(true);
     });
-    console.log("rendered components");
   }
   async handle_on_change(setting, value, elm) {
     await this.update(setting, value);
