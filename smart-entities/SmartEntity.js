@@ -29,7 +29,7 @@ export class SmartEntity extends CollectionItem {
   get name() { return (!this.env.main.settings.show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get path() { return this.data.path; }
   get tokens() { return this.data.embeddings[this.embed_model]?.tokens; }
-  get embed_model() { return this.collection.smart_embed_model; }
+  get embed_model() { return this.collection?.smart_embed_model_key || "None"; }
   get vec() { return this.data?.embeddings?.[this.embed_model]?.vec; }
   get embedding() { return this.data.embeddings?.[this.embed_model]; }
   // setters
@@ -51,4 +51,5 @@ export class SmartEntity extends CollectionItem {
     if(this.size < (this.env.settings.embed_input_min_chars || 300)) return false;
     return true;
   }
+  get smart_embed() { return this.collection.smart_embed; }
 }

@@ -13,28 +13,23 @@ export class SmartBlock extends SmartEntity {
   }
   // SmartChunk: text, length, path
   update_data(data) {
-    if (!this.is_new || (this.vec?.length !== this.collection.smart_embed?.dims)) {
-      // length returned by SmartMarkdown
-      if (this.data.length !== data.length) this.data.embedding = {}; // clear embedding (DEPRECATED)
-      if (this.data.length !== data.length) this.data.embeddings = {}; // clear embeddings
-    }
-    // if(!this.data.embedding?.vec) this._embed_input += data.text; // store text for embedding (DEPRECATED)
+    if (this.should_clear_embeddings(data)) this.data.embeddings = {};
     if (!this.vec) this._embed_input += data.text; // store text for embedding
-
     delete data.text; // clear data.text to prevent saving text
     super.update_data(data);
     return true;
   }
+  should_clear_embeddings(data) {
+    if(this.is_new) return true;
+    if(this.smart_embed && this.vec?.length !== this.smart_embed.dims) return true;
+    if(this.data.length !== data.length) return true;
+    return false;
+  }
   init() {
-    if (!this.note) return console.log({ "no note for block": this.data });
-    if (Array.isArray(this.note.last_history.blocks)) this.note.last_history.blocks = {}; // convert to object
-    this.note.last_history.blocks[this.key] = true; // add block key to note history entry
-    if(this.is_unembedded) this.collection.smart_embed.embed_entity(this);
+    if (!this.source) return console.log({ "no source for block": this.data });
+    if(this.smart_embed && this.is_unembedded) this.smart_embed.embed_entity(this);
   }
   async get_content() {
-    // const note_content = await this.note?.get_content();
-    // if(!note_content) return null;
-    // const block_content = this.env.smart_markdown.get_block_from_path(this.data.path, note_content);
     if (!this.note) return null;
     try {
       if (this.has_lines) { // prevents full parsing of note if not needed
@@ -88,6 +83,14 @@ export class SmartBlock extends SmartEntity {
   get source() { return this.env.smart_sources.get(this.source_key); }
   get source_key() { return this.data.path.split("#")[0]; }
   get size() { return this.data.length; }
+  get is_unembedded() {
+    if(this.excluded) return false;
+    return super.is_unembedded;
+  }
+  get excluded() {
+    const block_headings = this.path.split("#").slice(1); // remove first element (file path)
+    return this.env.excluded_headings.some(heading => block_headings.includes(heading));
+  }
   // DEPRECATED since v2
   get note() { return this.source; }
   get note_key() { return this.data.path.split("#")[0]; }

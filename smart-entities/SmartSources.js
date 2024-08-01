@@ -5,7 +5,6 @@ import { SmartEntities } from "./SmartEntities.js";
 export class SmartSources extends SmartEntities {
   async import(files = [], opts = {}) {
     let batch = [];
-    // console.log({ files });
     try {
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
       let i = 0;
@@ -14,7 +13,7 @@ export class SmartSources extends SmartEntities {
         const file_size = files[i].size ?? files[i].stat?.size;
         if (typeof file_size !== 'number') console.warn("file size is not a number: ", files[i]);
         if (file_size > 1000000) {
-          console.log("skipping large file: ", files[i].path);
+          console.log(`Smart Connections: Skipping large file: ${files[i].path}`);
           continue;
         }
         if (batch.length % 10 === 0) {
@@ -32,8 +31,7 @@ export class SmartSources extends SmartEntities {
             console.error('Batch processing error:', error);
             // log files paths that were in batch via files
             const files_in_batch = files.slice(i - batch.length, i);
-            console.log(files_in_batch.map(file => file.path));
-            // Handle timeout or other errors here
+            console.log(`Smart Connections: Batch processing error: ${JSON.stringify(files_in_batch.map(file => file.path), null, 2)}`);
           }
           batch = [];
         }
@@ -41,11 +39,8 @@ export class SmartSources extends SmartEntities {
         if (!note) batch.push(this.create_or_update({ path: files[i].path }));
         else {
           if (note.meta_changed) {
-            console.log("note meta changed: ", note);
             note.data.embeddings = {};
             batch.push(this.create_or_update({ path: files[i].path }));
-          } else if (this.env.smart_blocks?.smart_embed) {
-            batch.push(this.env.smart_blocks.import(note, { show_notice: false }));
           }
         }
       }
@@ -66,24 +61,15 @@ export class SmartSources extends SmartEntities {
           console.error('Final batch processing error:', error);
         }
       }
-
+      this.env.links = this.build_links_map();
       this.env.main.notices.remove('initial scan progress');
-      this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
-      // this.ensure_embeddings();
+      if(files.length > 1) this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
     } catch (e) {
       console.warn("error importing notes: ", e);
       console.warn({ batch });
     }
   }
-  // async ensure_embeddings(show_notice = false) {
-  //   await super.ensure_embeddings(show_notice);
-  //   await this.prune(true);
-  //   if (this.env.smart_blocks?.smart_embed) {
-  //     await this.env.smart_blocks.ensure_embeddings(show_notice); // trigger block-level import
-  //     await this.env.smart_blocks.prune(true);
-  //   }
-  // }
-  async prune(override = false) {
+  async prune() {
     const start = Date.now();
     const remove = [];
     const items_w_vec = Object.entries(this.items).filter(([key, note]) => note.vec);
@@ -114,14 +100,35 @@ export class SmartSources extends SmartEntities {
         }
       }
     }
-    console.log(remove);
     const remove_ratio = remove.length / total_items_w_vec;
-    console.log(`Pruning: Found ${remove.length} Smart Notes in ${Date.now() - start}ms`);
-    if ((override && (remove_ratio < 0.5)) || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio * 100)}%) Note-level Embeddings?`)) {
+    console.log(`Smart Connections: Pruning: Found ${remove.length} Smart Notes to remove in ${Date.now() - start}ms`);
+    if (remove_ratio < 0.5 || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio * 100)}%) Note-level Embeddings?`)) {
       this.delete_many(remove);
-      this.adapter._save_queue();
     }
+    await this.env.smart_blocks.prune();
+    this.env.save();
   }
   get current_note() { return this.get(this.env.main.app.workspace.getActiveFile().path); }
-  get blocks() { this.env.smart_blocks.get_many(this.last_history.blocks); }
+  build_links_map() {
+    const links_map = {};
+    for (const source of Object.values(this.items)) {
+      for (const link of source.outlink_paths) {
+        if (!links_map[link]) links_map[link] = {};
+        links_map[link][source.key] = true;
+      }
+    }
+    return links_map;
+  }
+  async refresh_embeddings() {
+    await this.prune();
+    for (const source of Object.values(this.items)) {
+      if(source.excluded) continue;
+      if (source.is_unembedded) source.smart_embed.embed_entity(source);
+      else if (this.env.smart_blocks.smart_embed) {
+        source.blocks.forEach(block => {
+          if (block.is_unembedded) block.smart_embed.embed_entity(block);
+        });
+      }
+    }
+  }
 }

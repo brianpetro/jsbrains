@@ -61,9 +61,14 @@ class Collection {
     const item = existing ? existing : new this.item_type(this.env);
     item.is_new = !!!existing;
     const changed = item.update_data(data); // handles this.data
+    if (!existing) {
+      if (item.validate_save()) this.set(item); // make it available in collection (if valid)
+      else {
+        console.warn("Invalid item, skipping adding to collection: ", item);
+        return item;
+      }
+    }
     if (existing && !changed) return existing; // if existing item and no changes, return existing item (no need to save)
-    if (item.validate_save()) this.set(item); // make it available in collection (if valid)
-
     // dynamically handle async init functions
     if (item.init instanceof AsyncFunction) return new Promise((resolve, reject) => { item.init(data).then(() => resolve(item)); });
     item.init(data); // handles functions that involve other items
@@ -231,31 +236,7 @@ class Collection {
       ;
       current_class = Object.getPrototypeOf(current_class);
     }
-    // console.log(Object.keys(this));
   }
-
-
-
-  // CHOPPING BLOCK
-  // May be moved to adapter class or removed
-
-  /**
-   * Revives items from a serialized state.
-   * @param {string} key - The key of the item.
-   * @param {*} value - The serialized item value.
-   * @returns {CollectionItem|*} The revived item or the original value if not an object.
-   */
-  reviver(key, value) {
-    if (typeof value !== 'object' || value === null) return value; // skip non-objects, quick return
-    if (value.class_name) return new (this.env.item_types[value.class_name])(this.env, value);
-    return value;
-  }
-  replacer(key, value) {
-    if (value instanceof this.item_type) return value.data;
-    if (value instanceof CollectionItem) return value.ref;
-    return value;
-  }
-
 }
 exports.Collection = Collection;
 

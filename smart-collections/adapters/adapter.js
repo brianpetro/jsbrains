@@ -106,12 +106,14 @@ class SmartCollectionsAdapter {
     if(!(await this.exists(this.data_path))) await this.mkdir(this.data_path);
     try {
       const item_file_path = `${this.data_path}/${item.multi_ajson_file_name}.ajson`; // Use item.file_name for file naming
-      const ajson = item.ajson;
-      if(!ajson && (await this.exists(item_file_path))){
-        await this.remove(item_file_path);
+      if(item.deleted){
         delete this.main.items[key];
-        console.log("Deleted item: " + key);
+        if((await this.exists(item_file_path))){
+          await this.remove(item_file_path);
+          console.log("Deleted entity: " + key);
+        }
       } else {
+        const ajson = item.ajson;
         await this.append(item_file_path, '\n' + ajson);
       }
     } catch (err) {
@@ -125,7 +127,7 @@ class SmartCollectionsAdapter {
     if(this._saving) return console.log("Already saving");
     this._saving = true; // prevent multiple saves at once
     setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
-    console.log("Saving collection items");
+    console.log("Saving " + this.main.collection_name);
     const start = Date.now();
     const batch_items = [];
     for (const key of Object.keys(this.main.save_queue)) {
@@ -134,7 +136,7 @@ class SmartCollectionsAdapter {
     await Promise.all(batch_items);
     this._saving = false;
     this.main.save_queue = {};
-    console.log(`Saved ${batch_items.length} collection items in ${Date.now() - start}ms`);
+    console.log(`Saved ${batch_items.length} ${this.main.collection_name} in ${Date.now() - start}ms`);
   }
 }
 exports.SmartCollectionsAdapter = SmartCollectionsAdapter;

@@ -1,5 +1,4 @@
 import { create_hash } from "./create_hash.js";
-import { cos_sim } from "./cos_sim.js";
 import { SmartEntity } from "./SmartEntity.js";
 
 export class SmartSource extends SmartEntity {
@@ -16,31 +15,48 @@ export class SmartSource extends SmartEntity {
     const hash = await create_hash(content); // update hash
     if (hash !== this.last_history?.hash) {
       this.data.history.push({ blocks: {}, mtime: this.t_file.stat.mtime, size: this.t_file.stat.size, hash }); // add history entry
-      this.data.embedding = {}; // clear embedding (DEPRECATED)
       this.data.embeddings = {}; // clear embeddings
     } else {
       this.last_history.mtime = this.t_file.stat.mtime; // update mtime
       this.last_history.size = this.t_file.stat.size; // update size
+      if(!this.last_history.blocks) this.last_history.blocks = {};
     }
-    this.env.smart_blocks.import(this, { show_notice: false });
+    // this.env.smart_blocks.import(this, { show_notice: false });
+    const { blocks, outlinks } = await this.env.smart_chunks.parse(this);
+    this.data.outlinks = outlinks;
+    for(let i = 0; i < blocks.length; i++){
+      const block = blocks[i];
+      const item = this.env.smart_blocks.create_or_update(block);
+      this.last_history.blocks[item.key] = true;
+    }
     this.queue_save();
-    if(this.is_unembedded) this.collection.smart_embed.embed_entity(this);
+    if(this.is_unembedded) this.smart_embed.embed_entity(this);
+  }
+  get excluded_lines() {
+    return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
   async get_content() { return await this.env.main.read_file(this.data.path); }
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
-    const content = await this.get_content(); // get content from file
+    let content = await this.get_content(); // get content from file
+    if(this.excluded_lines.length){
+      const content_lines = content.split("\n");
+      this.excluded_lines.forEach(lines => {
+        const {start, end} = lines;
+        lines.forEach((line, i) => {
+          if(i >= start && i <= end) content_lines[line] = "";
+        });
+      });
+      content = content_lines.filter(line => line.length).join("\n");
+    }
     const breadcrumbs = this.data.path.split("/").join(" > ").replace(".md", "");
     const max_tokens = this.collection.smart_embed.max_tokens; // prevent loading too much content
-
-    // console.log("max_tokens: ", max_tokens);
-    this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 10);
+    this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 4);
     return this._embed_input;
   }
   find_connections() {
     let results = [];
     if (!this.vec && !this.median_block_vec) {
-      // console.log(this);
       const start_embedding_btn = {
         text: "Start embedding",
         callback: () => {
@@ -67,10 +83,8 @@ export class SmartSource extends SmartEntity {
       if (!Array.isArray(filter.exclude_key_starts_with_any)) filter.exclude_key_starts_with_any = [];
       filter.exclude_key_starts_with_any = filter.exclude_key_starts_with_any.concat(this.outlink_paths);
     }
-    console.log("filter: ", filter);
     if (this.vec && this.median_block_vec && this.env.smart_blocks.smart_embed && this.collection.smart_embed) {
-      console.log("FIND v1");
-      const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
+      const nearest_notes = this.env.smart_sources.nearest(this.vec, filter);
       const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter);
       results = nearest_blocks.concat(nearest_notes)
         // sort by item.score descending
@@ -78,29 +92,8 @@ export class SmartSource extends SmartEntity {
           if (a.score === b.score) return 0;
           return (a.score > b.score) ? -1 : 1;
         });
-    } else if (this.median_block_vec && this.env.smart_blocks.smart_embed) { // IS THIS EVER CALLED?
-      console.log("FIND v2");
-      const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter);
-      // re-rank: sort by block note median block vec sim
-      results = nearest_blocks
-        .map(block => {
-          if (!block.note?.median_block_vec.length) {
-            block.score = block.sim;
-            return block;
-          }
-          block.score = (block.sim + cos_sim(this.median_block_vec, block.note.median_block_vec)) / 2;
-          return block;
-        });
-      const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
-      results = results.concat(nearest_notes)
-        // sort by item.score descending
-        .sort((a, b) => {
-          if (a.score === b.score) return 0;
-          return (a.score > b.score) ? -1 : 1;
-        });
     } else if (this.vec && this.collection.smart_embed) {
-      console.log("FIND v3");
-      const nearest_notes = this.env.smart_notes.nearest(this.vec, filter);
+      const nearest_notes = this.env.smart_sources.nearest(this.vec, filter);
       results = nearest_notes
         // sort by item.score descending
         .sort((a, b) => {
@@ -121,12 +114,10 @@ export class SmartSource extends SmartEntity {
       if (!this.t_file) return true;
       if ((this.last_history?.mtime || 0) < this.t_file.stat.mtime) {
         const size_diff = Math.abs(this.last_history.size - this.t_file.stat.size);
-        console.log("mtime changed: ", this.last_history, this.t_file);
         const size_diff_ratio = size_diff / (this.last_history.size || 1);
-        console.log("size diff ratio: ", size_diff_ratio);
-        if (size_diff_ratio > 0.03) return true; // if size diff greater than 5% of last_history.size, assume file changed
+        if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of last_history.size, assume file changed
+        // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.data.path}`);
       }
-      // return (this.last_history.mtime !== this.t_file.stat.mtime) && (this.last_history.size !== this.t_file.stat.size);
       return false;
     } catch (e) {
       console.warn("error getting meta changed for ", this.data.path, ": ", e);
@@ -142,6 +133,7 @@ export class SmartSource extends SmartEntity {
   get t_file() { return this.env.main.get_tfile(this.data.path); } // should be better handled using non-Obsidian API
   // v2.2
   get ajson() {
+    if(this.deleted) return `${JSON.stringify(this.ajson_key)}: null`;
     return [
       super.ajson,
       ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
@@ -161,4 +153,9 @@ export class SmartSource extends SmartEntity {
   get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }
   get size() { return this.last_history?.size || 0; }
   get mtime() { return this.last_history?.mtime || 0; }
+  get is_unembedded() {
+    if(this.meta_changed) return true;
+    return super.is_unembedded;
+  }
+  get excluded() { return !this.env.is_included(this.data.path); }
 }

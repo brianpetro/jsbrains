@@ -71,8 +71,9 @@ class CollectionItem {
    * @returns {boolean} True if data was successfully updated.
    */
   update_data(data) {
-    data = JSON.parse(JSON.stringify(data, this.update_data_replacer));
-    deep_merge(this.data, data); // deep merge data
+    data = JSON.stringify(data, this.update_data_replacer);
+    if(data === JSON.stringify(this.data)) return false; // unchanged
+    deep_merge(this.data, JSON.parse(data)); // deep merge data
     return true; // return true if data changed (default true)
   }
 
@@ -125,8 +126,6 @@ class CollectionItem {
   delete() {
     this.deleted = true;
     this.queue_save();
-    // this.data = undefined;
-    // delete this.collection.items[this.key];
   }
 
   // functional filter (returns true or false) for filtering items in collection; called by collection class
