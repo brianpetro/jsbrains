@@ -202,18 +202,8 @@ class Collection {
    * Saves the current state of the collection.
    */
   async save() {
-    if(typeof this.adapter?.save === 'function') {
-      await this.adapter.save();
-      this.save_queue = {};
-    }
+    if(typeof this.adapter?.save === 'function') await this.adapter.save();
     else console.warn("No save method found in adapter");
-  }
-  save_sync() {
-    if(typeof this.adapter?.save_sync === 'function') {
-      this.adapter.save_sync();
-      this.save_queue = {};
-    }
-    else console.warn("No save_sync method found in adapter");
   }
 
   /**
@@ -222,10 +212,6 @@ class Collection {
   async load() {
     if(typeof this.adapter?.load === 'function') return await this.adapter.load();
     else console.warn("No load method found in adapter");
-  }
-  load_sync() {
-    if(typeof this.adapter?.load_sync === 'function') return this.adapter.load_sync();
-    else console.warn("No load_sync method found in adapter");
   }
 
   // BACKWARD COMPATIBILITY

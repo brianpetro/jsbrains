@@ -46,4 +46,9 @@ export class SmartEntity extends CollectionItem {
     if (!this.embedding) this.embedding = {};
     this.data.embeddings[this.embed_model].vec = vec;
   }
+  get is_unembedded() {
+    if(this.vec) return false;
+    if(this.size < (this.env.settings.embed_input_min_chars || 300)) return false;
+    return true;
+  }
 }

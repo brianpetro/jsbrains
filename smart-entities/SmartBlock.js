@@ -29,6 +29,7 @@ export class SmartBlock extends SmartEntity {
     if (!this.note) return console.log({ "no note for block": this.data });
     if (Array.isArray(this.note.last_history.blocks)) this.note.last_history.blocks = {}; // convert to object
     this.note.last_history.blocks[this.key] = true; // add block key to note history entry
+    if(this.is_unembedded) this.collection.smart_embed.embed_entity(this);
   }
   async get_content() {
     // const note_content = await this.note?.get_content();
@@ -86,6 +87,7 @@ export class SmartBlock extends SmartEntity {
   get line_end() { return this.data.lines[1]; }
   get source() { return this.env.smart_sources.get(this.source_key); }
   get source_key() { return this.data.path.split("#")[0]; }
+  get size() { return this.data.length; }
   // DEPRECATED since v2
   get note() { return this.source; }
   get note_key() { return this.data.path.split("#")[0]; }

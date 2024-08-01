@@ -24,6 +24,7 @@ export class SmartSource extends SmartEntity {
     }
     this.env.smart_blocks.import(this, { show_notice: false });
     this.queue_save();
+    if(this.is_unembedded) this.collection.smart_embed.embed_entity(this);
   }
   async get_content() { return await this.env.main.read_file(this.data.path); }
   async get_embed_input() {
@@ -157,4 +158,7 @@ export class SmartSource extends SmartEntity {
       })
       .filter(link_path => link_path);
   }
+  get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }
+  get size() { return this.last_history?.size || 0; }
+  get mtime() { return this.last_history?.mtime || 0; }
 }

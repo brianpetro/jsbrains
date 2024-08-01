@@ -92,7 +92,7 @@ class SmartCollectionsAdapter {
    */
   save() {
     if(this.save_timeout) clearTimeout(this.save_timeout);
-    this.save_timeout = setTimeout(() => { this._save(); }, 10000);
+    this.save_timeout = setTimeout(() => { this._save_queue(); }, 3000);
   }
 
   /**
@@ -133,6 +133,7 @@ class SmartCollectionsAdapter {
     }
     await Promise.all(batch_items);
     this._saving = false;
+    this.main.save_queue = {};
     console.log(`Saved ${batch_items.length} collection items in ${Date.now() - start}ms`);
   }
 }

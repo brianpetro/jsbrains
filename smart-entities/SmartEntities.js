@@ -6,7 +6,7 @@ export class SmartEntities extends Collection {
   constructor(env, opts) {
     super(env, opts);
     this.env = env; // env is the brain (brain is Deprecated)
-    this._pause_embeddings = false; // used to pause ensure_embeddings
+    // this._pause_embeddings = false; // used to pause ensure_embeddings
   }
   async _save() { await this.adapter._save_queue(); } // async b/c Obsidian API is async
   replacer(key, value) {
@@ -115,85 +115,85 @@ export class SmartEntities extends Collection {
     this._pause_embeddings = true;
     this.env.main.notices.remove('embedding progress');
   }
-  async ensure_embeddings(show_notice = null) {
-    console.log("ensure_embeddings");
-    if (!this.smart_embed) return console.log("SmartEmbed not loaded for " + this.collection_name);
-    const unembedded_items = this.unembedded_items; // gets all without vec
-    if (unembedded_items.length === 0) return true; // skip if no unembedded items
-    console.log("unembedded_items: ", unembedded_items);
-    const performance_notice_msg = "(This is a resource intensive operation)";
-    if ((show_notice !== false) && (unembedded_items.length > 30)) {
-      const start_btn = { text: "Start embedding", callback: () => this.ensure_embeddings(false) };
-      this.env.main.notices.show('start embedding', [`Are you ready to begin embedding ${unembedded_items.length} ${this.collection_name}?`, performance_notice_msg], { timeout: 0, confirm: start_btn });
-      return false;
-    }
-    if (this.is_embedding) return console.log('already embedding');
-    this.is_embedding = true;
-    const batch_size = this.smart_embed.batch_size;
-    this.env.main.notices.remove('start embedding');
-    let total_tokens = 0;
-    let time_start = Date.now();
-    let time_elapsed = 0;
-    let tokens_per_sec = 0;
-    let last_notice_ts = Date.now();
-    for (let i = 0; i < unembedded_items.length; i += batch_size) {
-      // set timeout to set is_embedding to false if it takes too long
-      clearTimeout(this.is_embedding_timeout);
-      this.is_embedding_timeout = setTimeout(() => {
-        this.is_embedding = false;
-        console.log("embedding timeout");
-      }, 60000);
-      // console.log("i: ", i);
-      if (this._pause_embeddings) {
-        // console.log("pause_embeddings");
-        this.is_embedding = false;
-        this._pause_embeddings = false;
-        const restart_btn = { text: "Restart", callback: () => this.ensure_embeddings() };
-        this.env.main.notices.show('restart embedding', [`Embedding ${this.collection_name}...`, `Paused at ${i} / ${unembedded_items.length} ${this.collection_name}`, performance_notice_msg], { timeout: 0, button: restart_btn });
-        this.adapter._save_queue(); // save immediately, overwrites existing file
-        return;
-      }
-      // if divisible by 100 or last shown more than one minute ago
-      if (i % 200 === 0 || (Date.now() - last_notice_ts > 60000)) {
-        last_notice_ts = Date.now();
-        // const pause_btn = {text: "Pause", callback: () => this.pause_embedding(), stay_open: true};
-        const pause_btn = { text: "Pause", callback: this.pause_embedding.bind(this), stay_open: true };
-        this.env.main.notices.show('embedding progress', [`Embedding ${this.collection_name}...`, `Progress: ${i} / ${unembedded_items.length} ${this.collection_name}`, `${tokens_per_sec} tokens/sec`, performance_notice_msg], { timeout: 0, button: pause_btn, immutable: true });
-      }
-      const items = unembedded_items.slice(i, i + batch_size);
-      await Promise.all(items.map(async (item) => await item.get_embed_input())); // make sure all items have embed_input (in cache for call by embed_batch)
-      const resp = await this.smart_embed.embed_batch(items);
-      if (resp.error) {
-        console.log("error embedding batch: ", resp.error);
-        this.is_embedding = false;
-        return false;
-      }
-      // console.log("resp: ", resp);
-      items.forEach(item => {
-        item._embed_input = null; // clear _embed_input cache after embedding
-        item.queue_save();
-      });
-      total_tokens += resp.reduce((acc, item) => acc + item.tokens, 0);
-      time_elapsed = Date.now() - time_start;
-      tokens_per_sec = Math.round(total_tokens / (time_elapsed / 1000));
-      // console.log(items.filter(i => !i.vec).map(item => item));
-      if (i && (i % 500 === 0)) {
-        // console.log(unembedded_items[i]);
-        await this.adapter._save_queue();
-      }
-      // console.log("done i: ", i);
-    }
-    if (this.env.main._notice?.noticeEl?.parentElement) this.env.main._notice.hide();
-    const embedded_ct = unembedded_items.filter(i => i.vec).length;
-    // console.log(unembedded_items.map(i => i.key));
-    this.env.main.notices.remove('embedding progress');
-    this.env.main.notices.show('done embedding', [`Embedding ${this.collection_name}...`, `Done creating ${embedded_ct} embeddings.`], { timeout: 10000 });
-    if (unembedded_items.length) this.adapter._save_queue();
-    this.is_embedding = false;
-    return true;
-  }
+  // async ensure_embeddings(show_notice = null) {
+  //   console.log("ensure_embeddings");
+  //   if (!this.smart_embed) return console.log("SmartEmbed not loaded for " + this.collection_name);
+  //   const unembedded_items = this.unembedded_items; // gets all without vec
+  //   if (unembedded_items.length === 0) return true; // skip if no unembedded items
+  //   console.log("unembedded_items: ", unembedded_items);
+  //   const performance_notice_msg = "(This is a resource intensive operation)";
+  //   if ((show_notice !== false) && (unembedded_items.length > 30)) {
+  //     const start_btn = { text: "Start embedding", callback: () => this.ensure_embeddings(false) };
+  //     this.env.main.notices.show('start embedding', [`Are you ready to begin embedding ${unembedded_items.length} ${this.collection_name}?`, performance_notice_msg], { timeout: 0, confirm: start_btn });
+  //     return false;
+  //   }
+  //   if (this.is_embedding) return console.log('already embedding');
+  //   this.is_embedding = true;
+  //   const batch_size = this.smart_embed.batch_size;
+  //   this.env.main.notices.remove('start embedding');
+  //   let total_tokens = 0;
+  //   let time_start = Date.now();
+  //   let time_elapsed = 0;
+  //   let tokens_per_sec = 0;
+  //   let last_notice_ts = Date.now();
+  //   for (let i = 0; i < unembedded_items.length; i += batch_size) {
+  //     // set timeout to set is_embedding to false if it takes too long
+  //     clearTimeout(this.is_embedding_timeout);
+  //     this.is_embedding_timeout = setTimeout(() => {
+  //       this.is_embedding = false;
+  //       console.log("embedding timeout");
+  //     }, 60000);
+  //     // console.log("i: ", i);
+  //     if (this._pause_embeddings) {
+  //       // console.log("pause_embeddings");
+  //       this.is_embedding = false;
+  //       this._pause_embeddings = false;
+  //       const restart_btn = { text: "Restart", callback: () => this.ensure_embeddings() };
+  //       this.env.main.notices.show('restart embedding', [`Embedding ${this.collection_name}...`, `Paused at ${i} / ${unembedded_items.length} ${this.collection_name}`, performance_notice_msg], { timeout: 0, button: restart_btn });
+  //       this.adapter._save_queue(); // save immediately, overwrites existing file
+  //       return;
+  //     }
+  //     // if divisible by 100 or last shown more than one minute ago
+  //     if (i % 200 === 0 || (Date.now() - last_notice_ts > 60000)) {
+  //       last_notice_ts = Date.now();
+  //       // const pause_btn = {text: "Pause", callback: () => this.pause_embedding(), stay_open: true};
+  //       const pause_btn = { text: "Pause", callback: this.pause_embedding.bind(this), stay_open: true };
+  //       this.env.main.notices.show('embedding progress', [`Embedding ${this.collection_name}...`, `Progress: ${i} / ${unembedded_items.length} ${this.collection_name}`, `${tokens_per_sec} tokens/sec`, performance_notice_msg], { timeout: 0, button: pause_btn, immutable: true });
+  //     }
+  //     const items = unembedded_items.slice(i, i + batch_size);
+  //     await Promise.all(items.map(async (item) => await item.get_embed_input())); // make sure all items have embed_input (in cache for call by embed_batch)
+  //     const resp = await this.smart_embed.embed_batch(items);
+  //     if (resp.error) {
+  //       console.log("error embedding batch: ", resp.error);
+  //       this.is_embedding = false;
+  //       return false;
+  //     }
+  //     // console.log("resp: ", resp);
+  //     items.forEach(item => {
+  //       item._embed_input = null; // clear _embed_input cache after embedding
+  //       item.queue_save();
+  //     });
+  //     total_tokens += resp.reduce((acc, item) => acc + item.tokens, 0);
+  //     time_elapsed = Date.now() - time_start;
+  //     tokens_per_sec = Math.round(total_tokens / (time_elapsed / 1000));
+  //     // console.log(items.filter(i => !i.vec).map(item => item));
+  //     if (i && (i % 500 === 0)) {
+  //       // console.log(unembedded_items[i]);
+  //       await this.adapter._save_queue();
+  //     }
+  //     // console.log("done i: ", i);
+  //   }
+  //   if (this.env.main._notice?.noticeEl?.parentElement) this.env.main._notice.hide();
+  //   const embedded_ct = unembedded_items.filter(i => i.vec).length;
+  //   // console.log(unembedded_items.map(i => i.key));
+  //   this.env.main.notices.remove('embedding progress');
+  //   this.env.main.notices.show('done embedding', [`Embedding ${this.collection_name}...`, `Done creating ${embedded_ct} embeddings.`], { timeout: 10000 });
+  //   if (unembedded_items.length) this.adapter._save_queue();
+  //   this.is_embedding = false;
+  //   return true;
+  // }
   get embedded_items() { return this.smart_embed ? Object.values(this.items).filter(i => i.vec) : Object.values(this.items); }
-  get unembedded_items() { return this.smart_embed ? Object.values(this.items).filter(item => !item.vec) : []; }
+  get unembedded_items() { return this.smart_embed ? Object.values(this.items).filter(item => item.is_unembedded) : []; }
 
   nearest(vec, filter = {}) {
     if (!vec) return console.log("no vec");

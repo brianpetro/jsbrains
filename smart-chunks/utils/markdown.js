@@ -91,10 +91,10 @@ function store_front_matter_block(acc, front_matter, index, opts) {
   const { embed_input_min_chars } = opts;
   const text = (front_matter.includes('\r\n') ? front_matter.replace(/\r\n/g, '\n') : front_matter).trim();
   const embed_input_len = text.split('\n').slice(1).join('\n').trim().length;
-  if (embed_input_len < embed_input_min_chars) {
-    acc.log.push(`Skipping frontmatter block: ${embed_input_len} characters shorter than min length ${embed_input_min_chars}`);
-    return;
-  }
+  // if (embed_input_len < embed_input_min_chars) {
+  //   acc.log.push(`Skipping frontmatter block: ${embed_input_len} characters shorter than min length ${embed_input_min_chars}`);
+  //   return;
+  // }
   acc.blocks.push({
     text,
     path: acc.block_path,
@@ -123,10 +123,10 @@ function process_and_store_block(acc, opts) {
   const text = (acc.curr.includes('\r\n') ? acc.curr.replace(/\r\n/g, '\n') : acc.curr).trim();
   const block_length = text.split('\n').slice(1).join('\n').trim().length;
 
-  if (block_length < embed_input_min_chars) {
-    acc.log.push(`Skipping block shorter than min length: ${acc.curr}`);
-    return;
-  }
+  // if (block_length < embed_input_min_chars) {
+  //   acc.log.push(`Skipping block shorter than min length: ${acc.curr}`);
+  //   return;
+  // }
   
 
   acc.blocks.push({

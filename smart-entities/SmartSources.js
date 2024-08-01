@@ -68,21 +68,21 @@ export class SmartSources extends SmartEntities {
       }
 
       this.env.main.notices.remove('initial scan progress');
-      this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Done importing Smart Notes.`], { timeout: 3000 });
-      this.ensure_embeddings();
+      this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
+      // this.ensure_embeddings();
     } catch (e) {
       console.warn("error importing notes: ", e);
       console.warn({ batch });
     }
   }
-  async ensure_embeddings(show_notice = false) {
-    await super.ensure_embeddings(show_notice);
-    await this.prune(true);
-    if (this.env.smart_blocks?.smart_embed) {
-      await this.env.smart_blocks.ensure_embeddings(show_notice); // trigger block-level import
-      await this.env.smart_blocks.prune(true);
-    }
-  }
+  // async ensure_embeddings(show_notice = false) {
+  //   await super.ensure_embeddings(show_notice);
+  //   await this.prune(true);
+  //   if (this.env.smart_blocks?.smart_embed) {
+  //     await this.env.smart_blocks.ensure_embeddings(show_notice); // trigger block-level import
+  //     await this.env.smart_blocks.prune(true);
+  //   }
+  // }
   async prune(override = false) {
     const start = Date.now();
     const remove = [];

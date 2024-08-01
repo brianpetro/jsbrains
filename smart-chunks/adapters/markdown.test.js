@@ -84,13 +84,13 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v2 blocks'
 });
 
 // test increasing min embed input length should prevent frontmatter block from being individual block
-test.serial('frontmatter shorter than min_embed_input_length should not be included as individual block', async t => {
-  const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2b);
-  const expected_blocks = t.context.expected_v2b.blocks.map(block => {
-    block.text = block.text.replace(/\r\n/g, '\n');
-    return block;
-  });
-  // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2b_${platform}.json`), JSON.stringify(parsed, null, 2));
-  t.deepEqual(parsed.blocks, expected_blocks);
-  t.is(parsed.blocks.length, 15);
-});
+// test.serial('frontmatter shorter than min_embed_input_length should not be included as individual block', async t => {
+//   const parsed = await t.context.smart_chunks.parse(t.context.mock_entity_v2b);
+//   const expected_blocks = t.context.expected_v2b.blocks.map(block => {
+//     block.text = block.text.replace(/\r\n/g, '\n');
+//     return block;
+//   });
+//   // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2b_${platform}.json`), JSON.stringify(parsed, null, 2));
+//   t.deepEqual(parsed.blocks, expected_blocks);
+//   t.is(parsed.blocks.length, 15);
+// });
