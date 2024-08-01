@@ -17,8 +17,6 @@ class MarkdownAdapter {
   static get defaults() {
     return {
       excluded_headings: null,
-      embed_input_max_chars: 1000,
-      embed_input_min_chars: 10,
       skip_blocks_with_headings_only: false,
       multi_heading_blocks: false,
       min_length_for_single_line_blocks: 300,
