@@ -29,13 +29,12 @@ class SmartEmbedModel {
   /**
    * Create a SmartEmbed instance.
    * @param {string} env - The environment to use.
-   * @param {string|object} config - The model configuration key or the model configuration object.
-   * expects model to contain at least a model_key
+   * @param {object} opts - Full model configuration object or at least a model_key, api_key, and adapter
    */
-  constructor(env, config) {
+  constructor(env, opts={}) {
     this.env = env;
-    if(config.model_key) this.config = {...embed_models[config.model_key], ...config};
-    else this.config = { ...config };
+    if(opts.model_key) this.config = {...embed_models[opts.model_key], ...opts};
+    else this.config = { ...opts };
     // Initialize statistics
     this.embed_ct = 0; // Count of embeddings processed
     this.timestamp = null; // Last operation timestamp
@@ -54,16 +53,18 @@ class SmartEmbedModel {
     this.resume_timeout = null;
     this.total_tokens = 0;
     this.start_time = null;
+    this.last_queue_addition_time = null;
+    this.queue_process_timeout = null;
   }
 
   /**
    * Factory method to create a new SmartEmbed instance and initialize it.
    * @param {string} env - The environment to use.
-   * @param {string} model_config - Full model configuration object or at least a model_key, api_key, and adapter
+   * @param {object} opts - Full model configuration object or at least a model_key, api_key, and adapter
    * @returns {Promise<SmartEmbed>} A promise that resolves with an initialized SmartEmbed instance.
    */
-  static async create(env, model_config) {
-    const model = new this(env, model_config);
+  static async create(env, opts={}) {
+    const model = new this(env, opts);
     // Initialize adapter-specific logic if adapter is present
     if (model.adapter && typeof model.adapter.init === 'function') await model.adapter.init();
     return model;
@@ -139,8 +140,20 @@ class SmartEmbedModel {
   embed_entity(entity){
     this.entity_queue.push(entity);
     this.queue_total++;
-    this.process_queue();
+    this.last_queue_addition_time = Date.now();
+    this._schedule_queue_processing();
     this._update_progress();
+  }
+
+  _schedule_queue_processing() {
+    clearTimeout(this.queue_process_timeout);
+    this.queue_process_timeout = setTimeout(() => {
+      if (Date.now() - this.last_queue_addition_time >= 1000) {
+        this.process_queue();
+      } else {
+        this._schedule_queue_processing();
+      }
+    }, 1000);
   }
 
   _update_progress() {
@@ -172,10 +185,8 @@ class SmartEmbedModel {
   process_queue() {
     if (this.is_queue_halted || this.is_processing_queue) return;
     
-    if (this.entity_queue.length >= this.batch_size) {
+    if (this.entity_queue.length > 0) {
       this._process_queue();
-    } else {
-      this._process_queue_debounced();
     }
   }
 
@@ -251,7 +262,7 @@ class SmartEmbedModel {
       `Embedding complete.`,
       `${this.embedded_total} entities embedded.`,
       `${this._calculate_tokens_per_second()} tokens/sec using ${this.model_name}`
-    ], { timeout: 0 });
+    ], { timeout: 10000 });
   }
 
   _reset_queue_stats() {
@@ -274,6 +285,7 @@ class SmartEmbedModel {
     this.is_queue_halted = true;
     clearTimeout(this.debounce_timeout);
     clearTimeout(this.resume_timeout);
+    clearTimeout(this.queue_process_timeout);
     console.log("Queue processing halted");
     this.env.main.notices.remove('embedding_progress');
     this.env.main.notices.show('embedding_paused', [
@@ -292,9 +304,10 @@ class SmartEmbedModel {
   resume_queue_processing(delay = 0) {
     this.is_queue_halted = false;
     clearTimeout(this.resume_timeout);
+    clearTimeout(this.queue_process_timeout);
     this.resume_timeout = setTimeout(() => {
       console.log("Resuming queue processing");
-      this.process_queue();
+      this._schedule_queue_processing();
     }, delay);
   }
 
