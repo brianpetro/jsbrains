@@ -43,9 +43,9 @@ export class SmartSource extends SmartEntity {
       const content_lines = content.split("\n");
       this.excluded_lines.forEach(lines => {
         const {start, end} = lines;
-        lines.forEach((line, i) => {
-          if(i >= start && i <= end) content_lines[line] = "";
-        });
+        for(let i = start; i <= end; i++){
+          content_lines[i] = "";
+        }
       });
       content = content_lines.filter(line => line.length).join("\n");
     }
