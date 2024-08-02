@@ -212,9 +212,7 @@ class SmartEmbedModel {
     try {
       await this._prepare_batch(batch);
       const resp = await this.embed_batch(batch);
-      if (resp.error) {
-        throw new Error(`Error embedding batch: ${resp.error}`);
-      }
+      if (!resp || resp.error) throw new Error(`Error embedding batch: ${JSON.stringify(resp, null, 2)}`);
       await this._handle_batch_response(batch, resp);
     } catch (error) {
       console.error("Error processing batch:", error);
