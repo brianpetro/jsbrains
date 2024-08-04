@@ -54,55 +54,6 @@ export class SmartSource extends SmartEntity {
     this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 4);
     return this._embed_input;
   }
-  find_connections() {
-    let results = [];
-    if (!this.vec && !this.median_block_vec) {
-      const start_embedding_btn = {
-        text: "Start embedding",
-        callback: () => {
-          this.collection.import([this.t_file]).then(() => this.env.main.view.render_nearest(this));
-        }
-      };
-      this.env.main.notices.show('no embedding found', `No embeddings found for ${this.name}.`, { confirm: start_embedding_btn });
-      return results;
-    }
-    const smart_view_filter = this.env.plugin.settings.smart_view_filter;
-    const filter = {};
-    if (smart_view_filter?.include_exclude) {
-      filter.exclude_key_starts_with_any = [this.key];
-      if (smart_view_filter?.exclude_filter) filter.exclude_key_starts_with_any.push(smart_view_filter.exclude_filter);
-      if (smart_view_filter?.include_filter) filter.key_starts_with = smart_view_filter.include_filter;
-    } else {
-      filter.exclude_key_starts_with = this.key;
-    }
-    if (smart_view_filter?.exclude_inlinks && this.env.links[this.data.path]) {
-      if (!Array.isArray(filter.exclude_key_starts_with_any)) filter.exclude_key_starts_with_any = [];
-      filter.exclude_key_starts_with_any = filter.exclude_key_starts_with_any.concat(Object.keys(this.env.links[this.data.path] || {}));
-    }
-    if (smart_view_filter?.exclude_outlinks && this.env.links[this.data.path]) {
-      if (!Array.isArray(filter.exclude_key_starts_with_any)) filter.exclude_key_starts_with_any = [];
-      filter.exclude_key_starts_with_any = filter.exclude_key_starts_with_any.concat(this.outlink_paths);
-    }
-    if (this.vec && this.median_block_vec && this.env.smart_blocks.smart_embed && this.collection.smart_embed) {
-      const nearest_notes = this.env.smart_sources.nearest(this.vec, filter);
-      const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter);
-      results = nearest_blocks.concat(nearest_notes)
-        // sort by item.score descending
-        .sort((a, b) => {
-          if (a.score === b.score) return 0;
-          return (a.score > b.score) ? -1 : 1;
-        });
-    } else if (this.vec && this.collection.smart_embed) {
-      const nearest_notes = this.env.smart_sources.nearest(this.vec, filter);
-      results = nearest_notes
-        // sort by item.score descending
-        .sort((a, b) => {
-          if (a.score === b.score) return 0;
-          return (a.score > b.score) ? -1 : 1;
-        });
-    }
-    return results;
-  }
   open() { this.env.main.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec

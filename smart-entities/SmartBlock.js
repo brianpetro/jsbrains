@@ -55,10 +55,6 @@ export class SmartBlock extends SmartEntity {
     const next = await this.next_block.get_content();
     return `---BEGIN CURRENT ${i}---\n${current}\n---END CURRENT ${i}---\n---BEGIN NEXT ${i}---\n${next}\n---END NEXT ${i}---\n`;
   }
-  find_connections() {
-    if (!this.vec) return [];
-    return this.env.smart_blocks.nearest(this.vec, { exclude_key_starts_with: this.note.key });
-  }
   get breadcrumbs() { return this.data.path.split("/").join(" > ").split("#").join(" > ").replace(".md", ""); }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get lines() { return { start: this.data.lines[0], end: this.data.lines[1] }; };

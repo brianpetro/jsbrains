@@ -79,6 +79,8 @@ export class SmartEntities extends Collection {
     if (!this.env.smart_embed_active_models) this.env.smart_embed_active_models = {};
     this.env.smart_embed_active_models[this.model_instance_id] = val;
   }
+  nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
+  // DEPRECATED in favor of entity-based nearest_to(entity, filter)
   nearest(vec, filter = {}) {
     if (!vec) return console.log("no vec");
     const {
