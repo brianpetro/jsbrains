@@ -57,7 +57,7 @@ class SmartFs {
    * @param {string} [opts.env_path] - Custom environment path
    */
   constructor(env, opts = {}) {
-    this.env_path = opts.env_path || env.config.env_path || env.config.vault_path; // vault_path is DEPRECATED
+    this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
     this.gitignore_patterns = this.#load_gitignore();
   }
 
