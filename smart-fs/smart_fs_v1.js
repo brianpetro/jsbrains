@@ -68,6 +68,7 @@ class SmartFs {
     await env.smart_fs[opts.env_path].init();
     return env.smart_fs[opts.env_path];
   }
+  async init() {}
 
   /**
    * Load .gitignore patterns
