@@ -1,104 +1,123 @@
-export class ObsidianFsAdapter {
-  constructor(data_adapter) {
-    this.data_adapter = data_adapter;
+/**
+ * ObsidianSmartFsAdapter class
+ * 
+ * This class provides an adapter for the Obsidian vault adapter to work with SmartFs.
+ * It wraps Obsidian vault adapter methods for file system operations.
+ * 
+ * @class
+ * @classdesc Adapter for Obsidian vault file system operations compatible with SmartFs
+ */
+export class ObsidianSmartFsAdapter {
+  /**
+   * Create an ObsidianSmartFsAdapter instance
+   * 
+   * @param {Object} smart_fs - The SmartFs instance
+   */
+  constructor(smart_fs) {
+    // scoped to env_path by default
+    this.obsidian_adapter = smart_fs.env.main.app.vault.adapter;
   }
 
-  async access(path) {
-    const exists = await this.data_adapter.exists(path);
-    if (!exists) {
-      throw new Error(`ENOENT: no such file or directory, access '${path}'`);
-    }
+  /**
+   * Append content to a file
+   * 
+   * @param {string} rel_path - The relative path of the file to append to
+   * @param {string} data - The content to append
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async append(rel_path, data) {
+    return await this.obsidian_adapter.append(rel_path, data);
   }
 
-  async appendFile(path, data, options) {
-    return await this.data_adapter.append(path, data, options);
+  /**
+   * Create a new directory
+   * 
+   * @param {string} rel_path - The relative path of the directory to create
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async create_dir(rel_path) {
+    return await this.obsidian_adapter.mkdir(rel_path);
   }
 
-  async chmod(path, mode) {
-    throw new Error('Not implemented');
+  /**
+   * Check if a file or directory exists
+   * 
+   * @param {string} rel_path - The relative path to check
+   * @returns {Promise<boolean>} True if the path exists, false otherwise
+   */
+  async exists(rel_path) {
+    return await this.obsidian_adapter.exists(rel_path);
   }
 
-  async chown(path, uid, gid) {
-    throw new Error('Not implemented');
+  /**
+   * List files in a directory
+   * 
+   * @param {string} rel_path - The relative path to list
+   * @returns {Promise<string[]>} Array of file paths
+   */
+  async list(rel_path) {
+    return await this.obsidian_adapter.list(rel_path);
   }
 
-  async copyFile(src, dest) {
-    return await this.data_adapter.copy(src, dest);
+  /**
+   * Read the contents of a file
+   * 
+   * @param {string} rel_path - The relative path of the file to read
+   * @returns {Promise<string>} The contents of the file
+   */
+  async read(rel_path) {
+    return await this.obsidian_adapter.read(rel_path);
   }
 
-  async lchmod(path, mode) {
-    throw new Error('Not implemented');
+  /**
+   * Rename a file or directory
+   * 
+   * @param {string} old_path - The current path of the file or directory
+   * @param {string} new_path - The new path for the file or directory
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async rename(old_path, new_path) {
+    return await this.obsidian_adapter.rename(old_path, new_path);
   }
 
-  async lchown(path, uid, gid) {
-    throw new Error('Not implemented');
+  /**
+   * Remove a file
+   * 
+   * @param {string} rel_path - The relative path of the file to remove
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async remove(rel_path) {
+    return await this.obsidian_adapter.remove(rel_path);
   }
 
-  async link(existingPath, newPath) {
-    throw new Error('Not implemented');
+  /**
+   * Remove a directory
+   * 
+   * @param {string} rel_path - The relative path of the directory to remove
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async remove_dir(rel_path) {
+    return await this.obsidian_adapter.rmdir(rel_path);
   }
 
-  async lstat(path) {
-    return await this.data_adapter.stat(path);
+  /**
+   * Get file or directory information
+   * 
+   * @param {string} rel_path - The relative path of the file or directory
+   * @returns {Promise<Object>} An object containing file or directory information
+   */
+  async stat(rel_path) {
+    return await this.obsidian_adapter.stat(rel_path);
   }
 
-  async mkdir(path, options) {
-    return await this.data_adapter.mkdir(path);
-  }
-
-  async mkdtemp(prefix) {
-    throw new Error('Not implemented');
-  }
-
-  async open(path, flags, mode) {
-    throw new Error('Not implemented');
-  }
-
-  async readdir(path, options) {
-    return await this.data_adapter.list(path);
-  }
-
-  async readFile(path, options) {
-    return await this.data_adapter.read(path);
-  }
-
-  async readlink(path, options) {
-    throw new Error('Not implemented');
-  }
-
-  async realpath(path, options) {
-    return await this.data_adapter.getResourcePath(path);
-  }
-
-  async rename(oldPath, newPath) {
-    return await this.data_adapter.rename(oldPath, newPath);
-  }
-
-  async rmdir(path, options) {
-    return await this.data_adapter.rmdir(path, options.recursive);
-  }
-
-  async stat(path, options) {
-    return await this.data_adapter.stat(path);
-  }
-
-  async symlink(target, path, type) {
-    throw new Error('Not implemented');
-  }
-
-  async truncate(path, len) {
-    throw new Error('Not implemented');
-  }
-
-  async unlink(path) {
-    return await this.data_adapter.remove(path);
-  }
-
-  async utimes(path, atime, mtime) {
-    throw new Error('Not implemented');
-  }
-
-  async writeFile(path, data, options) {
-    return await this.data_adapter.write(path, data, options);
+  /**
+   * Write content to a file
+   * 
+   * @param {string} rel_path - The relative path of the file to write to
+   * @param {string} data - The content to write
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async write(rel_path, data) {
+    return await this.obsidian_adapter.write(rel_path, data);
   }
 }

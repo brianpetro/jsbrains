@@ -19,34 +19,46 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import fs from 'fs';
-import path from 'path';
 import { Minimatch } from 'minimatch';
-
-const fsPromises = fs.promises;
 
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
  * 
  * @class
  * @description
- * SmartFs provides a layer of abstraction over Node.js's native `fs` module,
- * adding features like automatic `.gitignore` handling and path resolution.
- * It's designed to work seamlessly with Smart Environments, enhancing file
- * system operations with additional smart functionality.
+ * SmartFs provides a powerful abstraction layer over file system operations,
+ * designed to work seamlessly with Smart Environments. It enhances standard
+ * file system functionality with intelligent features and robust error handling.
  * 
  * Key Features:
- * - Automatic `.gitignore` pattern handling
- * - Path resolution relative to the environment path
- * - Wrapping of common `fs` methods with additional smart functionality
+ * - Automatic `.gitignore` pattern handling for secure file operations
+ * - Smart path resolution relative to the environment path
+ * - Adapter-based architecture for flexible backend support (e.g., Node.js fs, Obsidian, etc.)
+ * - Pre-processing and post-processing hooks for advanced file handling
+ * - Comprehensive error handling and logging
  * - Support for both synchronous and asynchronous operations
  * 
  * @example
  * const env = new SmartEnvironment();
- * const smartFs = new SmartFs(env);
+ * const smart_fs = new SmartFs(env, { adapter: NodeFsAdapter });
  * 
- * // Use smartFs methods instead of native fs methods
- * await smartFs.readFile('example.txt');
+ * // Use smart_fs methods for enhanced file operations
+ * try {
+ *   const file_content = await smart_fs.read('example.txt');
+ *   console.log(file_content);
+ * } catch (error) {
+ *   console.error('Error reading file:', error.message);
+ * }
+ * 
+ * // Perform directory operations
+ * await smart_fs.create_dir('new_folder');
+ * const files = await smart_fs.list('.');
+ * console.log('Files in current directory:', files);
+ * 
+ * // Write to a file with automatic exclusion handling
+ * await smart_fs.write('output.txt', 'Hello, SmartFs!');
+ * 
+ * @see {@link https://github.com/brianpetro/js-brains} for more information and updates.
  */
 class SmartFs {
   /**
@@ -58,29 +70,41 @@ class SmartFs {
    */
   constructor(env, opts = {}) {
     this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
-    this.gitignore_patterns = this.#load_gitignore();
+    if(!opts.adapter) throw new Error('SmartFs requires an adapter');
+    this.adapter = new opts.adapter(this);
+    this.excluded_patterns = [];
+  }
+  static async create(env, opts = {}) {
+    if(typeof opts.env_path !== 'string' || opts.env_path.length === 0) return; // no env_path provided
+    if(typeof env.smart_fs !== 'object') env.smart_fs = {};
+    if(env.smart_fs[opts.env_path] instanceof this) return env.smart_fs[opts.env_path];
+    env.smart_fs[opts.env_path] = new this(env, opts);
+    await env.smart_fs[opts.env_path].init();
+    return env.smart_fs[opts.env_path];
+  }
+  async init() {
+    await this.load_gitignore();
   }
 
   /**
    * Load .gitignore patterns
    * 
-   * @private
-   * @returns {Minimatch[]} Array of Minimatch patterns
+   * @returns {Promise<Minimatch[]>} Array of Minimatch patterns
    */
-  #load_gitignore() {
-    const patterns = [];
-    const gitignore_path = path.join(this.env_path, '.gitignore');
-    if (fs.existsSync(gitignore_path)) {
-      fs.readFileSync(gitignore_path, 'utf8')
+  async load_gitignore() {
+    const gitignore_path = '.gitignore';
+    const gitignore_exists = await this.exists(gitignore_path);
+    if (gitignore_exists) {
+      const gitignore_content = await this.read(gitignore_path);
+      gitignore_content
         .split('\n')
         .filter(Boolean)
-        .forEach(pattern => patterns.push(new Minimatch(pattern.trim())))
+        .forEach(pattern => this.excluded_patterns.push(new Minimatch(pattern.trim())))
       ;
     }
-    patterns.push(new Minimatch('.env'));
-    patterns.push(new Minimatch('.git'));
-    patterns.push(new Minimatch('.gitignore'));
-    return patterns;
+    this.excluded_patterns.push(new Minimatch('.env'));
+    this.excluded_patterns.push(new Minimatch('.git'));
+    this.excluded_patterns.push(new Minimatch('.gitignore'));
   }
 
   /**
@@ -89,43 +113,41 @@ class SmartFs {
    * @param {string} pattern - The pattern to add
    */
   add_ignore_pattern(pattern) {
-    this.gitignore_patterns.push(new Minimatch(pattern.trim()));
+    this.excluded_patterns.push(new Minimatch(pattern.trim()));
   }
-
   /**
-   * Check if a path is ignored
+   * Check if a path is ignored based on gitignore patterns
    * 
    * @param {string} _path - The path to check
    * @returns {boolean} True if the path is ignored, false otherwise
    */
-  is_ignored(_path) {
-    if (!this.gitignore_patterns.length) return false;
-    const relative_path = _path.startsWith(this.env_path) ? path.relative(this.env_path, _path) : _path;
-    return this.gitignore_patterns.some(pattern => pattern.match(relative_path));
+  is_excluded(_path) {
+    if (!this.excluded_patterns.length) return false;
+    return this.excluded_patterns.some(pattern => pattern.match(_path));
   }
 
   /**
-   * Resolve a relative path to an absolute path
+   * Check if any path in an array of paths is excluded
    * 
-   * @private
-   * @param {string} rel_path - The relative path to resolve
-   * @returns {string} The resolved absolute path
+   * @param {string[]} paths - Array of paths to check
+   * @returns {boolean} True if any path is excluded, false otherwise
    */
-  #resolvePath(rel_path) {
-    if (rel_path.startsWith(this.env_path)) return rel_path;
-    return path.join(this.env_path, rel_path);
+  has_excluded_patterns(paths) {
+    return paths.some(p => this.is_excluded(p));
   }
 
   /**
-   * Pre-process a path before operation
+   * Pre-process an array of paths, throwing an error if any path is excluded
    * 
-   * @param {string} resolved_path - The resolved path
-   * @param {...any} args - Additional arguments
-   * @returns {Array|null} Processed arguments or null if path is ignored
+   * @param {string[]} paths - Array of paths to pre-process
+   * @throws {Error} If any path in the array is excluded
+   * @returns {string[]} The array of paths
    */
-  pre_process(resolved_path, ...args) {
-    if (this.is_ignored(resolved_path)) return null;
-    return [resolved_path, ...args];
+  pre_process(paths) {
+    if (this.has_excluded_patterns(paths)) {
+      throw new Error(`Path is excluded: ${paths.find(p => this.is_excluded(p))}`);
+    }
+    return paths;
   }
 
   /**
@@ -136,95 +158,34 @@ class SmartFs {
    */
   post_process(returned_value) {
     if (Array.isArray(returned_value) && typeof returned_value[0] === 'string') {
-      returned_value = returned_value.filter(r => !this.is_ignored(r));
+      returned_value = returned_value.filter(r => !this.is_excluded(r));
     }
     return returned_value;
   }
-
-  /**
-   * Process paths before an operation
-   * 
-   * @private
-   * @param {string[]} paths - The paths to process
-   * @returns {string[]|Object[]} Processed paths or error objects
-   */
-  #processPaths(paths) {
-    return paths.map(path => {
-      const resolvedPath = this.#resolvePath(path);
-      if (this.is_ignored(resolvedPath)){
-        return { error: `Path is ignored: ${path}` };
-      }
-      return resolvedPath;
-    });
+  // v2
+  async use_adapter(method, paths, ...args) {
+    if(!this.adapter[method]) throw new Error(`Method ${method} not found in adapter`);
+    paths = this.pre_process(paths);
+    const resp = await this.adapter[method](...paths, ...args);
+    return this.post_process(resp);
   }
 
   /**
-   * Wrap an asynchronous fs method
+   * Append content to a file
    * 
-   * @private
-   * @param {Function} method - The method to wrap
-   * @param {number} [path_count=1] - The number of path arguments
-   * @returns {Function} The wrapped method
+   * @param {string} rel_path - The relative path of the file to append to
+   * @param {string|Buffer} content - The content to append
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  #wrapMethod(method, path_count = 1) {
-    return async (...args) => {
-      const paths = args.slice(0, path_count);
-      const other_args = args.slice(path_count);
-      const processed_paths = this.#processPaths(paths);
-      if (processed_paths.some(p => p.error)) return processed_paths.find(p => p.error);
-
-      let result = await method(...processed_paths, ...other_args);
-      return this.post_process(result);
-    };
-  }
+  async append(rel_path, content) { return await this.use_adapter('append', [rel_path], content); }
 
   /**
-   * Wrap a synchronous fs method
+   * Create a new directory
    * 
-   * @private
-   * @param {Function} method - The method to wrap
-   * @param {number} [path_count=1] - The number of path arguments
-   * @returns {Function} The wrapped method
+   * @param {string} rel_path - The relative path of the directory to create
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  #wrapSyncMethod(method, path_count = 1) {
-    return (...args) => {
-      const paths = args.slice(0, path_count);
-      const other_args = args.slice(path_count);
-      const processed_paths = this.#processPaths(paths);
-      if (processed_paths.some(p => p.error)) return processed_paths.find(p => p.error);
-
-      let result = method(...processed_paths, ...other_args);
-      return this.post_process(result);
-    };
-  }
-
-  // Wrapped fs methods
-  appendFile = this.#wrapMethod(fsPromises.appendFile);
-  appendFileSync = this.#wrapSyncMethod(fs.appendFileSync);
-  // exists = this.#wrapMethod(fsPromises.access); // better handled by custom exists method
-  existsSync = this.#wrapSyncMethod(fs.existsSync);
-  mkdir = this.#wrapMethod(fsPromises.mkdir);
-  mkdirSync = this.#wrapSyncMethod(fs.mkdirSync);
-  readdir = this.#wrapMethod(fsPromises.readdir);
-  readdirSync = this.#wrapSyncMethod(fs.readdirSync);
-  readFile = this.#wrapMethod(fsPromises.readFile);
-  readFileSync = this.#wrapSyncMethod(fs.readFileSync);
-  realpath = this.#wrapMethod(fsPromises.realpath);
-  realpathSync = this.#wrapSyncMethod(fs.realpathSync);
-  rename = this.#wrapMethod(fsPromises.rename);
-  renameSync = this.#wrapSyncMethod(fs.renameSync);
-  // rmdir = this.#wrapMethod(fsPromises.rmdir); // DEPRECATED
-  // rmdirSync = this.#wrapSyncMethod(fs.rmdirSync); // DEPRECATED
-  rmdir = this.#wrapMethod(fsPromises.rm);
-  rmdirSync = this.#wrapSyncMethod(fs.rmSync);
-  stat = this.#wrapMethod(fsPromises.stat);
-  statSync = this.#wrapSyncMethod(fs.statSync);
-  symlink = this.#wrapMethod(fsPromises.symlink, 2);
-  symlinkSync = this.#wrapSyncMethod(fs.symlinkSync, 2);
-  unlink = this.#wrapMethod(fsPromises.unlink);
-  unlinkSync = this.#wrapSyncMethod(fs.unlinkSync);
-  writeFile = this.#wrapMethod(fsPromises.writeFile);
-  writeFileSync = this.#wrapSyncMethod(fs.writeFileSync);
+  async create_dir(rel_path) { return await this.use_adapter('create_dir', [rel_path]); }
 
   /**
    * Check if a file or directory exists
@@ -232,17 +193,68 @@ class SmartFs {
    * @param {string} rel_path - The relative path to check
    * @returns {Promise<boolean>} True if the path exists, false otherwise
    */
-  async exists(rel_path) {
-    try {
-      await fsPromises.access(this.#resolvePath(rel_path));
-      return true;
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        return false;
-      }
-      throw error; // Re-throw the error if it's not a 'file not found' error
-    }
-  }
+  async exists(rel_path) { return await this.use_adapter('exists', [rel_path]); }
+
+  /**
+   * List files in a directory
+   * 
+   * @param {string} rel_path - The relative path to list
+   * @returns {Promise<string[]>} Array of file paths
+   */
+  async list(rel_path) { return await this.use_adapter('list', [rel_path]); }
+
+  /**
+   * Read the contents of a file
+   * 
+   * @param {string} rel_path - The relative path of the file to read
+   * @returns {Promise<string|Buffer>} The contents of the file
+   */
+  async read(rel_path) { return await this.use_adapter('read', [rel_path]); }
+
+  /**
+   * Remove a file
+   * 
+   * @param {string} rel_path - The relative path of the file to remove
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async remove(rel_path) { return await this.use_adapter('remove', [rel_path]); }
+
+  /**
+   * Remove a directory
+   * 
+   * @param {string} rel_path - The relative path of the directory to remove
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async remove_dir(rel_path) { return await this.use_adapter('remove_dir', [rel_path]); }
+
+  /**
+   * Rename a file or directory
+   * 
+   * @param {string} rel_path - The current relative path
+   * @param {string} new_rel_path - The new relative path
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async rename(rel_path, new_rel_path) { return await this.use_adapter('rename', [rel_path, new_rel_path]); }
+
+  /**
+   * Get file or directory statistics
+   * 
+   * @param {string} rel_path - The relative path to get statistics for
+   * @returns {Promise<Object>} An object containing file or directory statistics
+   */
+  async stat(rel_path) { return await this.use_adapter('stat', [rel_path]); }
+
+  /**
+   * Write content to a file
+   * 
+   * @param {string} rel_path - The relative path of the file to write to
+   * @param {string|Buffer} content - The content to write
+   * @returns {Promise<void>} A promise that resolves when the operation is complete
+   */
+  async write(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
+  // // aliases
+  // async create(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
+  // async update(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
 }
 
 export { SmartFs };

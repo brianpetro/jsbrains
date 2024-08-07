@@ -2,7 +2,7 @@
   "name": "smart-file-system",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "type": "module",
   "description": "Smart FS for use with Smart Environments.",
   "main": "smart_fs.js",
