@@ -67,4 +67,8 @@ export class SmartEntity extends CollectionItem {
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }
+
+  // FS
+  get fs() { return this.collection.fs; }
+
 }

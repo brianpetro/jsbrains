@@ -98,4 +98,9 @@ export class SmartEntities extends Collection {
   }
   get file_name() { return this.collection_name + '-' + this.smart_embed_model_key.split("/").pop(); }
   get smart_embed_model_key() { return this.config[this.collection_name + "_embed_model"]; }
+  // CRUD
+  get fs() {
+    if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path];
+    return this.env.fs;
+  }
 }

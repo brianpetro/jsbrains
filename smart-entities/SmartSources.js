@@ -131,4 +131,10 @@ export class SmartSources extends SmartEntities {
       }
     }
   }
+  // CRUD
+  async create(key, content) {
+    await this.env.fs.write(key, content);
+    const source = await this.create_or_update({ path: key });
+    return source;
+  }
 }

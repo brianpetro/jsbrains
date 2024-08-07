@@ -35,7 +35,7 @@ export class SmartSource extends SmartEntity {
   get excluded_lines() {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
-  async get_content() { return await this.env.main.read_file(this.data.path); }
+  async get_content() { return await this.env.main.read_file(this.data.path); } // DECPRECATE for this.read?
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
     let content = await this.get_content(); // get content from file
@@ -109,4 +109,50 @@ export class SmartSource extends SmartEntity {
     return super.is_unembedded;
   }
   get excluded() { return !this.env.is_included(this.data.path); }
+
+  // FS
+  async has_source_file() { return await this.fs.exists(this.data.path); }
+  // CRUD
+  async append(content) { await this.fs.append(this.data.path, content); }
+  async update(content) { await this.fs.write(this.data.path, content); }
+  async read() { return await this.fs.read(this.data.path); }
+  async remove() {
+    await this.fs.remove(this.data.path);
+    this.delete();
+  }
+  async rename(new_path) {
+    await this.fs.rename(this.data.path, new_path);
+    this.data.key = new_path;
+    this.data.path = new_path;
+    this.data.embeddings = {}; // clear embeddings
+    this.init();
+  }
+  async move(to_key){
+    const key_type = to_key.includes("#") ? "block" : "source";
+    if(key_type === "source"){
+      const to_entity = this.collection.get(to_key);
+      if(to_entity?.has_source_file()){
+        await to_entity.append(await this.read());
+        await this.remove();
+      }else{
+        await this.rename(to_key);
+      }
+    }else{
+      // should delete this entity
+      throw new Error("Cannot move to block"); // TODO: Implement moving to block
+    }
+  }
+  async merge(blocks){
+    // TODO: Implement merging
+    // appends blocks with matching headings in this.blocks
+    // appends unmatched blocks to end of this content
+  }
+  async merge_to(entity){
+    await entity.merge(this.blocks);
+    await this.remove();
+  }
+  async merge_from(entity){
+    await this.merge(entity.blocks);
+    await entity.remove();
+  }
 }

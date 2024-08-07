@@ -87,6 +87,55 @@ export class SmartBlock extends SmartEntity {
     const block_headings = this.path.split("#").slice(1); // remove first element (file path)
     return this.env.excluded_headings.some(heading => block_headings.includes(heading));
   }
+
+  // CRUD
+  async read() {
+    return (await this.source.read())
+      .split("\n")
+      .slice(this.line_start, this.line_end + 1)
+      .join("\n")
+    ;
+  }
+  async append(append_content) {
+    let all_lines = (await this.source.read()).split("\n");
+    // use this.line_start and this.line_end to insert append_content at the correct position
+    const content_before = all_lines.slice(0, this.line_end + 1);
+    const content_after = all_lines.slice(this.line_end + 1);
+    const new_content = [
+      ...content_before,
+      append_content,
+      ...content_after,
+    ].join("\n");
+    await this.source.update(new_content);
+  }
+  async update(new_block_content) {
+    const full_content = await this.source.read();
+    const all_lines = full_content.split("\n");
+    const new_content = [
+      ...all_lines.slice(0, this.line_start),
+      new_block_content,
+      ...all_lines.slice(this.line_end + 1),
+    ].join("\n");
+    await this.source.update(new_content);
+  }
+  async remove() {
+    await this.update("");
+  }
+  async move(to_key) {
+    const key_type = to_key.includes("#") ? "block" : "source";
+    if(key_type === "source"){
+      const to_entity = this.env.smart_sources.get(to_key);
+      if(to_entity?.has_source_file()){
+        await to_entity.append(await this.read());
+      }else{
+        await this.env.smart_sources.create(to_key, await this.read());
+      }
+      await this.remove();
+    }else{
+      throw new Error("Cannot move to block"); // TODO: Implement moving to block
+    }
+  }
+
   // DEPRECATED since v2
   get note() { return this.source; }
   get note_key() { return this.data.path.split("#")[0]; }
