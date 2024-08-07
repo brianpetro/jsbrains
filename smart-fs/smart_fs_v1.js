@@ -60,6 +60,14 @@ class SmartFs {
     this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
     this.gitignore_patterns = this.#load_gitignore();
   }
+  static async create(env, opts = {}) {
+    if(typeof opts.env_path !== 'string' || opts.env_path.length === 0) return; // no env_path provided
+    if(typeof env.smart_fs !== 'object') env.smart_fs = {};
+    if(env.smart_fs[opts.env_path] instanceof this) return env.smart_fs[opts.env_path];
+    env.smart_fs[opts.env_path] = new this(env, opts);
+    await env.smart_fs[opts.env_path].init();
+    return env.smart_fs[opts.env_path];
+  }
 
   /**
    * Load .gitignore patterns
