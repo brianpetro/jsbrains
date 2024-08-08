@@ -111,51 +111,105 @@ export class SmartSource extends SmartEntity {
   get excluded() { return !this.env.is_included(this.data.path); }
 
   // FS
+  /**
+   * Checks if the source file exists in the file system.
+   * @returns {Promise<boolean>} A promise that resolves to true if the file exists, false otherwise.
+   */
   async has_source_file() { return await this.fs.exists(this.data.path); }
+
   // CRUD
+  /**
+   * Appends content to the end of the source file.
+   * @param {string} content - The content to append to the file.
+   * @returns {Promise<void>} A promise that resolves when the operation is complete.
+   */
   async append(content) { await this.fs.append(this.data.path, content); }
+
+  /**
+   * Updates the entire content of the source file.
+   * @param {string} content - The new content to write to the file.
+   * @returns {Promise<void>} A promise that resolves when the operation is complete.
+   */
   async update(content) { await this.fs.write(this.data.path, content); }
+
+  /**
+   * Reads the entire content of the source file.
+   * @returns {Promise<string>} A promise that resolves with the content of the file.
+   */
   async read() { return await this.fs.read(this.data.path); }
+
+  /**
+   * Removes the source file from the file system and deletes the entity.
+   * This is different from delete() because it also removes the source file.
+   * @returns {Promise<void>} A promise that resolves when the operation is complete.
+   */
   async remove() {
     await this.fs.remove(this.data.path);
     this.delete();
   }
+  /**
+   * Renames the current source to a new path.
+   * If the new path is a block, it should use the move() method.
+   * If the new path already exists as a source, it throws an error.
+   * If the new path includes headings, it updates the content with the new headings.
+   * 
+   * @param {string} new_path - The new path to rename the source to.
+   * @throws {Error} If the new path is an existing source.
+   */
   async rename(new_path) {
-    await this.fs.rename(this.data.path, new_path);
-    this.data.key = new_path;
-    this.data.path = new_path;
-    this.data.embeddings = {}; // clear embeddings
-    this.init();
-  }
-  // INCOMPLETE: MUST DECIDE IS INPUT SHOULD BE ENTITY OR KEY!!!!!!!!
-  // async move(to_key){
-  async move(to_entity){
-    // const key_type = to_key.includes("#") ? "block" : "source";
-    // if(key_type === "source"){
-    if(to_entity.collection_name === "smart_sources"){
-      // const to_entity = this.collection.get(to_key);
-      if(to_entity?.has_source_file()){
-        await to_entity.append(await this.read());
-        await this.remove();
-      }else{
-        await this.rename(to_key);
-      }
-    }else{
-      // should delete this entity
-      throw new Error("Cannot move to block"); // TODO: Implement moving to block
+    if (new_path.includes("#")) {
+      // If the new path includes headings, update the content with the new headings
+      const headings = new_path.split("#").slice(1);
+      const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
+      const new_content = new_headings_content + "\n" + await this.read();
+      await this.update(new_content);
     }
-  }
-  async merge(blocks){
-    // TODO: Implement merging
-    // appends blocks with matching headings in this.blocks
-    // appends unmatched blocks to end of this content
-  }
-  async merge_to(entity){
-    await entity.merge(this.blocks);
+    // Extract the target source key from the new path
+    const target_source_key = new_path.split("#")[0];
+    // Get the target source from the environment
+    const target_source = this.env.smart_sources.get(target_source_key);
+    if (target_source) await target_source.merge(await this.read());
+    else {
+      // Rename the file in the filesystem
+      await this.fs.rename(this.data.path, target_source_key);
+      // Create or update the collection with the new path
+      this.collection.create_or_update({ path: target_source_key });
+    }
+    // Remove the current source after renaming
     await this.remove();
   }
-  async merge_from(entity){
-    await this.merge(entity.blocks);
-    await entity.remove();
+  /**
+   * Moves the current source to a new location.
+   * Handles `to` as a string (new path) or entity (block or source).
+   * 
+   * @param {string|Object} to - The destination path or entity to move to.
+   * @returns {Promise<void>}
+   */
+  async move(to) {
+    if (typeof to === "string") await this.rename(to);
+    else if(typeof to.key === "string") await this.rename(to.key);
+  }
+
+  /**
+   * Merges the given content into the current source.
+   * Parses the content into blocks and either appends to existing blocks or adds new blocks.
+   * 
+   * @param {string} content - The content to merge into the current source.
+   * @returns {Promise<void>}
+   */
+  async merge(content) {
+    const { blocks } = await this.env.smart_chunks.parse({
+      content,
+      file_path: this.data.path,
+    });
+    if(!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      const existing_block = this.env.smart_blocks.get(block.key);
+      // appends blocks with matching headings in this.blocks
+      if (existing_block) await existing_block.append(block.text);
+      // appends unmatched blocks to end of this content
+      else await this.append(block.text);
+    }
   }
 }

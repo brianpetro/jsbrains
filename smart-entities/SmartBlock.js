@@ -89,6 +89,10 @@ export class SmartBlock extends SmartEntity {
   }
 
   // CRUD
+  /**
+   * Reads the content of the block from the source file.
+   * @returns {Promise<string>} The content of the block.
+   */
   async read() {
     return (await this.source.read())
       .split("\n")
@@ -96,6 +100,12 @@ export class SmartBlock extends SmartEntity {
       .join("\n")
     ;
   }
+
+  /**
+   * Appends content to the end of the block.
+   * @param {string} append_content - The content to append.
+   * @returns {Promise<void>}
+   */
   async append(append_content) {
     let all_lines = (await this.source.read()).split("\n");
     // use this.line_start and this.line_end to insert append_content at the correct position
@@ -108,6 +118,12 @@ export class SmartBlock extends SmartEntity {
     ].join("\n");
     await this.source.update(new_content);
   }
+
+  /**
+   * Updates the content of the block.
+   * @param {string} new_block_content - The new content for the block.
+   * @returns {Promise<void>}
+   */
   async update(new_block_content) {
     const full_content = await this.source.read();
     const all_lines = full_content.split("\n");
@@ -118,22 +134,42 @@ export class SmartBlock extends SmartEntity {
     ].join("\n");
     await this.source.update(new_content);
   }
+
+  /**
+   * Removes the block from the source file and deletes the entity.
+   * @returns {Promise<void>}
+   */
   async remove() {
     await this.update("");
+    this.delete();
   }
+
+  /**
+   * Moves the block to a new location.
+   * @param {string} to_key - The key of the destination (can be a block or source).
+   * @returns {Promise<void>}
+   */
   async move(to_key) {
-    const key_type = to_key.includes("#") ? "block" : "source";
-    if(key_type === "source"){
-      const to_entity = this.env.smart_sources.get(to_key);
-      if(to_entity?.has_source_file()){
-        await to_entity.append(await this.read());
-      }else{
-        await this.env.smart_sources.create(to_key, await this.read());
+    const to_collection_name = to_key.includes("#") ? "smart_blocks" : "smart_sources";
+    const to_entity = this.env[to_collection_name].get(to_key);
+    if(to_entity) await to_entity.append(await this.read());
+    else {
+      const target_source_key = to_key.split("#")[0];
+      const target_source = this.env.smart_sources.get(target_source_key);
+      if (to_key.includes("#")) {
+        // If the to_key includes headings, update the content with the new headings
+        const headings = to_key.split("#").slice(1);
+        const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
+        const new_content = [
+          new_headings_content,
+          ...(await this.read()).split("\n").slice(1), // remove first line (old heading)
+        ].join("\n");
+        await this.update(new_content);
       }
-      await this.remove();
-    }else{
-      throw new Error("Cannot move to block"); // TODO: Implement moving to block
+      if(target_source) await target_source.merge(await this.read());
+      else await this.env.smart_sources.create(target_source_key, await this.read());
     }
+    await this.remove();
   }
 
   // DEPRECATED since v2
