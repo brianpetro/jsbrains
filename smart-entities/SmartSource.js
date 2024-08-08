@@ -127,10 +127,13 @@ export class SmartSource extends SmartEntity {
     this.data.embeddings = {}; // clear embeddings
     this.init();
   }
-  async move(to_key){
-    const key_type = to_key.includes("#") ? "block" : "source";
-    if(key_type === "source"){
-      const to_entity = this.collection.get(to_key);
+  // INCOMPLETE: MUST DECIDE IS INPUT SHOULD BE ENTITY OR KEY!!!!!!!!
+  // async move(to_key){
+  async move(to_entity){
+    // const key_type = to_key.includes("#") ? "block" : "source";
+    // if(key_type === "source"){
+    if(to_entity.collection_name === "smart_sources"){
+      // const to_entity = this.collection.get(to_key);
       if(to_entity?.has_source_file()){
         await to_entity.append(await this.read());
         await this.remove();
