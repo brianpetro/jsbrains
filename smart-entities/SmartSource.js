@@ -11,6 +11,12 @@ export class SmartSource extends SmartEntity {
     };
   }
   async init() {
+    // this.env.smart_blocks.import(this, { show_notice: false });
+    await this.parse_content();
+    this.queue_save();
+    if(this.is_unembedded) this.smart_embed.embed_entity(this);
+  }
+  async parse_content() {
     const content = await this.get_content();
     const hash = await create_hash(content); // update hash
     if (hash !== this.last_history?.hash) {
@@ -21,17 +27,15 @@ export class SmartSource extends SmartEntity {
       this.last_history.size = this.t_file.stat.size; // update size
       if(!this.last_history.blocks) this.last_history.blocks = {};
     }
-    // this.env.smart_blocks.import(this, { show_notice: false });
     const { blocks, outlinks } = await this.env.smart_chunks.parse(this);
     this.data.outlinks = outlinks;
-    for(let i = 0; i < blocks.length; i++){
+    for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
       const item = this.env.smart_blocks.create_or_update(block);
       this.last_history.blocks[item.key] = true;
     }
-    this.queue_save();
-    if(this.is_unembedded) this.smart_embed.embed_entity(this);
   }
+
   get excluded_lines() {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
@@ -123,14 +127,18 @@ export class SmartSource extends SmartEntity {
    * @param {string} content - The content to append to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
-  async append(content) { await this.fs.append(this.data.path, content); }
+  async append(content) { await this.fs.append(this.data.path, "\n" + content); }
 
   /**
    * Updates the entire content of the source file.
    * @param {string} content - The new content to write to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
-  async update(content) { await this.fs.write(this.data.path, content); }
+  async update(content) {
+    await this.fs.write(this.data.path, content);
+    // should re-parse the content
+    await this.parse_content();
+  }
 
   /**
    * Reads the entire content of the source file.
@@ -173,7 +181,7 @@ export class SmartSource extends SmartEntity {
       // Rename the file in the filesystem
       await this.fs.rename(this.data.path, target_source_key);
       // Create or update the collection with the new path
-      this.collection.create_or_update({ path: target_source_key });
+      await this.collection.create_or_update({ path: target_source_key });
     }
     // Remove the current source after renaming
     await this.remove();
@@ -205,11 +213,16 @@ export class SmartSource extends SmartEntity {
     if(!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
-      const existing_block = this.env.smart_blocks.get(block.key);
-      // appends blocks with matching headings in this.blocks
-      if (existing_block) await existing_block.append(block.text);
+      const existing_block = this.env.smart_blocks.get(block.path);
+      const block_content = content
+        .split("\n")
+        .slice(block.lines[0], block.lines[1] + 1)
+        .join("\n")
+      ;
+      // appends blocks with matching headings in this.blocks. Removes first line since it's redundant heading
+      if (existing_block) await existing_block.append(block_content.split("\n").slice(1).join("\n"));
       // appends unmatched blocks to end of this content
-      else await this.append(block.text);
+      else await this.append(block_content);
     }
   }
 }

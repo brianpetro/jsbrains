@@ -63,7 +63,7 @@ export class SmartEntity extends CollectionItem {
   }
   get is_unembedded() {
     if(this.vec) return false;
-    if(this.size < (this.env.settings.embed_input_min_chars || 300)) return false;
+    if(this.size < (this.env.settings?.embed_input_min_chars || 300)) return false;
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }

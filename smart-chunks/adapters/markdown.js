@@ -31,7 +31,12 @@ class MarkdownAdapter {
 
   async parse(entity) {
     try {
-      const content = (typeof entity.content === 'string' ? entity.content : await entity.get_content()).replace(/\r\n/g, '\n'); // replace windows line breaks with unix
+      let content = (typeof entity.content === 'string' ? entity.content : await entity.get_content());
+      if(!content){
+        console.log("no content for ", entity.file_path);
+        return { blocks: [], outlinks: [] };
+      }
+      content = content.replace(/\r\n/g, '\n'); // replace windows line breaks with unix
       const file_path = entity.file_path;
       const file_breadcrumbs = convert_file_path_to_breadcrumbs(file_path);
       const acc = initialize_acc(file_path, file_breadcrumbs);
