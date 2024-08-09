@@ -113,7 +113,6 @@ test.serial('SmartSource merge operation', async t => {
   // Test merge
   mock_env.files['merge_to.md'] = '# h1\n## h2\nSome initial content\n### h3\nSome other initial content';
   const merge_to_source = await mock_env.smart_sources.create_or_update({ path: 'merge_to.md' });
-  await merge_to_source.parse_content();
-  await merge_to_source.merge('# h1\n## h2\nMerged content1\n### h3\nMerged content2');
-  t.is(await merge_to_source.read(), '# h1\n## h2\nSome initial content\nMerged content1\n### h3\nSome other initial content\nMerged content2', 'Content should be merged');
+  await merge_to_source.merge('Some unmatched content\n# h1\n## h2\nMerged content1\n### h3\nMerged content2');
+  t.is((await merge_to_source.read()).trim(), '# h1\n## h2\nSome initial content\nMerged content1\n### h3\nSome other initial content\nMerged content2\n\n\nSome unmatched content', 'Content should be merged');
 });

@@ -141,7 +141,14 @@ export class SmartSource extends SmartEntity {
   async update(full_content) {
     full_content = this.update_pre_process(full_content);
     await this.fs.write(this.data.path, full_content);
-    await this.init(); // re-parse the content and re-embed if needed
+    this.debounced_init();
+  }
+  debounced_init() {
+    if(this.init_timeout) clearTimeout(this.init_timeout);
+    this.init_timeout = setTimeout(() => {
+      this.init();
+      this.init_timeout = null;
+    }, 300);
   }
 
   update_pre_process(content) {
@@ -213,26 +220,42 @@ export class SmartSource extends SmartEntity {
    * Parses the content into blocks and either appends to existing blocks or adds new blocks.
    * 
    * @param {string} content - The content to merge into the current source.
+   * @param {Object} opts - Options object.
+   * @param {boolean} opts.replace_blocks - If true, replace the content of existing blocks with the new content.
    * @returns {Promise<void>}
    */
-  async merge(content) {
+  async merge(content, opts={}) {
     const { blocks } = await this.env.smart_chunks.parse({
       content,
       file_path: this.data.path,
     });
     if(!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-      const existing_block = this.env.smart_blocks.get(block.path);
-      const block_content = content
+    // get content for each block (SMart CHunks currently returns embed_input format 2024-08-09)
+    blocks.forEach(block => {
+      block.content = content
         .split("\n")
         .slice(block.lines[0], block.lines[1] + 1)
         .join("\n")
       ;
-      // appends blocks with matching headings in this.blocks. Removes first line since it's redundant heading
-      if (existing_block) await existing_block.append(block_content.split("\n").slice(1).join("\n"));
-      // appends unmatched blocks to end of this content
-      else await this.append(block_content);
+    });
+    // sort blocks by line number in descending order
+    // (prevents having to re-calculate lines for downstream blocks)
+    const curr_blocks = this.blocks.sort((a, b) => b.data.lines[0] - a.data.lines[0]);
+    for(let i = 0; i < curr_blocks.length; i++){
+      const curr_block = curr_blocks[i];
+      const block = blocks.find(block => block.path === curr_block.key);
+      if(block){
+        if(opts.replace_blocks) await curr_block.update(block.content);
+        else await curr_block.append(block.content.split("\n").slice(1).join("\n")); // skip the first line (redundant heading)
+        block.matched = true;
+      }
     }
+    // append any unmatched blocks to the end of the file
+    const unmatched_content = blocks
+      .filter(block => !block.matched)
+      .map(block => block.content)
+      .join("\n")
+    ;
+    await this.append("\n\n" + unmatched_content);
   }
 }
