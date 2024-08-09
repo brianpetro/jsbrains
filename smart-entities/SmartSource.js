@@ -238,6 +238,8 @@ export class SmartSource extends SmartEntity {
         .join("\n")
       ;
     });
+    // should read and re-parse content to make sure all blocks are up to date
+    await this.parse_content();
     // sort blocks by line number in descending order
     // (prevents having to re-calculate lines for downstream blocks)
     const curr_blocks = this.blocks.sort((a, b) => b.data.lines[0] - a.data.lines[0]);
