@@ -127,17 +127,27 @@ export class SmartSource extends SmartEntity {
    * @param {string} content - The content to append to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
-  async append(content) { await this.fs.append(this.data.path, "\n" + content); }
+  async append(content) {
+    const current_content = await this.read();
+    const new_content = current_content + "\n" + content;
+    await this.update(new_content);
+  }
 
   /**
    * Updates the entire content of the source file.
-   * @param {string} content - The new content to write to the file.
+   * @param {string} full_content - The new content to write to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
-  async update(content) {
-    await this.fs.write(this.data.path, content);
-    // should re-parse the content
-    await this.parse_content();
+  async update(full_content) {
+    full_content = this.update_pre_process(full_content);
+    await this.fs.write(this.data.path, full_content);
+    await this.init(); // re-parse the content and re-embed if needed
+  }
+
+  update_pre_process(content) {
+    // const current_content = this.read(); // Read the current content of the file
+    // TODO: add change syntax if enabled
+    return content;
   }
 
   /**
