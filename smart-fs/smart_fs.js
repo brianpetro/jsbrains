@@ -69,6 +69,7 @@ class SmartFs {
    * @param {string} [opts.env_path] - Custom environment path
    */
   constructor(env, opts = {}) {
+    this.env = env;
     this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
     if(!opts.adapter) throw new Error('SmartFs requires an adapter');
     this.adapter = new opts.adapter(this);
