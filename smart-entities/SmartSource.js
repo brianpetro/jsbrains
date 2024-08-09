@@ -217,14 +217,15 @@ export class SmartSource extends SmartEntity {
 
   /**
    * Merges the given content into the current source.
-   * Parses the content into blocks and either appends to existing blocks or adds new blocks.
+   * Parses the content into blocks and either appends to existing blocks, replaces blocks, or replaces all content.
    * 
    * @param {string} content - The content to merge into the current source.
    * @param {Object} opts - Options object.
-   * @param {boolean} opts.replace_blocks - If true, replace the content of existing blocks with the new content.
+   * @param {string} opts.mode - The merge mode: 'append', 'replace_blocks', or 'replace_all'. Default is 'append'.
    * @returns {Promise<void>}
    */
-  async merge(content, opts={}) {
+  async merge(content, opts = {}) {
+    const { mode = 'append_blocks' } = opts;
     const { blocks } = await this.env.smart_chunks.parse({
       content,
       file_path: this.data.path,
@@ -234,30 +235,45 @@ export class SmartSource extends SmartEntity {
     blocks.forEach(block => {
       block.content = content
         .split("\n")
-        .slice(block.lines[0], block.lines[1] + 1)
+        .slice(
+          block.lines[0], // - 1, // minus 1 to account for Smart Chunks being 1-indexed as of 2024-08-09
+          block.lines[1] + 1
+        )
         .join("\n")
       ;
     });
     // should read and re-parse content to make sure all blocks are up to date
     await this.parse_content();
-    // sort blocks by line number in descending order
-    // (prevents having to re-calculate lines for downstream blocks)
-    const curr_blocks = this.blocks.sort((a, b) => b.data.lines[0] - a.data.lines[0]);
-    for(let i = 0; i < curr_blocks.length; i++){
-      const curr_block = curr_blocks[i];
-      const block = blocks.find(block => block.path === curr_block.key);
-      if(block){
-        if(opts.replace_blocks) await curr_block.update(block.content);
-        else await curr_block.append(block.content.split("\n").slice(1).join("\n")); // skip the first line (redundant heading)
-        block.matched = true;
+    if(mode === "replace_all"){ // appends unmatched blocks to end (unless replace_all)
+      await this.update(content);
+    }else{
+      // sort blocks by line number in descending order
+      // (prevents having to re-calculate lines for downstream blocks)
+      const curr_blocks = this.blocks.sort((a, b) => b.data.lines[0] - a.data.lines[0]);
+      for(let i = 0; i < curr_blocks.length; i++){
+        const curr_block = curr_blocks[i];
+        const block = blocks.find(block => block.path === curr_block.key);
+        if(block){
+          if(mode === "append_blocks") {
+            // const first_non_heading_line = block.content.split("\n").findIndex(line => !line.startsWith("#"));
+            // await curr_block.append(block.content.split("\n").slice(first_non_heading_line).join("\n"));
+            await curr_block.append(block.content.split("\n").slice(1).join("\n"));
+          }else{
+            await curr_block.update(block.content);
+          }
+          block.matched = true;
+          curr_block.matched = true;
+        }
       }
+      // append any unmatched blocks to the end of the file
+      const unmatched_content = blocks
+        .filter(block => !block.matched)
+        .map(block => block.content)
+        .join("\n")
+      ;
+      await this.append("\n\n" + unmatched_content);
     }
-    // append any unmatched blocks to the end of the file
-    const unmatched_content = blocks
-      .filter(block => !block.matched)
-      .map(block => block.content)
-      .join("\n")
-    ;
-    await this.append("\n\n" + unmatched_content);
+    await this.parse_content();
   }
+
 }

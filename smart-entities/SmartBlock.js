@@ -111,6 +111,8 @@ export class SmartBlock extends SmartEntity {
     // use this.line_start and this.line_end to insert append_content at the correct position
     const content_before = all_lines.slice(0, this.line_end + 1);
     const content_after = all_lines.slice(this.line_end + 1);
+    // const content_before = all_lines.slice(0, this.line_end);
+    // const content_after = all_lines.slice(this.line_end);
     const new_content = [
       ...content_before,
       append_content,
@@ -128,6 +130,7 @@ export class SmartBlock extends SmartEntity {
     const full_content = await this.source.read();
     const all_lines = full_content.split("\n");
     const new_content = [
+      // ...all_lines.slice(0, this.line_start - 1), // Smart Chunks is Base-1 as of 2024-08-09
       ...all_lines.slice(0, this.line_start),
       new_block_content,
       ...all_lines.slice(this.line_end + 1),

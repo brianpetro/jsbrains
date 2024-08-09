@@ -109,10 +109,61 @@ test.serial('SmartSource remove operation', async t => {
   t.false(await mock_env.fs.exists('renamed.md'), 'File should be removed');
 });
 
-test.serial('SmartSource merge operation', async t => {
+const initial_merge_content = `# h1
+## h2
+Some initial content
+### h3
+Some other initial content`;
+const merge_content_input = `Some unmatched content
+# h1
+## h2
+Merged content1
+### h3
+Merged content2`;
+const expected_merge_append_blocks_output = `# h1
+## h2
+Some initial content
+Merged content1
+### h3
+Some other initial content
+Merged content2
+
+
+Some unmatched content`;
+test.serial('SmartSource merge (mode=append_blocks) operation', async t => {
   // Test merge
-  mock_env.files['merge_to.md'] = '# h1\n## h2\nSome initial content\n### h3\nSome other initial content';
+  mock_env.files['merge_to.md'] = initial_merge_content;
   const merge_to_source = await mock_env.smart_sources.create_or_update({ path: 'merge_to.md' });
-  await merge_to_source.merge('Some unmatched content\n# h1\n## h2\nMerged content1\n### h3\nMerged content2');
-  t.is((await merge_to_source.read()).trim(), '# h1\n## h2\nSome initial content\nMerged content1\n### h3\nSome other initial content\nMerged content2\n\n\nSome unmatched content', 'Content should be merged');
+  await merge_to_source.merge(merge_content_input, { mode: 'append_blocks' });
+  t.is((await merge_to_source.read()).trim(), expected_merge_append_blocks_output.trim(), 'Content should be merged');
+});
+const merge_replace_blocks_content_input = `Some unmatched content
+# h1
+## h2
+Replaced content1
+### h3
+Replaced content2`;
+
+const expected_merge_replace_blocks_output = `# h1
+## h2
+Replaced content1
+### h3
+Replaced content2
+
+
+Some unmatched content`;
+test.serial('SmartSource merge (mode=replace_blocks) operation', async t => {
+  mock_env.files['merge_to.md'] = initial_merge_content;
+  const merge_to_source = await mock_env.smart_sources.create_or_update({ path: 'merge_to.md' });
+  await merge_to_source.merge(merge_replace_blocks_content_input, { mode: 'replace_blocks' });
+  t.is((await merge_to_source.read()).trim(), expected_merge_replace_blocks_output.trim(), 'Content should be merged');
+});
+
+
+const expected_merge_replace_all_output = `replaced content`;
+test.serial('SmartSource merge (mode=replace_all) operation', async t => {
+  mock_env.files['merge_to.md'] = initial_merge_content;
+  const merge_to_source = await mock_env.smart_sources.create_or_update({ path: 'merge_to.md' });
+  await merge_to_source.merge('replaced content', { mode: 'replace_all' });
+  t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output, 'Content should be merged');
 });
