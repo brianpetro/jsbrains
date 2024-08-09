@@ -242,7 +242,20 @@ test.serial('SmartSource merge (mode=replace_all) operation', async t => {
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output, 'Content should be merged');
 });
 // test replace_all with wrap_changes
-const expected_merge_replace_all_output_with_change_syntax = `<<<<<<< HEAD\n${initial_merge_content}\n=======\nreplaced content\n>>>>>>>`;
+const expected_merge_replace_all_output_with_change_syntax = `<<<<<<< HEAD
+  =======
+  replaced content
+  >>>>>>>
+  <<<<<<< HEAD
+  ## h2
+  Some initial content
+  =======
+  >>>>>>>
+  <<<<<<< HEAD
+  ### h3
+  Some other initial content
+  =======
+  >>>>>>>`.split("\n").map(line => line.trim()).join("\n");
 test.serial('SmartSource merge (mode=replace_all) with wrap_changes', async t => {
   const env = t.context.mock_env;
   env.settings.use_change_syntax = true;
@@ -250,4 +263,30 @@ test.serial('SmartSource merge (mode=replace_all) with wrap_changes', async t =>
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.merge('replaced content', { mode: 'replace_all' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output_with_change_syntax, 'Content should be merged');
+});
+
+// test replace_all with wrap_changes
+const expected_merge_replace_all_input_2 = `# h1
+## h2
+replaced content`;
+const expected_merge_replace_all_output_with_change_syntax_2 = `# h1
+  <<<<<<< HEAD
+  ## h2
+  Some initial content
+  =======
+  ## h2
+  replaced content
+  >>>>>>>
+  <<<<<<< HEAD
+  ### h3
+  Some other initial content
+  =======
+  >>>>>>>`.split("\n").map(line => line.trim()).join("\n");
+test.serial('SmartSource merge (mode=replace_all) with wrap_changes #2', async t => {
+  const env = t.context.mock_env;
+  env.settings.use_change_syntax = true;
+  env.files['merge_to.md'] = initial_merge_content;
+  const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
+  await merge_to_source.merge(expected_merge_replace_all_input_2, { mode: 'replace_all' });
+  t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output_with_change_syntax_2, 'Content should be merged');
 });

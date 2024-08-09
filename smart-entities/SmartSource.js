@@ -238,11 +238,41 @@ export class SmartSource extends SmartEntity {
         )
         .join("\n")
       ;
+      const match = this.blocks.find(b => b.key === block.path);
+      if(match){
+        block.matched = true;
+        match.matched = true;
+      }
     });
     // should read and re-parse content to make sure all blocks are up to date
     await this.parse_content();
     if(mode === "replace_all"){
-      await this.update(content);
+      if(this.should_use_change_syntax){
+        let all = "";
+        const new_blocks = blocks.sort((a, b) => a.lines[0] - b.lines[0]);
+        // if first block line start is >0 then add prior content to all
+        if(new_blocks[0].lines[0] > 0){
+          all += content.split("\n").slice(0, new_blocks[0].lines[0]).join("\n");
+        }
+        for(let i = 0; i < new_blocks.length; i++){
+          const block = new_blocks[i];
+          if(all.length) all += "\n";
+          if(block.matched){
+            const og = this.env.smart_blocks.get(block.path);
+            all += wrap_changes(this, (await og.read()), block.content);
+          }else{
+            all += wrap_changes(this, "", block.content);
+          }
+        }
+        const unmatched_old = this.blocks.filter(b => !b.matched);
+        for(let i = 0; i < unmatched_old.length; i++){
+          const block = unmatched_old[i];
+          all += (all.length ? "\n" : "") + wrap_changes(this, await block.read(), "");
+        }
+        await this.update(all, { skip_wrap_changes: true });
+      }else{
+        await this.update(content);
+      }
     }
     else{
       // sort blocks by line number in descending order
