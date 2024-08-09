@@ -1,5 +1,6 @@
 import { create_hash } from "./create_hash.js";
 import { SmartEntity } from "./SmartEntity.js";
+import { wrap_changes } from "smart-entities-actions/utils/wrap_changes.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -128,9 +129,10 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async append(content) {
+    if(this.should_use_change_syntax) content = wrap_changes(this, "", content);
     const current_content = await this.read();
     const new_content = current_content + "\n" + content;
-    await this.update(new_content);
+    await this.update(new_content, { skip_wrap_changes: true });
   }
 
   /**
@@ -138,23 +140,18 @@ export class SmartSource extends SmartEntity {
    * @param {string} full_content - The new content to write to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
-  async update(full_content) {
-    full_content = this.update_pre_process(full_content);
+  async update(full_content, opts = {}) {
+    full_content = await this.update_pre_process(full_content, opts);
     await this.fs.write(this.data.path, full_content);
     this.debounced_init();
+    // await this.init();
   }
   debounced_init() {
     if(this.init_timeout) clearTimeout(this.init_timeout);
     this.init_timeout = setTimeout(() => {
       this.init();
       this.init_timeout = null;
-    }, 300);
-  }
-
-  update_pre_process(content) {
-    // const current_content = this.read(); // Read the current content of the file
-    // TODO: add change syntax if enabled
-    return content;
+    }, 900);
   }
 
   /**
@@ -244,19 +241,19 @@ export class SmartSource extends SmartEntity {
     });
     // should read and re-parse content to make sure all blocks are up to date
     await this.parse_content();
-    if(mode === "replace_all"){ // appends unmatched blocks to end (unless replace_all)
+    if(mode === "replace_all"){
       await this.update(content);
-    }else{
+    }
+    else{
       // sort blocks by line number in descending order
       // (prevents having to re-calculate lines for downstream blocks)
-      const curr_blocks = this.blocks.sort((a, b) => b.data.lines[0] - a.data.lines[0]);
+      const curr_blocks = this.blocks.sort((a, b) => b.data.lines[1] - a.data.lines[1]);
       for(let i = 0; i < curr_blocks.length; i++){
         const curr_block = curr_blocks[i];
+        // console.log(curr_block.lines);
         const block = blocks.find(block => block.path === curr_block.key);
         if(block){
           if(mode === "append_blocks") {
-            // const first_non_heading_line = block.content.split("\n").findIndex(line => !line.startsWith("#"));
-            // await curr_block.append(block.content.split("\n").slice(first_non_heading_line).join("\n"));
             await curr_block.append(block.content.split("\n").slice(1).join("\n"));
           }else{
             await curr_block.update(block.content);

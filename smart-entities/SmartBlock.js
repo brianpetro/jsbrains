@@ -1,4 +1,5 @@
 import { SmartEntity } from "./SmartEntity.js";
+import { wrap_changes } from "smart-entities-actions/utils/wrap_changes.js";
 
 export class SmartBlock extends SmartEntity {
   static get defaults() {
@@ -107,6 +108,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<void>}
    */
   async append(append_content) {
+    if(this.should_use_change_syntax) append_content = wrap_changes(this, "", append_content);
     let all_lines = (await this.source.read()).split("\n");
     // use this.line_start and this.line_end to insert append_content at the correct position
     const content_before = all_lines.slice(0, this.line_end + 1);
@@ -118,7 +120,7 @@ export class SmartBlock extends SmartEntity {
       append_content,
       ...content_after,
     ].join("\n");
-    await this.source.update(new_content);
+    await this.source.update(new_content, { skip_wrap_changes: true });
   }
 
   /**
@@ -126,7 +128,8 @@ export class SmartBlock extends SmartEntity {
    * @param {string} new_block_content - The new content for the block.
    * @returns {Promise<void>}
    */
-  async update(new_block_content) {
+  async update(new_block_content, opts = {}) {
+    new_block_content = await this.update_pre_process(new_block_content, opts);
     const full_content = await this.source.read();
     const all_lines = full_content.split("\n");
     const new_content = [
@@ -135,7 +138,7 @@ export class SmartBlock extends SmartEntity {
       new_block_content,
       ...all_lines.slice(this.line_end + 1),
     ].join("\n");
-    await this.source.update(new_content);
+    await this.source.update(new_content, { skip_wrap_changes: true });
   }
 
   /**

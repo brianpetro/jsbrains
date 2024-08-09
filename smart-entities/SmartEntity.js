@@ -1,5 +1,6 @@
 import { CollectionItem } from "smart-collections/CollectionItem.js";
 import { find_connections } from "./actions/find_connections.js";
+import { wrap_changes } from "smart-entities-actions/utils/wrap_changes.js";
 
 export class SmartEntity extends CollectionItem {
   static get defaults() {
@@ -70,5 +71,13 @@ export class SmartEntity extends CollectionItem {
 
   // FS
   get fs() { return this.collection.fs; }
+  get should_use_change_syntax() { return this.env.settings.use_change_syntax; }
+  async update_pre_process(content, opts = {}) {
+    if(this.should_use_change_syntax && !opts.skip_wrap_changes){
+      const current_content = await this.read();
+      content = wrap_changes(this, current_content, content);
+    }
+    return content;
+  }
 
 }
