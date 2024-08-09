@@ -1,0 +1,129 @@
+{
+  "blocks": [
+    {
+      "path": "test_env/test_markdown_v2c.md#h1 line should be in heading block 1#heading block 1",
+      "heading": "heading block 1",
+      "length": 44,
+      "lines": [
+        1,
+        4
+      ],
+      "text": "test_env > test_markdown_v2c: h1 line should be in heading block 1 > heading block 1:\n![[October 27th, 2022#heading 1]]\nsame block"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#h1 line should be in heading block 1#heading block 2",
+      "heading": "heading block 2",
+      "length": 10,
+      "lines": [
+        5,
+        7
+      ],
+      "text": "test_env > test_markdown_v2c: h1 line should be in heading block 1 > heading block 2:\nnext block"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#h1 line should be in heading block 1#heading block 2#Observations from working on Question 1",
+      "heading": "Observations from working on Question 1",
+      "length": 79,
+      "lines": [
+        8,
+        13
+      ],
+      "text": "test_env > test_markdown_v2c: h1 line should be in heading block 1 > heading block 2 > Observations from working on Question 1:\n- safety\n- user-centric and inclusive design\n- inter-disciplinary collaboration"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#h1 line should be in heading block 1#heading block 2#Observations from working on Question 1{1}",
+      "heading": "Observations from working on Question 1",
+      "length": 345,
+      "lines": [
+        14,
+        14
+      ],
+      "text": "test_env > test_markdown_v2c: h1 line should be in heading block 1 > heading block 2 > Observations from working on Question 1:\n**\"Lorem ipsum dolor sit amet\" mindset:** This aligns with ATIH's focus on \"consectetur adipiscing elit\"... (really long single line should be parsed as a single block... lorem ipsum dolor sit amet consectetur adipiscing elit... lorem ipsum dolor sit amet consectetur adipiscing elit... lorem ipsum dolor sit amet consectetur adipiscing elit...)"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#h1 line should be in heading block 1#heading block 2#Observations from working on Question 1{2}",
+      "heading": "Observations from working on Question 1",
+      "length": 207,
+      "lines": [
+        15,
+        18
+      ],
+      "text": "test_env > test_markdown_v2c: h1 line should be in heading block 1 > heading block 2 > Observations from working on Question 1:\n**Lessons learned from aircraft and rocket design:** Responsible Tech principle of learning from past advancements.\n**Cockpit design and cognitive load:** User-centered design and human-computer interaction."
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#",
+      "heading": null,
+      "length": 42,
+      "lines": [
+        20,
+        21
+      ],
+      "text": "test_env > test_markdown_v2c:\nTreated as new block\nShould clear headings"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#{1}",
+      "heading": null,
+      "length": 13,
+      "lines": [
+        23,
+        25
+      ],
+      "text": "test_env > test_markdown_v2c:\nAnother block"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#Another heading",
+      "heading": "Another heading",
+      "length": 42,
+      "lines": [
+        26,
+        31
+      ],
+      "text": "test_env > test_markdown_v2c: Another heading:\n1. First item\n2. Second item\n3. Third item"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#Yet Another Heading",
+      "heading": "Yet Another Heading",
+      "length": 28,
+      "lines": [
+        32,
+        35
+      ],
+      "text": "test_env > test_markdown_v2c: Yet Another Heading:\n1. First item\n2. Second item"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#Yet Another Heading{1}",
+      "heading": "Yet Another Heading",
+      "length": 70,
+      "lines": [
+        36,
+        39
+      ],
+      "text": "test_env > test_markdown_v2c: Yet Another Heading:\n3. Third item\n   1. Child item 1\n   2. Child item 2\n   3. Child item 3"
+    },
+    {
+      "path": "test_env/test_markdown_v2c.md#Yet Another Heading{2}",
+      "heading": "Yet Another Heading",
+      "length": 28,
+      "lines": [
+        40,
+        41
+      ],
+      "text": "test_env > test_markdown_v2c: Yet Another Heading:\n4. Fourth item\n5. Fifth item"
+    }
+  ],
+  "log": [
+    "Skipping empty block: test_env > test_markdown_v2c: h1 line should be in heading block 1:"
+  ],
+  "start_line": 42,
+  "curr_line": 41,
+  "curr_heading": "Yet Another Heading",
+  "file_path": "test_env/test_markdown_v2c.md",
+  "curr_level": 2,
+  "outlinks": [
+    {
+      "title": "October 27th, 2022#heading 1",
+      "target": "October 27th, 2022#heading 1",
+      "line": 3
+    }
+  ]
+}
