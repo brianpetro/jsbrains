@@ -26,6 +26,6 @@
   "dependencies": {
     "smart-collections": "file:../smart-collections",
     "smart-embed-model": "file:../smart-embed-model",
-    "smart-entities-actions": "file:../../smart-connect-core-v2"
+    "smart-entities-actions": "file:../../smart-entities-actions"
   }
 }
