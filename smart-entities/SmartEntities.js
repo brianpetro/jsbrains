@@ -103,4 +103,46 @@ export class SmartEntities extends Collection {
     if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path];
     return this.env.fs;
   }
+  // SEARCH
+  /**
+   * Lexically searches for entities matching the given filter criteria.
+   * @param {Object} search_filter - The filter criteria for the search.
+   * @returns {Promise<Array<Entity>>} A promise that resolves to an array of matching entities.
+   */
+  async search(search_filter = {}) {
+    if(!search_filter.keywords){
+      console.warn("search_filter.keywords not set");
+      return [];
+    }
+    const search_results = await Promise.all(
+      this.items.map(async (item) => {
+        try {
+          const matches = await item.search(search_filter);
+          return matches ? { item, relevance: this.calculate_relevance(item, search_filter) } : null;
+        } catch (error) {
+          console.error(`Error searching item ${item.id || 'unknown'}:`, error);
+          return null;
+        }
+      })
+    );
+    return search_results
+      .filter(Boolean)
+      .sort((a, b) => b.relevance - a.relevance) // sort by relevance 
+      .map(result => result.item);
+  }
+
+  /**
+   * Calculates the relevance of an item based on the search filter.
+   * 
+   * @param {Object} item - The item to calculate relevance for.
+   * @param {Object} search_filter - The search filter containing keywords.
+   * @returns {number} The relevance score:
+   *                   1 if any keyword is found in the item's path,
+   *                   0 otherwise (default relevance for keyword in content).
+   */
+  calculate_relevance(item, search_filter) {
+    // if keyword in search_filter is in item.data.path, return 1
+    if(search_filter.keywords.some(keyword => item.data.path?.includes(keyword))) return 1;
+    return 0; // default relevance (keyword in content)
+  }
 }

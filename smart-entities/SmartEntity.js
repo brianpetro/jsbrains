@@ -22,7 +22,7 @@ export class SmartEntity extends CollectionItem {
   async get_as_context(params = {}) {
     return `---BEGIN NOTE${params.i ? " " + params.i : ""} [[${this.path}]]---\n${await this.get_content()}\n---END NOTE${params.i ? " " + params.i : ""}---`;
   }
-  async get_content() { } // override in child class
+  async get_content() { } // override in child class (DEPRECATED in favor of read())
   async get_embed_input() { } // override in child class
   // find_connections v2 (smart action)
   find_connections(params) {
@@ -78,6 +78,31 @@ export class SmartEntity extends CollectionItem {
       content = wrap_changes(this, current_content, content);
     }
     return content;
+  }
+  /**
+   * Searches for keywords within the entity's data and content.
+   * @param {Object} search_filter - The search filter object.
+   * @param {string[]} search_filter.keywords - An array of keywords to search for.
+   * @returns {Promise<boolean>} A promise that resolves to true if the entity matches the search criteria, false otherwise.
+   */
+  async search(search_filter = {}) {
+    // First, run the initial filter (defined in CollectionItem)
+    if (!this.filter(search_filter)) return false;
+    // Extract keywords from search_filter
+    const { keywords } = search_filter;
+    // Validate the keywords
+    if (!keywords || !Array.isArray(keywords)) {
+      console.warn("Entity.search: keywords not set or is not an array");
+      return false;
+    }
+    // Check if any keyword is in the entity's path
+    if (keywords.some(keyword => this.data.path.includes(keyword))) return true;
+    // Read the entity's content (uses CRUD read())
+    const content = await this.read();
+    // Check if any keyword is in the entity's content
+    if (keywords.some(keyword => content.includes(keyword))) return true;
+    // If no matches found, return false
+    return false;
   }
 
 }
