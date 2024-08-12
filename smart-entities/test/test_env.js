@@ -3,39 +3,18 @@ import { SmartSources } from '../SmartSources.js';
 import { SmartBlock } from '../SmartBlock.js';
 import { SmartBlocks } from '../SmartBlocks.js';
 import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
+import { SmartFs } from '../../smart-fs/smart_fs.js';
+import { TestFsSmartFsAdapter } from '../../smart-fs/adapters/test_fs.js';
+
 export function load_test_env(t) {
   t.context.mock_env = {
     item_types: {
       SmartSource: SmartSource,
       SmartBlock: SmartBlock,
     },
-    fs: {
-      write: async (key, content) => {
-        t.context.mock_env.files[key] = content;
-      },
-      append: async (key, content) => {
-        t.context.mock_env.files[key] += content;
-      },
-      read: async (key) => {
-        return t.context.mock_env.files[key];
-      },
-      remove: async (key) => {
-        delete t.context.mock_env.files[key];
-      },
-      exists: async (key) => {
-        const entity = key.includes("#") ? t.context.mock_env.smart_blocks.get(key) : t.context.mock_env.smart_sources.get(key);
-        if(entity?.deleted) return false;
-        return key in t.context.mock_env.files;
-      },
-      rename: async (old_key, new_key) => {
-        t.context.mock_env.files[new_key] = `${t.context.mock_env.files[old_key]}`;
-        delete t.context.mock_env.files[old_key];
-      }
-    },
-    files: {},
     main: {
       read_file: async (path) => {
-        return t.context.mock_env.files[path];
+        return t.context.mock_env.smart_fs.read(path);
       },
       get_tfile: (path) => {
         return { stat: { mtime: Date.now(), size: 33 }, extension: 'md' };
@@ -64,6 +43,15 @@ export function load_test_env(t) {
     },
     settings: {}
   };
+
+  // Initialize SmartFs with TestFsSmartFsAdapter
+  t.context.mock_env.smart_fs = new SmartFs(t.context.mock_env, {
+    adapter: TestFsSmartFsAdapter,
+    env_path: '/mock/env/path'
+  });
+  // add fs getter to mock_env
+  t.context.mock_env.fs = t.context.mock_env.smart_fs;
+
   t.context.mock_env.smart_chunks = new SmartChunks(t.context.mock_env);
   t.context.mock_env.smart_blocks = new SmartBlocks(t.context.mock_env);
   t.context.mock_env.smart_sources = new SmartSources(t.context.mock_env);

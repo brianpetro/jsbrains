@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { Minimatch } from 'minimatch';
+import Minimatch from 'minimatch';
 
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
