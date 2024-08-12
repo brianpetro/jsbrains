@@ -101,6 +101,14 @@ export class SmartBlock extends SmartEntity {
       .join("\n")
     ;
   }
+  async read_with_sub_blocks() {
+    const content = await this.read();
+    const sub_blocks = await Promise.all(this.sub_blocks
+      .sort((a, b) => a.data.lines[0] - b.data.lines[0]) // sort sub-blocks by line number in ASCENDING order
+      .map(async block => await block.read())
+    );
+    return [content, ...sub_blocks].join("\n\n");
+  }
 
   /**
    * Appends content to the end of the block.
@@ -108,8 +116,12 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<void>}
    */
   async append(append_content) {
-    if(this.should_use_change_syntax) append_content = wrap_changes(this, "", append_content);
     let all_lines = (await this.source.read()).split("\n");
+    // if first line of block is same as first line of append_content, remove it
+    if(all_lines[this.line_start] === append_content.split("\n")[0]){
+      append_content = append_content.split("\n").slice(1).join("\n");
+    }
+    if(this.should_use_change_syntax) append_content = wrap_changes(this, "", append_content);
     // use this.line_start and this.line_end to insert append_content at the correct position
     const content_before = all_lines.slice(0, this.line_end + 1);
     const content_after = all_lines.slice(this.line_end + 1);
@@ -117,9 +129,10 @@ export class SmartBlock extends SmartEntity {
     // const content_after = all_lines.slice(this.line_end);
     const new_content = [
       ...content_before,
+      "", // add a blank line before appending
       append_content,
       ...content_after,
-    ].join("\n");
+    ].join("\n").trim();
     await this.source.update(new_content, { skip_wrap_changes: true });
   }
 
@@ -143,9 +156,16 @@ export class SmartBlock extends SmartEntity {
 
   /**
    * Removes the block from the source file and deletes the entity.
+   * Deletes all sub-blocks as well.
    * @returns {Promise<void>}
    */
   async remove() {
+    if(this.sub_blocks.length) {
+      await Promise.all(this.sub_blocks
+        .sort((a, b) => b.data.lines[0] - a.data.lines[0]) // sort sub-blocks by line number in DESCENDING order
+        .map(async block => await block.remove())
+      );
+    }
     await this.update("");
     this.delete();
   }
@@ -155,27 +175,46 @@ export class SmartBlock extends SmartEntity {
    * @param {string} to_key - The key of the destination (can be a block or source).
    * @returns {Promise<void>}
    */
-  async move(to_key) {
+  async move_to(to_key) {
     const to_collection_name = to_key.includes("#") ? "smart_blocks" : "smart_sources";
     const to_entity = this.env[to_collection_name].get(to_key);
-    if(to_entity) await to_entity.append(await this.read());
-    else {
-      const target_source_key = to_key.split("#")[0];
-      const target_source = this.env.smart_sources.get(target_source_key);
-      if (to_key.includes("#")) {
-        // If the to_key includes headings, update the content with the new headings
-        const headings = to_key.split("#").slice(1);
-        const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
-        const new_content = [
-          new_headings_content,
-          ...(await this.read()).split("\n").slice(1), // remove first line (old heading)
-        ].join("\n");
-        await this.update(new_content);
-      }
-      if(target_source) await target_source.merge(await this.read());
-      else await this.env.smart_sources.create(target_source_key, await this.read());
+    const content = await this.read_with_sub_blocks();
+    try {
+      await this.remove();
+    } catch (e) {
+      console.warn("error removing block: ", e);
     }
-    await this.remove();
+    try {
+      if(to_entity) {
+        await to_entity.append(content);
+      } else {
+        const target_source_key = to_key.split("#")[0];
+        const target_source = this.env.smart_sources.get(target_source_key);
+        if (to_key.includes("#")) {
+          const headings = to_key.split("#").slice(1);
+          const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
+          const new_content = [
+              new_headings_content,
+              ...content.split("\n").slice(1)
+          ].join("\n").trim();
+          if(target_source) await target_source.append(new_content);
+          else await this.env.smart_sources.create(target_source_key, new_content);
+        } else {
+          if(target_source) await target_source.append(content);
+          else await this.env.smart_sources.create(target_source_key, content);
+        }
+      }
+    } catch (e) {
+      console.warn("error moving block: ", e);
+      // return to original location
+      this.deleted = false;
+      await this.update(content);
+    }
+    await this.source.parse_content();
+  }
+
+  get sub_blocks() {
+    return this.source.blocks.filter(block => this.key !== block.key && block.key.startsWith(this.key));
   }
 
   // DEPRECATED since v2

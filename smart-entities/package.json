@@ -27,5 +27,10 @@
     "smart-collections": "file:../smart-collections",
     "smart-embed-model": "file:../smart-embed-model",
     "smart-entities-actions": "file:../../smart-entities-actions"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.js"
+    ]
   }
 }

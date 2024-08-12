@@ -131,7 +131,11 @@ export class SmartSource extends SmartEntity {
   async append(content) {
     if(this.should_use_change_syntax) content = wrap_changes(this, "", content);
     const current_content = await this.read();
-    const new_content = current_content + "\n" + content;
+    const new_content = [
+      current_content,
+      "",
+      content,
+    ].join("\n").trim();
     await this.update(new_content, { skip_wrap_changes: true });
   }
 
@@ -143,8 +147,8 @@ export class SmartSource extends SmartEntity {
   async update(full_content, opts = {}) {
     full_content = await this.update_pre_process(full_content, opts);
     await this.fs.write(this.data.path, full_content);
-    this.debounced_init();
-    // await this.init();
+    // this.debounced_init();
+    await this.parse_content();
   }
   debounced_init() {
     if(this.init_timeout) clearTimeout(this.init_timeout);
@@ -172,44 +176,52 @@ export class SmartSource extends SmartEntity {
   /**
    * Renames the current source to a new path.
    * If the new path is a block, it should use the move() method.
-   * If the new path already exists as a source, it throws an error.
+   * If the new path already exists as a source, it merges the content.
    * If the new path includes headings, it updates the content with the new headings.
    * 
    * @param {string} new_path - The new path to rename the source to.
-   * @throws {Error} If the new path is an existing source.
    */
   async rename(new_path) {
+    const current_content = await this.read();
     if (new_path.includes("#")) {
       // If the new path includes headings, update the content with the new headings
       const headings = new_path.split("#").slice(1);
       const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
-      const new_content = new_headings_content + "\n" + await this.read();
+      const new_content = new_headings_content + "\n" + current_content;
       await this.update(new_content);
     }
     // Extract the target source key from the new path
     const target_source_key = new_path.split("#")[0];
     // Get the target source from the environment
     const target_source = this.env.smart_sources.get(target_source_key);
-    if (target_source) await target_source.merge(await this.read());
-    else {
+    if (target_source) {
+      // If target exists, merge the content
+      await target_source.merge(current_content, { mode: 'append_blocks' });
+    } else {
       // Rename the file in the filesystem
       await this.fs.rename(this.data.path, target_source_key);
       // Create or update the collection with the new path
-      await this.collection.create_or_update({ path: target_source_key });
+      await this.collection.create_or_update({ path: target_source_key, content: current_content });
     }
-    // Remove the current source after renaming
+    // Remove the current source after renaming or merging
     await this.remove();
   }
+
   /**
    * Moves the current source to a new location.
    * Handles `to` as a string (new path) or entity (block or source).
    * 
-   * @param {string|Object} to - The destination path or entity to move to.
+   * @param {string|Object|SmartEntity} entity_ref - The destination path or entity to move to.
    * @returns {Promise<void>}
    */
-  async move(to) {
-    if (typeof to === "string") await this.rename(to);
-    else if(typeof to.key === "string") await this.rename(to.key);
+  async move_to(entity_ref) {
+    if (typeof entity_ref === "string") {
+      await this.rename(entity_ref);
+    } else if (typeof entity_ref.key === "string") {
+      await this.rename(entity_ref.key);
+    } else {
+      throw new Error("Invalid entity reference for move_to operation");
+    }
   }
 
   /**
@@ -227,7 +239,10 @@ export class SmartSource extends SmartEntity {
       content,
       file_path: this.data.path,
     });
+    // console.log(blocks);
     if(!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
+    // should read and re-parse content to make sure all blocks are up to date
+    await this.parse_content();
     // get content for each block (SMart CHunks currently returns embed_input format 2024-08-09)
     blocks.forEach(block => {
       block.content = content
@@ -238,14 +253,14 @@ export class SmartSource extends SmartEntity {
         )
         .join("\n")
       ;
+      // console.log({ block });
       const match = this.blocks.find(b => b.key === block.path);
       if(match){
         block.matched = true;
         match.matched = true;
       }
+      // console.log({ block });
     });
-    // should read and re-parse content to make sure all blocks are up to date
-    await this.parse_content();
     if(mode === "replace_all"){
       if(this.should_use_change_syntax){
         let all = "";
@@ -275,21 +290,14 @@ export class SmartSource extends SmartEntity {
       }
     }
     else{
-      // sort blocks by line number in descending order
-      // (prevents having to re-calculate lines for downstream blocks)
-      const curr_blocks = this.blocks.sort((a, b) => b.data.lines[1] - a.data.lines[1]);
-      for(let i = 0; i < curr_blocks.length; i++){
-        const curr_block = curr_blocks[i];
-        // console.log(curr_block.lines);
-        const block = blocks.find(block => block.path === curr_block.key);
-        if(block){
-          if(mode === "append_blocks") {
-            await curr_block.append(block.content.split("\n").slice(1).join("\n"));
+      for(let i = 0; i < blocks.length; i++){
+        const block = blocks[i];
+        if(block.matched){
+          if(mode === "append_blocks"){
+            await this.env.smart_blocks.get(block.path).append(block.content);//.split("\n").slice(1).join("\n"));
           }else{
-            await curr_block.update(block.content);
+            await this.env.smart_blocks.get(block.path).update(block.content);
           }
-          block.matched = true;
-          curr_block.matched = true;
         }
       }
       // append any unmatched blocks to the end of the file
@@ -298,7 +306,9 @@ export class SmartSource extends SmartEntity {
         .map(block => block.content)
         .join("\n")
       ;
-      await this.append("\n\n" + unmatched_content);
+      if(unmatched_content.length){
+        await this.append(unmatched_content);
+      }
     }
     await this.parse_content();
   }
