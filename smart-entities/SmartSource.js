@@ -174,15 +174,23 @@ export class SmartSource extends SmartEntity {
     this.delete();
   }
   /**
-   * Renames the current source to a new path.
-   * If the new path is a block, it should use the move() method.
-   * If the new path already exists as a source, it merges the content.
-   * If the new path includes headings, it updates the content with the new headings.
+   * Moves the current source to a new location.
+   * Handles the destination as a string (new path) or entity (block or source).
    * 
-   * @param {string} new_path - The new path to rename the source to.
+   * @param {string|Object|SmartEntity} entity_ref - The destination path or entity to move to.
+   * @throws {Error} If the entity reference is invalid.
+   * @returns {Promise<void>} A promise that resolves when the move operation is complete.
    */
-  async rename(new_path) {
+  async move_to(entity_ref) {
+    const new_path = typeof entity_ref === "string" ? entity_ref : entity_ref.key;
+    if (!new_path) {
+      throw new Error("Invalid entity reference for move_to operation");
+    }
+
     const current_content = await this.read();
+    const target_source_key = new_path.split("#")[0];
+    const target_source = this.env.smart_sources.get(target_source_key);
+
     if (new_path.includes("#")) {
       // If the new path includes headings, update the content with the new headings
       const headings = new_path.split("#").slice(1);
@@ -190,10 +198,7 @@ export class SmartSource extends SmartEntity {
       const new_content = new_headings_content + "\n" + current_content;
       await this.update(new_content);
     }
-    // Extract the target source key from the new path
-    const target_source_key = new_path.split("#")[0];
-    // Get the target source from the environment
-    const target_source = this.env.smart_sources.get(target_source_key);
+
     if (target_source) {
       // If target exists, merge the content
       await target_source.merge(current_content, { mode: 'append_blocks' });
@@ -203,25 +208,9 @@ export class SmartSource extends SmartEntity {
       // Create or update the collection with the new path
       await this.collection.create_or_update({ path: target_source_key, content: current_content });
     }
+
     // Remove the current source after renaming or merging
     await this.remove();
-  }
-
-  /**
-   * Moves the current source to a new location.
-   * Handles `to` as a string (new path) or entity (block or source).
-   * 
-   * @param {string|Object|SmartEntity} entity_ref - The destination path or entity to move to.
-   * @returns {Promise<void>}
-   */
-  async move_to(entity_ref) {
-    if (typeof entity_ref === "string") {
-      await this.rename(entity_ref);
-    } else if (typeof entity_ref.key === "string") {
-      await this.rename(entity_ref.key);
-    } else {
-      throw new Error("Invalid entity reference for move_to operation");
-    }
   }
 
   /**

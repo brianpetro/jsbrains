@@ -120,3 +120,71 @@ test.serial('SmartBlock move_to operation with headings - Parent Heading Block s
 
     t.is((await env.fs.read('source.md')).trim(), '# Header 2\nContent 2', 'Original file should only contain the remaining block');
 });
+
+test.serial('SmartSource move_to operation - new nested folder', async t => {
+    const env = t.context.mock_env;
+    env.files['source.md'] = 'Initial content';
+    const source = await env.smart_sources.create_or_update({ path: 'source.md' });
+
+    await source.move_to('new_folder/subfolder/new_location.md');
+    t.false(await env.fs.exists('source.md'), 'Old file should not exist');
+    t.true(await env.fs.exists('new_folder/subfolder/new_location.md'), 'New file should exist in nested location');
+    t.is(await env.fs.read('new_folder/subfolder/new_location.md'), 'Initial content', 'Content should be the same after moving');
+});
+
+test.serial('SmartSource move_to operation - existing file (merge with replace_all)', async t => {
+    const env = t.context.mock_env;
+    env.files['from.md'] = '# Header 1\nContent 1\n# Header 2\nContent 2';
+    const source = await env.smart_sources.create_or_update({ path: 'from.md' });
+    env.files['to.md'] = '# Existing Header\nExisting content';
+    const target = await env.smart_sources.create_or_update({ path: 'to.md' });
+
+    await source.move_to('to.md');
+    t.false(await env.fs.exists('from.md'), 'Source file should not exist after move');
+    t.is(await env.fs.read('to.md'), '# Existing Header\nExisting content\n\n# Header 1\nContent 1\n# Header 2\nContent 2', 'Content should be merged with replace_all mode');
+});
+
+test.serial('SmartBlock move_to operation - move to a non-existent file', async t => {
+    const env = t.context.mock_env;
+    env.files['source.md'] = '# Header 1\nContent 1\n# Header 2\nContent 2';
+    const source = await env.smart_sources.create_or_update({ path: 'source.md' });
+    await source.parse_content();
+
+    const block1 = source.blocks.find(b => b.data.path === 'source.md#Header 1');
+
+    await block1.move_to('non_existent.md');
+    t.true(await env.fs.exists('non_existent.md'), 'New file should be created');
+    t.is(await env.fs.read('non_existent.md'), '# Header 1\nContent 1', 'Moved block content should be in the new file');
+    t.is((await env.fs.read('source.md')).trim(), '# Header 2\nContent 2', 'Original file should only contain the remaining block');
+});
+
+test.serial('SmartBlock move_to operation - move block with nested subheadings', async t => {
+    const env = t.context.mock_env;
+    env.files['source.md'] = '# Header 1\nContent 1\n## Subheader 1\nSubcontent 1\n### Sub-subheader\nSub-subcontent\n# Header 2\nContent 2';
+    const source = await env.smart_sources.create_or_update({ path: 'source.md' });
+    await source.parse_content();
+
+    const block1 = source.blocks.find(b => b.data.path === 'source.md#Header 1');
+
+    await block1.move_to('new_file.md');
+    t.true(await env.fs.exists('new_file.md'), 'New file should exist');
+    t.is(await env.fs.read('new_file.md'), '# Header 1\nContent 1\n\n## Subheader 1\nSubcontent 1\n\n### Sub-subheader\nSub-subcontent', 'Moved block content should include all nested subheadings');
+    t.is((await env.fs.read('source.md')).trim(), '# Header 2\nContent 2', 'Original file should only contain the remaining block');
+});
+
+test.serial('SmartBlock move_to operation - move to specific position in existing file', async t => {
+    const env = t.context.mock_env;
+    env.files['source.md'] = '# Header 1\nContent 1\n# Header 2\nContent 2';
+    const source = await env.smart_sources.create_or_update({ path: 'source.md' });
+    await source.parse_content();
+
+    env.files['target.md'] = '# Existing Header\nExisting content\n# Another Header\nMore content';
+    const target = await env.smart_sources.create_or_update({ path: 'target.md' });
+    await target.parse_content();
+
+    const block2 = source.blocks.find(b => b.data.path === 'source.md#Header 2');
+
+    await block2.move_to('target.md#Another Header');
+    t.is(await env.fs.read('target.md'), '# Existing Header\nExisting content\n# Another Header\nMore content\n\n# Header 2\nContent 2', 'Moved block should be inserted after the specified header');
+    t.is((await env.fs.read('source.md')).trim(), '# Header 1\nContent 1', 'Original file should only contain the remaining block');
+});
