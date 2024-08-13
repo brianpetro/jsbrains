@@ -29,13 +29,40 @@ export class SmartChange {
         return this.adapters[change_opts.file_type] || this.adapters.default;
     }
 
+    wrap(change_type, change_opts) {
+        const adapter = this.get_adapter(change_opts);
+        return adapter.wrap(change_type, change_opts);
+    }
+    async destroy(entity, opts={}){
+        const current_content = await entity.read();
+        const wrapped_content = this.wrap('content', { before: current_content, ...opts });
+        await entity._update(wrapped_content);
+    }
+    async update(entity, new_content) {
+        const current_content = await entity.read();
+        const wrapped_content = this.wrap('content', { before: current_content, after: new_content });
+        await entity._update(wrapped_content);
+    }
+    async move_to(from_entity, to_entity) {
+        const content = await from_entity.read();
+        const from_content = this.wrap('location', { to_key: to_entity.key, before: content });
+        await from_entity._update(from_content);
+        const to_content = this.wrap('location', { from_key: from_entity.key, after: content });
+        await to_entity._append(to_content);
+    }
+
+    // DEPRECATED
     before(change_type, change_opts) {
         const adapter = this.get_adapter(change_opts);
         return adapter.before(change_type, change_opts);
     }
-
     after(change_type, change_opts) {
         const adapter = this.get_adapter(change_opts);
         return adapter.after(change_type, change_opts);
+    }
+
+    unwrap(content, change_opts) {
+        const adapter = this.get_adapter(change_opts);
+        return adapter.unwrap(content);
     }
 }

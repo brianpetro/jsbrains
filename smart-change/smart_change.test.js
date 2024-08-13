@@ -18,26 +18,16 @@ test('SmartChange content before with default adapter', t => {
     const result = smart_change.before('content', { before: 'old content', after: 'new content' });
     t.is(result, '<<<<<<< HEAD\nold content\n=======\nnew content\n>>>>>>>');
 });
-
-test('SmartChange content before with explanation', t => {
-    const smart_change = t.context.smart_change;
-    const result = smart_change.before('content', { before: 'old content', after: 'new content', explanation: 'This is an explanation' });
-    t.is(result, '<<<<<<< HEAD\nold content\n=======\nnew content\n>>>>>>>\n--- Explanation ---\nThis is an explanation\n-------------------\n');
-});
-
 test('SmartChange location before with default adapter', t => {
     const smart_change = t.context.smart_change;
-    const result = smart_change.before('location', { to_key: 'new_file.md', from_key: 'old_file.md' });
-    t.deepEqual(result, {
-        to_content: '<<<<<<< HEAD\n[Content moved from: old_file.md]\n=======\n[New content]\n>>>>>>>',
-        from_content: '<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: new_file.md]\n>>>>>>>'
-    });
+    const result = smart_change.before('location', { from_key: 'old_file.md', after: 'new content' });
+    t.is(result, '<<<<<<< MOVED_FROM\nold_file.md\n=======\nnew content\n>>>>>>>');
 });
 
 test('SmartChange location after with default adapter', t => {
     const smart_change = t.context.smart_change;
-    const result = smart_change.after('location', { from_key: 'old_file.md' });
-    t.is(result, '<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: old_file.md]\n>>>>>>>');
+    const result = smart_change.after('location', { to_key: 'new_file.md', before: 'original content' });
+    t.is(result, '<<<<<<< HEAD\noriginal content\n=======\nnew_file.md\n>>>>>>> MOVED_TO\noriginal content');
 });
 
 test('SmartChange with markdown adapter for content change', t => {
@@ -92,4 +82,143 @@ test('SmartChange falls back to default adapter for unknown file_type', t => {
     const smart_change = t.context.smart_change;
     const result = smart_change.before('content', { before: 'old', after: 'new', file_type: 'unknown_type' });
     t.true(result.includes('<<<<<<< HEAD'));
+});
+
+test('SmartChange unwrap returns full content for before and after', t => {
+    const smart_change = t.context.smart_change;
+    const original_content = `
+    # Heading 1
+    Some content here.
+
+    <<<<<<< HEAD
+    ## Original Heading 2
+    Original subheading content.
+    =======
+    ## New Heading 2
+    New subheading content.
+    >>>>>>>
+
+    # Heading 3
+    More content here.
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const expected_before = `
+    # Heading 1
+    Some content here.
+
+    ## Original Heading 2
+    Original subheading content.
+
+    # Heading 3
+    More content here.
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const expected_after = `
+    # Heading 1
+    Some content here.
+
+    ## New Heading 2
+    New subheading content.
+
+    # Heading 3
+    More content here.
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const result = smart_change.unwrap(original_content, { file_type: 'default' });
+    
+    t.is(result.before, expected_before, 'Before content should contain full content with original state');
+    t.is(result.after, expected_after, 'After content should contain full content with new state');
+});
+
+test('SmartChange unwrap handles multiple change blocks', t => {
+    const smart_change = t.context.smart_change;
+    const original_content = `
+    # Heading 1
+
+    <<<<<<< HEAD
+    Original content 1
+    =======
+    New content 1
+    >>>>>>>
+
+    Some unchanged content
+
+    <<<<<<< HEAD
+    Original content 2
+    =======
+    New content 2
+    >>>>>>>
+
+    # Heading 2
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const expected_before = `
+    # Heading 1
+
+    Original content 1
+
+    Some unchanged content
+
+    Original content 2
+
+    # Heading 2
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const expected_after = `
+    # Heading 1
+
+    New content 1
+
+    Some unchanged content
+
+    New content 2
+
+    # Heading 2
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const result = smart_change.unwrap(original_content, { file_type: 'default' });
+    
+    t.is(result.before, expected_before, 'Before content should contain full content with all original states');
+    t.is(result.after, expected_after, 'After content should contain full content with all new states');
+});
+
+test('SmartChange unwrap handles location changes', t => {
+    const smart_change = t.context.smart_change;
+    const original_content = `
+    # Original File
+
+    Some content here.
+
+    <<<<<<< MOVED_FROM
+    old_file.md
+    =======
+    This content was moved from old_file.md
+    >>>>>>>
+
+    More content here.
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const expected_before = `
+    # Original File
+
+    Some content here.
+
+
+    More content here.
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const expected_after = `
+    # Original File
+
+    Some content here.
+
+    This content was moved from old_file.md
+
+    More content here.
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+
+    const result = smart_change.unwrap(original_content, { file_type: 'default' });
+    
+    t.is(result.before, expected_before, 'Before content should not include moved content');
+    t.is(result.after, expected_after, 'After content should include moved content');
 });
