@@ -37,10 +37,7 @@ const smart_change = new SmartChange(env);
 
 ## Development
 
-Smart Change is designed to be modular and extensible. It consists of two main modules:
-
-1. `smart-change`: Handles the core logic for wrapping and processing changes
-2. `smart-change-ui`: Manages the rendering and user interface for reviewing changes
+Smart Change is designed to be modular and extensible.
 
 ## Adapter Examples
 

@@ -16,28 +16,28 @@ test.beforeEach(t => {
 test('SmartChange content before with default adapter', t => {
     const smart_change = t.context.smart_change;
     const result = smart_change.before('content', { before: 'old content', after: 'new content' });
-    t.is(result, '<<<<<<< HEAD\nold content\n=======\nnew content\n>>>>>>> AI_SUGGESTION');
+    t.is(result, '<<<<<<< HEAD\nold content\n=======\nnew content\n>>>>>>>');
 });
 
 test('SmartChange content before with explanation', t => {
     const smart_change = t.context.smart_change;
     const result = smart_change.before('content', { before: 'old content', after: 'new content', explanation: 'This is an explanation' });
-    t.is(result, '<<<<<<< HEAD\nold content\n=======\nnew content\n>>>>>>> AI_SUGGESTION\n--- Explanation ---\nThis is an explanation\n-------------------\n');
+    t.is(result, '<<<<<<< HEAD\nold content\n=======\nnew content\n>>>>>>>\n--- Explanation ---\nThis is an explanation\n-------------------\n');
 });
 
 test('SmartChange location before with default adapter', t => {
     const smart_change = t.context.smart_change;
     const result = smart_change.before('location', { to_key: 'new_file.md', from_key: 'old_file.md' });
     t.deepEqual(result, {
-        to_content: '<<<<<<< HEAD\n[Content moved from: old_file.md]\n=======\n[New content]\n>>>>>>> AI_SUGGESTION',
-        from_content: '<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: new_file.md]\n>>>>>>> AI_SUGGESTION'
+        to_content: '<<<<<<< HEAD\n[Content moved from: old_file.md]\n=======\n[New content]\n>>>>>>>',
+        from_content: '<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: new_file.md]\n>>>>>>>'
     });
 });
 
 test('SmartChange location after with default adapter', t => {
     const smart_change = t.context.smart_change;
     const result = smart_change.after('location', { from_key: 'old_file.md' });
-    t.is(result, '<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: old_file.md]\n>>>>>>> AI_SUGGESTION');
+    t.is(result, '<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: old_file.md]\n>>>>>>>');
 });
 
 test('SmartChange with markdown adapter for content change', t => {
@@ -76,7 +76,7 @@ test('SmartChange with markdown adapter for location after', t => {
 test('SmartChange with obsidian_markdown adapter', t => {
     const smart_change = t.context.smart_change;
     const result = smart_change.before('content', { before: 'old content', after: 'new content', file_type: 'obsidian_markdown' });
-    t.is(result, '\n```smart-change\n<<<<<<< ORIGINAL\nold content\n=======\nnew content\n>>>>>>> AI_SUGGESTION\n```\n');
+    t.is(result, '\n```smart-change\n<<<<<<< ORIGINAL\nold content\n=======\nnew content\n>>>>>>>\n```\n');
 });
 
 test('SmartChange uses correct adapter based on file_type', t => {

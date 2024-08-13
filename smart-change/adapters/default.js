@@ -4,7 +4,15 @@ export class DefaultAdapter {
 
     if (change_type === 'content') {
       const { before, after } = other_opts;
-      let content = `<<<<<<< HEAD\n${before}\n=======\n${after}\n>>>>>>> AI_SUGGESTION`;
+      let content = [
+        `<<<<<<< HEAD`,
+        before,
+        `=======`,
+        after,
+        `>>>>>>>`,
+        // `>>>>>>>`,
+      ].filter(line => line).join("\n");
+        
       if (explanation) {
         content += `\n--- Explanation ---\n${explanation}\n-------------------\n`;
       }
@@ -12,8 +20,8 @@ export class DefaultAdapter {
     } else if (change_type === 'location') {
       const { to_key, from_key } = other_opts;
       return {
-        to_content: `<<<<<<< HEAD\n[Content moved from: ${from_key}]\n=======\n[New content]\n>>>>>>> AI_SUGGESTION`,
-        from_content: `<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: ${to_key}]\n>>>>>>> AI_SUGGESTION`
+        to_content: `<<<<<<< HEAD\n[Content moved from: ${from_key}]\n=======\n[New content]\n>>>>>>>`,
+        from_content: `<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: ${to_key}]\n>>>>>>>`
       };
     }
     throw new Error(`Unsupported change type: ${change_type}`);
@@ -22,7 +30,7 @@ export class DefaultAdapter {
   after(change_type, change_opts) {
     if (change_type === 'location') {
       const { from_key } = change_opts;
-      return `<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: ${from_key}]\n>>>>>>> AI_SUGGESTION`;
+      return `<<<<<<< HEAD\n[Original content]\n=======\n[Content moved to: ${from_key}]\n>>>>>>>`;
     }
     return null;
   }
