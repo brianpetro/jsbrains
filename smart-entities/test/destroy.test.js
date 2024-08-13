@@ -1,5 +1,5 @@
 import test from 'ava';
-import { load_test_env } from './test_env.js';
+import { load_test_env } from './_env.js';
 
 test.beforeEach(t => {
   load_test_env(t);
@@ -11,8 +11,7 @@ test.serial('SmartSource remove operation', async t => {
   const source = await env.smart_sources.create_or_update({ path: 'test.md' });
 
   await source.update('Initial content');
-  await source.append('Appended content');
-  await source.remove();
+  await source.destroy();
   t.false(await env.smart_fs.exists('test.md'), 'File should be removed');
 });
 
@@ -23,7 +22,7 @@ test.serial('SmartSource remove operation on nested file', async t => {
   const source = await env.smart_sources.create_or_update({ path: nested_path });
 
   await source.update('Nested content');
-  await source.remove();
+  await source.destroy();
   t.false(await env.smart_fs.exists(nested_path), 'Nested file should be removed');
 });
 
@@ -32,7 +31,7 @@ test.serial('SmartSource remove operation and recreate', async t => {
   await env.smart_fs.write('test.md', 'Initial content');
   
   const source1 = await env.smart_sources.create_or_update({ path: 'test.md' });
-  await source1.remove();
+  await source1.destroy();
   
   const source2 = await env.smart_sources.create('test.md', 'New content');
   
