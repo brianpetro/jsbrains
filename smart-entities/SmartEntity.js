@@ -71,14 +71,6 @@ export class SmartEntity extends CollectionItem {
 
   // FS
   get fs() { return this.collection.fs; }
-  get should_use_change_syntax() { return this.env.settings.use_change_syntax; }
-  async update_pre_process(content, opts = {}) {
-    if(this.should_use_change_syntax && !opts.skip_wrap_changes){
-      const current_content = await this.read();
-      content = wrap_changes(this, current_content, content);
-    }
-    return content;
-  }
   /**
    * Searches for keywords within the entity's data and content.
    * @param {Object} search_filter - The search filter object.
