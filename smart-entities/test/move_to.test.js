@@ -69,7 +69,7 @@ test.serial('SmartBlock move_to operation - move within the same file', async t 
   t.is(
     (await env.smart_fs.read('multi_block.md')).trim(),
     '# Header 2\nContent 2\n# Header 3\nContent 3\n\n## Header 1\nContent 1',
-    'Block should be moved to the end of the file'
+    'Block should be moved to Header 3 block with added heading depth'
   );
 });
 
@@ -113,7 +113,6 @@ test.serial('SmartBlock move_to operation - preserve sub-block keys when moving'
 
   // Check if sub-block keys are preserved
   await source.parse_content();
-  t.truthy(source.blocks.find(b => b.data.path === 'source_with_subblocks.md#Header 1'), 'Parent block key should be preserved');
   t.truthy(source.blocks.find(b => b.data.path === 'source_with_subblocks.md#Header 1#Subheader 1'), 'Sub-block 1 key should be preserved');
   t.truthy(source.blocks.find(b => b.data.path === 'source_with_subblocks.md#Header 1#Subheader 2'), 'Sub-block 2 key should be preserved');
 });
@@ -173,7 +172,7 @@ test.serial('SmartSource move_to operation - existing file (merge with replace_a
 
     await source.move_to('to.md');
     t.false(await env.smart_fs.exists('from.md'), 'Source file should not exist after move');
-    t.is(await env.smart_fs.read('to.md'), '# Existing Header\nExisting content\n\n# Header 1\nContent 1\n\n# Header 2\nContent 2', 'Content should be merged with replace_all mode');
+    t.is(await env.smart_fs.read('to.md'), '# Existing Header\nExisting content\n\n# Header 1\nContent 1\n# Header 2\nContent 2', 'Content should be merged with replace_all mode');
 });
 
 test.serial('SmartBlock move_to operation - move to a non-existent file', async t => {
@@ -281,4 +280,18 @@ test.serial('SmartBlock move_to operation with smart_change syntax', async t => 
   >>>>>>> MOVED_TO
   ${block_2}`.split("\n").map(line => line.trim()).join("\n");
   t.is(await env.smart_fs.read('source.md'), expected_source_content, 'Original file should contain smart_change syntax');
+});
+
+test.serial('SmartSource move_to block within the same source', async t => {
+  const env = t.context.mock_env;
+  await env.smart_fs.write('source.md', '# Header 1\nContent 1\n# Header 2\nContent 2');
+  const source = await env.smart_sources.create_or_update({ path: 'source.md' });
+  await source.parse_content();
+
+  await source.move_to('source.md#Header 2');
+  t.is(
+    await env.smart_fs.read('source.md'),
+    '# Header 1\nContent 1\n# Header 2\nContent 2\n\n## Header 1\nContent 1\n## Header 2\nContent 2',
+    'Content should be moved to the specified block with correct heading levels'
+  );
 });

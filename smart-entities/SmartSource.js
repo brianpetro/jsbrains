@@ -1,6 +1,5 @@
 import { create_hash } from "./create_hash.js";
 import { SmartEntity } from "./SmartEntity.js";
-import { wrap_changes } from "smart-entities-actions/utils/wrap_changes.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -129,14 +128,14 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async append(content) {
-    if(this.should_use_change_syntax) content = wrap_changes(this, "", content);
+    if(this.env.smart_change) content = this.env.smart_change.wrap("content", { before: "", after: content });
     const current_content = await this.read();
     const new_content = [
       current_content,
       "",
       content,
     ].join("\n").trim();
-    await this.update(new_content, { skip_wrap_changes: true });
+    await this._update(new_content);
   }
 
   /**
@@ -145,10 +144,28 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async update(full_content, opts = {}) {
-    full_content = await this.update_pre_process(full_content, opts);
-    await this.fs.write(this.data.path, full_content);
+    const {
+      mode = "replace_all",
+    } = opts;
+    if(mode === "replace_all"){
+      // if(this.env.smart_change && !opts.skip_wrap_changes){
+      //   full_content = this.env.smart_change.wrap("content", {
+      //     before: await this.read({ no_changes: "before" }),
+      //     after: full_content
+      //   });
+      // }
+      // await this.fs.write(this.data.path, full_content);
+      await this.merge(full_content, { mode: "replace_all" });
+    }else if(mode === "merge_replace"){
+      await this.merge(full_content, { mode: "replace_blocks" });
+    }else if(mode === "merge_append"){
+      await this.merge(full_content, { mode: "append_blocks" });
+    }
     // this.debounced_init();
     await this.parse_content();
+  }
+  async _update(content) {
+    await this.fs.write(this.data.path, content);
   }
   debounced_init() {
     if(this.init_timeout) clearTimeout(this.init_timeout);
@@ -162,7 +179,21 @@ export class SmartSource extends SmartEntity {
    * Reads the entire content of the source file.
    * @returns {Promise<string>} A promise that resolves with the content of the file.
    */
-  async read() { return await this.fs.read(this.data.path); }
+  async read(opts = {}) {
+    let content = await this._read();
+    
+    if (opts.no_changes) {
+      const unwrapped = this.env.smart_change.unwrap(content, {file_type: this.file_type});
+      content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
+    }
+    // NO opts.headings
+    if (opts.add_depth) {
+      content = increase_heading_depth(content, opts.add_depth);
+    }
+    
+    return content;
+  }
+  async _read() { return await this.fs.read(this.data.path); }
 
   /**
    * Removes the source file from the file system and deletes the entity.
@@ -172,6 +203,9 @@ export class SmartSource extends SmartEntity {
   async remove() {
     await this.fs.remove(this.data.path);
     this.delete();
+  }
+  async destroy() {
+    await this.remove();
   }
   /**
    * Moves the current source to a new location.
@@ -196,7 +230,7 @@ export class SmartSource extends SmartEntity {
       const headings = new_path.split("#").slice(1);
       const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
       const new_content = new_headings_content + "\n" + current_content;
-      await this.update(new_content);
+      await this._update(new_content);
     }
 
     if (target_source) {
@@ -209,8 +243,8 @@ export class SmartSource extends SmartEntity {
       await this.collection.create_or_update({ path: target_source_key, content: current_content });
     }
 
-    // Remove the current source after renaming or merging
-    await this.remove();
+    // Remove the current source after renaming or merging (if not moving to the same source)
+    if(this.key !== target_source_key) await this.remove();
   }
 
   /**
@@ -251,7 +285,7 @@ export class SmartSource extends SmartEntity {
       // console.log({ block });
     });
     if(mode === "replace_all"){
-      if(this.should_use_change_syntax){
+      if(this.env.smart_change){
         let all = "";
         const new_blocks = blocks.sort((a, b) => a.lines[0] - b.lines[0]);
         // if first block line start is >0 then add prior content to all
@@ -263,29 +297,41 @@ export class SmartSource extends SmartEntity {
           if(all.length) all += "\n";
           if(block.matched){
             const og = this.env.smart_blocks.get(block.path);
-            all += wrap_changes(this, (await og.read()), block.content);
+            all += this.env.smart_change.wrap("content", {
+              before: await og.read({ no_changes: "before", headings: "last" }),
+              after: block.content
+            });
           }else{
-            all += wrap_changes(this, "", block.content);
+            all += this.env.smart_change.wrap("content", {
+              before: "",
+              after: block.content
+            });
           }
         }
         const unmatched_old = this.blocks.filter(b => !b.matched);
         for(let i = 0; i < unmatched_old.length; i++){
           const block = unmatched_old[i];
-          all += (all.length ? "\n" : "") + wrap_changes(this, await block.read(), "");
+          all += (all.length ? "\n" : "") + this.env.smart_change.wrap("content", {
+            before: await block.read({ no_changes: "before", headings: "last" }),
+            after: ""
+          });
         }
-        await this.update(all, { skip_wrap_changes: true });
+        // await this.update(all, { skip_wrap_changes: true });
+        await this._update(all);
       }else{
-        await this.update(content);
+        await this._update(content);
+        // await this.update(content);
       }
     }
     else{
       for(let i = 0; i < blocks.length; i++){
         const block = blocks[i];
         if(block.matched){
+          const to_block = this.env.smart_blocks.get(block.path);
           if(mode === "append_blocks"){
-            await this.env.smart_blocks.get(block.path).append(block.content);//.split("\n").slice(1).join("\n"));
+            await to_block.append(block.content);//.split("\n").slice(1).join("\n"));
           }else{
-            await this.env.smart_blocks.get(block.path).update(block.content);
+            await to_block.update(block.content);
           }
         }
       }

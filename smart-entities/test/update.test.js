@@ -97,9 +97,7 @@ test.serial('SmartSource update (mode=replace_blocks) operation', async t => {
   const env = t.context.mock_env;
   await env.smart_fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
-  console.log({merge_to_source3: await merge_to_source.read()})
   await merge_to_source.update(merge_replace_blocks_content_input, { mode: 'merge_replace' });
-  console.log({merge_to_source3: await merge_to_source.read()})
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_blocks_output.trim(), 'Content should be merged');
 });
 
