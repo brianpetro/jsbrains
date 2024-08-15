@@ -27,13 +27,6 @@ export class CollectionItem {
     this.config = this.env?.config;
     this.merge_defaults();
     if (data) this.data = data;
-    // only keep this.embeddings[this.embed_model], remove other embeddings
-    if (this.data.embeddings) {
-      for (let key in this.data.embeddings) {
-        if (key !== this.embed_model) delete this.data.embeddings[key];
-      }
-      if(this.data.embedding) delete this.data.embedding;
-    }
     if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
