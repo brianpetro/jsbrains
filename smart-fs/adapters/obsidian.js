@@ -14,6 +14,8 @@ export class ObsidianSmartFsAdapter {
    * @param {Object} smart_fs - The SmartFs instance
    */
   constructor(smart_fs) {
+    this.obsidian = smart_fs.env.main.obsidian;
+    this.obsidian_app = smart_fs.env.main.app;
     // scoped to env_path by default
     this.obsidian_adapter = smart_fs.env.main.app.vault.adapter;
   }
@@ -35,7 +37,7 @@ export class ObsidianSmartFsAdapter {
    * @param {string} rel_path - The relative path of the directory to create
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async create_dir(rel_path) {
+  async mkdir(rel_path) {
     return await this.obsidian_adapter.mkdir(rel_path);
   }
 
@@ -55,10 +57,50 @@ export class ObsidianSmartFsAdapter {
    * @param {string} rel_path - The relative path to list
    * @returns {Promise<string[]>} Array of file paths
    */
-  async list(rel_path) {
-    return await this.obsidian_adapter.list(rel_path);
+  async list(rel_path, opts={}) {
+    if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
+    if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
+    const files = this.obsidian_app.vault.getAllLoadedFiles()
+      .filter((file) => {
+        const last_slash = file.path.lastIndexOf('/');
+        if(last_slash === -1 && rel_path !== '') return false;
+        const folder_path = file.path.slice(0, last_slash);
+        if(folder_path !== rel_path) return false;
+        return true;
+      })
+    ;
+    return files;
   }
-
+  async list_recursive(rel_path, opts={}) {
+    if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
+    if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
+    const files = this.obsidian_app.vault.getAllLoadedFiles()
+      .filter((file) => {
+        if(rel_path !== '' && !file.path.startsWith(rel_path)) return false;
+        if(file instanceof this.obsidian.TFile){
+          if(opts.type === 'folder') return false;
+          file.type = 'file';
+        }else if(file instanceof this.obsidian.TFolder){
+          if(opts.type === 'file') return false;
+          file.type = 'folder';
+        }
+        return true;
+      })
+    ;
+    return files;
+  }
+  async list_files(rel_path) {
+    return await this.list(rel_path, {type: 'file'});
+  }
+  async list_files_recursive(rel_path) {
+    return await this.list_recursive(rel_path, {type: 'file'});
+  }
+  async list_folders(rel_path) {
+    return await this.list(rel_path, {type: 'folder'});
+  }
+  async list_folders_recursive(rel_path) {
+    return await this.list_recursive(rel_path, {type: 'folder'});
+  }
   /**
    * Read the contents of a file
    * 

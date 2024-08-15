@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs, { Dirent } from 'fs';
+import path, { basename } from 'path';
 const fs_promises = fs.promises;
 
 /**
@@ -42,7 +42,8 @@ export class NodeFsSmartFsAdapter {
       const other_args = args.slice(path_count);
       const resolved_paths = paths.map(path => this.#resolve_path(path));
       let result = await method(...resolved_paths, ...other_args);
-      return this.post_process(result);
+      // return this.smart_fs.post_process(result); // handled by smart_fs.use_adapter
+      return result;
     };
   }
 
@@ -60,7 +61,8 @@ export class NodeFsSmartFsAdapter {
       const other_args = args.slice(path_count);
       const resolved_paths = paths.map(path => this.#resolve_path(path));
       let result = method(...resolved_paths, ...other_args);
-      return this.post_process(result);
+      // return this.smart_fs.post_process(result); // handled by smart_fs.use_adapter
+      return result;
     };
   }
 
@@ -107,7 +109,7 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the directory to create
    * @returns {Promise<void>}
    */
-  async create_dir(rel_path) { return await this.mkdir(rel_path); }
+  async mkdir(rel_path) { return await this.mkdir(rel_path); }
 
   /**
    * Check if a file or directory exists
@@ -131,7 +133,48 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the directory to list
    * @returns {Promise<string[]>}
    */
-  async list(rel_path) { return await this.readdir(rel_path); }
+  async list(rel_path, opts={}) {
+    const items = await this.readdir(rel_path, { withFileTypes: true, ...(opts.recursive ? { recursive: true } : {}) });
+    const files = items.reduce((acc, item) => {
+      const folder = item.parentPath.replace(this.smart_fs.env_path, '').slice(1);
+      const file = {
+        basename: item.name.split('.')[0],
+        extension: item.name.slice(item.name.indexOf('.') + 1),
+        name: item.name,
+        path: folder ? folder + '/' + item.name : item.name,
+      };
+      if(this.smart_fs.is_excluded(file.path)) return acc;
+      if(item.isFile()){
+        if(opts.type === 'folder') return acc;
+        file.type = 'file';
+        // set to getter that calls statSync and formats the result
+        Object.defineProperty(file, 'stat', {
+          get: () => {
+            const stat = this.statSync(file.path);
+            return {
+              ctime: stat.ctime.getTime(),
+              mtime: stat.mtime.getTime(),
+              size: stat.size,
+            };
+          }
+        });
+        acc[file.path] = file;
+        if(!opts.type && folder !== '') acc[folder].children.push(acc[file.path]);
+      }else if(item.isDirectory()){
+        if(opts.type === 'file') return acc;
+        file.type = 'folder';
+        file.children = [];
+        acc[file.path] = file;
+      }
+      return acc;
+    }, {});
+    return Object.values(files);
+  }
+  async list_recursive(rel_path, opts={}) { return await this.list(rel_path, { ...opts, recursive: true }); }
+  async list_files(rel_path, opts={}) { return (await this.list(rel_path, { ...opts, type: 'file' })); }
+  async list_files_recursive(rel_path, opts={}) { return (await this.list_recursive(rel_path, { ...opts, type: 'file' })); }
+  async list_folders(rel_path, opts={}) { return (await this.list(rel_path, { ...opts, type: 'folder' })); }
+  async list_folders_recursive(rel_path, opts={}) { return (await this.list_recursive(rel_path, { ...opts, type: 'folder' })); }
 
   /**
    * Read the contents of a file

@@ -17,7 +17,7 @@ export class TestFsSmartFsAdapter {
     this.files[rel_path] = (this.files[rel_path] || '') + content;
   }
 
-  async create_dir(rel_path) {
+  async mkdir(rel_path) {
     // For simplicity, we'll just mark directories with a special string
     this.files[rel_path] = '[DIRECTORY]';
   }

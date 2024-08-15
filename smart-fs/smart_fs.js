@@ -51,7 +51,7 @@ import Minimatch from 'minimatch';
  * }
  * 
  * // Perform directory operations
- * await smart_fs.create_dir('new_folder');
+ * await smart_fs.mkdir('new_folder');
  * const files = await smart_fs.list('.');
  * console.log('Files in current directory:', files);
  * 
@@ -104,9 +104,10 @@ class SmartFs {
         .forEach(pattern => this.add_ignore_pattern(pattern))
       ;
     }
-    this.add_ignore_pattern('.env');
-    this.add_ignore_pattern('.git');
-    this.add_ignore_pattern('.gitignore');
+    this.add_ignore_pattern('**/*.excalidraw.md');
+    // exclude all hidden files and folders
+    this.add_ignore_pattern('**/.**', { dot: true }); // ignore hidden files and folders in subdirectories
+    this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
   }
 
   /**
@@ -114,8 +115,8 @@ class SmartFs {
    * 
    * @param {string} pattern - The pattern to add
    */
-  add_ignore_pattern(pattern) {
-    this.excluded_patterns.push(new Minimatch.Minimatch(pattern.trim()));
+  add_ignore_pattern(pattern, opts = {}) {
+    this.excluded_patterns.push(new Minimatch.Minimatch(pattern.trim(), opts));
   }
   /**
    * Check if a path is ignored based on gitignore patterns
@@ -159,8 +160,13 @@ class SmartFs {
    * @returns {any} The post-processed value
    */
   post_process(returned_value) {
-    if (Array.isArray(returned_value) && typeof returned_value[0] === 'string') {
-      returned_value = returned_value.filter(r => !this.is_excluded(r));
+    if(this.adapter.post_process) return this.adapter.post_process(returned_value);
+    if (Array.isArray(returned_value)){
+      returned_value = returned_value.filter(r => {
+        if(typeof r === 'string') return !this.is_excluded(r);
+        if(typeof r === 'object' && r.path) return !this.is_excluded(r.path);
+        return true;
+      });
     }
     return returned_value;
   }
@@ -168,7 +174,7 @@ class SmartFs {
   async use_adapter(method, paths, ...args) {
     if(!this.adapter[method]) throw new Error(`Method ${method} not found in adapter`);
     paths = this.pre_process(paths);
-    const resp = await this.adapter[method](...paths, ...args);
+    let resp = await this.adapter[method](...paths, ...args);
     return this.post_process(resp);
   }
 
@@ -187,7 +193,7 @@ class SmartFs {
    * @param {string} rel_path - The relative path of the directory to create
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async create_dir(rel_path) { return await this.use_adapter('create_dir', [rel_path]); }
+  async mkdir(rel_path) { return await this.use_adapter('mkdir', [rel_path]); }
 
   /**
    * Check if a file or directory exists
@@ -203,7 +209,12 @@ class SmartFs {
    * @param {string} rel_path - The relative path to list
    * @returns {Promise<string[]>} Array of file paths
    */
-  async list(rel_path) { return await this.use_adapter('list', [rel_path]); }
+  async list(rel_path='/') { return await this.use_adapter('list', [rel_path]); }
+  async list_recursive(rel_path='/') { return await this.use_adapter('list_recursive', [rel_path]); }
+  async list_files(rel_path='/') { return await this.use_adapter('list_files', [rel_path]); }
+  async list_files_recursive(rel_path='/') { return await this.use_adapter('list_files_recursive', [rel_path]); }
+  async list_folders(rel_path='/') { return await this.use_adapter('list_folders', [rel_path]); }
+  async list_folders_recursive(rel_path='/') { return await this.use_adapter('list_folders_recursive', [rel_path]); }
 
   /**
    * Read the contents of a file
