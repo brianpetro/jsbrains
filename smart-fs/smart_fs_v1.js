@@ -21,7 +21,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { Minimatch } from 'minimatch';
+import Minimatch from 'minimatch';
 
 const fsPromises = fs.promises;
 
