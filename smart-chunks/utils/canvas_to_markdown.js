@@ -1,6 +1,6 @@
 function canvas_to_markdown(canvas) {
   const canvas_obj = JSON.parse(canvas);
-  const nodes = canvas_obj.nodes;
+  const nodes = canvas_obj.nodes || [];
   const groups = nodes.filter(node => node.type === 'group');
   const group_map = {};
 
