@@ -31,7 +31,7 @@
  * @param {Object} data - The data object to create a UID for.
  * @returns {string} A unique identifier based on the input data.
  */
-function create_uid(data) {
+export function create_uid(data) {
   const str = JSON.stringify(data);
   let hash = 0;
   if (str.length === 0) return hash;
@@ -44,7 +44,6 @@ function create_uid(data) {
   }
   return hash.toString() + str.length;
 }
-exports.create_uid = create_uid;
 
 /**
  * Deeply merges two objects, giving precedence to the properties of the source object.
@@ -52,7 +51,7 @@ exports.create_uid = create_uid;
  * @param {Object} source - The source object from which properties are sourced.
  * @returns {Object} The merged object.
  */
-function deep_merge(target, source) {
+export function deep_merge(target, source) {
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       // both exist and are objects
@@ -63,21 +62,19 @@ function deep_merge(target, source) {
   return target;
   function is_obj(item) { return (item &amp;&amp; typeof item === 'object' &amp;&amp; !Array.isArray(item)); }
 }
-exports.deep_merge = deep_merge;
 
 /**
  * Converts a class name from camelCase to snake_case and makes plural forms.
  * @param {string} class_name - The class name to convert.
  * @returns {string} The snake_case and pluralized class name.
  */
-function collection_instance_name_from(class_name) {
+export function collection_instance_name_from(class_name) {
   return class_name
     .replace(/([a-z])([A-Z])/g, '$1_$2') // convert camelCase to snake_case
     .toLowerCase() // convert to lowercase
     .replace(/y$/, 'ie') // ex. summaries
     + 's';
 }
-exports.collection_instance_name_from = collection_instance_name_from;
 
 /**
  * Calculates the cosine similarity between two vectors.
@@ -85,13 +82,12 @@ exports.collection_instance_name_from = collection_instance_name_from;
  * @param {Array&lt;number>} vector2 - The second vector.
  * @returns {number} The cosine similarity between the two vectors.
  */
-function cos_sim(vector1, vector2) {
+export function cos_sim(vector1, vector2) {
   const dotProduct = vector1.reduce((acc, val, i) => acc + val * vector2[i], 0);
   const normA = Math.sqrt(vector1.reduce((acc, val) => acc + val * val, 0));
   const normB = Math.sqrt(vector2.reduce((acc, val) => acc + val * val, 0));
   return normA === 0 || normB === 0 ? 0 : dotProduct / (normA * normB);
 }
-exports.cos_sim = cos_sim;
 
 /**
  * Maintains a collection of top items based on their similarity measure.
@@ -99,7 +95,7 @@ exports.cos_sim = cos_sim;
  * @param {Object} item - The new item to consider for inclusion.
  * @param {number} [ct=10] - The count of top items to maintain.
  */
-function top_acc(_acc, item, ct = 10) {
+export function top_acc(_acc, item, ct = 10) {
   if (_acc.items.size &lt; ct) {
     _acc.items.add(item);
   } else if (item.sim > _acc.min) {
@@ -109,15 +105,13 @@ function top_acc(_acc, item, ct = 10) {
     _acc.min = _acc.minItem.sim;
   }
 }
-exports.top_acc = top_acc;
 
 /**
  * Delays the execution of the next line in the code by a specified number of milliseconds.
  * @param {number} ms - The number of milliseconds to delay.
  * @returns {Promise} A promise that resolves after the specified delay.
  */
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-exports.sleep = sleep;</code></pre>
+export function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }</code></pre>
         </article>
     </section>
 
@@ -127,13 +121,13 @@ exports.sleep = sleep;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="FsAdapter.html">FsAdapter</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="ObsidianAdapter.html">ObsidianAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed Aug 14 2024 01:40:43 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Aug 15 2024 18:55:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
