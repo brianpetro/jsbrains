@@ -58,7 +58,8 @@ class SmartFs {
    */
   constructor(env, opts = {}) {
     this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
-    this.gitignore_patterns = this.#load_gitignore();
+    this.gitignore_patterns = [];
+    this.#load_gitignore();
   }
   static async create(env, opts = {}) {
     if(typeof opts.env_path !== 'string' || opts.env_path.length === 0) return; // no env_path provided
@@ -77,19 +78,18 @@ class SmartFs {
    * @returns {Minimatch[]} Array of Minimatch patterns
    */
   #load_gitignore() {
-    const patterns = [];
     const gitignore_path = path.join(this.env_path, '.gitignore');
     if (fs.existsSync(gitignore_path)) {
       fs.readFileSync(gitignore_path, 'utf8')
         .split('\n')
+        .filter(line => !line.startsWith('#')) // ignore comments
         .filter(Boolean)
-        .forEach(pattern => patterns.push(new Minimatch(pattern.trim())))
+        .forEach(pattern => this.add_ignore_pattern(pattern))
       ;
     }
-    patterns.push(new Minimatch('.env'));
-    patterns.push(new Minimatch('.git'));
-    patterns.push(new Minimatch('.gitignore'));
-    return patterns;
+    this.add_ignore_pattern('.env');
+    this.add_ignore_pattern('.git');
+    this.add_ignore_pattern('.gitignore');
   }
 
   /**
@@ -97,8 +97,8 @@ class SmartFs {
    * 
    * @param {string} pattern - The pattern to add
    */
-  add_ignore_pattern(pattern) {
-    this.gitignore_patterns.push(new Minimatch(pattern.trim()));
+  add_ignore_pattern(pattern, opts = {}) {
+    this.gitignore_patterns.push(new Minimatch.Minimatch(pattern.trim(), opts));
   }
 
   /**

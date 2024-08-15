@@ -99,13 +99,14 @@ class SmartFs {
       const gitignore_content = await this.read(gitignore_path);
       gitignore_content
         .split('\n')
+        .filter(line => !line.startsWith('#')) // ignore comments
         .filter(Boolean)
-        .forEach(pattern => this.excluded_patterns.push(new Minimatch(pattern.trim())))
+        .forEach(pattern => this.add_ignore_pattern(pattern))
       ;
     }
-    this.excluded_patterns.push(new Minimatch('.env'));
-    this.excluded_patterns.push(new Minimatch('.git'));
-    this.excluded_patterns.push(new Minimatch('.gitignore'));
+    this.add_ignore_pattern('.env');
+    this.add_ignore_pattern('.git');
+    this.add_ignore_pattern('.gitignore');
   }
 
   /**
@@ -114,7 +115,7 @@ class SmartFs {
    * @param {string} pattern - The pattern to add
    */
   add_ignore_pattern(pattern) {
-    this.excluded_patterns.push(new Minimatch(pattern.trim()));
+    this.excluded_patterns.push(new Minimatch.Minimatch(pattern.trim()));
   }
   /**
    * Check if a path is ignored based on gitignore patterns
