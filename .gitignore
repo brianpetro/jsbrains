@@ -2,3 +2,5 @@
 .env
 node_modules
 ref
+**/node_modules/**
+**/ref/**

@@ -1,5 +1,5 @@
 // merge two objects, overwriting existing properties with new_obj properties
-function ajson_merge(existing, new_obj) {
+export function ajson_merge(existing, new_obj) {
   if(new_obj === null) return null;
   for (const key in new_obj) {
     if (Array.isArray(existing[key]) && Array.isArray(new_obj[key])) {
@@ -40,5 +40,3 @@ function ajson_merge(existing, new_obj) {
 function isObject(obj) {
   return obj && typeof obj === 'object' && !Array.isArray(obj);
 }
-exports.ajson_merge = ajson_merge;
-

@@ -1,6 +1,5 @@
 import { CollectionItem } from "smart-collections/CollectionItem.js";
 import { find_connections } from "./actions/find_connections.js";
-import { wrap_changes } from "smart-entities-actions/utils/wrap_changes.js";
 
 export class SmartEntity extends CollectionItem {
   static get defaults() {

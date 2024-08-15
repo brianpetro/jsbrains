@@ -1,12 +1,12 @@
-const { CollectionItem } = require('./CollectionItem');
+import { CollectionItem } from './CollectionItem.js';
+import { deep_merge } from './helpers.js';
+
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
-const helpers = require('./helpers');
-const { deep_merge, } = helpers;
 
 /**
  * Base class representing a collection of items with various methods to manipulate and retrieve these items.
  */
-class Collection {
+export class Collection {
   /**
    * Constructs a new Collection instance.
    * @param {Object} env - The environment context containing configurations and adapters.
@@ -93,7 +93,8 @@ class Collection {
    * @param {Object} opts - The options used to filter the items.
    * @return {CollectionItem[]} The filtered items.
    */
-  filter(opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(opts)).map(([key, item]) => item); }
+  list(opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(opts)).map(([key, item]) => item); }
+  filter(opts) { return this.list(opts); } // DEPRECATED: use list() instead
   /**
    * Retrieves items from the collection based on the provided strategy and options.
    * @param {Function[]} strategy - The strategy used to retrieve the items.
@@ -238,7 +239,6 @@ class Collection {
     }
   }
 }
-exports.Collection = Collection;
 
 /**
  * Sequentially executes an array of asynchronous functions, passing the result of each function
@@ -250,7 +250,7 @@ exports.Collection = Collection;
  * @returns {*} The final value after all functions have been executed.
  * @throws {Error} Throws an error if any function in the array is not actually a function or if an async function throws an error.
  */
-async function sequential_async_processor(funcs, initial_value, opts = {}) {
+export async function sequential_async_processor(funcs, initial_value, opts = {}) {
   let value = initial_value;
   for (const func of funcs) {
     // Ensure each element is a function before attempting to call it
@@ -267,4 +267,3 @@ async function sequential_async_processor(funcs, initial_value, opts = {}) {
 
   return value;
 }
-exports.sequential_async_processor = sequential_async_processor;

@@ -1,15 +1,18 @@
-const { ajson_merge } = require('../utils/ajson_merge.js');
-class SmartCollectionsAdapter {
-  constructor(main) {
-    this.main = main;
+import { ajson_merge } from '../utils/ajson_merge.js';
+
+export class MultiFileSmartCollectionsAdapter {
+  constructor(collection) {
+    this.collection = collection;
+    this.env = this.collection.env;
+    this.fs = collection.fs;
   }
-  get env() { return this.main.env; }
-  get items() { return this.main.items; }
+
+  get items() { return this.collection.items; }
 
   /**
    * @returns {string} The data path for folder that contains .ajson files.
    */
-  get data_path() { return this.main.data_path; }
+  get data_path() { return this.collection.data_path; }
 
   /**
    * Asynchronously loads collection items from .ajson files within the specified data path.
@@ -18,21 +21,22 @@ class SmartCollectionsAdapter {
   async load() {
     console.log("Loading collection items");
     const start = Date.now();
-    if(!(await this.exists(this.data_path))) await this.mkdir(this.data_path);
-    const files = (await this.list(this.data_path)).files; // List all files in the directory
-    const vault_paths = this.main.env.all_files.reduce((acc, file) => {
-      acc[file.path] = file;
+    if(!(await this.fs.exists(this.data_path))) await this.fs.mkdir(this.data_path);
+    const files = (await this.fs.list_files(this.data_path)); // List all files in the directory
+    const vault_paths = (await this.fs.list_files_recursive('/')).reduce((acc, file) => {
+      acc[file.path] = true;
       return acc;
     }, {});
     const item_types = [
       ...Object.keys(this.env.item_types),
       'SmartNote', // v1 backward compatibility
     ];
-    for (const file_path of files) {
+    for (const file of files) {
+      const file_path = file.path;
       if(!file_path.endsWith('.ajson')) continue; // ensure it's an .ajson file
       let source_is_deleted = false;
       try {
-        const content = (await this.read(file_path)).trim();
+        const content = (await this.fs.read(file_path)).trim();
         const data = content
           .split('\n')
           .reduce((acc, line) => {
@@ -66,16 +70,16 @@ class SmartCollectionsAdapter {
             if(!entity_key.includes("#")) main_entity = entity;
           })
         ;
-        if(source_is_deleted || !main_entity) await this.remove(file_path);
+        if(source_is_deleted || !main_entity) await this.fs.remove(file_path);
         else if(main_entity.ajson !== content) {
-          await this.write(file_path, main_entity.ajson);
+          await this.fs.write(file_path, main_entity.ajson);
         }
       } catch (err) {
         console.log("Error loading file: " + file_path);
         console.log(err.stack); // stack trace
         // if parse error, remove file
         console.log(err.message);
-        if(err.message.includes("Expected ")) await this.remove(file_path);
+        if(err.message.includes("Expected ")) await this.fs.remove(file_path);
       }
     }
     const end = Date.now(); // log time
@@ -100,21 +104,21 @@ class SmartCollectionsAdapter {
    * @param {boolean} [force=false] - Forces the save operation even if it's currently flagged as saving.
    */
   async _save(key) {
-    delete this.main.save_queue[key];
-    const item = this.main.get(key);
+    delete this.collection.save_queue[key];
+    const item = this.collection.get(key);
     if(!item) return console.warn("Item not found: " + key);
-    if(!(await this.exists(this.data_path))) await this.mkdir(this.data_path);
+    if(!(await this.fs.exists(this.data_path))) await this.fs.mkdir(this.data_path);
     try {
       const item_file_path = `${this.data_path}/${item.multi_ajson_file_name}.ajson`; // Use item.file_name for file naming
       if(item.deleted){
-        delete this.main.items[key];
-        if((await this.exists(item_file_path))){
-          await this.remove(item_file_path);
+        delete this.collection.items[key];
+        if((await this.fs.exists(item_file_path))){
+          await this.fs.remove(item_file_path);
           console.log("Deleted entity: " + key);
         }
       } else {
         const ajson = item.ajson;
-        await this.append(item_file_path, '\n' + ajson);
+        await this.fs.append(item_file_path, '\n' + ajson);
       }
     } catch (err) {
       if(err.message.includes("ENOENT")) return; // already deleted
@@ -127,17 +131,15 @@ class SmartCollectionsAdapter {
     if(this._saving) return console.log("Already saving");
     this._saving = true; // prevent multiple saves at once
     setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
-    console.log("Saving " + this.main.collection_name);
+    console.log("Saving " + this.collection.collection_name);
     const start = Date.now();
     const batch_items = [];
-    for (const key of Object.keys(this.main.save_queue)) {
+    for (const key of Object.keys(this.collection.save_queue)) {
       batch_items.push(this._save(key));
     }
     await Promise.all(batch_items);
     this._saving = false;
-    this.main.save_queue = {};
-    console.log(`Saved ${batch_items.length} ${this.main.collection_name} in ${Date.now() - start}ms`);
+    this.collection.save_queue = {};
+    console.log(`Saved ${batch_items.length} ${this.collection.collection_name} in ${Date.now() - start}ms`);
   }
 }
-exports.SmartCollectionsAdapter = SmartCollectionsAdapter;
-

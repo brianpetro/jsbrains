@@ -1,5 +1,4 @@
 import { SmartEntity } from "./SmartEntity.js";
-import { wrap_changes } from "smart-entities-actions/utils/wrap_changes.js";
 
 export class SmartBlock extends SmartEntity {
   static get defaults() {
@@ -254,7 +253,7 @@ export class SmartBlock extends SmartEntity {
         if (to_key.includes("#")) {
           const headings = to_key.split("#").slice(1);
           const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
-          const new_content = [
+          let new_content = [
               new_headings_content,
               ...content.split("\n").slice(1)
           ].join("\n").trim();

@@ -19,18 +19,10 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-const { LongTermMemory: LTM } = require('./long_term_memory.js');
-const { AJSON } = require('./AJSON.js');
-const { ScJSON } = require('./ScJSON.js');
-const { ObsidianAJSON } = require('./ObsidianAJSON.js');
-const { Brain } = require('./Brain');
-const { Collection } = require('./Collection');
-const { CollectionItem } = require('./CollectionItem');
-// export all classes
-exports.Brain = Brain;
-exports.Collection = Collection;
-exports.CollectionItem = CollectionItem;
-exports.LongTermMemory = LTM;
-exports.AJSON = AJSON;
-exports.ScJSON = ScJSON;
-exports.ObsidianAJSON = ObsidianAJSON;
+import { Collection } from './Collection.js';
+import { CollectionItem } from './CollectionItem.js';
+
+export {
+  Collection,
+  CollectionItem,
+};

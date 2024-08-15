@@ -1,6 +1,7 @@
 {
   "name": "smart-collections",
   "author": "Brian Joseph Petro (🌴 Brian)",
+  "type": "module",
   "license": "MIT",
   "version": "1.0.27",
   "description": "Convenient interface for managing collections of items.",

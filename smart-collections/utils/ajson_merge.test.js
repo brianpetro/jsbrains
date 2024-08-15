@@ -1,5 +1,5 @@
-const test = require('ava');
-const { ajson_merge } = require('./ajson_merge');
+import test from 'ava';
+import { ajson_merge } from './ajson_merge.js';
 
 test('should correctly merge two objects', t => {
   const obj1 = { a: 1, b: { c: 2 } };

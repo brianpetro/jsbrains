@@ -3,7 +3,7 @@
  * @param {Object} data - The data object to create a UID for.
  * @returns {string} A unique identifier based on the input data.
  */
-function create_uid(data) {
+export function create_uid(data) {
   const str = JSON.stringify(data);
   let hash = 0;
   if (str.length === 0) return hash;
@@ -16,7 +16,6 @@ function create_uid(data) {
   }
   return hash.toString() + str.length;
 }
-exports.create_uid = create_uid;
 
 /**
  * Deeply merges two objects, giving precedence to the properties of the source object.
@@ -24,7 +23,7 @@ exports.create_uid = create_uid;
  * @param {Object} source - The source object from which properties are sourced.
  * @returns {Object} The merged object.
  */
-function deep_merge(target, source) {
+export function deep_merge(target, source) {
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       // both exist and are objects
@@ -35,21 +34,19 @@ function deep_merge(target, source) {
   return target;
   function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
 }
-exports.deep_merge = deep_merge;
 
 /**
  * Converts a class name from camelCase to snake_case and makes plural forms.
  * @param {string} class_name - The class name to convert.
  * @returns {string} The snake_case and pluralized class name.
  */
-function collection_instance_name_from(class_name) {
+export function collection_instance_name_from(class_name) {
   return class_name
     .replace(/([a-z])([A-Z])/g, '$1_$2') // convert camelCase to snake_case
     .toLowerCase() // convert to lowercase
     .replace(/y$/, 'ie') // ex. summaries
     + 's';
 }
-exports.collection_instance_name_from = collection_instance_name_from;
 
 /**
  * Calculates the cosine similarity between two vectors.
@@ -57,13 +54,12 @@ exports.collection_instance_name_from = collection_instance_name_from;
  * @param {Array<number>} vector2 - The second vector.
  * @returns {number} The cosine similarity between the two vectors.
  */
-function cos_sim(vector1, vector2) {
+export function cos_sim(vector1, vector2) {
   const dotProduct = vector1.reduce((acc, val, i) => acc + val * vector2[i], 0);
   const normA = Math.sqrt(vector1.reduce((acc, val) => acc + val * val, 0));
   const normB = Math.sqrt(vector2.reduce((acc, val) => acc + val * val, 0));
   return normA === 0 || normB === 0 ? 0 : dotProduct / (normA * normB);
 }
-exports.cos_sim = cos_sim;
 
 /**
  * Maintains a collection of top items based on their similarity measure.
@@ -71,7 +67,7 @@ exports.cos_sim = cos_sim;
  * @param {Object} item - The new item to consider for inclusion.
  * @param {number} [ct=10] - The count of top items to maintain.
  */
-function top_acc(_acc, item, ct = 10) {
+export function top_acc(_acc, item, ct = 10) {
   if (_acc.items.size < ct) {
     _acc.items.add(item);
   } else if (item.sim > _acc.min) {
@@ -81,12 +77,10 @@ function top_acc(_acc, item, ct = 10) {
     _acc.min = _acc.minItem.sim;
   }
 }
-exports.top_acc = top_acc;
 
 /**
  * Delays the execution of the next line in the code by a specified number of milliseconds.
  * @param {number} ms - The number of milliseconds to delay.
  * @returns {Promise} A promise that resolves after the specified delay.
  */
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-exports.sleep = sleep;
+export function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

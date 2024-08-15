@@ -1,14 +1,9 @@
-const helpers = require('./helpers');
-const {
-  create_uid,
-  deep_merge,
-  collection_instance_name_from,
-} = helpers;
+import { create_uid, deep_merge, collection_instance_name_from } from './helpers.js';
 
 /**
  * Represents an item within a collection, providing methods for data manipulation, validation, and interaction with its collection.
  */
-class CollectionItem {
+export class CollectionItem {
   /**
    * Default properties for an instance of CollectionItem.
    * @returns {Object} Default data configuration.
@@ -203,5 +198,3 @@ class CollectionItem {
 
   get ajson_key() { return this.constructor.name + ":" + this.key; }
 }
-
-exports.CollectionItem = CollectionItem;

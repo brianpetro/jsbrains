@@ -1,7 +1,5 @@
-const test = require('ava');
-
-// Import the function to be tested
-const {sequential_async_processor} = require('./Collection.js');
+import test from 'ava';
+import { sequential_async_processor } from './Collection.js';
 
 // Define some sample functions to be used in the tests
 const addOne = async (value) => value + 1;
