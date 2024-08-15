@@ -11,7 +11,6 @@ export class SmartSource extends SmartEntity {
     };
   }
   async init() {
-    // this.env.smart_blocks.import(this, { show_notice: false });
     await this.parse_content();
     this.queue_save();
     if(this.is_unembedded) this.smart_embed.embed_entity(this);
@@ -112,7 +111,7 @@ export class SmartSource extends SmartEntity {
     if(this.meta_changed) return true;
     return super.is_unembedded;
   }
-  get excluded() { return !this.env.is_included(this.data.path); }
+  get excluded() { return this.env.fs.is_excluded(this.data.path); }
 
   // FS
   /**

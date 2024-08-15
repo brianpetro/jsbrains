@@ -7,6 +7,13 @@ export class SmartBlocks extends SmartEntities {
     const items = Object.entries(this.items);
     for (let i = 0; i < items.length; i++) {
       const [key, block] = items[i];
+      Object.entries(block.data.embeddings).forEach(([model, embedding]) => {
+        // only keep active model embeddings
+        if(model !== block.embed_model){
+          block.data.embeddings[model] = null;
+          block.queue_save();
+        }
+      });
       if (block.is_gone) remove.push(key); // remove if expired
     }
     const remove_ratio = remove.length / items.length;

@@ -3,7 +3,7 @@ import { SmartEntities } from "./SmartEntities.js";
 
 // DO: Extract to separate files
 export class SmartSources extends SmartEntities {
-  async import(files = [], opts = {}) {
+  async import(files = []) {
     let batch = [];
     try {
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
@@ -74,7 +74,7 @@ export class SmartSources extends SmartEntities {
     const remove = [];
     const items_w_vec = Object.entries(this.items).filter(([key, note]) => note.vec);
     const total_items_w_vec = items_w_vec.length;
-    const available_notes = this.env.files.reduce((acc, file) => {
+    const available_notes = (await this.fs.list_files_recursive('/')).reduce((acc, file) => {
       acc[file.path] = true;
       return acc;
     }, {});
@@ -83,6 +83,13 @@ export class SmartSources extends SmartEntities {
       return; // skip rest if no items with vec
     }
     for (const [key, note] of items_w_vec) {
+      Object.entries(note.data.embeddings).forEach(([model, embedding]) => {
+        // only keep active model embeddings
+        if(model !== note.embed_model){
+          note.data.embeddings[model] = null;
+          note.queue_save();
+        }
+      });
       if (!available_notes[note.data.path]) {
         remove.push(key); // remove if not available
         continue;

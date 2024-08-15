@@ -46,19 +46,16 @@ export class SmartEntity extends CollectionItem {
   get tokens() { return this.data.embeddings[this.embed_model]?.tokens; }
   get embed_model() { return this.collection?.smart_embed_model_key || "None"; }
   get vec() { return this.data?.embeddings?.[this.embed_model]?.vec; }
-  get embedding() { return this.data.embeddings?.[this.embed_model]; }
   // setters
-  set embedding(embedding) {
-    if (!this.data.embeddings) this.data.embeddings = {};
-    this.data.embeddings[this.embed_model] = embedding;
-  }
   set error(error) { this.data.embeddings[this.embed_model].error = error; }
   set tokens(tokens) {
-    if (!this.embedding) this.embedding = {};
-    this.embedding.tokens = tokens;
+    if(!this.data.embeddings) this.data.embeddings = {};
+    if(!this.data.embeddings[this.embed_model]) this.data.embeddings[this.embed_model] = {};
+    this.data.embeddings[this.embed_model].tokens = tokens;
   }
   set vec(vec) {
-    if (!this.embedding) this.embedding = {};
+    if(!this.data.embeddings) this.data.embeddings = {};
+    if(!this.data.embeddings[this.embed_model]) this.data.embeddings[this.embed_model] = {};
     this.data.embeddings[this.embed_model].vec = vec;
   }
   get is_unembedded() {
