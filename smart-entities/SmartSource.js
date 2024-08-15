@@ -1,5 +1,7 @@
 import { create_hash } from "./create_hash.js";
 import { SmartEntity } from "./SmartEntity.js";
+import { sort_by_score } from "./utils/sort_by_score.js";
+import { prepare_filter } from "./utils/prepare_filter.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -33,6 +35,27 @@ export class SmartSource extends SmartEntity {
       const item = this.env.smart_blocks.create_or_update(block);
       this.last_history.blocks[item.key] = true;
     }
+  }
+  find_connections(params={}) {
+    let connections = super.find_connections(params);
+    const {limit = 50} = params;
+    if(!params.exclude_blocks_from_source_connections && this.median_block_vec){
+      const cache_key = this.key + "_blocks";
+      if(!this.env.connections_cache[cache_key]){
+        const filter_opts = prepare_filter(this.env, this, params);
+        const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter_opts);
+        this.env.connections_cache[cache_key] = (
+          nearest_blocks
+          .sort(sort_by_score)
+          .slice(0, limit)
+        );
+      }
+      connections = [
+        ...connections,
+        ...this.env.connections_cache[cache_key],
+      ].sort(sort_by_score).slice(0, limit);
+    }
+    return connections;
   }
 
   get excluded_lines() {
@@ -83,7 +106,18 @@ export class SmartSource extends SmartEntity {
   get is_gone() { return this.t_file === null; }
   get last_history() { return this.data.history.length ? this.data.history[this.data.history.length - 1] : null; }
   get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
-  get median_block_vec() { return this._median_block_vec ? this._median_block_vec : this._median_block_vec = this.block_vecs[0]?.map((val, i) => this.block_vecs.map(vec => vec[i]).sort()[Math.floor(this.block_vecs.length / 2)]); }
+  get median_block_vec() {
+    if (this._median_block_vec) return this._median_block_vec;
+    if (!this.block_vecs.length) return null;
+    const vec_length = this.block_vecs[0].length;
+    this._median_block_vec = new Array(vec_length);
+    for (let i = 0; i < vec_length; i++) {
+      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
+      const mid = Math.floor(values.length / 2);
+      this._median_block_vec[i] = values.length % 2 !== 0 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+    }
+    return this._median_block_vec;
+  }
   get t_file() { return this.env.main.get_tfile(this.data.path); } // should be better handled using non-Obsidian API
   // v2.2
   get ajson() {

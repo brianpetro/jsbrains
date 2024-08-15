@@ -1,5 +1,6 @@
 import { CollectionItem } from "smart-collections/CollectionItem.js";
-import { find_connections } from "./actions/find_connections.js";
+import { prepare_filter } from "./utils/prepare_filter.js";
+import { sort_by_score } from "./utils/sort_by_score.js";
 
 export class SmartEntity extends CollectionItem {
   static get defaults() {
@@ -24,18 +25,18 @@ export class SmartEntity extends CollectionItem {
   async get_content() { } // override in child class (DEPRECATED in favor of read())
   async get_embed_input() { } // override in child class
   // find_connections v2 (smart action)
-  find_connections(params) {
-    const smart_connections_filter = {...this.env.settings.smart_view_filter}; // copy to avoid mutating settings
-    if(!smart_connections_filter.include_exclude){
-      delete smart_connections_filter.exclude_filter;
-      delete smart_connections_filter.include_filter;
+  find_connections(params={}) {
+    params = {
+      ...(this.env.settings.smart_view_filter || {}),
+      ...params,
+    };
+    const {limit = 50} = params;
+    if(!this.env.connections_cache[this.key]){
+      const filter_opts = prepare_filter(this.env, this, params);
+      const nearest = this.nearest(filter_opts);
+      this.env.connections_cache[this.key] = nearest.sort(sort_by_score);
     }
-    delete smart_connections_filter.include_exclude; // unused in find_connections params
-    return find_connections(this.env, {
-      ...smart_connections_filter,
-      ...params, // incoming params override settings
-      key: this.key,
-    });
+    return this.env.connections_cache[this.key].slice(0, limit);
   }
 
   // getters
