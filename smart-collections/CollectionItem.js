@@ -116,29 +116,61 @@ export class CollectionItem {
     this.queue_save();
   }
 
-  // functional filter (returns true or false) for filtering items in collection; called by collection class
   /**
    * Filters items in the collection based on provided options.
-   * @param {Object} opts - Filtering options.
-   * @returns {boolean} True if the item passes the filter.
+   * functional filter (returns true or false) for filtering items in collection; called by collection class
+   * @param {Object} filter_opts - Filtering options.
+   * @param {string} [filter_opts.exclude_key] - A single key to exclude.
+   * @param {string[]} [filter_opts.exclude_keys] - An array of keys to exclude. If exclude_key is provided, it's added to this array.
+   * @param {string} [filter_opts.exclude_key_starts_with] - Exclude keys starting with this string.
+   * @param {string[]} [filter_opts.exclude_key_starts_with_any] - Exclude keys starting with any of these strings.
+   * @param {string} [filter_opts.exclude_key_includes] - Exclude keys that include this string.
+   * @param {string} [filter_opts.key_ends_with] - Include only keys ending with this string.
+   * @param {string} [filter_opts.key_starts_with] - Include only keys starting with this string.
+   * @param {string[]} [filter_opts.key_starts_with_any] - Include only keys starting with any of these strings.
+   * @param {string} [filter_opts.key_includes] - Include only keys that include this string.
+   * @returns {boolean} True if the item passes the filter, false otherwise.
    */
-  filter(opts = {}) {
+  filter(filter_opts = {}) {
     const {
       exclude_key,
       exclude_keys = exclude_key ? [exclude_key] : [],
       exclude_key_starts_with,
       exclude_key_starts_with_any,
+      exclude_key_includes,
       key_ends_with,
       key_starts_with,
       key_starts_with_any,
-    } = opts;
+      key_includes,
+    } = filter_opts;
+
+    // Exclude keys that are in the exclude_keys array
     if (exclude_keys?.includes(this.key)) return false;
+
+    // Exclude keys that start with a specific string
     if (exclude_key_starts_with && this.key.startsWith(exclude_key_starts_with)) return false;
+
+    // Exclude keys that start with any of the provided prefixes
     if (exclude_key_starts_with_any && exclude_key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
+
+    // Include only keys that end with a specific string
     if (key_ends_with && !this.key.endsWith(key_ends_with)) return false;
+
+    // Include only keys that start with a specific string
     if (key_starts_with && !this.key.startsWith(key_starts_with)) return false;
+
+    // Include only keys that start with any of the provided prefixes
     if (key_starts_with_any && !key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
+
+    // Include only keys that include a specific string
+    if (key_includes && !this.key.includes(key_includes)) return false;
+
+    // Exclude keys that include a specific string
+    if (exclude_key_includes && this.key.includes(exclude_key_includes)) return false;
+
     // OVERRIDE FILTER LOGIC here: pattern: if(opts.pattern && !this.data[opts.pattern.matcher]) return false;
+
+    // If all conditions pass, return true
     return true;
   }
 
