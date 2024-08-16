@@ -90,11 +90,11 @@ export class Collection {
   // READ
   /**
    * Filters the items in the collection based on the provided options.
-   * @param {Object} opts - The options used to filter the items.
+   * @param {Object} filter_opts - The options used to filter the items.
    * @return {CollectionItem[]} The filtered items.
    */
-  list(opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(opts)).map(([key, item]) => item); }
-  filter(opts) { return this.list(opts); } // DEPRECATED: use list() instead
+  list(filter_opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(filter_opts)).map(([key, item]) => item); }
+  filter(filter_opts) { return this.list(filter_opts); } // DEPRECATED: use list() instead
   /**
    * Retrieves items from the collection based on the provided strategy and options.
    * @param {Function[]} strategy - The strategy used to retrieve the items.
