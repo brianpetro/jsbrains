@@ -29,7 +29,7 @@ export class SmartEntity extends CollectionItem {
     };
     const {limit = 50} = opts;
     if(!this.env.connections_cache[this.key]){
-      const nearest = this.nearest(opts);
+      const nearest = this.nearest(this.find_connections_opts);
       this.env.connections_cache[this.key] = nearest.sort(sort_by_score);
     }
     return this.env.connections_cache[this.key].slice(0, limit);
@@ -60,4 +60,8 @@ export class SmartEntity extends CollectionItem {
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }
+
+  // SmartSources (how might this be better done?)
+  get_key() { return this.data.path; }
+  get path() { return this.data.path; }
 }

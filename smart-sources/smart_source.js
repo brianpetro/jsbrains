@@ -1,5 +1,5 @@
 import { create_hash } from "./utils/create_hash.js";
-import { SmartEntity } from "smart-entities/smart_entity.js";
+import { SmartEntity } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 
 export class SmartSource extends SmartEntity {
@@ -11,7 +11,6 @@ export class SmartSource extends SmartEntity {
       _embed_input: null, // stored temporarily
     };
   }
-  get_key() { return this.data.path; }
   async init() {
     await this.parse_content();
     this.queue_save();
@@ -81,7 +80,6 @@ export class SmartSource extends SmartEntity {
   }
   open() { this.env.main.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
-  get path() { return this.data.path; }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
   get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }

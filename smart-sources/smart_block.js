@@ -1,6 +1,6 @@
-import { SmartSource } from "./smart_source.js";
+import { SmartEntity } from "smart-entities";
 
-export class SmartBlock extends SmartSource {
+export class SmartBlock extends SmartEntity {
   static get defaults() {
     return {
       data: {
@@ -11,8 +11,6 @@ export class SmartBlock extends SmartSource {
       _embed_input: '', // stored temporarily
     };
   }
-  // requires overriding since parent class has source-specific logic
-  find_connections(params={}) { return super.find_connections(params); }
   // SmartChunk: text, length, path
   update_data(data) {
     if (this.should_clear_embeddings(data)) this.data.embeddings = {};
@@ -57,6 +55,7 @@ export class SmartBlock extends SmartSource {
     const next = await this.next_block.get_content();
     return `---BEGIN CURRENT ${i}---\n${current}\n---END CURRENT ${i}---\n---BEGIN NEXT ${i}---\n${next}\n---END NEXT ${i}---\n`;
   }
+  get path() { return this.data.path; }
   get breadcrumbs() { return this.data.path.split("/").join(" > ").split("#").join(" > ").replace(".md", ""); }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get lines() { return { start: this.data.lines[0], end: this.data.lines[1] }; };

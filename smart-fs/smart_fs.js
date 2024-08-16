@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import {Minimatch} from 'minimatch';
+import {minimatch} from 'minimatch';
 
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
@@ -94,7 +94,7 @@ class SmartFs {
   /**
    * Load .gitignore patterns
    * 
-   * @returns {Promise<Minimatch[]>} Array of Minimatch patterns
+   * @returns {Promise<minimatch[]>} Array of Minimatch patterns
    */
   async load_gitignore() {
     const gitignore_path = '.gitignore';
@@ -120,7 +120,7 @@ class SmartFs {
    * @param {string} pattern - The pattern to add
    */
   add_ignore_pattern(pattern, opts = {}) {
-    this.excluded_patterns.push(new Minimatch.Minimatch(pattern.trim(), opts));
+    this.excluded_patterns.push(new minimatch.Minimatch(pattern.trim(), opts));
   }
   /**
    * Check if a path is ignored based on gitignore patterns

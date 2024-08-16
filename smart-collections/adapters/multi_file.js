@@ -4,9 +4,9 @@ export class MultiFileSmartCollectionsAdapter {
   constructor(collection) {
     this.collection = collection;
     this.env = this.collection.env;
-    this.fs = collection.fs;
     this.save_timeout = null;
   }
+  get fs() { return this.collection.fs; }
 
   get items() { return this.collection.items; }
 

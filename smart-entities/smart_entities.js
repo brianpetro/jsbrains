@@ -163,4 +163,9 @@ export class SmartEntities extends Collection {
     }
     return opts;
   }
+  // Smart Sources (should be moved to SmartSources module, inherited by SmartSources and SmartBlocks)
+  get fs() {
+    if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path] || this.env.fs;
+    return this.env.fs;
+  }
 }

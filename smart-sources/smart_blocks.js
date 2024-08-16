@@ -1,6 +1,6 @@
-import { SmartSources } from "./smart_sources.js";
+import { SmartEntities } from "smart-entities";
 
-export class SmartBlocks extends SmartSources {
+export class SmartBlocks extends SmartEntities {
   async prune() {
     const start = Date.now();
     const remove = [];

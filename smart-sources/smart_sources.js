@@ -5,7 +5,7 @@ import { SmartEntities } from "smart-entities";
 export class SmartSources extends SmartEntities {
   async import(source_files) {
     if(!source_files?.length) source_files = await this.fs.list_files_recursive();
-    source_files = source_files.filter(file => ['.md', '.canvas', '.txt'].includes(file.extension)); // filter available file types
+    source_files = source_files.filter(file => ['md', 'canvas', 'txt'].includes(file.extension)); // filter available file types
     let batch = [];
     try {
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
@@ -140,10 +140,6 @@ export class SmartSources extends SmartEntities {
     }
   }
   // CRUD
-  get fs() {
-    if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path] || this.env.fs;
-    return this.env.fs;
-  }
   async create(key, content) {
     await this.env.fs.write(key, content);
     const source = await this.create_or_update({ path: key });
