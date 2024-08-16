@@ -1,6 +1,5 @@
 import { CollectionItem } from "smart-collections/CollectionItem.js";
-import { prepare_filter } from "./utils/prepare_filter.js";
-import { sort_by_score } from "./utils/sort_by_score.js";
+import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 
 export class SmartEntity extends CollectionItem {
   static get defaults() {
@@ -22,15 +21,15 @@ export class SmartEntity extends CollectionItem {
   }
   async get_embed_input() { } // override in child class
   // find_connections v2 (smart action)
-  find_connections(params={}) {
-    params = {
+  find_connections(opts={}) {
+    this.find_connections_opts = {
       ...(this.env.settings.smart_view_filter || {}),
-      ...params,
+      ...opts,
+      entity: this,
     };
-    const {limit = 50} = params;
+    const {limit = 50} = opts;
     if(!this.env.connections_cache[this.key]){
-      const filter_opts = prepare_filter(this.env, this, params);
-      const nearest = this.nearest(filter_opts);
+      const nearest = this.nearest(opts);
       this.env.connections_cache[this.key] = nearest.sort(sort_by_score);
     }
     return this.env.connections_cache[this.key].slice(0, limit);

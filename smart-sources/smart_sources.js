@@ -1,5 +1,5 @@
-import { create_hash } from "./create_hash.js";
-import { SmartEntities } from "./SmartEntities.js";
+import { create_hash } from "./utils/create_hash.js";
+import { SmartEntities } from "smart-entities";
 
 // DO: Extract to separate files
 export class SmartSources extends SmartEntities {

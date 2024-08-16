@@ -1,7 +1,6 @@
-import { create_hash } from "./create_hash.js";
+import { create_hash } from "./utils/create_hash.js";
 import { SmartEntity } from "smart-entities/smart_entity.js";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
-import { prepare_filter } from "smart-entities/utils/prepare_filter.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -37,14 +36,14 @@ export class SmartSource extends SmartEntity {
       this.last_history.blocks[item.key] = true;
     }
   }
-  find_connections(params={}) {
-    let connections = super.find_connections(params);
-    const {limit = 50} = params;
-    if(!params.exclude_blocks_from_source_connections && this.median_block_vec){
+  find_connections(opts={}) {
+    let connections = super.find_connections(opts);
+    const {limit = 50} = this.find_connections_opts; // super modifies opts and sets this.find_connections_opts
+    if(!opts.exclude_blocks_from_source_connections && this.median_block_vec){
       const cache_key = this.key + "_blocks";
       if(!this.env.connections_cache[cache_key]){
-        const filter_opts = prepare_filter(this.env, this, params);
-        const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, filter_opts);
+        opts.entity = this;
+        const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, this.find_connections_opts);
         this.env.connections_cache[cache_key] = (
           nearest_blocks
           .sort(sort_by_score)

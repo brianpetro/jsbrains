@@ -1,7 +1,7 @@
-import { SmartSource } from '../SmartSource.js';
-import { SmartSources } from '../SmartSources.js';
-import { SmartBlock } from '../SmartBlock.js';
-import { SmartBlocks } from '../SmartBlocks.js';
+import { SmartSource } from '../smart_source.js';
+import { SmartSources } from '../smart_sources.js';
+import { SmartBlock } from '../smart_block.js';
+import { SmartBlocks } from '../smart_blocks.js';
 import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import { TestFsSmartFsAdapter } from '../../smart-fs/adapters/test_fs.js';
