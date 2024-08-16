@@ -12,6 +12,7 @@ export class SmartSource extends SmartEntity {
       _embed_input: null, // stored temporarily
     };
   }
+  get_key() { return this.data.path; }
   async init() {
     await this.parse_content();
     this.queue_save();
@@ -57,7 +58,6 @@ export class SmartSource extends SmartEntity {
     }
     return connections;
   }
-
   get excluded_lines() {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
@@ -82,6 +82,7 @@ export class SmartSource extends SmartEntity {
   }
   open() { this.env.main.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
+  get path() { return this.data.path; }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
   get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
@@ -148,6 +149,7 @@ export class SmartSource extends SmartEntity {
   get excluded() { return this.env.fs.is_excluded(this.data.path); }
 
   // FS
+  get fs() { return this.collection.fs; }
   /**
    * Checks if the source file exists in the file system.
    * @returns {Promise<boolean>} A promise that resolves to true if the file exists, false otherwise.
@@ -379,6 +381,32 @@ export class SmartSource extends SmartEntity {
       }
     }
     await this.parse_content();
+  }
+  // SEARCH
+  /**
+   * Searches for keywords within the entity's data and content.
+   * @param {Object} search_filter - The search filter object.
+   * @param {string[]} search_filter.keywords - An array of keywords to search for.
+   * @returns {Promise<boolean>} A promise that resolves to true if the entity matches the search criteria, false otherwise.
+   */
+  async search(search_filter = {}) {
+    // First, run the initial filter (defined in CollectionItem)
+    if (!this.filter(search_filter)) return false;
+    // Extract keywords from search_filter
+    const { keywords } = search_filter;
+    // Validate the keywords
+    if (!keywords || !Array.isArray(keywords)) {
+      console.warn("Entity.search: keywords not set or is not an array");
+      return false;
+    }
+    // Check if any keyword is in the entity's path
+    if (keywords.some(keyword => this.data.path.includes(keyword))) return true;
+    // Read the entity's content (uses CRUD read())
+    const content = await this.read();
+    // Check if any keyword is in the entity's content
+    if (keywords.some(keyword => content.includes(keyword))) return true;
+    // If no matches found, return false
+    return false;
   }
 
 }

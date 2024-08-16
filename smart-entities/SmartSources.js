@@ -140,9 +140,41 @@ export class SmartSources extends SmartEntities {
     }
   }
   // CRUD
+  get fs() {
+    if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path] || this.env.fs;
+    return this.env.fs;
+  }
   async create(key, content) {
     await this.env.fs.write(key, content);
     const source = await this.create_or_update({ path: key });
     return source;
+  }
+  // SEARCH
+  /**
+   * Lexical search for matching SmartSource content.
+   * @param {Object} search_filter - The filter criteria for the search.
+   * @returns {Promise<Array<Entity>>} A promise that resolves to an array of matching entities.
+   */
+  async search(search_filter = {}) {
+    if(!search_filter.keywords){
+      console.warn("search_filter.keywords not set");
+      return [];
+    }
+    const search_results = await Promise.all(
+      this.items.map(async (item) => {
+        try {
+          const matches = await item.search(search_filter);
+          return matches ? { item, relevance: this.calculate_relevance(item, search_filter) } : null;
+        } catch (error) {
+          console.error(`Error searching item ${item.id || 'unknown'}:`, error);
+          return null;
+        }
+      })
+    );
+    return search_results
+      .filter(Boolean)
+      .sort((a, b) => b.relevance - a.relevance) // sort by relevance 
+      .map(result => result.item)
+    ;
   }
 }

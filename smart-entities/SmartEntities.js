@@ -98,38 +98,6 @@ export class SmartEntities extends Collection {
   }
   get file_name() { return this.collection_name + '-' + this.smart_embed_model_key.split("/").pop(); }
   get smart_embed_model_key() { return this.config?.[this.collection_name + "_embed_model"] || "None"; }
-  // CRUD
-  get fs() {
-    if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path] || this.env.fs;
-    return this.env.fs;
-  }
-  // SEARCH
-  /**
-   * Lexically searches for entities matching the given filter criteria.
-   * @param {Object} search_filter - The filter criteria for the search.
-   * @returns {Promise<Array<Entity>>} A promise that resolves to an array of matching entities.
-   */
-  async search(search_filter = {}) {
-    if(!search_filter.keywords){
-      console.warn("search_filter.keywords not set");
-      return [];
-    }
-    const search_results = await Promise.all(
-      this.items.map(async (item) => {
-        try {
-          const matches = await item.search(search_filter);
-          return matches ? { item, relevance: this.calculate_relevance(item, search_filter) } : null;
-        } catch (error) {
-          console.error(`Error searching item ${item.id || 'unknown'}:`, error);
-          return null;
-        }
-      })
-    );
-    return search_results
-      .filter(Boolean)
-      .sort((a, b) => b.relevance - a.relevance) // sort by relevance 
-      .map(result => result.item);
-  }
 
   /**
    * Calculates the relevance of an item based on the search filter.
@@ -144,5 +112,55 @@ export class SmartEntities extends Collection {
     // if keyword in search_filter is in item.data.path, return 1
     if(search_filter.keywords.some(keyword => item.data.path?.includes(keyword))) return 1;
     return 0; // default relevance (keyword in content)
+  }
+  /**
+   * Overrides the prepare_filter method to add entity-based filters.
+   * This method requires the entity to be set in the options.
+   * 
+   * @param {Object} opts - The filter options.
+   * @param {Object} opts.entity - The entity to base the filters on.
+   * @param {string|string[]} opts.exclude_filter - Keys or prefixes to exclude.
+   * @param {string|string[]} opts.include_filter - Keys or prefixes to include.
+   * @param {boolean} opts.exclude_inlinks - Whether to exclude inlinks of the entity.
+   * @param {boolean} opts.exclude_outlinks - Whether to exclude outlinks of the entity.
+   * @returns {Object} The modified filter options.
+   */
+  prepare_filter(opts = {}) {
+    const {
+      entity,
+      exclude_filter,
+      include_filter,
+      exclude_inlinks,
+      exclude_outlinks,
+    } = opts;
+    
+    if(entity) {
+      opts.exclude_key_starts_with = entity.key; // exclude current entity
+      // include/exclude filters
+      if (exclude_filter) {
+        if (opts.exclude_key_starts_with) {
+          opts.exclude_key_starts_with_any = [opts.exclude_key_starts_with];
+          delete opts.exclude_key_starts_with;
+        } else if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
+        if (typeof exclude_filter === "string") opts.exclude_key_starts_with_any.push(exclude_filter);
+        else if (Array.isArray(exclude_filter)) opts.exclude_key_starts_with_any.push(...exclude_filter);
+      }
+      if (include_filter) {
+        if (!Array.isArray(opts.key_starts_with_any)) opts.key_starts_with_any = [];
+        if (typeof include_filter === "string") opts.key_starts_with_any.push(include_filter);
+        else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
+      }
+      // exclude inlinks
+      if (exclude_inlinks && this.env.links[entity.data.path]) {
+        if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
+        opts.exclude_key_starts_with_any.push(...Object.keys(this.env.links[entity.data.path] || {}));
+      }
+      // exclude outlinks
+      if (exclude_outlinks && this.env.links[entity.data.path]) {
+        if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
+        opts.exclude_key_starts_with_any.push(...entity.outlink_paths);
+      }
+    }
+    return opts;
   }
 }

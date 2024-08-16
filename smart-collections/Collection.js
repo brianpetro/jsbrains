@@ -93,8 +93,20 @@ export class Collection {
    * @param {Object} filter_opts - The options used to filter the items.
    * @return {CollectionItem[]} The filtered items.
    */
-  list(filter_opts) { return Object.entries(this.items).filter(([key, item]) => item.filter(filter_opts)).map(([key, item]) => item); }
-  filter(filter_opts) { return this.list(filter_opts); } // DEPRECATED: use list() instead
+  filter(filter_opts) {
+    filter_opts = this.prepare_filter(filter_opts);
+    return Object.entries(this.items).filter(([key, item]) => item.filter(filter_opts)).map(([key, item]) => item);
+  }
+  // alias for filter
+  list(filter_opts) { return this.filter(filter_opts); }
+
+  /**
+   * Prepares filter options for use in the filter implementation.
+   * Used by sub-classes to convert simplified filter options into filter_opts compatible with the filter implementation.
+   * @param {Object} filter_opts - The original filter options provided.
+   * @returns {Object} The prepared filter options compatible with the filter implementation.
+   */
+  prepare_filter(filter_opts) { return filter_opts; }
   /**
    * Retrieves items from the collection based on the provided strategy and options.
    * @param {Function[]} strategy - The strategy used to retrieve the items.
