@@ -1,7 +1,7 @@
 import { create_hash } from "./create_hash.js";
-import { SmartEntity } from "./SmartEntity.js";
-import { sort_by_score } from "./utils/sort_by_score.js";
-import { prepare_filter } from "./utils/prepare_filter.js";
+import { SmartEntity } from "smart-entities/smart_entity.js";
+import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { prepare_filter } from "smart-entities/utils/prepare_filter.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {

@@ -1,6 +1,6 @@
-import { SmartEntity } from "./SmartEntity.js";
+import { SmartSource } from "./smart_source.js";
 
-export class SmartBlock extends SmartEntity {
+export class SmartBlock extends SmartSource {
   static get defaults() {
     return {
       data: {
@@ -11,6 +11,8 @@ export class SmartBlock extends SmartEntity {
       _embed_input: '', // stored temporarily
     };
   }
+  // requires overriding since parent class has source-specific logic
+  find_connections(params={}) { return super.find_connections(params); }
   // SmartChunk: text, length, path
   update_data(data) {
     if (this.should_clear_embeddings(data)) this.data.embeddings = {};

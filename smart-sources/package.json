@@ -1,16 +1,18 @@
 {
-  "name": "smart-entities",
+  "name": "smart-sources",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "version": "2.0.0",
   "type": "module",
-  "description": "Easy to manage embedded collections.",
-  "main": "main.js",
+  "description": "Easy to manage collections mapped to local or remote sources.",
+  "main": "smart_sources.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
-    "embeddings"
+    "embeddings",
+    "collections",
+    "sources"
   ],
   "repository": {
     "type": "git",
@@ -24,9 +26,7 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-collections": "file:../smart-collections",
-    "smart-embed-model": "file:../smart-embed-model",
-    "smart-entities-actions": "file:../../smart-entities-actions"
+    "smart-entities": "file:../smart-entities"
   },
   "ava": {
     "files": [
