@@ -159,11 +159,14 @@ export class NodeFsSmartFsAdapter {
           }
         });
         acc[file.path] = file;
-        if(!opts.type && folder !== '') acc[folder].children.push(acc[file.path]);
       }else if(item.isDirectory()){
         if(opts.type === 'file') return acc;
         file.type = 'folder';
-        file.children = [];
+        Object.defineProperty(file, 'children', {
+          get: () => {
+            return Object.values(this.smart_fs.files).filter(f => f.path.startsWith(file.path));
+          }
+        });
         acc[file.path] = file;
       }
       return acc;
