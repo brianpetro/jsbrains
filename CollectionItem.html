@@ -273,7 +273,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line190">line 190</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line222">line 222</a>
     </li></ul></dd>
     
 
@@ -335,7 +335,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line166">line 166</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line198">line 198</a>
     </li></ul></dd>
     
 
@@ -397,7 +397,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line160">line 160</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line192">line 192</a>
     </li></ul></dd>
     
 
@@ -459,7 +459,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line172">line 172</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line204">line 204</a>
     </li></ul></dd>
     
 
@@ -521,7 +521,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line178">line 178</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line210">line 210</a>
     </li></ul></dd>
     
 
@@ -583,7 +583,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line184">line 184</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line216">line 216</a>
     </li></ul></dd>
     
 
@@ -645,7 +645,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line154">line 154</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line186">line 186</a>
     </li></ul></dd>
     
 
@@ -823,7 +823,7 @@
     
 
     
-    <h4 class="name" id="filter"><span class="type-signature"></span>filter<span class="signature">(opts)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="filter"><span class="type-signature"></span>filter<span class="signature">(filter_opts)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -831,7 +831,8 @@
 
 
 <div class="description">
-    <p>Filters items in the collection based on provided options.</p>
+    <p>Filters items in the collection based on provided options.
+functional filter (returns true or false) for filtering items in collection; called by collection class</p>
 </div>
 
 
@@ -867,7 +868,7 @@
 
         <tr>
             
-                <td class="name"><code>opts</code></td>
+                <td class="name"><code>filter_opts</code></td>
             
 
             <td class="type">
@@ -883,7 +884,332 @@
 
             
 
-            <td class="description last"><p>Filtering options.</p></td>
+            <td class="description last"><p>Filtering options.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>exclude_key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A single key to exclude.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>exclude_keys</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;string></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>An array of keys to exclude. If exclude_key is provided, it's added to this array.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>exclude_key_starts_with</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Exclude keys starting with this string.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>exclude_key_starts_with_any</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;string></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Exclude keys starting with any of these strings.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>exclude_key_includes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Exclude keys that include this string.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key_ends_with</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Include only keys ending with this string.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key_starts_with</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Include only keys starting with this string.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key_starts_with_any</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;string></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Include only keys starting with any of these strings.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key_includes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Include only keys that include this string.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -924,7 +1250,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line125">line 125</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line134">line 134</a>
     </li></ul></dd>
     
 
@@ -953,7 +1279,7 @@
 
         
 <div class="param-desc">
-    <p>True if the item passes the filter.</p>
+    <p>True if the item passes the filter, false otherwise.</p>
 </div>
 
 
@@ -1321,7 +1647,7 @@ Handles interactions with other collection items.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line148">line 148</a>
+        <a href="smart-collections_CollectionItem.js.html">smart-collections/CollectionItem.js</a>, <a href="smart-collections_CollectionItem.js.html#line180">line 180</a>
     </li></ul></dd>
     
 
@@ -1912,7 +2238,7 @@ Handles interactions with other collection items.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Aug 15 2024 23:24:40 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Fri Aug 16 2024 21:02:47 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
