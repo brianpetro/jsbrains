@@ -110,8 +110,9 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
   // override save_queue to log time
   async save_queue() {
     console.log("Saving " + this.collection.collection_name);
+    const queue_length = Object.keys(this._save_queue).length;
     const start = Date.now();
     await super.save_queue();
-    console.log(`Saved ${batch_items.length} ${this.collection.collection_name} in ${Date.now() - start}ms`);
+    console.log(`Saved ${queue_length} ${this.collection.collection_name} in ${Date.now() - start}ms`);
   }
 }
