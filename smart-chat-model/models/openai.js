@@ -119,7 +119,7 @@ async function fetch_openai_models(api_key, request_adapter=null) {
         const out = {
           model_name: model.id, 
           key: model.id,
-          multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo')
+          multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo') || model.id.startsWith('gpt-4o')
         };
         const m = Object.entries(model_context).find(m => m[0] === model.id || model.id.startsWith(m[0] + '-'));
         if(m) {
