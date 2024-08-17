@@ -1,6 +1,7 @@
 import { Collection } from "smart-collections";
 import { top_acc } from "./top_acc.js";
 import { cos_sim } from "./cos_sim.js";
+import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 
 export class SmartEntities extends Collection {
   constructor(env, opts) {
@@ -182,15 +183,13 @@ export class SmartEntities extends Collection {
     });
     // console.log(results);
     // sort by sim sim desc
-    results.sort((a, b) => {
-      if(a.sim === b.sim) return 0;
-      return (a.sim > b.sim) ? -1 : 1;
-    });
+    results.sort(sort_by_score);
     // get top K results
     const k = params.k || this.env.config.lookup_k || 10;
-    let top_k = await Promise.all(results.slice(0, k)
+    let top_k = await Promise.all(results
       // filter duplicates by r.data.path
       .filter((r, i, a) => a.findIndex(t => t.data.path === r.data.path) === i)
+      .slice(0, k)
       .map(async r => {
         return {
           score: r.sim,
