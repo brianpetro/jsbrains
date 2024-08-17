@@ -938,7 +938,13 @@ including the model to use, the chat history excluding the last user message, an
 
 
 <div class="description">
-    <p>Converts a class name from camelCase to snake_case and makes plural forms.</p>
+    <p>Converts a class name to its corresponding collection instance name.</p>
+<p>This function performs the following transformations:</p>
+<ol>
+<li>Converts camelCase to snake_case</li>
+<li>Makes the name plural (with special handling for words ending in 'y')</li>
+<li>Handles the special case of names ending with 'Item'</li>
+</ol>
 </div>
 
 
@@ -990,7 +996,7 @@ including the model to use, the chat history excluding the last user message, an
 
             
 
-            <td class="description last"><p>The class name to convert.</p></td>
+            <td class="description last"><p>The class name to convert (e.g., 'SmartEntity', 'CollectionItem')</p></td>
         </tr>
 
     
@@ -1031,7 +1037,7 @@ including the model to use, the chat history excluding the last user message, an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line43">line 43</a>
+        <a href="smart-collections_utils_collection_instance_name_from.js.html">smart-collections/utils/collection_instance_name_from.js</a>, <a href="smart-collections_utils_collection_instance_name_from.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -1060,7 +1066,7 @@ including the model to use, the chat history excluding the last user message, an
 
         
 <div class="param-desc">
-    <p>The snake_case and pluralized class name.</p>
+    <p>The converted collection instance name (e.g., 'smart_entities', 'collection')</p>
 </div>
 
 
@@ -1080,6 +1086,12 @@ including the model to use, the chat history excluding the last user message, an
     
 
 
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>collection_instance_name_from('SmartEntity') // Returns 'smart_entities'
+collection_instance_name_from('CollectionItem') // Returns 'collection'</code></pre>
 
 
 
@@ -1213,7 +1225,7 @@ including the model to use, the chat history excluding the last user message, an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line57">line 57</a>
+        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line46">line 46</a>
     </li></ul></dd>
     
 
@@ -1372,7 +1384,7 @@ including the model to use, the chat history excluding the last user message, an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line6">line 6</a>
+        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line8">line 8</a>
     </li></ul></dd>
     
 
@@ -1554,7 +1566,7 @@ including the model to use, the chat history excluding the last user message, an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line26">line 26</a>
+        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line28">line 28</a>
     </li></ul></dd>
     
 
@@ -2137,7 +2149,7 @@ as the input to the next, along with an optional options object.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_Collection.js.html">smart-collections/Collection.js</a>, <a href="smart-collections_Collection.js.html#line272">line 272</a>
+        <a href="smart-collections_utils_sequential_async_processor.js.html">smart-collections/utils/sequential_async_processor.js</a>, <a href="smart-collections_utils_sequential_async_processor.js.html#line12">line 12</a>
     </li></ul></dd>
     
 
@@ -2325,7 +2337,7 @@ as the input to the next, along with an optional options object.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line86">line 86</a>
+        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line75">line 75</a>
     </li></ul></dd>
     
 
@@ -2756,7 +2768,7 @@ as the input to the next, along with an optional options object.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line70">line 70</a>
+        <a href="smart-collections_helpers.js.html">smart-collections/helpers.js</a>, <a href="smart-collections_helpers.js.html#line59">line 59</a>
     </li></ul></dd>
     
 
@@ -2808,7 +2820,7 @@ as the input to the next, along with an optional options object.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Aug 17 2024 13:19:31 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Aug 17 2024 18:52:27 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
