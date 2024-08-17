@@ -107,8 +107,14 @@ export class ObsidianSmartFsAdapter {
    * @param {string} rel_path - The relative path of the file to read
    * @returns {Promise<string>} The contents of the file
    */
-  async read(rel_path) {
-    return await this.obsidian_adapter.read(rel_path);
+  async read(rel_path, encoding) {
+    if(encoding === 'utf-8') return await this.obsidian_adapter.read(rel_path);
+    if(encoding === 'base64'){
+      const array_buffer = await this.obsidian_adapter.readBinary(rel_path, 'base64');
+      const base64 = this.obsidian.arrayBufferToBase64(array_buffer);
+      return base64;
+    }
+    throw new Error(`Unsupported encoding: ${encoding}`);
   }
 
   /**

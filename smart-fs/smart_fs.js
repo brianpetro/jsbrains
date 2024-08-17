@@ -197,7 +197,7 @@ class SmartFs {
    * @param {string} rel_path - The relative path of the directory to create
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async mkdir(rel_path) { return await this.use_adapter('mkdir', [rel_path]); }
+  async mkdir(rel_path, opts={}) { return await this.use_adapter('mkdir', [rel_path], opts); }
 
   /**
    * Check if a file or directory exists
@@ -226,7 +226,7 @@ class SmartFs {
    * @param {string} rel_path - The relative path of the file to read
    * @returns {Promise<string|Buffer>} The contents of the file
    */
-  async read(rel_path) { return await this.use_adapter('read', [rel_path]); }
+  async read(rel_path, encoding='utf-8') { return await this.use_adapter('read', [rel_path], encoding); }
 
   /**
    * Remove a file
@@ -293,6 +293,7 @@ class SmartFs {
     }
     return rel_path.replace(/\/+/g, '/').replace(/^\//, '').replace(/\/$/, '');
   }
+
 }
 
 export { SmartFs };
