@@ -1,4 +1,4 @@
-import { CollectionItem } from './CollectionItem.js';
+import { CollectionItem } from './collection_item.js';
 import { deep_merge } from './helpers.js';
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
@@ -13,12 +13,10 @@ export class Collection {
    */
   constructor(env, opts = {}) {
     this.env = env;
-    // this.brain = this.env; // DEPRECATED: use env instead of brain
     this.config = this.env.config;
     this.items = {};
     this.opts = opts;
     if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
-    this.save_queue = {};
   }
 
   // STATIC METHODS
@@ -108,14 +106,6 @@ export class Collection {
    */
   prepare_filter(filter_opts) { return filter_opts; }
   /**
-   * Retrieves items from the collection based on the provided strategy and options.
-   * @param {Function[]} strategy - The strategy used to retrieve the items.
-   * @param {Object} opts - The options used to retrieve the items.
-   * @return {CollectionItem[]} The retrieved items.
-   * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
-   */
-  async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
-  /**
    * Retrieves a single item from the collection based on the provided strategy and options.
    * @param {String} key - The key of the item to retrieve.
    * @return {CollectionItem} The retrieved item.
@@ -166,9 +156,10 @@ export class Collection {
   }
   /**
    * Deletes an item from the collection based on its key.
+   * Does not trigger save or delete from adapter data.
    * @param {String} key - The key of the item to delete.
    */
-  delete(key) {
+  delete_item(key) {
     delete this.items[key];
   }
   /**
@@ -197,7 +188,12 @@ export class Collection {
    * Gets the class name of the item type the collection manages.
    * @return {String} The item class name.
    */
-  get item_class_name() { return this.constructor.name.slice(0, -1).replace(/(ie)$/g, 'y'); } // remove 's' from end of name & if name ends in 'ie', replace with 'y'
+  get item_class_name() {
+    const name = this.constructor.name;
+    if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; // Entities -> Entity
+    else if (name.endsWith('s')) return name.slice(0, -1); // Sources -> Source
+    else return name + "Item"; // Collection -> CollectionItem
+  }
   /**
    * Gets the name of the item type the collection manages, derived from the class name.
    * @return {String} The item name.
@@ -213,34 +209,20 @@ export class Collection {
    * Gets the data path from the environment.
    * @returns {string} The data path.
    */
-  get data_path() { return this.env.data_path + '/multi'; }
+  get data_path() { return this.env.data_path; }
 
   // ADAPTER METHODS
   /**
    * Saves the current state of the collection.
    */
-  async save() {
-    if(typeof this.adapter?.save === 'function') await this.adapter.save();
-    else console.warn("No save method found in adapter");
-  }
-  debounce_save_queue() {
-    if(this.save_timeout) clearTimeout(this.save_timeout);
-    this.save_timeout = setTimeout(() => {
-      this.adapter._save_queue();
-      this.save_timeout = null;
-    }, 30000);
-  }
+  async save() { await this.adapter.save(); }
+  async save_queue() { await this.adapter.save_queue(); }
+  queue_save(key) { this.adapter.queue_save(key); }
 
   /**
    * Loads the collection state.
    */
-  async load() {
-    if(typeof this.adapter?.load === 'function') return await this.adapter.load();
-    else console.warn("No load method found in adapter");
-  }
-
-  // BACKWARD COMPATIBILITY
-  get LTM() { return this.adapter; }
+  async load() { await this.adapter.load(); }
 
   // UTILITY METHODS
   /**
@@ -257,32 +239,12 @@ export class Collection {
       current_class = Object.getPrototypeOf(current_class);
     }
   }
-}
-
-/**
- * Sequentially executes an array of asynchronous functions, passing the result of each function
- * as the input to the next, along with an optional options object.
- * 
- * @param {Function[]} funcs - An array of functions to execute sequentially (may be async functions).
- * @param {*} initial_value - The initial value to pass to the first function in the array.
- * @param {Object} opts - Optional parameters to pass to each function.
- * @returns {*} The final value after all functions have been executed.
- * @throws {Error} Throws an error if any function in the array is not actually a function or if an async function throws an error.
- */
-export async function sequential_async_processor(funcs, initial_value, opts = {}) {
-  let value = initial_value;
-  for (const func of funcs) {
-    // Ensure each element is a function before attempting to call it
-    if (typeof func !== 'function') {
-      throw new TypeError('All elements in async_functions array must be functions');
-    }
-    try {
-      value = await func(value, opts);
-    } catch (error) {
-      // console.error("Error encountered during sequential processing:", error);
-      throw error; // Rethrow to halt execution, or handle differently if continuation is desired
-    }
-  }
-
-  return value;
+  // /**
+  //  * Retrieves items from the collection based on the provided strategy and options.
+  //  * @param {Function[]} strategy - The strategy used to retrieve the items.
+  //  * @param {Object} opts - The options used to retrieve the items.
+  //  * @return {CollectionItem[]} The retrieved items.
+  //  * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
+  //  */
+  // async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
 }

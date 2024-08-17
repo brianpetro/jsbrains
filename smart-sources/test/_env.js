@@ -13,12 +13,12 @@ export function load_test_env(t) {
       SmartBlock: SmartBlock,
     },
     main: {
-      read_file: async (path) => {
-        return t.context.mock_env.smart_fs.read(path);
-      },
-      get_tfile: (path) => {
-        return { stat: { mtime: Date.now(), size: 33 }, extension: 'md' };
-      },
+      // read_file: async (path) => {
+      //   return t.context.mock_env.smart_fs.read(path);
+      // },
+      // get_tfile: (path) => {
+      //   return { stat: { mtime: Date.now(), size: 33 }, extension: 'md' };
+      // },
       get_link_target_path: (target, file_path) => {
         return target;
       },

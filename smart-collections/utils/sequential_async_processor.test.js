@@ -1,5 +1,5 @@
 import test from 'ava';
-import { sequential_async_processor } from './Collection.js';
+import { sequential_async_processor } from './sequential_async_processor.js';
 
 // Define some sample functions to be used in the tests
 const addOne = async (value) => value + 1;

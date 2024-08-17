@@ -59,7 +59,6 @@ export class SmartSource extends SmartEntity {
   get excluded_lines() {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
-  async get_content() { return await this.env.main.read_file(this.data.path); } // DECPRECATE for this.read?
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
     let content = await this.get_content(); // get content from file
@@ -298,7 +297,7 @@ export class SmartSource extends SmartEntity {
     if(!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
     // should read and re-parse content to make sure all blocks are up to date
     await this.parse_content();
-    // get content for each block (SMart CHunks currently returns embed_input format 2024-08-09)
+    // get content for each block (Smart Chunks currently returns embed_input format 2024-08-09)
     blocks.forEach(block => {
       block.content = content
         .split("\n")
@@ -348,11 +347,9 @@ export class SmartSource extends SmartEntity {
             after: ""
           });
         }
-        // await this.update(all, { skip_wrap_changes: true });
         await this._update(all);
       }else{
         await this._update(content);
-        // await this.update(content);
       }
     }
     else{
@@ -406,4 +403,9 @@ export class SmartSource extends SmartEntity {
     return false;
   }
 
+  // DEPRECATED methods
+  /**
+   * @deprecated Use this.read() instead
+   */
+  async get_content() { return await this._read(); }
 }

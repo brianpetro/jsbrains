@@ -1,0 +1,29 @@
+{
+  "CollectionItem:root_item_1": {
+    "key": "root_item_1"
+  },
+  "CollectionItem:root_item_2": {
+    "key": "root_item_2"
+  },
+  "CollectionItem:root_item_3": {
+    "key": "root_item_3"
+  },
+  "CollectionItem:test_dir_1/item_1": {
+    "key": "test_dir_1/item_1"
+  },
+  "CollectionItem:test_dir_1/item_2": {
+    "key": "test_dir_1/item_2"
+  },
+  "CollectionItem:test_dir_1/item_3": {
+    "key": "test_dir_1/item_3"
+  },
+  "CollectionItem:test_dir_2/item_1": {
+    "key": "test_dir_2/item_1"
+  },
+  "CollectionItem:test_dir_2/item_2": {
+    "key": "test_dir_2/item_2"
+  },
+  "CollectionItem:test_dir_2/item_3": {
+    "key": "test_dir_2/item_3"
+  }
+}

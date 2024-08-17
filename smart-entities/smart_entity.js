@@ -1,4 +1,4 @@
-import { CollectionItem } from "smart-collections/CollectionItem.js";
+import { CollectionItem } from "smart-collections";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 
 export class SmartEntity extends CollectionItem {

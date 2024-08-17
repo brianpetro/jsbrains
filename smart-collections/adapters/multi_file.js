@@ -1,19 +1,12 @@
 import { ajson_merge } from '../utils/ajson_merge.js';
+import { SmartCollectionAdapter } from './_adapter.js';
+export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
 
-export class MultiFileSmartCollectionsAdapter {
-  constructor(collection) {
-    this.collection = collection;
-    this.env = this.collection.env;
-    this.save_timeout = null;
-  }
   get fs() { return this.collection.fs; }
-
-  get items() { return this.collection.items; }
-
   /**
    * @returns {string} The data path for folder that contains .ajson files.
    */
-  get data_path() { return this.collection.data_path; }
+  get data_path() { return this.collection.data_path + '/multi'; }
 
   /**
    * Asynchronously loads collection items from .ajson files within the specified data path.
@@ -88,31 +81,16 @@ export class MultiFileSmartCollectionsAdapter {
     console.log("Loaded collection items in " + time + "ms");
   }
 
-  add_to_collection(entity) {
-    this.env[entity.collection_name].items[entity.key] = entity;
-  }
-
-  /**
-   * Schedules a save operation to prevent multiple saves happening at the same time.
-   */
-  save() {
-    if(this.save_timeout) clearTimeout(this.save_timeout);
-    this.save_timeout = setTimeout(() => { this._save_queue(); }, 3000);
-  }
-
-  /**
-   * Asynchronously saves modified collection items to their respective .ajson files.
-   * @param {boolean} [force=false] - Forces the save operation even if it's currently flagged as saving.
-   */
-  async _save(key) {
+  async save_item(key) {
     delete this.collection.save_queue[key];
     const item = this.collection.get(key);
-    if(!item) return console.warn("Item not found: " + key);
+    if(!item) return console.warn(`Item not found: ${key}, aborting save`);
     if(!(await this.fs.smart_env_data.exists(this.data_path))) await this.fs.smart_env_data.mkdir(this.data_path);
     try {
       const item_file_path = `${this.data_path}/${item.multi_ajson_file_name}.ajson`; // Use item.file_name for file naming
       if(item.deleted){
-        delete this.collection.items[key];
+        // delete this.collection.items[key];
+        this.collection.delete_item(key);
         if((await this.fs.smart_env_data.exists(item_file_path))){
           await this.fs.smart_env_data.remove(item_file_path);
           console.log("Deleted entity: " + key);
@@ -129,20 +107,11 @@ export class MultiFileSmartCollectionsAdapter {
     }
   }
 
-
-  async _save_queue() {
-    if(this._saving) return console.log("Already saving");
-    this._saving = true; // prevent multiple saves at once
-    setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
+  // override save_queue to log time
+  async save_queue() {
     console.log("Saving " + this.collection.collection_name);
     const start = Date.now();
-    const batch_items = [];
-    for (const key of Object.keys(this.collection.save_queue)) {
-      batch_items.push(this._save(key));
-    }
-    await Promise.all(batch_items);
-    this._saving = false;
-    this.collection.save_queue = {};
+    await super.save_queue();
     console.log(`Saved ${batch_items.length} ${this.collection.collection_name} in ${Date.now() - start}ms`);
   }
 }

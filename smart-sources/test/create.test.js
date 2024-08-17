@@ -1,9 +1,6 @@
 import test from 'ava';
 import { load_test_env } from './_env.js';
-
-test.beforeEach(t => {
-  load_test_env(t);
-});
+test.beforeEach(t => { load_test_env(t); });
 
 test.serial('SmartSources create', async t => {
   const env = t.context.mock_env;

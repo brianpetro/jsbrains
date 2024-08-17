@@ -1,4 +1,5 @@
-import { create_uid, deep_merge, collection_instance_name_from } from './helpers.js';
+import { create_uid, deep_merge } from './helpers.js';
+import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 
 /**
  * Represents an item within a collection, providing methods for data manipulation, validation, and interaction with its collection.
@@ -23,7 +24,7 @@ export class CollectionItem {
    */
   constructor(env, data = null) {
     this.env = env;
-    this.brain = this.env; // DEPRECATED
+    // this.brain = this.env; // DEPRECATED
     this.config = this.env?.config;
     this.merge_defaults();
     if (data) this.data = data;
@@ -49,7 +50,7 @@ export class CollectionItem {
    * @returns {string} The unique key.
    */
   get_key() {
-    console.log("called default get_key");
+    // console.log("called default get_key");
     return create_uid(this.data);
   }
   // update_data - for data in this.data
@@ -60,8 +61,11 @@ export class CollectionItem {
    */
   update_data(data) {
     data = JSON.stringify(data, this.update_data_replacer);
-    if(data === JSON.stringify(this.data)) return false; // unchanged
-    deep_merge(this.data, JSON.parse(data)); // deep merge data
+    data = JSON.parse(data);
+    const data_entries = Object.entries(data);
+    const changed = data_entries.some(([key, value]) => this.data[key] !== value);
+    if(!changed) return false; // return false if no changes
+    deep_merge(this.data, data); // deep merge data
     return true; // return true if data changed (default true)
   }
 
@@ -95,10 +99,7 @@ export class CollectionItem {
     this.queue_save();
     this.collection.save(); // save collection
   }
-  queue_save() {
-    this.collection.save_queue[this.key] = true;
-    this.collection.debounce_save_queue();
-  }
+  queue_save() { this.collection.queue_save(this.key); }
 
   /**
    * Validates the item's data before saving.
@@ -106,7 +107,7 @@ export class CollectionItem {
    */
   validate_save() {
     if(!this.key) return false;
-    if(this.key === '') return false;
+    if(this.key.trim() === '') return false;
     if(this.key === 'undefined') return false;
     return true;
   }

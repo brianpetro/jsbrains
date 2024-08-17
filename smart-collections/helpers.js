@@ -1,3 +1,5 @@
+import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
+export { collection_instance_name_from };
 /**
  * Creates a unique identifier for the given data without using cryptographic methods.
  * @param {Object} data - The data object to create a UID for.
@@ -33,19 +35,6 @@ export function deep_merge(target, source) {
   }
   return target;
   function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
-}
-
-/**
- * Converts a class name from camelCase to snake_case and makes plural forms.
- * @param {string} class_name - The class name to convert.
- * @returns {string} The snake_case and pluralized class name.
- */
-export function collection_instance_name_from(class_name) {
-  return class_name
-    .replace(/([a-z])([A-Z])/g, '$1_$2') // convert camelCase to snake_case
-    .toLowerCase() // convert to lowercase
-    .replace(/y$/, 'ie') // ex. summaries
-    + 's';
 }
 
 /**

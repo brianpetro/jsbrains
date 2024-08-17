@@ -1,4 +1,4 @@
-import { Collection } from "smart-collections/Collection.js";
+import { Collection } from "smart-collections";
 import { top_acc } from "./top_acc.js";
 import { cos_sim } from "./cos_sim.js";
 
@@ -8,7 +8,7 @@ export class SmartEntities extends Collection {
     this.env = env; // env is the brain (brain is Deprecated)
     this.model_instance_id = null;
   }
-  async _save() { await this.adapter._save_queue(); } // async b/c Obsidian API is async
+  // async _save() { await this.adapter._save_queue(); } // async b/c Obsidian API is async
   unload() {
     if (typeof this.smart_embed?.unload === 'function') {
       this.smart_embed.unload();
