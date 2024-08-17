@@ -95,7 +95,10 @@ export class CollectionItem {
     this.queue_save();
     this.collection.save(); // save collection
   }
-  queue_save() { this.collection.save_queue[this.key] = true; }
+  queue_save() {
+    this.collection.save_queue[this.key] = true;
+    this.collection.debounce_save_queue();
+  }
 
   /**
    * Validates the item's data before saving.

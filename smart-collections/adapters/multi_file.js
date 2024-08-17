@@ -128,6 +128,8 @@ export class MultiFileSmartCollectionsAdapter {
       item.queue_save();
     }
   }
+
+
   async _save_queue() {
     if(this._saving) return console.log("Already saving");
     this._saving = true; // prevent multiple saves at once

@@ -223,6 +223,13 @@ export class Collection {
     if(typeof this.adapter?.save === 'function') await this.adapter.save();
     else console.warn("No save method found in adapter");
   }
+  debounce_save_queue() {
+    if(this.save_timeout) clearTimeout(this.save_timeout);
+    this.save_timeout = setTimeout(() => {
+      this.adapter._save_queue();
+      this.save_timeout = null;
+    }, 30000);
+  }
 
   /**
    * Loads the collection state.
