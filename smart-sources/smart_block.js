@@ -30,14 +30,14 @@ export class SmartBlock extends SmartEntity {
     if(this.smart_embed && this.is_unembedded) this.smart_embed.embed_entity(this);
   }
   async get_content() {
-    if (!this.note) return null;
+    if (!this.source) return null;
     try {
       if (this.has_lines) { // prevents full parsing of note if not needed
-        const all_lines = await this.note.get_content();
+        const all_lines = await this.source.get_content();
         const block_content = all_lines.split("\n").slice(this.line_start, this.line_end + 1).join("\n");
         return block_content;
       }
-      const block_content = await this.env.smart_chunks.get_block_from_path(this.data.path, this.note);
+      const block_content = await this.env.smart_chunks.get_block_from_path(this.data.path, this.source);
       return block_content;
     } catch (e) {
       console.log("error getting block content for ", this.data.path, ": ", e);
@@ -63,8 +63,8 @@ export class SmartBlock extends SmartEntity {
   get folder() { return this.data.path.split("/").slice(0, -1).join("/"); }
   get is_block() { return this.data.path.includes("#"); }
   get is_gone() {
-    if (!this.note?.t_file) return true; // gone if missing entity or file
-    if (!this.note.last_history.blocks[this.key]) return true;
+    if (!this.source?.t_file) return true; // gone if missing entity or file
+    if (!this.source.last_history.blocks[this.key]) return true;
     return false;
   }
   // use text length to detect changes
@@ -73,7 +73,7 @@ export class SmartBlock extends SmartEntity {
   get next_block() {
     if (!this.data.lines) return null;
     const next_line = this.data.lines[1] + 1;
-    return this.note.blocks?.find(block => next_line === block.data?.lines?.[0]);
+    return this.source.blocks?.find(block => next_line === block.data?.lines?.[0]);
   }
   get line_start() { return this.data.lines[0]; }
   get line_end() { return this.data.lines[1]; }
