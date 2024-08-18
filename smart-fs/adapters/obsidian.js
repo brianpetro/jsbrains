@@ -60,6 +60,24 @@ export class ObsidianSmartFsAdapter {
   async list(rel_path, opts={}) {
     if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
+    if(rel_path.includes('.')){ 
+      // const {files} = await this.obsidian_adapter.list(rel_path);
+      const {files: file_paths} = await this.obsidian_adapter.list(rel_path);
+      // const files = await Promise.all(file_paths.map(async file_path => {
+      //   return await this.obsidian_app.vault.getFileByPath(file_path);
+      // }));
+      const files = file_paths.map(file_path => {
+        const file_name = file_path.split('/').pop();
+        const file = {
+          basename: file_name.split('.')[0],
+          extension: file_name.split('.').pop(),
+          name: file_name,
+          path: file_path,
+        };
+        return file;
+      });
+      return files;
+    }
     const files = this.obsidian_app.vault.getAllLoadedFiles()
       .filter((file) => {
         const last_slash = file.path.lastIndexOf('/');
@@ -71,6 +89,7 @@ export class ObsidianSmartFsAdapter {
     ;
     return files;
   }
+  // NOTE: currently does not handle hidden files and folders
   async list_recursive(rel_path, opts={}) {
     if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
