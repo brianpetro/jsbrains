@@ -61,11 +61,7 @@ export class ObsidianSmartFsAdapter {
     if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
     if(rel_path.includes('.')){ 
-      // const {files} = await this.obsidian_adapter.list(rel_path);
       const {files: file_paths} = await this.obsidian_adapter.list(rel_path);
-      // const files = await Promise.all(file_paths.map(async file_path => {
-      //   return await this.obsidian_app.vault.getFileByPath(file_path);
-      // }));
       const files = file_paths.map(file_path => {
         const file_name = file_path.split('/').pop();
         const file = {
