@@ -60,6 +60,7 @@ export class ObsidianSmartFsAdapter {
   async list(rel_path, opts={}) {
     if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
+    // handle hidden files and folders (getAllLoadedFiles excludes hidden files and folders)
     if(rel_path.includes('.')){ 
       const {files: file_paths} = await this.obsidian_adapter.list(rel_path);
       const files = file_paths.map(file_path => {
