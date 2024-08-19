@@ -37,17 +37,13 @@ export class SmartSource extends SmartEntity {
   }
   find_connections(opts={}) {
     let connections = super.find_connections(opts);
-    const {limit = 50} = this.find_connections_opts; // super modifies opts and sets this.find_connections_opts
+    const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
     if(!opts.exclude_blocks_from_source_connections && this.median_block_vec){
       const cache_key = this.key + "_blocks";
       if(!this.env.connections_cache[cache_key]){
-        opts.entity = this;
-        const nearest_blocks = this.env.smart_blocks.nearest(this.median_block_vec, this.find_connections_opts);
-        this.env.connections_cache[cache_key] = (
-          nearest_blocks
-          .sort(sort_by_score)
-          .slice(0, limit)
-        );
+        const nearest = this.env.smart_blocks.nearest(this.median_block_vec, this.filter_opts)
+        nearest.sort(sort_by_score)
+        this.env.connections_cache[cache_key] = nearest.slice(0, limit);
       }
       connections = [
         ...connections,

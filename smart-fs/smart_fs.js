@@ -197,7 +197,7 @@ class SmartFs {
    * @param {string} rel_path - The relative path of the directory to create
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async mkdir(rel_path, opts={}) { return await this.use_adapter('mkdir', [rel_path], opts); }
+  async mkdir(rel_path, opts={recursive: true}) { return await this.use_adapter('mkdir', [rel_path], opts); }
 
   /**
    * Check if a file or directory exists
@@ -280,7 +280,7 @@ class SmartFs {
       append: async (rel_path, content) => await this.adapter.append(this.ensure_smart_env_data_path(rel_path), content),
       exists: async (rel_path) => await this.adapter.exists(this.ensure_smart_env_data_path(rel_path)),
       list: async (rel_path) => await this.adapter.list(this.ensure_smart_env_data_path(rel_path)),
-      mkdir: async (rel_path, opts={}) => await this.adapter.mkdir(this.ensure_smart_env_data_path(rel_path), opts),
+      mkdir: async (rel_path, opts={recursive: true}) => await this.adapter.mkdir(this.ensure_smart_env_data_path(rel_path), opts),
       read: async (rel_path, encoding='utf-8') => await this.adapter.read(this.ensure_smart_env_data_path(rel_path), encoding),
       remove_dir: async (rel_path) => await this.adapter.remove_dir(this.ensure_smart_env_data_path(rel_path)),
       remove: async (rel_path) => await this.adapter.remove(this.ensure_smart_env_data_path(rel_path)),

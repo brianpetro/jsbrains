@@ -91,8 +91,8 @@ export class Collection {
    * @param {Object} filter_opts - The options used to filter the items.
    * @return {CollectionItem[]} The filtered items.
    */
-  filter(filter_opts) {
-    filter_opts = this.prepare_filter(filter_opts);
+  filter(filter_opts={}) {
+    this.filter_opts = this.prepare_filter(filter_opts);
     return Object.entries(this.items).filter(([key, item]) => item.filter(filter_opts)).map(([key, item]) => item);
   }
   // alias for filter

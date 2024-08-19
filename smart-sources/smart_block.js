@@ -68,7 +68,20 @@ export class SmartBlock extends SmartEntity {
     return false;
   }
   // use text length to detect changes
-  get name() { return (!this.env.main.settings.show_full_path ? this.data.path.split("/").pop() : this.data.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
+  get name() {
+    const source_key = this.data.path.split("#")[0];
+    const file_name = source_key.split("/").pop().replace(".md", "");
+    const block_parts = this.data.path.split("#").slice(1);
+    
+    if (this.env.main.settings.show_full_path) {
+      return [...path_parts, ...block_parts].join(" > ");
+    } else {
+      // should return file_name and last non-bracket (i.e. {n}) heading
+      let last_heading = block_parts.pop();
+      if(last_heading.startsWith("{") && last_heading.endsWith("}")) last_heading = block_parts.pop();
+      return file_name + " > " + last_heading;
+    }
+  }
   // uses data.lines to get next block
   get next_block() {
     if (!this.data.lines) return null;

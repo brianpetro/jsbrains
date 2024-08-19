@@ -109,7 +109,7 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the directory to create
    * @returns {Promise<void>}
    */
-  async mkdir(rel_path) { return await this.mkdir(rel_path); }
+  async mkdir(rel_path, opts={}) { return await this.mkdir(rel_path, opts); }
 
   /**
    * Check if a file or directory exists

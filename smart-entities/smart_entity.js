@@ -22,17 +22,33 @@ export class SmartEntity extends CollectionItem {
   async get_embed_input() { } // override in child class
   // find_connections v2 (smart action)
   find_connections(opts={}) {
-    this.find_connections_opts = {
+    this.filter_opts = {
       ...(this.env.settings.smart_view_filter || {}),
       ...opts,
       entity: this,
     };
     const {limit = 50} = opts;
+    if(!this.env.connections_cache) this.env.connections_cache = {};
     if(!this.env.connections_cache[this.key]){
-      const nearest = this.nearest(this.find_connections_opts);
-      this.env.connections_cache[this.key] = nearest.sort(sort_by_score);
+      console.log("finding connections for", this.key);
+      const connections = this.nearest(this.filter_opts)
+        .sort(sort_by_score)
+        .slice(0, limit)
+      ;
+      this.connections_to_cache(this.key, connections);
     }
-    return this.env.connections_cache[this.key].slice(0, limit);
+    return this.connections_from_cache(this.key);
+  }
+  connections_from_cache(cache_key) {
+    return this.env.connections_cache[cache_key].map(cache_item => {
+      cache_item.item.score = cache_item.score;
+      return cache_item.item;
+    });
+  }
+  connections_to_cache(cache_key, connections) {
+    this.env.connections_cache[cache_key] = connections
+      .map(item => ({score: item.score, item}))
+    ;
   }
 
   // getters
