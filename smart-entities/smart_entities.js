@@ -181,23 +181,13 @@ export class SmartEntities extends Collection {
     const results = embeddings.flatMap((embedding, i) => {
       return this.nearest(embedding.vec, filter);
     });
-    // console.log(results);
-    // sort by sim sim desc
-    results.sort(sort_by_score);
-    // get top K results
     const k = params.k || this.env.config.lookup_k || 10;
-    let top_k = await Promise.all(results
-      // filter duplicates by r.data.path
+    const top_k = results
+      .sort(sort_by_score)
       .filter((r, i, a) => a.findIndex(t => t.data.path === r.data.path) === i)
       .slice(0, k)
-      .map(async r => {
-        return {
-          score: r.sim,
-          path: r.data.path,
-        };
-      })
-    );
-    // DO: decided whether to use these functions
+    ;
+    // DO: decided how to re-implement these functions
     // console.log("nearest before std dev slice", top_k.length);
     // top_k = get_nearest_until_next_dev_exceeds_std_dev(top_k); // tested
     // console.log("nearest after std dev slice", top_k.length);
