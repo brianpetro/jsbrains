@@ -22,28 +22,6 @@ export class Collection {
     this.merge_defaults();
   }
 
-  // // STATIC METHODS
-  // /**
-  //  * Loads a collection based on the environment and optional configuration.
-  //  * @param {Object} env - The environment context.
-  //  * @param {Object} [config={}] - Optional configuration for the collection.
-  //  * @returns {Promise<Collection>|Collection} The loaded collection instance.
-  //  */
-  // static load(env, opts = {}) {
-  //   if(typeof opts.adapter_class?.load === 'function') return opts.adapter_class.load(env, opts);
-  //   // if no static load method in adapter_class, load collection as normal
-  //   const { custom_collection_name } = opts;
-  //   env[this.collection_name] = new this(env, opts);
-  //   if (custom_collection_name) {
-  //     env[this.collection_name].collection_name = custom_collection_name;
-  //     env.collections[custom_collection_name] = this.constructor;
-  //   }
-  //   env[this.collection_name].merge_defaults();
-  //   // return promise if async
-  //   if (env[this.collection_name].load instanceof AsyncFunction) return env[this.collection_name].load().then(() => env[this.collection_name]);
-  //   else env[this.collection_name].load();
-  //   return env[this.collection_name];
-  // }
   /**
    * Gets the collection name derived from the class name.
    * @return {String} The collection name.
@@ -211,10 +189,19 @@ export class Collection {
 
   /**
    * Gets the data path from the environment.
+   * @deprecated use env.settings.smart_env_data_folder
    * @returns {string} The data path.
    */
-  get data_path() { return this.env.data_path; }
+  get data_path() { return this.env.data_path; } // DEPRECATED
 
+  get fs() {
+    if(!this.smart_fs) this.smart_fs = new this.env.smart_fs_class(this.env, {
+      adapter: this.env.smart_fs_adapter_class,
+      exclude_patterns: this.env.excluded_patterns,
+      smart_env_data_folder: this.env.settings.smart_env_data_folder
+    });
+    return this.smart_fs;
+  }
   // ADAPTER METHODS
   /**
    * Saves the current state of the collection.

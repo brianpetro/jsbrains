@@ -10,6 +10,7 @@ export class SmartEntities extends Collection {
     this.model_instance_id = null;
   }
   async init() {
+    await super.init();
     this.smart_chunks = new this.env.smart_chunks_class(this, {
       ...this.env.settings,
       skip_blocks_with_headings_only: true
@@ -202,10 +203,5 @@ export class SmartEntities extends Collection {
     console.log(top_k);
     console.log(`Found and returned ${top_k.length} ${this.collection_name}.`);
     return top_k;
-  }
-  // Smart Sources (should be moved to SmartSources module, inherited by SmartSources and SmartBlocks)
-  get fs() {
-    if(this.opts?.env_path) return this.env.smart_fs[this.opts.env_path] || this.env.fs;
-    return this.env.fs;
   }
 }

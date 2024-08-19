@@ -6,7 +6,8 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
   /**
    * @returns {string} The data path for folder that contains .ajson files.
    */
-  get data_path() { return this.collection.data_path + '/multi'; }
+  // get data_path() { return this.collection.data_path + '/multi'; }
+  get data_path() { return this.env.settings.smart_env_data_folder + '/multi'; }
 
   /**
    * Asynchronously loads collection items from .ajson files within the specified data path.

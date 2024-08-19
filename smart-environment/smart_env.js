@@ -19,15 +19,13 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import { SmartEnvSettings } from './smart_env_settings.js';
 export class SmartEnv {
   constructor(main, opts={}) {
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main; // ex. smart_connections_plugin
     this[main_name+"_opts"] = opts;
     this.mains = [main_name];
-    Object.assign(this, opts);
-    this.loading_collections = false;
-    this.collections_loaded = false;
     /**
      * @deprecated Use this.main_class_name instead of this.plugin
      */
@@ -36,40 +34,82 @@ export class SmartEnv {
      * @deprecated Use this.main_class_name instead of this.plugin
      */
     this.plugin = this.main; // DEPRECATED in favor of main
+    Object.assign(this, opts);
+    this.loading_collections = false;
+    this.collections_loaded = false;
+    this.smart_env_settings = new SmartEnvSettings(this, {
+      env_path: opts.env_path || '/',
+      smart_env_data_folder: opts.smart_env_data_folder
+    });
   }
-  static create(main, opts={}) {
-    const global_ref = opts.global_ref || window || global;
-    const existing_smart_env = global_ref.smart_env;
-    if(existing_smart_env) {
-      const main_name = camel_case_to_snake_case(main.constructor.name);
-      existing_smart_env[main_name] = main;
-      existing_smart_env.mains.push(main_name);
-      Object.keys(opts).forEach(key => {
-        if(typeof opts[key] === 'object'){
-          if(Array.isArray(opts[key])){
-            existing_smart_env[key] = [
-              ...(existing_smart_env[key] || []),
-              ...opts[key]
-            ];
-          } else if(opts[key] !== null) {
-            existing_smart_env[key] = {
-              ...(existing_smart_env[key] || {}),
-              ...opts[key]
-            }
-          }
-        } else {
-          if(existing_smart_env[key]) console.warn(`SmartEnv: Overwriting existing property ${key} with ${opts[key]}`);
-          existing_smart_env[key] = opts[key];
-        }
-      });
-      global_ref.smart_env = existing_smart_env;
-    }else {
-      global_ref.smart_env = new this(main, opts);
+  /**
+   * Creates or updates a SmartEnv instance.
+   * @param {Object} main - The main object to be added to the SmartEnv instance.
+   * @param {Object} [opts={}] - Options for configuring the SmartEnv instance.
+   * @param {Object} [opts.global_ref] - Custom global reference (e.g., for testing).
+   * @returns {SmartEnv} The SmartEnv instance.
+   * @throws {TypeError} If an invalid main object is provided.
+   * @throws {Error} If there's an error creating or updating the SmartEnv instance.
+   */
+  static create(main, opts = {}) {
+    if (!main || typeof main !== 'object'){ // || typeof main.constructor !== 'function') {
+      throw new TypeError('SmartEnv: Invalid main object provided');
     }
-    main.env = global_ref.smart_env;
-    return global_ref.smart_env;
+
+    const global_ref = opts.global_ref || (typeof window !== 'undefined' ? window : global);
+    let smart_env = global_ref.smart_env;
+
+    try {
+      if (!smart_env) {
+        smart_env = new this(main, opts);
+        global_ref.smart_env = smart_env;
+      } else {
+        smart_env.add_main(main, opts);
+      }
+
+      main.env = smart_env;
+      return smart_env;
+    } catch (error) {
+      console.error('SmartEnv: Error creating or updating SmartEnv instance', error);
+      throw error;
+    }
   }
+
+  /**
+   * Adds a new main object to the SmartEnv instance.
+   * @param {Object} main - The main object to be added.
+   * @param {Object} [opts={}] - Options to be merged into the SmartEnv instance.
+   */
+  add_main(main, opts = {}) {
+    const main_name = camel_case_to_snake_case(main.constructor.name);
+    this[main_name] = main;
+    this.mains.push(main_name);
+    this.merge_options(opts);
+  }
+
+  /**
+   * Merges provided options into the SmartEnv instance.
+   * @param {Object} opts - Options to be merged.
+   */
+  merge_options(opts) {
+    for (const [key, value] of Object.entries(opts)) {
+      if (typeof value === 'object' && value !== null) {
+        if (Array.isArray(value)) {
+          this[key] = [...(this[key] || []), ...value];
+        } else {
+          this[key] = { ...(this[key] || {}), ...value };
+        }
+      } else {
+        if (this[key] !== undefined) {
+          console.warn(`SmartEnv: Overwriting existing property ${key} with ${value}`);
+        }
+        this[key] = value;
+      }
+    }
+  }
+
   async init() {
+    await this.smart_env_settings.load();
     await this.ready_to_load_collections();
     await this.init_collections();
     await this.load_collections();
@@ -127,14 +167,15 @@ export class SmartEnv {
   }
   // NEEDS REVIEW:
   get settings() {
-    const settings = {};
-    this.mains.forEach(main => {
-      if(!settings[main]) settings[main] = {};
-      Object.keys(this[main].settings || {}).forEach(setting => {
-        settings[main][setting] = this[main].settings[setting];
-      });
-    });
-    return settings;
+    return this.smart_env_settings._settings;
+    // const settings = {};
+    // this.mains.forEach(main => {
+    //   if(!settings[main]) settings[main] = {};
+    //   Object.keys(this[main].settings || {}).forEach(setting => {
+    //     settings[main][setting] = this[main].settings[setting];
+    //   });
+    // });
+    // return settings;
   }
 }
 
@@ -142,6 +183,7 @@ function camel_case_to_snake_case(str) {
   const result = str
     .replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`)
     .replace(/^_/, '') // remove leading underscore
+    .replace(/2$/, '') // remove trailing 2 (bundled subclasses)
   ;
   return result;
 }

@@ -31,8 +31,10 @@ class SmartSettings {
     this.views = opts.views || this.env.views;
     this.templates = this.env.templates; // DEPRECATED in favor of views
   }
-  get settings() { return this.main.settings; }
-  set settings(settings) { this.main.settings = settings; }
+  // get settings() { return this.main.settings; }
+  // set settings(settings) { this.main.settings = settings; }
+  get settings() { return this.env.settings; }
+  set settings(settings) { this.env.settings = settings; }
   async render() {
     const view_data = (typeof this.get_view_data === "function") ? await this.get_view_data() : this.view_data;
     this.render_template(view_data);
@@ -56,8 +58,9 @@ class SmartSettings {
     } else {
       settings[setting] = (typeof value === "string") ? value.trim() : value;
     }
-    this.settings = settings;
-    await this.main.save_settings(true);
+    // this.settings = settings;
+    // await this.main.save_settings(true);
+    await this.env.smart_env_settings.save(settings);
   }
   render_components() {
     if(!this.main.obsidian.Setting) console.warn("missing Obsidian Setting component");
