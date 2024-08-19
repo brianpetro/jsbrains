@@ -129,8 +129,14 @@ class SmartFs {
    * @returns {boolean} True if the path is ignored, false otherwise
    */
   is_excluded(_path) {
-    if (!this.excluded_patterns.length) return false;
-    return this.excluded_patterns.some(pattern => pattern.match(_path));
+    try {
+      if (!this.excluded_patterns.length) return false;
+      return this.excluded_patterns.some(pattern => pattern.match(_path));
+    } catch(e) {
+      console.error(`Error checking if path is excluded: ${e.message}`);
+      console.error(`Path: `, _path);
+      throw e;
+    }
   }
 
   /**
@@ -263,6 +269,7 @@ class SmartFs {
 
   /**
    * Write content to a file
+   * Should handle when target path is within a folder that doesn't exist
    * 
    * @param {string} rel_path - The relative path of the file to write to
    * @param {string|Buffer} content - The content to write

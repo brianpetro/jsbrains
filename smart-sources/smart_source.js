@@ -17,14 +17,28 @@ export class SmartSource extends SmartEntity {
     if(this.is_unembedded) this.smart_embed.embed_entity(this);
   }
   async parse_content() {
-    const content = await this.get_content();
+    const content = await this.read();
     const hash = await create_hash(content); // update hash
+    // if (hash !== this.last_history?.hash) {
+    //   this.data.history.push({ blocks: {}, mtime: this.t_file.stat.mtime, size: this.t_file.stat.size, hash }); // add history entry
+    //   this.data.embeddings = {}; // clear embeddings
+    // } else {
+    //   this.last_history.mtime = this.t_file.stat.mtime; // update mtime
+    //   this.last_history.size = this.t_file.stat.size; // update size
+    //   if(!this.last_history.blocks) this.last_history.blocks = {};
+    // }
+    const file_stat = await this.fs.stat(this.data.path);
     if (hash !== this.last_history?.hash) {
-      this.data.history.push({ blocks: {}, mtime: this.t_file.stat.mtime, size: this.t_file.stat.size, hash }); // add history entry
+      this.data.history.push({
+        blocks: {},
+        mtime: file_stat.mtime,
+        size: file_stat.size,
+        hash
+      }); // add history entry
       this.data.embeddings = {}; // clear embeddings
     } else {
-      this.last_history.mtime = this.t_file.stat.mtime; // update mtime
-      this.last_history.size = this.t_file.stat.size; // update size
+      this.last_history.mtime = file_stat.mtime; // update mtime
+      this.last_history.size = file_stat.size; // update size
       if(!this.last_history.blocks) this.last_history.blocks = {};
     }
     const { blocks, outlinks } = await this.env.smart_chunks.parse(this);
@@ -121,7 +135,8 @@ export class SmartSource extends SmartEntity {
     ].join("\n");
   }
   get file_path() { return this.data.path; }
-  get file_type() { return this.t_file.extension; }
+  // get file_type() { return this.t_file.extension; }
+  get file_type() { return this.file_path.split(".").pop(); }
   get outlink_paths() {
     return (this.data.outlinks || [])
       .filter(link => !link.target.startsWith("http"))

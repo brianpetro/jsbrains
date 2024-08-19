@@ -1,5 +1,5 @@
-import fs, { Dirent } from 'fs';
-import path, { basename } from 'path';
+import fs from 'fs';
+import path from 'path';
 const fs_promises = fs.promises;
 
 /**
@@ -71,7 +71,7 @@ export class NodeFsSmartFsAdapter {
   appendFileSync = this.#wrap_sync_method(fs.appendFileSync);
   // exists = this.#wrapMethod(fsPromises.access); // better handled by custom exists method
   existsSync = this.#wrap_sync_method(fs.existsSync);
-  mkdir = this.#wrap_method(fs_promises.mkdir);
+  #mkdir = this.#wrap_method(fs_promises.mkdir);
   mkdirSync = this.#wrap_sync_method(fs.mkdirSync);
   readdir = this.#wrap_method(fs_promises.readdir);
   readdirSync = this.#wrap_sync_method(fs.readdirSync);
@@ -79,13 +79,13 @@ export class NodeFsSmartFsAdapter {
   readFileSync = this.#wrap_sync_method(fs.readFileSync);
   realpath = this.#wrap_method(fs_promises.realpath);
   realpathSync = this.#wrap_sync_method(fs.realpathSync);
-  rename = this.#wrap_method(fs_promises.rename, 2);
+  #rename = this.#wrap_method(fs_promises.rename, 2);
   renameSync = this.#wrap_sync_method(fs.renameSync, 2);
   // rmdir = this.#wrapMethod(fsPromises.rmdir); // DEPRECATED
   // rmdirSync = this.#wrapSyncMethod(fs.rmdirSync); // DEPRECATED
   rmdir = this.#wrap_method(fs_promises.rm);
   rmdirSync = this.#wrap_sync_method(fs.rmSync);
-  stat = this.#wrap_method(fs_promises.stat);
+  #stat = this.#wrap_method(fs_promises.stat);
   statSync = this.#wrap_sync_method(fs.statSync);
   symlink = this.#wrap_method(fs_promises.symlink, 2);
   symlinkSync = this.#wrap_sync_method(fs.symlinkSync, 2);
@@ -109,7 +109,7 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the directory to create
    * @returns {Promise<void>}
    */
-  async mkdir(rel_path, opts={}) { return await this.mkdir(rel_path, opts); }
+  async mkdir(rel_path, opts={}) { return await this.#mkdir(rel_path, opts); }
 
   /**
    * Check if a file or directory exists
@@ -191,7 +191,13 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the file to remove
    * @returns {Promise<void>}
    */
-  async remove(rel_path) { return await this.unlink(rel_path); }
+  async remove(rel_path) {
+    try {
+      await this.unlink(rel_path);
+    } catch (error) {
+      console.warn(`Error removing file: ${rel_path}`, error);
+    }
+  }
 
   /**
    * Remove a directory
@@ -206,14 +212,19 @@ export class NodeFsSmartFsAdapter {
    * @param {string} new_rel_path - New relative path
    * @returns {Promise<void>}
    */
-  async rename(rel_path, new_rel_path) { return await this.rename(rel_path, new_rel_path); }
+  async rename(rel_path, new_rel_path) {
+    // ensure parent folder exists
+    const parent_folder = path.dirname(new_rel_path);
+    if(!await this.exists(parent_folder)) await this.#mkdir(parent_folder, { recursive: true });
+    return await this.#rename(rel_path, new_rel_path);
+  }
 
   /**
    * Get file or directory stats
    * @param {string} rel_path - Relative path of the file or directory
    * @returns {Promise<fs.Stats>}
    */
-  async stat(rel_path) { return await this.stat(rel_path); }
+  async stat(rel_path) { return await this.#stat(rel_path); }
 
   /**
    * Write content to a file
@@ -221,5 +232,10 @@ export class NodeFsSmartFsAdapter {
    * @param {string|Buffer} content - Content to write
    * @returns {Promise<void>}
    */
-  async write(rel_path, content) { return await this.writeFile(rel_path, content); }
+  async write(rel_path, content) {
+    // ensure parent folder exists
+    const parent_folder = path.dirname(rel_path);
+    if(!await this.exists(parent_folder)) await this.mkdir(parent_folder, { recursive: true });
+    return await this.writeFile(rel_path, content);
+  }
 }
