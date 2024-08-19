@@ -19,14 +19,23 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-class SmartEnv {
+export class SmartEnv {
   constructor(main, opts={}) {
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main; // ex. smart_connections_plugin
+    this[main_name+"_opts"] = opts;
     this.mains = [main_name];
-    this.main = main; // DEPRECATED in favor of main class name converted to snake case
-    this.plugin = this.main; // DEPRECATED in favor of main
     Object.assign(this, opts);
+    this.loading_collections = false;
+    this.collections_loaded = false;
+    /**
+     * @deprecated Use this.main_class_name instead of this.plugin
+     */
+    this.main = main; // DEPRECATED in favor of main class name converted to snake case
+    /**
+     * @deprecated Use this.main_class_name instead of this.plugin
+     */
+    this.plugin = this.main; // DEPRECATED in favor of main
   }
   static create(main, opts={}) {
     const global_ref = opts.global_ref || window || global;
@@ -60,6 +69,63 @@ class SmartEnv {
     main.env = global_ref.smart_env;
     return global_ref.smart_env;
   }
+  async init() {
+    await this.ready_to_load_collections();
+    await this.init_collections();
+    await this.load_collections();
+    await this.smart_sources.import();
+  }
+  async ready_to_load_collections() { return true; } // override in subclasses with env-specific logic
+  async init_collections() {
+    for (const [key, collection_class] of Object.entries(this.collections)) {
+      new collection_class(this, {
+        adapter_class: this.main.smart_env_opts.smart_collection_adapter_class,
+        custom_collection_name: key, // unnecessary??
+      });
+      await this[key].init();
+    }
+  }
+  async load_collections() {
+    try{
+      this.loading_collections = true;
+      for (const key of Object.keys(this.collections)) {
+        await this[key].load();
+      }
+    }catch(err){
+      console.error(err);
+    }
+    this.loading_collections = false;
+    this.collections_loaded = true;
+  }
+  unload_collections() {
+    for(const key of Object.keys(this.collections)){
+      this[key].unload();
+      this[key] = null;
+    }
+  }
+  // NEEDS REVIEW: saves all collections (Likely DEPRECATED: may only need to save smart_sources)
+  save() {
+    for(const key of Object.keys(this.collections)){
+      this[key].save();
+    }
+  }
+  // NEEDS REVIEW: Can unload/reload be handled better?
+  unload() {
+    this.unload_collections();
+    this.smart_embed_active_models = {};
+  }
+  async reload() {
+    this.unload();
+    await this.init();
+  }
+  async reload_collections() {
+    console.log("Smart Connections: reloading collections");
+    this.unload_collections();
+    if(this.loading_collections) this.loading_collections = false; // reset flag
+    await this.init_collections();
+    await this.load_collections();
+  }
+  // NEEDS REVIEW:
   get settings() {
     const settings = {};
     this.mains.forEach(main => {
@@ -71,7 +137,6 @@ class SmartEnv {
     return settings;
   }
 }
-export { SmartEnv };
 
 function camel_case_to_snake_case(str) {
   const result = str

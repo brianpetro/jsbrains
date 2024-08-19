@@ -19,14 +19,6 @@ export class SmartSource extends SmartEntity {
   async parse_content() {
     const content = await this.read();
     const hash = await create_hash(content); // update hash
-    // if (hash !== this.last_history?.hash) {
-    //   this.data.history.push({ blocks: {}, mtime: this.t_file.stat.mtime, size: this.t_file.stat.size, hash }); // add history entry
-    //   this.data.embeddings = {}; // clear embeddings
-    // } else {
-    //   this.last_history.mtime = this.t_file.stat.mtime; // update mtime
-    //   this.last_history.size = this.t_file.stat.size; // update size
-    //   if(!this.last_history.blocks) this.last_history.blocks = {};
-    // }
     const file_stat = await this.fs.stat(this.data.path);
     if (hash !== this.last_history?.hash) {
       this.data.history.push({
@@ -41,7 +33,7 @@ export class SmartSource extends SmartEntity {
       this.last_history.size = file_stat.size; // update size
       if(!this.last_history.blocks) this.last_history.blocks = {};
     }
-    const { blocks, outlinks } = await this.env.smart_chunks.parse(this);
+    const { blocks, outlinks } = await this.smart_chunks.parse(this);
     this.data.outlinks = outlinks;
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
@@ -300,7 +292,7 @@ export class SmartSource extends SmartEntity {
    */
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const { blocks } = await this.env.smart_chunks.parse({
+    const { blocks } = await this.smart_chunks.parse({
       content,
       file_path: this.data.path,
     });

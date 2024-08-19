@@ -9,6 +9,13 @@ export class SmartEntities extends Collection {
     this.env = env; // env is the brain (brain is Deprecated)
     this.model_instance_id = null;
   }
+  async init() {
+    this.smart_chunks = new this.env.smart_chunks_class(this, {
+      ...this.env.settings,
+      skip_blocks_with_headings_only: true
+    });
+    await this.load_smart_embed();
+  }
   // async _save() { await this.adapter._save_queue(); } // async b/c Obsidian API is async
   unload() {
     if (typeof this.smart_embed?.unload === 'function') {
@@ -20,7 +27,7 @@ export class SmartEntities extends Collection {
     await super.load(); // MUST RUN BEFORE SMART EMBED async b/c Obsidian API is async
     await this.load_smart_embed();
   }
-  get SmartEmbedModel() { return this.env.modules.SmartEmbedModel; }
+  get SmartEmbedModel() { return this.env.smart_embed_model_class; }
   async load_smart_embed() {
     if (!this.SmartEmbedModel) return console.log("SmartEmbedModel must be included in the `env.modules` property");
     if (this.smart_embed_model_key === "None") return; // console.log("SmartEmbed disabled for ", this.collection_name);

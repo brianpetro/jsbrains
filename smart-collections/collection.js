@@ -13,34 +13,37 @@ export class Collection {
    */
   constructor(env, opts = {}) {
     this.env = env;
+    if(opts.custom_collection_name) this.collection_name = opts.custom_collection_name;
+    this.env[this.collection_name] = this;
     this.config = this.env.config;
     this.items = {};
     this.opts = opts;
     if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
+    this.merge_defaults();
   }
 
-  // STATIC METHODS
-  /**
-   * Loads a collection based on the environment and optional configuration.
-   * @param {Object} env - The environment context.
-   * @param {Object} [config={}] - Optional configuration for the collection.
-   * @returns {Promise<Collection>|Collection} The loaded collection instance.
-   */
-  static load(env, opts = {}) {
-    if(typeof opts.adapter_class?.load === 'function') return opts.adapter_class.load(env, opts);
-    // if no static load method in adapter_class, load collection as normal
-    const { custom_collection_name } = opts;
-    env[this.collection_name] = new this(env, opts);
-    if (custom_collection_name) {
-      env[this.collection_name].collection_name = custom_collection_name;
-      env.collections[custom_collection_name] = this.constructor;
-    }
-    env[this.collection_name].merge_defaults();
-    // return promise if async
-    if (env[this.collection_name].load instanceof AsyncFunction) return env[this.collection_name].load().then(() => env[this.collection_name]);
-    else env[this.collection_name].load();
-    return env[this.collection_name];
-  }
+  // // STATIC METHODS
+  // /**
+  //  * Loads a collection based on the environment and optional configuration.
+  //  * @param {Object} env - The environment context.
+  //  * @param {Object} [config={}] - Optional configuration for the collection.
+  //  * @returns {Promise<Collection>|Collection} The loaded collection instance.
+  //  */
+  // static load(env, opts = {}) {
+  //   if(typeof opts.adapter_class?.load === 'function') return opts.adapter_class.load(env, opts);
+  //   // if no static load method in adapter_class, load collection as normal
+  //   const { custom_collection_name } = opts;
+  //   env[this.collection_name] = new this(env, opts);
+  //   if (custom_collection_name) {
+  //     env[this.collection_name].collection_name = custom_collection_name;
+  //     env.collections[custom_collection_name] = this.constructor;
+  //   }
+  //   env[this.collection_name].merge_defaults();
+  //   // return promise if async
+  //   if (env[this.collection_name].load instanceof AsyncFunction) return env[this.collection_name].load().then(() => env[this.collection_name]);
+  //   else env[this.collection_name].load();
+  //   return env[this.collection_name];
+  // }
   /**
    * Gets the collection name derived from the class name.
    * @return {String} The collection name.
@@ -48,6 +51,7 @@ export class Collection {
   static get collection_name() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
 
   // INSTANCE METHODS
+  async init() {}
 
   /**
    * Creates or updates an item in the collection based on the provided data.

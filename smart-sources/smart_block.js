@@ -37,7 +37,8 @@ export class SmartBlock extends SmartEntity {
         const block_content = all_lines.split("\n").slice(this.line_start, this.line_end + 1).join("\n");
         return block_content;
       }
-      const block_content = await this.env.smart_chunks.get_block_from_path(this.data.path, this.source);
+      // DEPRECATED:
+      const block_content = await this.smart_chunks.get_block_from_path(this.data.path, this.source);
       return block_content;
     } catch (e) {
       console.log("error getting block content for ", this.data.path, ": ", e);
