@@ -20,7 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import {minimatch} from 'minimatch';
-
+import { fuzzy_search } from './utils/fuzzy_search.js';
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
  * 
@@ -66,29 +66,38 @@ class SmartFs {
    * 
    * @param {Object} env - The Smart Environment instance
    * @param {Object} [opts={}] - Optional configuration
-   * @param {string} [opts.env_path] - Custom environment path
+   * @param {string} [opts.fs_path] - Custom environment path
    */
   constructor(env, opts = {}) {
+    console.log('SmartFs constructor', opts);
     this.env = env;
-    this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
+    this.fs_path = opts.fs_path || opts.env_path || ''; // vault_path is DEPRECATED
     if(!opts.adapter) throw new Error('SmartFs requires an adapter');
     this.adapter = new opts.adapter(this);
     this.excluded_patterns = [];
     if(Array.isArray(opts.exclude_patterns)) {
       opts.exclude_patterns.forEach(pattern => this.add_ignore_pattern(pattern));
     }
-    this.smart_env_data_folder = opts.smart_env_data_folder || 'smart-env';
-  }
-  static async create(env, opts = {}) {
-    if(typeof opts.env_path !== 'string' || opts.env_path.length === 0) return; // no env_path provided
-    if(typeof env.smart_fs !== 'object') env.smart_fs = {};
-    if(env.smart_fs[opts.env_path] instanceof this) return env.smart_fs[opts.env_path];
-    env.smart_fs[opts.env_path] = new this(env, opts);
-    await env.smart_fs[opts.env_path].init();
-    return env.smart_fs[opts.env_path];
+    this.folders = {};
+    this.files = {};
+    this.file_paths = [];
+    this.folder_paths = [];
   }
   async init() {
     await this.load_gitignore();
+    const all = await this.list_recursive();
+    console.log(all);
+    all.forEach(file => {
+      if(file.path.endsWith('.ajson')) return;
+      if(file.type === 'file'){
+        this.files[file.path] = file;
+        this.file_paths.push(file.path);
+      }
+      if(file.type === 'folder'){
+        this.folders[file.path] = file;
+        this.folder_paths.push(file.path);
+      }
+    });
   }
 
   /**
@@ -280,25 +289,13 @@ class SmartFs {
   // async create(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
   // async update(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
 
-  // handle smart_env_data folder (excluded by default from base methods)
-  // wrapped with ensure_smart_env_data_path to ensure relative to smart_env_data_folder
-  get smart_env_data(){
-    return {
-      append: async (rel_path, content) => await this.adapter.append(this.ensure_smart_env_data_path(rel_path), content),
-      exists: async (rel_path) => await this.adapter.exists(this.ensure_smart_env_data_path(rel_path)),
-      list: async (rel_path) => await this.adapter.list(this.ensure_smart_env_data_path(rel_path)),
-      mkdir: async (rel_path, opts={recursive: true}) => await this.adapter.mkdir(this.ensure_smart_env_data_path(rel_path), opts),
-      read: async (rel_path, encoding='utf-8') => await this.adapter.read(this.ensure_smart_env_data_path(rel_path), encoding),
-      remove_dir: async (rel_path) => await this.adapter.remove_dir(this.ensure_smart_env_data_path(rel_path)),
-      remove: async (rel_path) => await this.adapter.remove(this.ensure_smart_env_data_path(rel_path)),
-      write: async (rel_path, content) => await this.adapter.write(this.ensure_smart_env_data_path(rel_path), content),
-    }
-  }
-  ensure_smart_env_data_path(rel_path) {
-    if (!rel_path.startsWith(this.smart_env_data_folder)) {
-      rel_path = this.smart_env_data_folder + '/' + rel_path;
-    }
-    return rel_path.replace(/\/+/g, '/').replace(/^\//, '').replace(/\/$/, '');
+
+  get_link_target_path(link_target, source_path) {
+    if(this.adapter.get_link_target_path) return this.adapter.get_link_target_path(link_target, source_path); // use Obsidian adapter Obsidian-native solution
+    // future: this logic may be improved using source_path to find matches in
+    // the same folder or subfolders first
+    if(!this.file_paths) return console.warn('get_link_target_path: file_paths not found');
+    return fuzzy_search(this.file_paths, link_target)[0];
   }
 
 }

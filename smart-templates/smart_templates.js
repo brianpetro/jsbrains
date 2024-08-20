@@ -23,8 +23,8 @@ import ejs from './ejs.min.cjs';
 import { SmartChatModel } from 'smart-chat-model';
 
 export class SmartTemplates {
-  constructor(env = {}, opts = {}) {
-    this.env = env;
+  constructor(main = {}, opts = {}) {
+    this.main = main;
     this.opts = opts;
     this.adapter = opts.adapter || null; // DEPRECATED: in favor of file_type_adapters
     this.file_type_adapters = {};
@@ -49,7 +49,7 @@ export class SmartTemplates {
     // RESERVED
   }
   get request_adapter() { return this.opts.request_adapter || null; }
-  get settings() { return this.env.settings; }
+  get settings() { return this.main.settings; }
   get var_prompts() { return this.settings.smart_templates?.var_prompts || {}; }
   get api_key() { return this.settings.smart_templates?.api_key; }
   get file_types() {
@@ -168,7 +168,7 @@ export class SmartTemplates {
     }
 
     // Use SmartChatModel to get replacement values
-    const chatModel = new SmartChatModel(this.env, this.chat_model_platform_key, this.model_config);
+    const chatModel = new SmartChatModel(this.main.env, this.chat_model_platform_key, this.model_config);
     if(this.request_adapter) chatModel._request_adapter = this.request_adapter;
     const replacementValues = await chatModel.complete(functionCallRequest);
     Object.entries(replacementValues).forEach(([key, value]) => {
@@ -188,14 +188,14 @@ export class SmartTemplates {
     return ejs.render(template_content, mergedContext);
   }
   get model_config() {
-    if(this.env.smart_templates_plugin?.settings?.[this.chat_model_platform_key]) return this.env.smart_templates_plugin.settings[this.chat_model_platform_key];
-    if(this.env.settings?.[this.chat_model_platform_key]) return this.env.settings[this.chat_model_platform_key];
+    if(this.main.settings.smart_templates_plugin?.[this.chat_model_platform_key]) return this.main.settings.smart_templates_plugin[this.chat_model_platform_key];
+    if(this.main.settings?.[this.chat_model_platform_key]) return this.main.settings[this.chat_model_platform_key];
     return {api_key: this.api_key};
   }
   get chat_model_platform_key() {
-    if(this.env.smart_templates_plugin?.settings?.chat_model_platform_key) return this.env.smart_templates_plugin.settings.chat_model_platform_key;
-    if(this.env.settings?.smart_templates?.chat_model_platform_key) return this.env.settings.smart_templates.chat_model_platform_key;
-    return this.env.settings?.chat_model_platform_key || 'openai';
+    if(this.main.settings.smart_templates_plugin?.chat_model_platform_key) return this.main.settings.smart_templates_plugin.chat_model_platform_key;
+    if(this.main.settings?.smart_templates?.chat_model_platform_key) return this.main.settings.smart_templates.chat_model_platform_key;
+    return this.main.settings?.chat_model_platform_key || 'openai';
   }
   add_template(path) {
     const file_name = path.split('/').pop().split('.').shift();

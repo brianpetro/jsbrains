@@ -13,11 +13,10 @@ export class Collection {
    */
   constructor(env, opts = {}) {
     this.env = env;
+    this.opts = opts;
     if(opts.custom_collection_name) this.collection_name = opts.custom_collection_name;
-    this.env[this.collection_name] = this;
     this.config = this.env.config;
     this.items = {};
-    this.opts = opts;
     if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
     this.merge_defaults();
   }
@@ -195,13 +194,17 @@ export class Collection {
   get data_path() { return this.env.data_path; } // DEPRECATED
 
   get fs() {
-    if(!this.smart_fs) this.smart_fs = new this.env.smart_fs_class(this.env, {
-      adapter: this.env.smart_fs_adapter_class,
-      exclude_patterns: this.env.excluded_patterns,
-      smart_env_data_folder: this.env.settings.smart_env_data_folder
-    });
+    if(!this.smart_fs) this.smart_fs = new this.env.smart_fs_class(this.env, this.fs_opts);
     return this.smart_fs;
   }
+  get fs_opts() {
+    return {
+      adapter: this.env.smart_fs_adapter_class,
+      exclude_patterns: this.env.excluded_patterns,
+      // smart_env_data_folder: this.env.settings.smart_env_data_folder
+    };
+  }
+
   // ADAPTER METHODS
   /**
    * Saves the current state of the collection.

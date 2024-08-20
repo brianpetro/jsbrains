@@ -22,6 +22,7 @@
 import { SmartEnvSettings } from './smart_env_settings.js';
 export class SmartEnv {
   constructor(main, opts={}) {
+    this.opts = opts;
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main; // ex. smart_connections_plugin
     this[main_name+"_opts"] = opts;
@@ -37,10 +38,7 @@ export class SmartEnv {
     Object.assign(this, opts);
     this.loading_collections = false;
     this.collections_loaded = false;
-    this.smart_env_settings = new SmartEnvSettings(this, {
-      env_path: opts.env_path || '/',
-      smart_env_data_folder: opts.smart_env_data_folder
-    });
+    this.smart_env_settings = new SmartEnvSettings(this, opts);
   }
   /**
    * Creates or updates a SmartEnv instance.
@@ -116,12 +114,14 @@ export class SmartEnv {
     await this.smart_sources.import();
   }
   async ready_to_load_collections() { return true; } // override in subclasses with env-specific logic
-  async init_collections() {
+  async init_collections(env_path=null) {
     for (const [key, collection_class] of Object.entries(this.collections)) {
-      new collection_class(this, {
+      const collection_opts = {
         adapter_class: this.main.smart_env_opts.smart_collection_adapter_class,
-        custom_collection_name: key, // unnecessary??
-      });
+        custom_collection_name: key,
+      };
+      if(env_path || this.opts.env_path) collection_opts.env_path = env_path || this.opts.env_path;
+      this[key] = new collection_class(this, collection_opts);
       await this[key].init();
     }
   }

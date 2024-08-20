@@ -2,5 +2,6 @@
 .env
 node_modules
 ref
+smart-env
 **/node_modules/**
 **/ref/**

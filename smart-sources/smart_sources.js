@@ -3,6 +3,16 @@ import { SmartEntities } from "smart-entities";
 
 // DO: Extract to separate files
 export class SmartSources extends SmartEntities {
+  get fs_opts() {
+    return {
+      ...super.fs_opts,
+      fs_path: this.opts.fs_path || this.opts.env_path || ''
+    };
+  }
+  async init() {
+    await super.init();
+    await this.fs.init();
+  }
   async import(source_files) {
     if(!source_files?.length) source_files = await this.fs.list_files_recursive();
     source_files = source_files.filter(file => ['md', 'canvas', 'txt'].includes(file.extension)); // filter available file types

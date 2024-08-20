@@ -24,8 +24,8 @@ export class NodeFsSmartFsAdapter {
    * @returns {string} The resolved absolute path
    */
   #resolve_path(rel_path) {
-    if (rel_path.startsWith(this.smart_fs.env_path)) return rel_path;
-    return path.join(this.smart_fs.env_path, rel_path);
+    if (rel_path.startsWith(this.smart_fs.fs_path)) return rel_path;
+    return path.join(this.smart_fs.fs_path, rel_path);
   }
 
   /**
@@ -136,7 +136,7 @@ export class NodeFsSmartFsAdapter {
   async list(rel_path, opts={}) {
     const items = await this.readdir(rel_path, { withFileTypes: true, ...(opts.recursive ? { recursive: true } : {}) });
     const files = items.reduce((acc, item) => {
-      const folder = item.parentPath.replace(this.smart_fs.env_path, '').slice(1);
+      const folder = item.parentPath.replace(this.smart_fs.fs_path, '').slice(1);
       const file = {
         basename: item.name.split('.')[0],
         extension: item.name.slice(item.name.indexOf('.') + 1),

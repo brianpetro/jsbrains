@@ -47,7 +47,7 @@ export function load_test_env(t) {
   // Initialize SmartFs with TestFsSmartFsAdapter
   t.context.mock_env.smart_fs = new SmartFs(t.context.mock_env, {
     adapter: TestFsSmartFsAdapter,
-    env_path: '/mock/env/path'
+    fs_path: '/mock/env/path'
   });
   // add fs getter to mock_env
   t.context.mock_env.fs = t.context.mock_env.smart_fs;

@@ -15,7 +15,7 @@ class MockAdapter {
 }
 
 test('SmartFs.use_adapter calls adapter method and applies pre/post processing', async t => {
-  const env = { config: { env_path: '/test/path' } };
+  const env = { config: { fs_path: '/test/path' } };
   const smart_fs = new SmartFs(env, { adapter: MockAdapter });
 
   // Mock excluded patterns
@@ -27,7 +27,7 @@ test('SmartFs.use_adapter calls adapter method and applies pre/post processing',
 });
 
 test('SmartFs.pre_process throws error for excluded paths', async t => {
-  const env = { config: { env_path: '/test/path' } };
+  const env = { config: { fs_path: '/test/path' } };
   const smart_fs = new SmartFs(env, { adapter: MockAdapter });
 
   smart_fs.excluded_patterns = [new Minimatch('*.excluded')];
@@ -39,7 +39,7 @@ test('SmartFs.pre_process throws error for excluded paths', async t => {
 });
 
 test('SmartFs.post_process filters out excluded paths', t => {
-  const env = { config: { env_path: '/test/path' } };
+  const env = { config: { fs_path: '/test/path' } };
   const smart_fs = new SmartFs(env, { adapter: MockAdapter });
 
   smart_fs.excluded_patterns = [new Minimatch('*.excluded')];
@@ -49,7 +49,7 @@ test('SmartFs.post_process filters out excluded paths', t => {
 });
 
 test('SmartFs constructor throws error when adapter is not set', async t => {
-  const env = { config: { env_path: '/test/path' } };
+  const env = { config: { fs_path: '/test/path' } };
   await t.throwsAsync(
     async () => new SmartFs(env, { adapter: null }),
     { message: 'SmartFs requires an adapter' }
@@ -57,7 +57,7 @@ test('SmartFs constructor throws error when adapter is not set', async t => {
 });
 
 test('SmartFs.use_adapter throws error when method is not found in adapter', async t => {
-  const env = { config: { env_path: '/test/path' } };
+  const env = { config: { fs_path: '/test/path' } };
   const smart_fs = new SmartFs(env, { adapter: MockAdapter });
 
   await t.throwsAsync(

@@ -14,7 +14,7 @@ export class SmartSource extends SmartEntity {
   async init() {
     await this.parse_content();
     this.queue_save();
-    if(this.is_unembedded) this.smart_embed.embed_entity(this);
+    if(this.is_unembedded && this.smart_embed) this.smart_embed.embed_entity(this);
   }
   async parse_content() {
     const content = await this.read();
@@ -117,7 +117,10 @@ export class SmartSource extends SmartEntity {
     }
     return this._median_block_vec;
   }
-  get t_file() { return this.env.main.get_tfile(this.data.path); } // should be better handled using non-Obsidian API
+  get t_file() {
+    // return this.env.main.get_tfile(this.data.path); // should be better handled using non-Obsidian API
+    return this.fs.files[this.data.path];
+  } 
   // v2.2
   get ajson() {
     if(this.deleted) return `${JSON.stringify(this.ajson_key)}: null`;
@@ -133,7 +136,7 @@ export class SmartSource extends SmartEntity {
     return (this.data.outlinks || [])
       .filter(link => !link.target.startsWith("http"))
       .map(link => {
-        const link_path = this.env.main.get_link_target_path(link.target, this.file_path);
+        const link_path = this.fs.get_link_target_path(link.target, this.file_path);
         return link_path;
       })
       .filter(link_path => link_path);
