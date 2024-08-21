@@ -204,4 +204,52 @@ export class SmartEntities extends Collection {
     console.log(`Found and returned ${top_k.length} ${this.collection_name}.`);
     return top_k;
   }
+  get settings_config() { return settings_config; }
 }
+
+export const settings_config = {
+  smart_sources_embed_model: {
+    name: 'Notes Embedding Model',
+    type: "dropdown",
+    description: "Select a model to use for embedding your notes.",
+    options_callback: 'get_embedding_model_options',
+    callback: 'restart',
+    required: true
+  },
+  smart_blocks_embed_model: {
+    name: 'Blocks Embedding Model',
+    type: "dropdown",
+    description: "Select a model to use for embedding your blocks.",
+    options_callback: 'get_embedding_model_options',
+    callback: 'restart',
+    required: true
+  },
+  embed_input_min_chars: {
+    name: 'Minimum Embedding Length',
+    type: "number",
+    description: "Minimum length of note to embed.",
+    placeholder: "Enter a number",
+    // callback: 'refresh_embeddings',
+    required: true,
+  },
+  api_key: {
+    name: 'OpenAI API Key for embeddings',
+    type: "password",
+    description: "Required for OpenAI embedding models",
+    placeholder: "Enter your OpenAI API Key",
+    callback: 'test_api_key_openai_embeddings',
+    conditional_callback: (settings) => !settings.smart_sources_embed_model.includes('/') || !settings.smart_blocks_embed_model.includes('/')
+  },
+  local_embedding_max_tokens: {
+    name: 'Local Embedding Max Tokens',
+    type: "dropdown",
+    description: "Reduce max tokens depending on available resources (CPU, RAM).",
+    option_1: "512",
+    option_2: "1024",
+    option_3: "2048|2048 (default)",
+    option_4: "4096",
+    option_5: "8192",
+    callback: 'reload_env',
+    conditional_callback: (settings) => settings.smart_sources_embed_model.includes('/') || settings.smart_blocks_embed_model.includes('/')
+  },
+};

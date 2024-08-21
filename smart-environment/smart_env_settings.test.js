@@ -34,7 +34,7 @@ test.beforeEach(async (t) => {
   t.context.env = new MockEnv();
   t.context.smart_env_settings = new SmartEnvSettings(t.context.env, {
     fs_path: "/",
-    smart_env_data_folder: ".smart-env"
+    env_data_dir: ".smart-env"
   });
   await t.context.smart_env_settings.fs.smart_env_data.write(".smart_env.json", JSON.stringify(smart_env_json));
 });

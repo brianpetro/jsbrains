@@ -188,7 +188,7 @@ export class Collection {
 
   /**
    * Gets the data path from the environment.
-   * @deprecated use env.settings.smart_env_data_folder
+   * @deprecated use env.settings.env_data_dir
    * @returns {string} The data path.
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
@@ -201,7 +201,6 @@ export class Collection {
     return {
       adapter: this.env.smart_fs_adapter_class,
       exclude_patterns: this.env.excluded_patterns,
-      // smart_env_data_folder: this.env.settings.smart_env_data_folder
     };
   }
 

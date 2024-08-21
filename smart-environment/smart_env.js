@@ -165,6 +165,12 @@ export class SmartEnv {
     await this.init_collections();
     await this.load_collections();
   }
+  get fs() {
+    return this.smart_sources?.fs || new this.opts.smart_fs_class(this, {
+      fs_path: this.opts.env_path,
+      adapter: this.opts.smart_fs_adapter_class
+    });
+  }
   // NEEDS REVIEW:
   get settings() {
     return this.smart_env_settings._settings;
@@ -186,4 +192,30 @@ function camel_case_to_snake_case(str) {
     .replace(/2$/, '') // remove trailing 2 (bundled subclasses)
   ;
   return result;
+}
+
+/**
+ * Deeply merges two objects without overwriting existing properties in the target object.
+ * @param {Object} target - The target object to merge properties into.
+ * @param {Object} source - The source object from which properties are sourced.
+ * @returns {Object} The merged object.
+ */
+export function deep_merge_no_overwrite(target, source) {
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      if (is_obj(source[key])) {
+        if (!target.hasOwnProperty(key) || !is_obj(target[key])) {
+          target[key] = {};
+        }
+        deep_merge_no_overwrite(target[key], source[key]);
+      } else if (!target.hasOwnProperty(key)) {
+        target[key] = source[key];
+      }
+    }
+  }
+  return target;
+
+  function is_obj(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+  }
 }
