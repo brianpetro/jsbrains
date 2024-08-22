@@ -55,7 +55,10 @@ test('smart_sources are loaded with data from _data.json', async t => {
     const test_data = JSON.parse(fs.readFileSync(data_path, 'utf8'));
     const smart_sources = t.context.env.smart_sources;
 
-    t.is(Object.keys(smart_sources.items).length, Object.keys(test_data).length);
+    t.is(
+        Object.keys(smart_sources.items).length, 
+        Object.keys(test_data).filter(key => key.startsWith('SmartSource:')).length
+    );
 
     // console.log("smart_sources.items", smart_sources.items);
     // console.log("smart_sources.adapter.test_data", smart_sources.adapter.test_data);

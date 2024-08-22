@@ -4,10 +4,24 @@
     "content": "This is the content of doc1 with some keywords.",
     "history": [
       {
-        "blocks": {},
+        "blocks": {
+          "test/doc1.test#": true
+        },
         "mtime": 1625097600000,
         "size": 48,
         "hash": "hash1"
+      }
+    ]
+  },
+  "SmartBlock:test/doc1.test#": {
+    "path": "test/doc1.test#",
+    "content": "This is the content of doc1 with some keywords.",
+    "history": [
+      {
+        "blocks": {},
+        "mtime": 1625097600000,
+        "size": 48,
+        "hash": "hash1_block"
       }
     ]
   },
@@ -16,10 +30,24 @@
     "content": "Doc2 contains different keywords and information.",
     "history": [
       {
-        "blocks": {},
+        "blocks": {
+          "test/doc2.test#": true
+        },
         "mtime": 1625184000000,
         "size": 51,
         "hash": "hash2"
+      }
+    ]
+  },
+  "SmartBlock:test/doc2.test#": {
+    "path": "test/doc2.test#",
+    "content": "Doc2 contains different keywords and information.",
+    "history": [
+      {
+        "blocks": {},
+        "mtime": 1625184000000,
+        "size": 51,
+        "hash": "hash2_block"
       }
     ]
   },
@@ -28,10 +56,24 @@
     "content": "This document has unique content without specific keywords.",
     "history": [
       {
-        "blocks": {},
+        "blocks": {
+          "other/doc3.test#": true
+        },
         "mtime": 1625270400000,
         "size": 60,
         "hash": "hash3"
+      }
+    ]
+  },
+  "SmartBlock:other/doc3.test#": {
+    "path": "other/doc3.test#",
+    "content": "This document has unique content without specific keywords.",
+    "history": [
+      {
+        "blocks": {},
+        "mtime": 1625270400000,
+        "size": 60,
+        "hash": "hash3_block"
       }
     ]
   },
@@ -40,10 +82,24 @@
     "content": "Project 1 details and specifications.",
     "history": [
       {
-        "blocks": {},
+        "blocks": {
+          "projects/project1.test#": true
+        },
         "mtime": 1625356800000,
         "size": 38,
         "hash": "hash4"
+      }
+    ]
+  },
+  "SmartBlock:projects/project1.test#": {
+    "path": "projects/project1.test#",
+    "content": "Project 1 details and specifications.",
+    "history": [
+      {
+        "blocks": {},
+        "mtime": 1625356800000,
+        "size": 38,
+        "hash": "hash4_block"
       }
     ]
   },
@@ -52,10 +108,24 @@
     "content": "Information about Project 2 and its goals.",
     "history": [
       {
-        "blocks": {},
+        "blocks": {
+          "projects/project2.test#": true
+        },
         "mtime": 1625443200000,
         "size": 44,
         "hash": "hash5"
+      }
+    ]
+  },
+  "SmartBlock:projects/project2.test#": {
+    "path": "projects/project2.test#",
+    "content": "Information about Project 2 and its goals.",
+    "history": [
+      {
+        "blocks": {},
+        "mtime": 1625443200000,
+        "size": 44,
+        "hash": "hash5_block"
       }
     ]
   }
