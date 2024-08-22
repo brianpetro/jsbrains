@@ -12,7 +12,7 @@ export class CollectionItem {
   static get defaults() {
     return {
       data: {
-        key: null,
+        // key: null,
       },
     };
   }
@@ -205,7 +205,7 @@ export class CollectionItem {
    * Retrieves or generates the key for this item.
    * @returns {string} The item's key.
    */
-  get key() { return this.data.key = this.data.key || this.get_key(); }
+  get key() { return this.data?.key || this.get_key(); }
 
   /**
    * Provides a reference object for this item, containing the collection name and key.

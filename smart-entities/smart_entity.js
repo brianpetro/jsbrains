@@ -81,6 +81,6 @@ export class SmartEntity extends CollectionItem {
   set vec(vec) { this.entity_adapter.vec = vec; }
 
   // SmartSources (how might this be better done?)
-  get_key() { return this.data.path; }
+  get_key() { return this.data.path.replace(/\\/g, "/"); }
   get path() { return this.data.path; }
 }
