@@ -26,12 +26,16 @@ export class SmartChange {
     }
 
     get_adapter(change_opts) {
-        return this.adapters[change_opts.file_type] || this.adapters.default;
+        return this.adapters[change_opts.adapter] || this.adapters[change_opts.file_type] || this.adapters.default;
     }
 
     wrap(change_type, change_opts) {
         const adapter = this.get_adapter(change_opts);
         return adapter.wrap(change_type, change_opts);
+    }
+    unwrap(content, change_opts) {
+        const adapter = this.get_adapter(change_opts);
+        return adapter.unwrap(content);
     }
     async destroy(entity, opts={}){
         const current_content = await entity.read();
@@ -61,8 +65,4 @@ export class SmartChange {
         return adapter.after(change_type, change_opts);
     }
 
-    unwrap(content, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.unwrap(content);
-    }
 }

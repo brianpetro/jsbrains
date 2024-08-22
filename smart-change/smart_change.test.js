@@ -63,19 +63,10 @@ test('SmartChange with markdown adapter for location after', t => {
 `);
 });
 
-test('SmartChange with obsidian_markdown adapter', t => {
-    const smart_change = t.context.smart_change;
-    const result = smart_change.before('content', { before: 'old content', after: 'new content', file_type: 'obsidian_markdown' });
-    t.is(result, '\n```smart-change\n<<<<<<< ORIGINAL\nold content\n=======\nnew content\n>>>>>>>\n```\n');
-});
-
 test('SmartChange uses correct adapter based on file_type', t => {
     const smart_change = t.context.smart_change;
     const markdown_result = smart_change.before('content', { before: 'old', after: 'new', file_type: 'markdown' });
     t.true(markdown_result.includes('[!ai_change]'));
-    
-    const obsidian_result = smart_change.before('content', { before: 'old', after: 'new', file_type: 'obsidian_markdown' });
-    t.true(obsidian_result.includes('```smart-change'));
 });
 
 test('SmartChange falls back to default adapter for unknown file_type', t => {
@@ -221,4 +212,82 @@ test('SmartChange unwrap handles location changes', t => {
     
     t.is(result.before, expected_before, 'Before content should not include moved content');
     t.is(result.after, expected_after, 'After content should include moved content');
+});
+
+test('ObsidianMarkdownAdapter wrap handles content changes', t => {
+    const smart_change = t.context.smart_change;
+    const result = smart_change.wrap('content', { 
+        before: 'old content', 
+        after: 'new content', 
+        adapter: 'obsidian_markdown' 
+    });
+    t.is(result, '\n```smart-change\n<<<<<<< ORIGINAL\nold content\n=======\nnew content\n>>>>>>>\n```\n');
+});
+
+test('ObsidianMarkdownAdapter wrap handles location changes', t => {
+    const smart_change = t.context.smart_change;
+    const result = smart_change.wrap('location', { 
+        from_key: 'old_file.md', 
+        after: 'new content', 
+        file_type: 'obsidian_markdown' 
+    });
+    t.is(result, '\n```smart-change\n<<<<<<< MOVED_FROM\nold_file.md\n=======\nnew content\n>>>>>>>\n```\n');
+});
+
+test('ObsidianMarkdownAdapter unwrap handles single change block', t => {
+    const smart_change = t.context.smart_change;
+    const content = '\n```smart-change\n<<<<<<< ORIGINAL\nold content\n=======\nnew content\n>>>>>>>\n```\n';
+    const result = smart_change.unwrap(content, { file_type: 'obsidian_markdown' });
+    t.is(result.before, 'old content');
+    t.is(result.after, 'new content');
+});
+
+test('ObsidianMarkdownAdapter unwrap handles multiple change blocks', t => {
+    const smart_change = t.context.smart_change;
+    const content = `
+    # Heading
+
+    \`\`\`smart-change
+    <<<<<<< ORIGINAL
+    old content 1
+    =======
+    new content 1
+    >>>>>>>
+    \`\`\`
+
+    Some unchanged content
+
+    \`\`\`smart-change
+    <<<<<<< ORIGINAL
+    old content 2
+    =======
+    new content 2
+    >>>>>>>
+    \`\`\`
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+    const result = smart_change.unwrap(content, { file_type: 'obsidian_markdown' });
+    t.is(result.before, '# Heading\n\nold content 1\n\nSome unchanged content\n\nold content 2');
+    t.is(result.after, '# Heading\n\nnew content 1\n\nSome unchanged content\n\nnew content 2');
+});
+
+test('ObsidianMarkdownAdapter unwrap handles nested code blocks', t => {
+    const smart_change = t.context.smart_change;
+    const content = `
+    \`\`\`smart-change
+    <<<<<<< ORIGINAL
+    \\\`\\\`\\\`python
+    def old_function():
+    return "old"
+    \\\`\\\`\\\`
+    =======
+    \\\`\\\`\\\`python
+    def new_function():
+    return "new"
+    \\\`\\\`\\\`
+    >>>>>>>
+    \`\`\`
+    `.split("\n").map(line => line.trim()).join("\n").trim();
+    const result = smart_change.unwrap(content, { file_type: 'obsidian_markdown' });
+    t.is(result.before, '```python\ndef old_function():\nreturn "old"\n```');
+    t.is(result.after, '```python\ndef new_function():\nreturn "new"\n```');
 });
