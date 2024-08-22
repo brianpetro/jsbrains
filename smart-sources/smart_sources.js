@@ -167,7 +167,7 @@ export class SmartSources extends SmartEntities {
       return [];
     }
     const search_results = await Promise.all(
-      this.items.map(async (item) => {
+      this.filter(search_filter).map(async (item) => {
         try {
           const matches = await item.search(search_filter);
           return matches ? { item, relevance: this.calculate_relevance(item, search_filter) } : null;
@@ -177,6 +177,7 @@ export class SmartSources extends SmartEntities {
         }
       })
     );
+    console.log({ search_results });
     return search_results
       .filter(Boolean)
       .sort((a, b) => b.relevance - a.relevance) // sort by relevance 

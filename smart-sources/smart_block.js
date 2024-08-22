@@ -159,6 +159,12 @@ export class SmartBlock extends SmartEntity {
     return prepend_content + (prepend_content ? '\n' : '') + content;
   }
 
+  // CRUD
+  get smart_change_opts() { 
+    return {
+      adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
+    };
+  }
   /**
    * Appends content to the end of the block.
    * @param {string} append_content - The content to append.
@@ -169,7 +175,7 @@ export class SmartBlock extends SmartEntity {
     if(all_lines[this.line_start] === append_content.split("\n")[0]){
       append_content = append_content.split("\n").slice(1).join("\n");
     }
-    if(this.env.smart_change) append_content = this.env.smart_change.wrap("content", { before: "", after: append_content });
+    if(this.env.smart_change) append_content = this.env.smart_change.wrap("content", { before: "", after: append_content, ...this.smart_change_opts });
     await this._append(append_content);
   }
   async _append(append_content) {
@@ -197,7 +203,8 @@ export class SmartBlock extends SmartEntity {
   async update(new_block_content, opts = {}) {
     if(this.env.smart_change) new_block_content = this.env.smart_change.wrap("content", {
       before: await this.read({ no_changes: "before", headings: "last" }),
-      after: new_block_content
+      after: new_block_content,
+      ...this.smart_change_opts
     });
     await this._update(new_block_content);
   }
@@ -245,7 +252,8 @@ export class SmartBlock extends SmartEntity {
       if(this.env.smart_change){
         const smart_change = this.env.smart_change.wrap('location', {
           to_key: to_key,
-          before: await this.read({headings: 'last', no_change: 'before'})
+          before: await this.read({headings: 'last', no_change: 'before'}),
+          ...this.smart_change_opts
         });
         this._update(smart_change);
       }else{
@@ -257,7 +265,7 @@ export class SmartBlock extends SmartEntity {
     try {
       if(to_entity) {
         if(this.env.smart_change){
-          content = this.env.smart_change.wrap("location", { from_key: this.source.key, after: content });
+          content = this.env.smart_change.wrap("location", { from_key: this.source.key, after: content, ...this.smart_change_opts });
           await to_entity._append(content);
         }else{
           await to_entity.append(content);
@@ -272,11 +280,11 @@ export class SmartBlock extends SmartEntity {
               new_headings_content,
               ...content.split("\n").slice(1)
           ].join("\n").trim();
-          if(this.env.smart_change) new_content = this.env.smart_change.wrap("location", { from_key: this.source.key, after: new_content });
+          if(this.env.smart_change) new_content = this.env.smart_change.wrap("location", { from_key: this.source.key, after: new_content, ...this.smart_change_opts });
           if(target_source) await target_source._append(new_content);
           else await this.env.smart_sources.create(target_source_key, new_content);
         } else {
-          if(this.env.smart_change) content = this.env.smart_change.wrap("location", { from_key: this.source.key, after: content });
+          if(this.env.smart_change) content = this.env.smart_change.wrap("location", { from_key: this.source.key, after: content, ...this.smart_change_opts });
           if(target_source) await target_source._append(content);
           else await this.env.smart_sources.create(target_source_key, content);
         }

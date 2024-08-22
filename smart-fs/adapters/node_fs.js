@@ -238,4 +238,6 @@ export class NodeFsSmartFsAdapter {
     if(!await this.exists(parent_folder)) await this.mkdir(parent_folder, { recursive: true });
     return await this.writeFile(rel_path, content);
   }
+
+  get sep() { return path.sep; }
 }

@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import {minimatch} from 'minimatch';
+import {minimatch} from 'minimatch'; // TODO: remove this dependency (prevents Obsidian mobile)
 import { fuzzy_search } from './utils/fuzzy_search.js';
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
@@ -297,6 +297,8 @@ class SmartFs {
     if(!this.file_paths) return console.warn('get_link_target_path: file_paths not found');
     return fuzzy_search(this.file_paths, link_target)[0];
   }
+
+  get sep() { return this.adapter.sep || '/'; }
 
 }
 

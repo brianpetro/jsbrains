@@ -20,6 +20,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartEnvSettings } from './smart_env_settings.js';
+import { SmartChange } from '../smart-change/smart_change.js';
+import { DefaultAdapter } from '../smart-change/adapters/default.js';
+import { MarkdownAdapter } from '../smart-change/adapters/markdown.js';
+import { ObsidianMarkdownAdapter } from '../smart-change/adapters/obsidian_markdown.js';
 export class SmartEnv {
   constructor(main, opts={}) {
     this.opts = opts;
@@ -39,6 +43,7 @@ export class SmartEnv {
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_env_settings = new SmartEnvSettings(this, opts);
+    this.smart_embed_active_models = {};
   }
   /**
    * Creates or updates a SmartEnv instance.
@@ -112,6 +117,7 @@ export class SmartEnv {
     await this.init_collections();
     await this.load_collections();
     await this.smart_sources.import();
+    this.init_smart_change();
   }
   async ready_to_load_collections() { return true; } // override in subclasses with env-specific logic
   async init_collections(env_path=null) {
@@ -170,6 +176,17 @@ export class SmartEnv {
       fs_path: this.opts.env_path,
       adapter: this.opts.smart_fs_adapter_class
     });
+  }
+
+  get smart_change_adapters() {
+    return {
+      default: new DefaultAdapter(),
+      markdown: new MarkdownAdapter(),
+      obsidian_markdown: new ObsidianMarkdownAdapter(),
+    };
+  }
+  init_smart_change() {
+    this.smart_change = new SmartChange(this, { adapters: this.smart_change_adapters });
   }
   // NEEDS REVIEW:
   get settings() {

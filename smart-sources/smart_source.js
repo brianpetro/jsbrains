@@ -159,13 +159,18 @@ export class SmartSource extends SmartEntity {
   async has_source_file() { return await this.fs.exists(this.data.path); }
 
   // CRUD
+  get smart_change_opts() { 
+    return {
+      adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
+    };
+  }
   /**
    * Appends content to the end of the source file.
    * @param {string} content - The content to append to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async append(content) {
-    if(this.env.smart_change) content = this.env.smart_change.wrap("content", { before: "", after: content });
+    if(this.env.smart_change) content = this.env.smart_change.wrap("content", { before: "", after: content, ...this.smart_change_opts });
     const current_content = await this.read();
     const new_content = [
       current_content,
@@ -189,6 +194,7 @@ export class SmartSource extends SmartEntity {
       //   full_content = this.env.smart_change.wrap("content", {
       //     before: await this.read({ no_changes: "before" }),
       //     after: full_content
+      //     ...this.smart_change_opts
       //   });
       // }
       // await this.fs.write(this.data.path, full_content);
@@ -336,12 +342,14 @@ export class SmartSource extends SmartEntity {
             const og = this.env.smart_blocks.get(block.path);
             all += this.env.smart_change.wrap("content", {
               before: await og.read({ no_changes: "before", headings: "last" }),
-              after: block.content
+              after: block.content,
+              ...this.smart_change_opts
             });
           }else{
             all += this.env.smart_change.wrap("content", {
               before: "",
-              after: block.content
+              after: block.content,
+              ...this.smart_change_opts
             });
           }
         }
@@ -350,7 +358,8 @@ export class SmartSource extends SmartEntity {
           const block = unmatched_old[i];
           all += (all.length ? "\n" : "") + this.env.smart_change.wrap("content", {
             before: await block.read({ no_changes: "before", headings: "last" }),
-            after: ""
+            after: "",
+            ...this.smart_change_opts
           });
         }
         await this._update(all);
@@ -390,8 +399,6 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<boolean>} A promise that resolves to true if the entity matches the search criteria, false otherwise.
    */
   async search(search_filter = {}) {
-    // First, run the initial filter (defined in CollectionItem)
-    if (!this.filter(search_filter)) return false;
     // Extract keywords from search_filter
     const { keywords } = search_filter;
     // Validate the keywords
