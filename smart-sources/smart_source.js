@@ -1,6 +1,7 @@
 import { create_hash } from "./utils/create_hash.js";
 import { SmartEntity } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { SourceAdapter } from "./adapters/_adapter.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -11,6 +12,9 @@ export class SmartSource extends SmartEntity {
       _embed_input: null, // stored temporarily
     };
   }
+  get source_adapters() { return this.collection.source_adapters; }
+  get source_adapter_class() { return this.source_adapters[this.file_type] || SourceAdapter; }
+  get source_adapter() { return new this.source_adapter_class(this); }
   async init() {
     await this.parse_content();
     this.queue_save();
@@ -21,6 +25,7 @@ export class SmartSource extends SmartEntity {
     const hash = await create_hash(content); // update hash
     const file_stat = await this.fs.stat(this.data.path);
     if (hash !== this.last_history?.hash) {
+      if(!this.last_history) this.data.history = [];
       this.data.history.push({
         blocks: {},
         mtime: file_stat.mtime,
@@ -103,7 +108,7 @@ export class SmartSource extends SmartEntity {
   get is_canvas() { return this.data.path.endsWith("canvas"); }
   get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
   get is_gone() { return this.t_file === null; }
-  get last_history() { return this.data.history.length ? this.data.history[this.data.history.length - 1] : null; }
+  get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
   get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
   get median_block_vec() {
     if (this._median_block_vec) return this._median_block_vec;
@@ -164,20 +169,50 @@ export class SmartSource extends SmartEntity {
       adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
     };
   }
+
+  /**
+   * FILTER/SEARCH METHODS
+   */
+  /**
+   * Searches for keywords within the entity's data and content.
+   * @param {Object} search_filter - The search filter object.
+   * @param {string[]} search_filter.keywords - An array of keywords to search for.
+   * @param {string} [search_filter.type='any'] - The type of search to perform. 'any' counts all matching keywords, 'all' counts only if all keywords match.
+   * @returns {Promise<number>} A promise that resolves to the number of matching keywords.
+   */
+  async search(search_filter = {}) {
+    const { keywords, type = 'any' } = search_filter;
+    if (!keywords || !Array.isArray(keywords)) {
+      console.warn("Entity.search: keywords not set or is not an array");
+      return 0;
+    }
+    const lowercased_keywords = keywords.map(keyword => keyword.toLowerCase());
+    const content = await this.read();
+    const lowercased_content = content.toLowerCase();
+    const lowercased_path = this.data.path.toLowerCase();
+
+    const matching_keywords = lowercased_keywords.filter(keyword => 
+      lowercased_path.includes(keyword) || lowercased_content.includes(keyword)
+    );
+
+    if (type === 'all') {
+      return matching_keywords.length === lowercased_keywords.length ? matching_keywords.length : 0;
+    } else {
+      return matching_keywords.length;
+    }
+  }
+
+  /**
+   * ADAPTER METHODS
+   */
   /**
    * Appends content to the end of the source file.
    * @param {string} content - The content to append to the file.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async append(content) {
-    if(this.env.smart_change) content = this.env.smart_change.wrap("content", { before: "", after: content, ...this.smart_change_opts });
-    const current_content = await this.read();
-    const new_content = [
-      current_content,
-      "",
-      content,
-    ].join("\n").trim();
-    await this._update(new_content);
+    await this.source_adapter.append(content);
+    await this.parse_content();
   }
 
   /**
@@ -186,36 +221,19 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async update(full_content, opts = {}) {
-    const {
-      mode = "replace_all",
-    } = opts;
-    if(mode === "replace_all"){
-      // if(this.env.smart_change && !opts.skip_wrap_changes){
-      //   full_content = this.env.smart_change.wrap("content", {
-      //     before: await this.read({ no_changes: "before" }),
-      //     after: full_content
-      //     ...this.smart_change_opts
-      //   });
-      // }
-      // await this.fs.write(this.data.path, full_content);
-      await this.merge(full_content, { mode: "replace_all" });
-    }else if(mode === "merge_replace"){
-      await this.merge(full_content, { mode: "replace_blocks" });
-    }else if(mode === "merge_append"){
-      await this.merge(full_content, { mode: "append_blocks" });
+    try {
+      // console.log('Updating source:', this.data.path);
+      await this.source_adapter.update(full_content, opts);
+      await this.parse_content();
+      // console.log('Update completed');
+    } catch (error) {
+      console.error('Error during update:', error);
+      throw error;
     }
-    // this.debounced_init();
-    await this.parse_content();
   }
+  // Add these underscore methods back
   async _update(content) {
-    await this.fs.write(this.data.path, content);
-  }
-  debounced_init() {
-    if(this.init_timeout) clearTimeout(this.init_timeout);
-    this.init_timeout = setTimeout(() => {
-      this.init();
-      this.init_timeout = null;
-    }, 900);
+    await this.source_adapter._update(content);
   }
 
   /**
@@ -223,20 +241,19 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<string>} A promise that resolves with the content of the file.
    */
   async read(opts = {}) {
-    let content = await this._read();
-    
-    if (opts.no_changes) {
-      const unwrapped = this.env.smart_change.unwrap(content, {file_type: this.file_type});
-      content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
+    try {
+      // console.log('Reading source:', this.data.path);
+      const content = await this.source_adapter.read(opts);
+      // console.log('Read completed');
+      return content;
+    } catch (error) {
+      console.error('Error during read:', error);
+      throw error;
     }
-    // NO opts.headings
-    if (opts.add_depth) {
-      content = increase_heading_depth(content, opts.add_depth);
-    }
-    
-    return content;
   }
-  async _read() { return await this.fs.read(this.data.path); }
+  async _read() {
+    return await this.source_adapter._read();
+  }
 
   /**
    * Removes the source file from the file system and deletes the entity.
@@ -244,12 +261,17 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async remove() {
-    await this.fs.remove(this.data.path);
-    this.delete();
+    try {
+      // console.log('Removing source:', this.data.path);
+      await this.source_adapter.remove();
+      // console.log('Remove completed');
+    } catch (error) {
+      console.error('Error during remove:', error);
+      throw error;
+    }
   }
-  async destroy() {
-    await this.remove();
-  }
+  async destroy() { await this.remove(); }
+
   /**
    * Moves the current source to a new location.
    * Handles the destination as a string (new path) or entity (block or source).
@@ -259,35 +281,14 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the move operation is complete.
    */
   async move_to(entity_ref) {
-    const new_path = typeof entity_ref === "string" ? entity_ref : entity_ref.key;
-    if (!new_path) {
-      throw new Error("Invalid entity reference for move_to operation");
+    try {
+      // console.log('Moving source:', this.data.path, 'to', entity_ref);
+      await this.source_adapter.move_to(entity_ref);
+      // console.log('Move completed');
+    } catch (error) {
+      console.error('Error during move:', error);
+      throw error;
     }
-
-    const current_content = await this.read();
-    const target_source_key = new_path.split("#")[0];
-    const target_source = this.env.smart_sources.get(target_source_key);
-
-    if (new_path.includes("#")) {
-      // If the new path includes headings, update the content with the new headings
-      const headings = new_path.split("#").slice(1);
-      const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
-      const new_content = new_headings_content + "\n" + current_content;
-      await this._update(new_content);
-    }
-
-    if (target_source) {
-      // If target exists, merge the content
-      await target_source.merge(current_content, { mode: 'append_blocks' });
-    } else {
-      // Rename the file in the filesystem
-      await this.fs.rename(this.data.path, target_source_key);
-      // Create or update the collection with the new path
-      await this.collection.create_or_update({ path: target_source_key, content: current_content });
-    }
-
-    // Remove the current source after renaming or merging (if not moving to the same source)
-    if(this.key !== target_source_key) await this.remove();
   }
 
   /**
@@ -300,125 +301,23 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>}
    */
   async merge(content, opts = {}) {
-    const { mode = 'append_blocks' } = opts;
-    const { blocks } = await this.smart_chunks.parse({
-      content,
-      file_path: this.data.path,
-    });
-    // console.log(blocks);
-    if(!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
-    // should read and re-parse content to make sure all blocks are up to date
-    await this.parse_content();
-    // get content for each block (Smart Chunks currently returns embed_input format 2024-08-09)
-    blocks.forEach(block => {
-      block.content = content
-        .split("\n")
-        .slice(
-          block.lines[0], // - 1, // minus 1 to account for Smart Chunks being 1-indexed as of 2024-08-09
-          block.lines[1] + 1
-        )
-        .join("\n")
-      ;
-      // console.log({ block });
-      const match = this.blocks.find(b => b.key === block.path);
-      if(match){
-        block.matched = true;
-        match.matched = true;
-      }
-      // console.log({ block });
-    });
-    if(mode === "replace_all"){
-      if(this.env.smart_change){
-        let all = "";
-        const new_blocks = blocks.sort((a, b) => a.lines[0] - b.lines[0]);
-        // if first block line start is >0 then add prior content to all
-        if(new_blocks[0].lines[0] > 0){
-          all += content.split("\n").slice(0, new_blocks[0].lines[0]).join("\n");
-        }
-        for(let i = 0; i < new_blocks.length; i++){
-          const block = new_blocks[i];
-          if(all.length) all += "\n";
-          if(block.matched){
-            const og = this.env.smart_blocks.get(block.path);
-            all += this.env.smart_change.wrap("content", {
-              before: await og.read({ no_changes: "before", headings: "last" }),
-              after: block.content,
-              ...this.smart_change_opts
-            });
-          }else{
-            all += this.env.smart_change.wrap("content", {
-              before: "",
-              after: block.content,
-              ...this.smart_change_opts
-            });
-          }
-        }
-        const unmatched_old = this.blocks.filter(b => !b.matched);
-        for(let i = 0; i < unmatched_old.length; i++){
-          const block = unmatched_old[i];
-          all += (all.length ? "\n" : "") + this.env.smart_change.wrap("content", {
-            before: await block.read({ no_changes: "before", headings: "last" }),
-            after: "",
-            ...this.smart_change_opts
-          });
-        }
-        await this._update(all);
-      }else{
-        await this._update(content);
-      }
+    try {
+      // console.log('Merging content into source:', this.data.path);
+      await this.source_adapter.merge(content, opts);
+      await this.parse_content();
+      // console.log('Merge completed');
+    } catch (error) {
+      console.error('Error during merge:', error);
+      throw error;
     }
-    else{
-      for(let i = 0; i < blocks.length; i++){
-        const block = blocks[i];
-        if(block.matched){
-          const to_block = this.env.smart_blocks.get(block.path);
-          if(mode === "append_blocks"){
-            await to_block.append(block.content);//.split("\n").slice(1).join("\n"));
-          }else{
-            await to_block.update(block.content);
-          }
-        }
-      }
-      // append any unmatched blocks to the end of the file
-      const unmatched_content = blocks
-        .filter(block => !block.matched)
-        .map(block => block.content)
-        .join("\n")
-      ;
-      if(unmatched_content.length){
-        await this.append(unmatched_content);
-      }
-    }
-    await this.parse_content();
   }
-  // SEARCH
-  /**
-   * Searches for keywords within the entity's data and content.
-   * @param {Object} search_filter - The search filter object.
-   * @param {string[]} search_filter.keywords - An array of keywords to search for.
-   * @returns {Promise<boolean>} A promise that resolves to true if the entity matches the search criteria, false otherwise.
-   */
-  async search(search_filter = {}) {
-    // Extract keywords from search_filter
-    const { keywords } = search_filter;
-    // Validate the keywords
-    if (!keywords || !Array.isArray(keywords)) {
-      console.warn("Entity.search: keywords not set or is not an array");
-      return false;
-    }
-    // Check if any keyword is in the entity's path
-    if (keywords.some(keyword => this.data.path.includes(keyword))) return true;
-    // Read the entity's content (uses CRUD read())
-    const content = await this.read();
-    // Check if any keyword is in the entity's content
-    if (keywords.some(keyword => content.includes(keyword))) return true;
-    // If no matches found, return false
-    return false;
-  }
+
 
   // DEPRECATED methods
   /**
    * @deprecated Use this.read() instead
    */
-  async get_content() { return await this._read(); }
+  async get_content() { return await this.read(); }
+
+
 }

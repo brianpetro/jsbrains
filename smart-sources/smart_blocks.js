@@ -43,5 +43,7 @@ export class SmartBlocks extends SmartEntities {
     const block = this.get(key);
     return block;
   }
-  async load() { console.log("Skipping smart_blocks.load(): Smart Blocks are loaded by Smart Sources"); }
+  async load() {
+    // console.log("Skipping smart_blocks.load(): Smart Blocks are loaded by Smart Sources");
+  }
 }

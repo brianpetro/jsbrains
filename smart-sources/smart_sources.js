@@ -1,8 +1,14 @@
 import { create_hash } from "./utils/create_hash.js";
 import { SmartEntities } from "smart-entities";
-
 // DO: Extract to separate files
 export class SmartSources extends SmartEntities {
+  constructor(env, opts = {}) {
+    super(env, opts);
+    this.source_adapters = {
+      ...(env.opts.source_adapters || {}),
+      ...(opts.source_adapters || {}),
+    };
+  }
   get fs_opts() {
     return {
       ...super.fs_opts,
@@ -12,6 +18,10 @@ export class SmartSources extends SmartEntities {
   async init() {
     await super.init();
     await this.fs.init();
+  }
+  async load(import_sources = true) {
+    await super.load();
+    if(import_sources) await this.import();
   }
   async import(source_files) {
     if(!source_files?.length) source_files = await this.fs.list_files_recursive();
@@ -170,17 +180,16 @@ export class SmartSources extends SmartEntities {
       this.filter(search_filter).map(async (item) => {
         try {
           const matches = await item.search(search_filter);
-          return matches ? { item, relevance: this.calculate_relevance(item, search_filter) } : null;
+          return matches ? { item, score: matches } : null;
         } catch (error) {
           console.error(`Error searching item ${item.id || 'unknown'}:`, error);
           return null;
         }
       })
     );
-    console.log({ search_results });
     return search_results
       .filter(Boolean)
-      .sort((a, b) => b.relevance - a.relevance) // sort by relevance 
+      .sort((a, b) => b.score - a.score) // sort by relevance 
       .map(result => result.item)
     ;
   }

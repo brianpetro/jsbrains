@@ -1,7 +1,8 @@
 export class SmartEnvSettings {
   constructor(env, opts={}) {
     this.env = env;
-    this.fs = new this.env.smart_fs_class(this.env, {
+    if(!opts.smart_fs_class) throw new Error('smart_fs_class is required to instantiate SmartEnvSettings');
+    this.fs = new opts.smart_fs_class(this.env, {
       adapter: opts.smart_fs_adapter_class,
       fs_path: opts.env_data_dir
     });
@@ -29,7 +30,7 @@ export class SmartEnvSettings {
   async load() {
     if(!(await this.fs.exists('.smart_env.json'))) await this.save({});
     this._settings = JSON.parse(await this.fs.read('.smart_env.json'));
-    console.log("smart_env settings", this._settings);
+    if(this.env.opts?.smart_env_settings) deep_merge(this._settings, this.env.opts.smart_env_settings);
     for(const key of this.env.mains){
       this._settings[key] = await this.env[key].load_settings();
     }
@@ -74,4 +75,21 @@ export function deep_merge_no_overwrite(target, source) {
   function is_obj(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
   }
+}
+/**
+ * Deeply merges two objects, giving precedence to the properties of the source object.
+ * @param {Object} target - The target object to merge properties into.
+ * @param {Object} source - The source object from which properties are sourced.
+ * @returns {Object} The merged object.
+ */
+export function deep_merge(target, source) {
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      // both exist and are objects
+      if (is_obj(source[key]) && is_obj(target[key])) deep_merge(target[key], source[key]);
+      else target[key] = source[key]; // precedence to source
+    }
+  }
+  return target;
+  function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
 }

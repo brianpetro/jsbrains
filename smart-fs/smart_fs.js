@@ -69,7 +69,6 @@ class SmartFs {
    * @param {string} [opts.fs_path] - Custom environment path
    */
   constructor(env, opts = {}) {
-    console.log('SmartFs constructor', opts);
     this.env = env;
     this.fs_path = opts.fs_path || opts.env_path || ''; // vault_path is DEPRECATED
     if(!opts.adapter) throw new Error('SmartFs requires an adapter');
@@ -86,7 +85,6 @@ class SmartFs {
   async init() {
     await this.load_gitignore();
     const all = await this.list_recursive();
-    console.log(all);
     all.forEach(file => {
       if(file.path.endsWith('.ajson')) return;
       if(file.type === 'file'){
@@ -241,7 +239,17 @@ class SmartFs {
    * @param {string} rel_path - The relative path of the file to read
    * @returns {Promise<string|Buffer>} The contents of the file
    */
-  async read(rel_path, encoding='utf-8') { return await this.use_adapter('read', [rel_path], encoding); }
+  async read(rel_path, encoding='utf-8') {
+    try {
+      // console.log('Reading file:', rel_path);
+      const content = await this.adapter.read(rel_path, encoding);
+      // console.log('Read completed');
+      return content;
+    } catch (error) {
+      console.error('Error during read:', error);
+      throw error;
+    }
+  }
 
   /**
    * Remove a file
@@ -284,7 +292,16 @@ class SmartFs {
    * @param {string|Buffer} content - The content to write
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async write(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
+  async write(rel_path, content) {
+    try {
+      // console.log('Writing to file:', rel_path);
+      await this.adapter.write(rel_path, content);
+      // console.log('Write completed');
+    } catch (error) {
+      console.error('Error during write:', error);
+      throw error;
+    }
+  }
   // // aliases
   // async create(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
   // async update(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }

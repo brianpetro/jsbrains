@@ -1,7 +1,11 @@
 import { CollectionItem } from "smart-collections";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
-
+import { EntityAdapter } from "smart-entities/adapters/_adapter.js";
 export class SmartEntity extends CollectionItem {
+  constructor(env, opts = {}) {
+    super(env, opts);
+    this.entity_adapter = new EntityAdapter(this);
+  }
   static get defaults() {
     return {
       data: {
@@ -58,7 +62,6 @@ export class SmartEntity extends CollectionItem {
   get name() { return (!this.env.main.settings.show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get tokens() { return this.data.embeddings[this.embed_model]?.tokens; }
   get embed_model() { return this.collection?.smart_embed_model_key || "None"; }
-  get vec() { return this.data?.embeddings?.[this.embed_model]?.vec; }
   // setters
   set error(error) { this.data.embeddings[this.embed_model].error = error; }
   set tokens(tokens) {
@@ -66,17 +69,16 @@ export class SmartEntity extends CollectionItem {
     if(!this.data.embeddings[this.embed_model]) this.data.embeddings[this.embed_model] = {};
     this.data.embeddings[this.embed_model].tokens = tokens;
   }
-  set vec(vec) {
-    if(!this.data.embeddings) this.data.embeddings = {};
-    if(!this.data.embeddings[this.embed_model]) this.data.embeddings[this.embed_model] = {};
-    this.data.embeddings[this.embed_model].vec = vec;
-  }
   get is_unembedded() {
     if(this.vec) return false;
     if(this.size < (this.env.settings?.embed_input_min_chars || 300)) return false;
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }
+
+  // ADAPTER METHODS
+  get vec() { return this.entity_adapter.vec; }
+  set vec(vec) { this.entity_adapter.vec = vec; }
 
   // SmartSources (how might this be better done?)
   get_key() { return this.data.path; }

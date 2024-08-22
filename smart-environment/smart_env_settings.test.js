@@ -1,6 +1,6 @@
 import test from "ava";
 import { SmartFs } from "../smart-fs/smart_fs.js";
-import { TestFsSmartFsAdapter } from "../smart-fs/adapters/test_fs.js";
+import { TestSmartFsAdapter } from "../smart-fs/adapters/_test.js";
 import { SmartEnvSettings } from "./smart_env_settings.js";
 
 class MockMain {
@@ -22,7 +22,7 @@ class MockEnv {
     this.mock_main = new MockMain();
     this.mains = ["mock_main"];
     this.smart_fs_class = SmartFs;
-    this.smart_fs_adapter_class = TestFsSmartFsAdapter;
+    this.smart_fs_adapter_class = TestSmartFsAdapter;
   }
 }
 

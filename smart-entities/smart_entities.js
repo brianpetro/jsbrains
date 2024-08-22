@@ -106,7 +106,13 @@ export class SmartEntities extends Collection {
     return Array.from(nearest.items);
   }
   get file_name() { return this.collection_name + '-' + this.smart_embed_model_key.split("/").pop(); }
-  get smart_embed_model_key() { return this.env.settings?.[this.collection_name + "_embed_model"] || "None"; }
+  get smart_embed_model_key() {
+    return (
+      this.env.settings?.[this.collection_name]?.embed_model
+      || this.env.settings?.[this.collection_name + "_embed_model"] // DEPRECATED: backwards compatibility
+      || "None"
+    );
+  }
 
   /**
    * Calculates the relevance of an item based on the search filter.
@@ -173,14 +179,10 @@ export class SmartEntities extends Collection {
     return opts;
   }
   async lookup(params={}) {
-    console.log("lookup", params);
     const { hypotheticals = [] } = params;
     if(!hypotheticals?.length) return {error: "hypotheticals is required"};
-    console.log(this);
     if(!this.smart_embed) return {error: "Embedding search is not enabled."};
     const embeddings = await this.smart_embed.embed_batch(hypotheticals.map(h => ({embed_input: h})));
-    console.log(embeddings);
-    console.log({scope: this.env.chats?.current?.scope});
     const filter = {
       ...(this.env.chats?.current?.scope || {}),
       ...(params.filter || {}),
@@ -189,7 +191,7 @@ export class SmartEntities extends Collection {
     const results = embeddings.flatMap((embedding, i) => {
       return this.nearest(embedding.vec, filter);
     });
-    const k = params.k || this.env.config.lookup_k || 10;
+    const k = params.k || this.env.settings.lookup_k || 10;
     const top_k = results
       .sort(sort_by_score)
       .filter((r, i, a) => a.findIndex(t => t.data.path === r.data.path) === i)
@@ -200,7 +202,7 @@ export class SmartEntities extends Collection {
     // top_k = get_nearest_until_next_dev_exceeds_std_dev(top_k); // tested
     // console.log("nearest after std dev slice", top_k.length);
     // top_k = sort_by_len_adjusted_similarity(top_k); // tested
-    console.log(top_k);
+    // console.log(top_k);
     console.log(`Found and returned ${top_k.length} ${this.collection_name}.`);
     return top_k;
   }

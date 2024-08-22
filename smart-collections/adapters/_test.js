@@ -11,6 +11,8 @@ export class TestSmartCollectionAdapter extends SmartCollectionAdapter{
     Object.entries(this.test_data).forEach(([ajson_key, value]) => {
       const [class_name, key] = ajson_key.split(":");
       const entity = new (this.env.item_types[class_name])(this.env, value);
+      // if value has content, this.collection.fs.write()
+      if(value.content) this.collection.fs.write(key, value.content);
       this.add_to_collection(entity);
     });
     // console.log("Loaded test collection");

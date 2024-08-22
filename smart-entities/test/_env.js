@@ -1,19 +1,31 @@
 import { TestSmartCollectionAdapter } from '../../smart-collections/adapters/_test.js';
 import { TestSmartFsAdapter } from '../../smart-fs/adapters/_test.js';
-import { TestSourceAdapter } from '../adapters/_test.js';
-import { MarkdownSourceAdapter } from '../adapters/markdown.js';
-import { SmartSource } from '../smart_source.js';
-import { SmartSources } from '../smart_sources.js';
-import { SmartBlock } from '../smart_block.js';
-import { SmartBlocks } from '../smart_blocks.js';
+import { SmartEntity } from '../smart_entity.js';
+import { SmartEntities } from '../smart_entities.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
+
 const __dirname = new URL('.', import.meta.url).pathname;
 
-// stub SmartSources import (TODO replace with Test Adapter)
-SmartSources.prototype.import = async function() {
+// stub SmartEntities.load_smart_embed_model
+SmartEntities.prototype.load_smart_embed = async function() {
+  this.smart_embed = {
+    embed: () => {
+      return {
+        vec: [0.1, 0.2, 0.3],
+        tokens: 100
+      }
+    },
+    embed_batch: (items) => {
+      return items.map(item => ({
+        ...item,
+        vec: [0.1, 0.2, 0.3],
+        tokens: 100
+      }));
+    }
+  };
   return Promise.resolve();
 };
 
@@ -31,19 +43,15 @@ class TestMain {
       smart_fs_class: SmartFs,
       smart_fs_adapter_class: TestSmartFsAdapter,
       collections: {
-        smart_sources: SmartSources,
-        smart_blocks: SmartBlocks,
+        smart_entities: SmartEntities,
       },
       item_types: {
-        SmartSource,
-        SmartBlock,
+        SmartEntity,
       },
-      source_adapters: {
-        // test: TestSourceAdapter,
-        default: MarkdownSourceAdapter,
-        test: MarkdownSourceAdapter,
-        md: MarkdownSourceAdapter,
-        // markdown: MarkdownSourceAdapter,
+      smart_env_settings: {
+        smart_entities: {
+          embed_model: 'model1',
+        },
       },
     };
   }

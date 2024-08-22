@@ -116,7 +116,6 @@ export class SmartEnv {
     await this.ready_to_load_collections();
     await this.init_collections();
     await this.load_collections();
-    await this.smart_sources.import();
     this.init_smart_change();
   }
   async ready_to_load_collections() { return true; } // override in subclasses with env-specific logic

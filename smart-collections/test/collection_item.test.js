@@ -2,7 +2,7 @@ import test from 'ava';
 import { load_test_env } from './_env.js';
 import { CollectionItem } from '../main.js';
 
-test.beforeEach(t => { load_test_env(t); });
+test.beforeEach(async t => { await load_test_env(t); });
 
 test('CollectionItem constructor initializes with correct data', t => {
   const { env } = t.context;

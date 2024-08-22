@@ -2,11 +2,10 @@ import test from 'ava';
 import { load_test_env } from './_env.js';
 import { Collection } from '../main.js';
 
-test.beforeEach(t => { load_test_env(t); });
+test.beforeEach(async t => { await load_test_env(t); });
 
 test('Collection.load creates a new collection instance', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
 
   t.true(test_collection instanceof Collection);
@@ -15,7 +14,6 @@ test('Collection.load creates a new collection instance', async t => {
 
 test('Collection.create_or_update creates a new item', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
 
   const new_item = test_collection.create_or_update({ key: 'test_item', data: 'test_data' });
@@ -27,7 +25,6 @@ test('Collection.create_or_update creates a new item', async t => {
 
 test('Collection.create_or_update updates an existing item', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
 
   test_collection.create_or_update({ key: 'test_item', data: 'initial_data' });
@@ -40,7 +37,6 @@ test('Collection.create_or_update updates an existing item', async t => {
 
 test('Collection.find_by returns the correct item', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
 
   test_collection.create_or_update({ key: 'test_item', data: 'test_data' });
@@ -52,7 +48,6 @@ test('Collection.find_by returns the correct item', async t => {
 
 test('Collection.filter returns correct items', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
 
   test_collection.create_or_update({ key: 'item1', data: 'data1' });
@@ -67,7 +62,6 @@ test('Collection.filter returns correct items', async t => {
 
 test('Collection.get_many returns correct items', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
 
   test_collection.create_or_update({ key: 'item1', data: 'data1' });
@@ -81,7 +75,6 @@ test('Collection.get_many returns correct items', async t => {
 
 test('Collection.delete_many removes correct items', async t => {
   const { env } = t.context;
-  await env.init();
   const test_collection = env.collection;
   const test_data_ct = Object.keys(test_collection.adapter.test_data).length;
   t.is(

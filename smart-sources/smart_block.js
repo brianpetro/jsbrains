@@ -1,4 +1,5 @@
 import { SmartEntity } from "smart-entities";
+import { increase_heading_depth } from "./utils/increase_heading_depth.js";
 
 export class SmartBlock extends SmartEntity {
   static get defaults() {
@@ -310,6 +311,3 @@ export class SmartBlock extends SmartEntity {
 }
 
 
-export function increase_heading_depth(content, depth) {
-  return content.replace(/^(#+)/gm, match => '#'.repeat(match.length + depth));
-}

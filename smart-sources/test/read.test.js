@@ -2,10 +2,10 @@ import test from 'ava';
 import { load_test_env } from './_env.js';
 import { SmartChange } from '../../smart-change/smart_change.js';
 import { DefaultAdapter } from '../../smart-change/adapters/default.js';
-import { increase_heading_depth } from '../../smart-entities/SmartBlock.js';
+import { increase_heading_depth } from '../../smart-sources/utils/increase_heading_depth.js';
 
-test.beforeEach(t => {
-  load_test_env(t);
+test.beforeEach(async t => {
+  await load_test_env(t);
 });
 
 const initial_content = `# Heading 1
@@ -14,16 +14,21 @@ Some content
 ### Heading 3
 More content`;
 
-test.serial('SmartSource read - default behavior', async t => {
-  const env = t.context.mock_env;
-  await env.smart_fs.write('test.md', initial_content);
+test('SmartSource read - default behavior', async t => {
+  const env = t.context.env;
+  await env.fs.write('test.md', 'Test content');
   const source = await env.smart_sources.create_or_update({ path: 'test.md' });
-  const content = await source.read();
-  t.is(content, initial_content, 'Default read should return the original content');
+  try {
+    const content = await source.read();
+    t.is(content, 'Test content', 'Read content should match written content');
+  } catch (error) {
+    console.error('Error during read:', error);
+    t.fail(`Read failed: ${error.message}`);
+  }
 });
 
 test.serial('SmartSource read - with no_changes option', async t => {
-  const env = t.context.mock_env;
+  const env = t.context.env;
   env.smart_change = new SmartChange(env, {
     adapters: {
       default: new DefaultAdapter()
@@ -37,7 +42,7 @@ test.serial('SmartSource read - with no_changes option', async t => {
 >>>>>>>
 Some content`;
 
-  await env.smart_fs.write('test_changes.md', content_with_changes);
+  await env.fs.write('test_changes.md', content_with_changes);
   const source = await env.smart_sources.create_or_update({ path: 'test_changes.md' });
 
   const content_before = await source.read({ no_changes: 'before' });
@@ -51,8 +56,8 @@ Some content`;
 });
 
 test.serial('SmartSource read - with add_depth option', async t => {
-  const env = t.context.mock_env;
-  await env.smart_fs.write('test_depth.md', initial_content);
+  const env = t.context.env;
+  await env.fs.write('test_depth.md', initial_content);
   const source = await env.smart_sources.create_or_update({ path: 'test_depth.md' });
   const block = source.blocks[0];
 
@@ -70,7 +75,7 @@ Some content`;
 });
 
 test.serial('SmartSource read - with headings option (all)', async t => {
-  const env = t.context.mock_env;
+  const env = t.context.env;
   const some_content = `Some content`;
   const block = await env.smart_blocks.create('test_headings.md#Section 1#Subsection A', some_content);
   const content_all_headings = await block.read({ headings: 'all' });
@@ -81,7 +86,7 @@ ${some_content}`;
 });
 
 test.serial('SmartSource read - with headings option (last)', async t => {
-  const env = t.context.mock_env;
+  const env = t.context.env;
   const some_content = `Some content`;
   const block = await env.smart_blocks.create('test_headings_last.md#Section 1#Subsection A', some_content);
 
