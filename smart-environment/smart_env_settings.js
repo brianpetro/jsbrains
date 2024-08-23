@@ -21,6 +21,7 @@ export class SmartEnvSettings {
         smart_env_settings[key] = this._settings[key];
       }
     }
+    if(!await this.fs.exists('')) await this.fs.mkdir('');
     await this.fs.write(
       '.smart_env.json',
       JSON.stringify(smart_env_settings, null, 2)
