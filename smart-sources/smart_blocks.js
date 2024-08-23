@@ -1,6 +1,15 @@
 import { SmartEntities } from "smart-entities";
+import { BlockAdapter } from "./adapters/_adapter.js";
+import { MarkdownBlockAdapter } from "./adapters/markdown.js";
 
 export class SmartBlocks extends SmartEntities {
+  constructor(env, opts = {}) {
+    super(env, opts);
+    this.block_adapters = {
+      "default": BlockAdapter,
+      "md": MarkdownBlockAdapter,
+    };
+  }
   async prune() {
     const start = Date.now();
     const remove = [];

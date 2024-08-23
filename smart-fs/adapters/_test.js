@@ -19,20 +19,15 @@ export class TestSmartFsAdapter {
   }
 
   async mkdir(rel_path, opts = { recursive: true }) {
-    if (opts.recursive) {
-      const parts = rel_path.split(this.sep);
-      let current_path = '';
-      for (const part of parts) {
-        current_path += (current_path ? this.sep : '') + part;
-        if (!(current_path in this.files)) {
-          this.files[current_path] = '[DIRECTORY]';
-        }
+    const parts = rel_path.split(this.sep);
+    let current_path = '';
+    for (const part of parts) {
+      current_path += (current_path ? this.sep : '') + part;
+      if (!(current_path in this.files) || opts.recursive) {
+        this.files[current_path] = '[DIRECTORY]';
+      } else if (!opts.recursive) {
+        throw new Error(`Directory already exists: ${current_path}`);
       }
-    } else {
-      if (rel_path in this.files) {
-        throw new Error(`Directory already exists: ${rel_path}`);
-      }
-      this.files[rel_path] = '[DIRECTORY]';
     }
   }
 
@@ -80,8 +75,17 @@ export class TestSmartFsAdapter {
     return this.list(rel_path, { ...opts, type: 'folder' });
   }
 
-  async list_folders_recursive(rel_path, opts = {}) {
-    return this.list_recursive(rel_path, { ...opts, type: 'folder' });
+  async list_folders_recursive(rel_path = '', opts = {}) {
+    const all_paths = Object.keys(this.files)
+      .filter(key => key.startsWith(rel_path) && this.files[key] === '[DIRECTORY]' && key !== rel_path)
+      .map(key => ({
+        basename: key.split(this.sep).pop(),
+        name: key.split(this.sep).pop(),
+        path: key,
+        type: 'folder'
+      }));
+
+    return all_paths;
   }
 
   async read(rel_path, encoding = 'utf-8') {

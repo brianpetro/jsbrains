@@ -1,8 +1,6 @@
 import { create_hash } from "./utils/create_hash.js";
 import { SmartEntity } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
-import { SourceAdapter } from "./adapters/_adapter.js";
-import { MarkdownSourceAdapter } from "./adapters/markdown.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -13,14 +11,13 @@ export class SmartSource extends SmartEntity {
       _embed_input: null, // stored temporarily
     };
   }
-  get source_adapters() {
-    return {
-      "md": MarkdownSourceAdapter,
-      ...this.collection.source_adapters,
-    };
+  get source_adapters() { return this.collection.source_adapters; }
+  get source_adapter() {
+    if(this._source_adapter) return this._source_adapter;
+    if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
+    else this._source_adapter = new this.source_adapters["default"](this);
+    return this._source_adapter;
   }
-  get source_adapter_class() { return this.source_adapters[this.file_type] || SourceAdapter; }
-  get source_adapter() { return new this.source_adapter_class(this); }
   async init() {
     // normalize path
     this.data.path = this.data.path.replace(/\\/g, "/");

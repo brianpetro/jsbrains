@@ -6,16 +6,13 @@ import { SmartSource } from '../smart_source.js';
 import { SmartSources } from '../smart_sources.js';
 import { SmartBlock } from '../smart_block.js';
 import { SmartBlocks } from '../smart_blocks.js';
+import { SmartDirectory } from '../smart_directory.js';
+import { SmartDirectories } from '../smart_directories.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 const __dirname = new URL('.', import.meta.url).pathname;
-
-// stub SmartSources import (TODO replace with Test Adapter)
-SmartSources.prototype.import = async function() {
-  return Promise.resolve();
-};
 
 class TestMain {
   load_settings() { return {}; }
@@ -33,17 +30,15 @@ class TestMain {
       collections: {
         smart_sources: SmartSources,
         smart_blocks: SmartBlocks,
+        smart_directories: SmartDirectories,
       },
       item_types: {
         SmartSource,
         SmartBlock,
+        SmartDirectory,
       },
       source_adapters: {
-        // test: TestSourceAdapter,
-        default: MarkdownSourceAdapter,
-        test: MarkdownSourceAdapter,
-        md: MarkdownSourceAdapter,
-        // markdown: MarkdownSourceAdapter,
+        test: TestSourceAdapter,
       },
     };
   }

@@ -1,10 +1,14 @@
 import { create_hash } from "./utils/create_hash.js";
 import { SmartEntities } from "smart-entities";
+import { SourceAdapter } from "./adapters/_adapter.js";
+import { MarkdownSourceAdapter } from "./adapters/markdown.js";
 // DO: Extract to separate files
 export class SmartSources extends SmartEntities {
   constructor(env, opts = {}) {
     super(env, opts);
     this.source_adapters = {
+      "md": MarkdownSourceAdapter,
+      "default": SourceAdapter,
       ...(env.opts.source_adapters || {}),
       ...(opts.source_adapters || {}),
     };
@@ -25,6 +29,9 @@ export class SmartSources extends SmartEntities {
   }
   async import(source_files) {
     if(!source_files?.length) source_files = await this.fs.list_files_recursive();
+    this.fs.folder_paths.forEach(async (_path) => {
+      await this.create_or_update({ path: _path });
+    });
     source_files = source_files.filter(file => ['md', 'canvas', 'txt'].includes(file.extension)); // filter available file types
     let batch = [];
     try {
@@ -83,8 +90,8 @@ export class SmartSources extends SmartEntities {
         }
       }
       this.env.links = this.build_links_map();
-      this.env.main.notices.remove('initial scan progress');
-      if(source_files.length > 1) this.env.main.notices.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
+      this.env.main.notices?.remove('initial scan progress');
+      if(source_files.length > 1) this.env.main.notices?.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
     } catch (e) {
       console.warn("error importing notes: ", e);
       console.warn({ batch });

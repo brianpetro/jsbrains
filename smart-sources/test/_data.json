@@ -128,5 +128,35 @@
         "hash": "hash5_block"
       }
     ]
+  },
+  "SmartDirectory:test": {
+    "path": "test",
+    "history": [
+      {
+        "mtime": 1625529600000,
+        "size": 0,
+        "hash": "hash_test_dir"
+      }
+    ]
+  },
+  "SmartDirectory:other": {
+    "path": "other",
+    "history": [
+      {
+        "mtime": 1625616000000,
+        "size": 0,
+        "hash": "hash_other_dir"
+      }
+    ]
+  },
+  "SmartDirectory:projects": {
+    "path": "projects",
+    "history": [
+      {
+        "mtime": 1625702400000,
+        "size": 0,
+        "hash": "hash_projects_dir"
+      }
+    ]
   }
 }

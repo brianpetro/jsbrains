@@ -20,7 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 export class SmartChange {
-    constructor(env, opts={}) {
+    constructor(env, opts = {}) {
         this.env = env;
         this.adapters = opts.adapters || {};
     }
@@ -37,7 +37,28 @@ export class SmartChange {
         const adapter = this.get_adapter(change_opts);
         return adapter.unwrap(content);
     }
-    async destroy(entity, opts={}){
+
+    get settings_config() {
+        return {
+            change_ui: {
+                name: 'Change UI',
+                type: "toggle",
+                description: "Display changes with accept/reject in Obsidian (requires Smart Connections plugin).",
+                callback: 'restart' // is this necessary?
+            }
+        }
+    }
+
+    // DEPRECATED
+    before(change_type, change_opts) {
+        const adapter = this.get_adapter(change_opts);
+        return adapter.before(change_type, change_opts);
+    }
+    after(change_type, change_opts) {
+        const adapter = this.get_adapter(change_opts);
+        return adapter.after(change_type, change_opts);
+    }
+    async destroy(entity, opts = {}) {
         const current_content = await entity.read();
         const wrapped_content = this.wrap('content', { before: current_content, ...opts });
         await entity._update(wrapped_content);
@@ -53,16 +74,6 @@ export class SmartChange {
         await from_entity._update(from_content);
         const to_content = this.wrap('location', { from_key: from_entity.key, after: content });
         await to_entity._append(to_content);
-    }
-
-    // DEPRECATED
-    before(change_type, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.before(change_type, change_opts);
-    }
-    after(change_type, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.after(change_type, change_opts);
     }
 
 }
