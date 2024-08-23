@@ -54,17 +54,22 @@ export class SmartSource extends SmartEntity {
   find_connections(opts={}) {
     let connections = super.find_connections(opts);
     const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
-    if(!opts.exclude_blocks_from_source_connections && this.median_block_vec){
-      const cache_key = this.key + "_blocks";
-      if(!this.env.connections_cache[cache_key]){
-        const nearest = this.env.smart_blocks.nearest(this.median_block_vec, this.filter_opts)
-        nearest.sort(sort_by_score)
-        this.env.connections_cache[cache_key] = nearest.slice(0, limit);
+    if(!opts.exclude_blocks_from_source_connections) {
+      const use_source_vec = this.env.smart_blocks.embed_model === this.embed_model;
+      const vec_to_use = use_source_vec ? this.vec : this.median_block_vec;
+      
+      if (vec_to_use) {
+        const cache_key = this.key + "_blocks";
+        if(!this.env.connections_cache[cache_key]){
+          const nearest = this.env.smart_blocks.nearest(vec_to_use, this.filter_opts)
+          nearest.sort(sort_by_score)
+          this.env.connections_cache[cache_key] = nearest.slice(0, limit);
+        }
+        connections = [
+          ...connections,
+          ...this.env.connections_cache[cache_key],
+        ].sort(sort_by_score).slice(0, limit);
       }
-      connections = [
-        ...connections,
-        ...this.env.connections_cache[cache_key],
-      ].sort(sort_by_score).slice(0, limit);
     }
     return connections;
   }
@@ -122,13 +127,18 @@ export class SmartSource extends SmartEntity {
   get median_block_vec() {
     if (this._median_block_vec) return this._median_block_vec;
     if (!this.block_vecs.length) return null;
+
     const vec_length = this.block_vecs[0].length;
     this._median_block_vec = new Array(vec_length);
+    const mid = Math.floor(this.block_vecs.length / 2);
+
     for (let i = 0; i < vec_length; i++) {
       const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      const mid = Math.floor(values.length / 2);
-      this._median_block_vec[i] = values.length % 2 !== 0 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
+        ? values[mid]
+        : (values[mid - 1] + values[mid]) / 2;
     }
+
     return this._median_block_vec;
   }
   get t_file() {
