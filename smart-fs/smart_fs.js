@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import {minimatch} from 'minimatch'; // TODO: remove this dependency (prevents Obsidian mobile)
+import { glob_to_regex } from './utils/match_glob.js';
 import { fuzzy_search } from './utils/fuzzy_search.js';
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
@@ -101,7 +101,7 @@ class SmartFs {
   /**
    * Load .gitignore patterns
    * 
-   * @returns {Promise<minimatch[]>} Array of Minimatch patterns
+   * @returns {Promise<RegExp[]>} Array of RegExp patterns
    */
   async load_gitignore() {
     const gitignore_path = '.gitignore';
@@ -117,7 +117,7 @@ class SmartFs {
     }
     this.add_ignore_pattern('**/*.excalidraw.md');
     // exclude all hidden files and folders
-    this.add_ignore_pattern('**/.**', { dot: true }); // ignore hidden files and folders in subdirectories
+    this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
     this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
   }
 
@@ -127,7 +127,7 @@ class SmartFs {
    * @param {string} pattern - The pattern to add
    */
   add_ignore_pattern(pattern, opts = {}) {
-    this.excluded_patterns.push(new minimatch.Minimatch(pattern.trim(), opts));
+    this.excluded_patterns.push(glob_to_regex(pattern.trim(), opts));
   }
   /**
    * Check if a path is ignored based on gitignore patterns
@@ -138,7 +138,7 @@ class SmartFs {
   is_excluded(_path) {
     try {
       if (!this.excluded_patterns.length) return false;
-      return this.excluded_patterns.some(pattern => pattern.match(_path));
+      return this.excluded_patterns.some(pattern => pattern.test(_path));
     } catch(e) {
       console.error(`Error checking if path is excluded: ${e.message}`);
       console.error(`Path: `, _path);
