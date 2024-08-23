@@ -40,21 +40,22 @@ export class SmartBlock extends SmartEntity {
     if(this.smart_embed && this.is_unembedded) this.smart_embed.embed_entity(this);
   }
 
-  async get_content() {
-    if (!this.source) return null;
-    try {
-      if (this.has_lines) { // prevents full parsing of note if not needed
-        const all_lines = await this.source.get_content();
-        const block_content = all_lines.split("\n").slice(this.line_start, this.line_end + 1).join("\n");
-        return block_content;
-      }
-      const block_content = await this.smart_chunks.get_block_from_path(this.data.path, this.source);
-      return block_content;
-    } catch (e) {
-      console.log("error getting block content for ", this.data.path, ": ", e);
-      return "BLOCK NOT FOUND";
-    }
-  }
+  async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }
+  // async get_content() {
+  //   if (!this.source) return null;
+  //   try {
+  //     if (this.has_lines) { // prevents full parsing of note if not needed
+  //       const all_lines = await this.source.get_content();
+  //       const block_content = all_lines.split("\n").slice(this.line_start, this.line_end + 1).join("\n");
+  //       return block_content;
+  //     }
+  //     const block_content = await this.smart_chunks.get_block_from_path(this.data.path, this.source);
+  //     return block_content;
+  //   } catch (e) {
+  //     console.log("error getting block content for ", this.data.path, ": ", e);
+  //     return "BLOCK NOT FOUND";
+  //   }
+  // }
 
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
@@ -83,18 +84,10 @@ export class SmartBlock extends SmartEntity {
   }
   // use text length to detect changes
   get name() {
-    const source_key = this.data.path.split("#")[0];
-    const file_name = source_key.split("/").pop().replace(".md", "");
-    const block_parts = this.data.path.split("#").slice(1);
-    
-    if (this.env.main.settings.show_full_path) {
-      return [...path_parts, ...block_parts].join(" > ");
-    } else {
-      // should return file_name and last non-bracket (i.e. {n}) heading
-      let last_heading = block_parts.pop();
-      if(last_heading.startsWith("{") && last_heading.endsWith("}")) last_heading = block_parts.pop();
-      return file_name + " > " + last_heading;
-    }
+    const source_name = this.source.name;
+    const block_path_parts = this.data.path.split("#").slice(1);
+    if(this.should_show_full_path) return [source_name, ...block_path_parts].join(" > ");
+    return [source_name, block_path_parts.pop()].join(" > ");
   }
   // uses data.lines to get next block
   get next_block() {

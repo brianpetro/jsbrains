@@ -59,7 +59,8 @@ export class SmartEntity extends CollectionItem {
   get smart_chunks() { return this.collection.smart_chunks; }
   get embed_link() { return `![[${this.data.path}]]`; }
   get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get name() { return (!this.env.main.settings.show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
+  get should_show_full_path() { return this.env.settings.show_full_path; }
+  get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get tokens() { return this.data.embeddings[this.embed_model]?.tokens; }
   get embed_model() { return this.collection?.smart_embed_model_key || "None"; }
   // setters

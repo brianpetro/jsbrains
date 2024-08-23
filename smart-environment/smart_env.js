@@ -46,10 +46,12 @@ export class SmartEnv {
     this.smart_embed_active_models = {};
   }
   get fs() {
-    return this.smart_sources?.fs || new this.opts.smart_fs_class(this, {
-      fs_path: this.opts.env_path,
-      adapter: this.opts.smart_fs_adapter_class
+    if(!this.smart_fs) this.smart_fs = new this.smart_fs_class(this, {
+      adapter: this.opts.smart_fs_adapter_class,
+      fs_path: this.opts.env_path || '',
+      exclude_patterns: this.excluded_patterns || [],
     });
+    return this.smart_fs;
   }
   get settings() { return this.smart_env_settings._settings; }
   set settings(settings) { this.smart_env_settings._settings = settings; }

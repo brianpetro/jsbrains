@@ -110,6 +110,10 @@ export class SmartSource extends SmartEntity {
       return true;
     }
   }
+  get name() {
+    if(this.should_show_full_path) return this.data.path.split("/").join(" > ").replace(".md", "");
+    return this.data.path.split("/").pop().replace(".md", "");
+  }
   get is_canvas() { return this.data.path.endsWith("canvas"); }
   get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
   get is_gone() { return this.t_file === null; }
