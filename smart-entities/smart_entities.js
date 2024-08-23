@@ -207,6 +207,7 @@ export class SmartEntities extends Collection {
     return top_k;
   }
   get settings_config() { return settings_config; }
+  get filter_config() { return filter_config; }
 }
 
 export const settings_config = {
@@ -216,7 +217,7 @@ export const settings_config = {
     description: "Select a model to use for embedding your notes.",
     options_callback: 'get_embedding_model_options',
     callback: 'restart',
-    required: true
+    // required: true
   },
   smart_blocks_embed_model: {
     name: 'Blocks Embedding Model',
@@ -224,7 +225,7 @@ export const settings_config = {
     description: "Select a model to use for embedding your blocks.",
     options_callback: 'get_embedding_model_options',
     callback: 'restart',
-    required: true
+    // required: true
   },
   embed_input_min_chars: {
     name: 'Minimum Embedding Length',
@@ -232,7 +233,7 @@ export const settings_config = {
     description: "Minimum length of note to embed.",
     placeholder: "Enter a number",
     // callback: 'refresh_embeddings',
-    required: true,
+    // required: true,
   },
   api_key: {
     name: 'OpenAI API Key for embeddings',
@@ -254,4 +255,45 @@ export const settings_config = {
     callback: 'reload_env',
     conditional_callback: (settings) => settings.smart_sources_embed_model.includes('/') || settings.smart_blocks_embed_model.includes('/')
   },
+  // "cohere_api_key": {
+  //   type: "text",
+  //   name: "Cohere API Key",
+  //   description: "API Key required to use Cohere re-ranker.",
+  //   placeholder: "Enter an API Key",
+  //   button: "Save",
+  // },
+};
+
+
+export const filter_config = {
+  "exclude_inlinks": {
+    type: "toggle",
+    name: "Exclude Inlinks",
+    description: "Exclude inlinks",
+  },
+  "exclude_outlinks": {
+    type: "toggle",
+    name: "Exclude Outlinks",
+    description: "Exclude outlinks",
+  },
+  "include_exclude": {
+    type: "toggle",
+    name: "Toggle Using Include/Exclude",
+    description: "Toggle using include/exclude filters",
+  },
+  "include_filter": {
+    type: "text",
+    name: "Include Filter",
+    description: "Require that results match this value.",
+  },
+  "exclude_filter": {
+    type: "text",
+    name: "Exclude Filter",
+    description: "Exclude results that match this value.",
+  },
+  // "re_rank": {
+  //   type: "toggle",
+  //   name: "Toggle Re-Ranker",
+  //   description: "Toggle the re-ranker",
+  // },
 };

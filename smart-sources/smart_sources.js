@@ -29,10 +29,16 @@ export class SmartSources extends SmartEntities {
   }
   async import(source_files) {
     if(!source_files?.length) source_files = await this.fs.list_files_recursive();
-    this.fs.folder_paths.forEach(async (_path) => {
-      await this.create_or_update({ path: _path });
-    });
-    source_files = source_files.filter(file => ['md', 'canvas', 'txt'].includes(file.extension)); // filter available file types
+    if(this.env.smart_directories) {
+      this.fs.folder_paths.forEach(async (_path) => {
+        await this.env.smart_directories.create_or_update({ path: _path });
+      });
+    }
+    source_files = source_files.filter(file => [
+      'md',
+      // 'canvas', // skip canvas until added canvas adapter
+      'txt'
+    ].includes(file.extension)); // filter available file types
     let batch = [];
     try {
       const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)

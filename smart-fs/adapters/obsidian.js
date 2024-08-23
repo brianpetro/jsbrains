@@ -14,11 +14,13 @@ export class ObsidianSmartFsAdapter {
    * @param {Object} smart_fs - The SmartFs instance
    */
   constructor(smart_fs) {
+    this.smart_fs = smart_fs;
     this.obsidian = smart_fs.env.main.obsidian;
     this.obsidian_app = smart_fs.env.main.app;
     // scoped to env_path by default
     this.obsidian_adapter = smart_fs.env.main.app.vault.adapter;
   }
+  get fs_path() { return this.smart_fs.fs_path; }
 
   /**
    * Append content to a file
@@ -28,6 +30,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async append(rel_path, data) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.append(rel_path, data);
   }
 
@@ -38,6 +41,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async mkdir(rel_path) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.mkdir(rel_path);
   }
 
@@ -48,6 +52,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<boolean>} True if the path exists, false otherwise
    */
   async exists(rel_path) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.exists(rel_path);
   }
 
@@ -58,6 +63,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<string[]>} Array of file paths
    */
   async list(rel_path, opts={}) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
     // handle hidden files and folders (getAllLoadedFiles excludes hidden files and folders)
@@ -88,6 +94,7 @@ export class ObsidianSmartFsAdapter {
   }
   // NOTE: currently does not handle hidden files and folders
   async list_recursive(rel_path, opts={}) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     if(rel_path.startsWith('/')) rel_path = rel_path.slice(1);
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
     const files = this.obsidian_app.vault.getAllLoadedFiles()
@@ -124,6 +131,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<string>} The contents of the file
    */
   async read(rel_path, encoding) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     if(encoding === 'utf-8') return await this.obsidian_adapter.read(rel_path);
     if(encoding === 'base64'){
       const array_buffer = await this.obsidian_adapter.readBinary(rel_path, 'base64');
@@ -141,6 +149,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async rename(old_path, new_path) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.rename(old_path, new_path);
   }
 
@@ -151,6 +160,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async remove(rel_path) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.remove(rel_path);
   }
 
@@ -161,6 +171,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async remove_dir(rel_path) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.rmdir(rel_path);
   }
 
@@ -171,6 +182,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<Object>} An object containing file or directory information
    */
   async stat(rel_path) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.stat(rel_path);
   }
 
@@ -182,6 +194,7 @@ export class ObsidianSmartFsAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async write(rel_path, data) {
+    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.write(rel_path, data);
   }
 }

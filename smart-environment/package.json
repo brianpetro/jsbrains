@@ -18,6 +18,7 @@
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
+    "smart-change": "../smart-change",
     "smart-file-system": "../smart-fs"
   }
 }

@@ -20,10 +20,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartEnvSettings } from './smart_env_settings.js';
-import { SmartChange } from '../smart-change/smart_change.js';
-import { DefaultAdapter } from '../smart-change/adapters/default.js';
-import { MarkdownAdapter } from '../smart-change/adapters/markdown.js';
-import { ObsidianMarkdownAdapter } from '../smart-change/adapters/obsidian_markdown.js';
+import { SmartChange } from 'smart-change/smart_change.js';
+import { DefaultAdapter } from 'smart-change/adapters/default.js';
+import { MarkdownAdapter } from 'smart-change/adapters/markdown.js';
+import { ObsidianMarkdownAdapter } from 'smart-change/adapters/obsidian_markdown.js';
 export class SmartEnv {
   constructor(main, opts={}) {
     this.opts = opts;
