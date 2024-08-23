@@ -1,5 +1,5 @@
-const test = require('ava');
-const { fuzzy_search } = require('./fuzzy_search');
+import test from 'ava';
+import { fuzzy_search } from './fuzzy_search.js';
 
 // fuzzy_search
 test('fuzzy_search should return an empty array if the input array is empty', (t) => {
