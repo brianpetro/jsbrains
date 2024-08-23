@@ -19,6 +19,7 @@ export class SmartEnvSettings {
         await this.env[key].save_settings(this._settings[key]);
       }else{
         smart_env_settings[key] = this._settings[key];
+        // TODO: decided: may check if present in main.settings and remove
       }
     }
     if(!await this.fs.exists('')) await this.fs.mkdir('');

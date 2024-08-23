@@ -193,16 +193,8 @@ export class Collection {
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
 
-  get fs() {
-    if(!this.smart_fs) this.smart_fs = new this.env.smart_fs_class(this.env, this.fs_opts);
-    return this.smart_fs;
-  }
-  get fs_opts() {
-    return {
-      adapter: this.env.smart_fs_adapter_class,
-      exclude_patterns: this.env.excluded_patterns,
-    };
-  }
+  // may be moved to SmartSources (should not be needed in this or SmartEntities)
+  get fs() { return this.env.fs; }
 
   // ADAPTER METHODS
   /**

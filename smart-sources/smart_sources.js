@@ -13,12 +13,6 @@ export class SmartSources extends SmartEntities {
       ...(opts.source_adapters || {}),
     };
   }
-  get fs_opts() {
-    return {
-      ...super.fs_opts,
-      fs_path: this.opts.fs_path || this.opts.env_path || ''
-    };
-  }
   async init() {
     await super.init();
     await this.fs.init();

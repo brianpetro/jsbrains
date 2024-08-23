@@ -58,8 +58,6 @@ class SmartSettings {
     } else {
       settings[setting] = (typeof value === "string") ? value.trim() : value;
     }
-    // this.settings = settings;
-    // await this.main.save_settings(true);
     await this.env.smart_env_settings.save(settings);
   }
   render_components() {

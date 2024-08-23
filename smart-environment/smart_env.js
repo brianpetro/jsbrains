@@ -45,6 +45,14 @@ export class SmartEnv {
     this.smart_env_settings = new SmartEnvSettings(this, opts);
     this.smart_embed_active_models = {};
   }
+  get fs() {
+    return this.smart_sources?.fs || new this.opts.smart_fs_class(this, {
+      fs_path: this.opts.env_path,
+      adapter: this.opts.smart_fs_adapter_class
+    });
+  }
+  get settings() { return this.smart_env_settings._settings; }
+  set settings(settings) { this.smart_env_settings._settings = settings; }
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
@@ -170,13 +178,8 @@ export class SmartEnv {
     await this.init_collections();
     await this.load_collections();
   }
-  get fs() {
-    return this.smart_sources?.fs || new this.opts.smart_fs_class(this, {
-      fs_path: this.opts.env_path,
-      adapter: this.opts.smart_fs_adapter_class
-    });
-  }
 
+  // smart-change
   get smart_change_adapters() {
     return {
       default: new DefaultAdapter(),
@@ -186,18 +189,6 @@ export class SmartEnv {
   }
   init_smart_change() {
     this.smart_change = new SmartChange(this, { adapters: this.smart_change_adapters });
-  }
-  // NEEDS REVIEW:
-  get settings() {
-    return this.smart_env_settings._settings;
-    // const settings = {};
-    // this.mains.forEach(main => {
-    //   if(!settings[main]) settings[main] = {};
-    //   Object.keys(this[main].settings || {}).forEach(setting => {
-    //     settings[main][setting] = this[main].settings[setting];
-    //   });
-    // });
-    // return settings;
   }
 }
 
