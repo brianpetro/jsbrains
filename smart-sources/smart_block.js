@@ -20,6 +20,8 @@ export class SmartBlock extends SmartEntity {
     };
   }
 
+  queue_save() { this.source.queue_save(this.key); }
+
   update_data(data) {
     if (this.should_clear_embeddings(data)) this.data.embeddings = {};
     if (!this.vec) this._embed_input += data.text; // store text for embedding

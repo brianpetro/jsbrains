@@ -31,7 +31,7 @@ class MarkdownAdapter {
 
   async parse(entity) {
     try {
-      let content = (typeof entity.content === 'string' ? entity.content : await entity.get_content());
+      let content = typeof entity.content === 'string' ? entity.content : (await entity.get_content());
       if(!content){
         console.log("no content for ", entity.file_path);
         return { blocks: [], outlinks: [] };

@@ -18,8 +18,10 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
     console.log("Loading collection items");
     const start = Date.now();
     if(!(await this.fs.exists(this.data_path))) await this.fs.mkdir(this.data_path);
-    const collection_data_files = (await this.fs.list(this.data_path)); // List all files in the directory
+    const collection_data_files = (await this.fs.list_files(this.data_path)); // List all files in the directory
+    console.log('collection_data_files', collection_data_files);
     const vault_paths = this.collection.fs.files; // initiated in SmartFs.init()
+    console.log('vault_paths', vault_paths);
     const item_types = [
       ...Object.keys(this.env.item_types),
       'SmartNote', // v1 backward compatibility

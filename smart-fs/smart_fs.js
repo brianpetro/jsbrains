@@ -70,6 +70,7 @@ class SmartFs {
    */
   constructor(env, opts = {}) {
     this.env = env;
+    this.opts = opts;
     this.fs_path = opts.fs_path || opts.env_path || ''; // vault_path is DEPRECATED
     if(!opts.adapter) throw new Error('SmartFs requires an adapter');
     this.adapter = new opts.adapter(this);
