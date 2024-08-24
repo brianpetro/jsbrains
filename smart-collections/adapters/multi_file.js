@@ -19,9 +19,7 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
     const start = Date.now();
     if(!(await this.fs.exists(this.data_path))) await this.fs.mkdir(this.data_path);
     const collection_data_files = (await this.fs.list_files(this.data_path)); // List all files in the directory
-    console.log('collection_data_files', collection_data_files);
     const vault_paths = this.collection.fs.files; // initiated in SmartFs.init()
-    console.log('vault_paths', vault_paths);
     const item_types = [
       ...Object.keys(this.env.item_types),
       'SmartNote', // v1 backward compatibility
@@ -44,6 +42,7 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
           }, {})
         ;
         let main_entity;
+        let main_entity_key;
         Object.entries(data)
           .forEach(([ajson_key, value]) => {
             if(!value || source_is_deleted) return; // handle null values (deleted)
@@ -53,8 +52,8 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
               class_name = ajson_key.split(":").shift();
               entity_key = ajson_key.split(":").slice(1).join(":"); // key is file path
             }else entity_key = ajson_key; // DEPRECATED: remove this
-            const check_path = entity_key.includes("#") ? entity_key.split("#")[0] : entity_key;
-            if(!vault_paths[check_path]){ // if not in vault path, it's a deleted item
+            if(!main_entity_key) main_entity_key = entity_key.includes("#") ? entity_key.split("#")[0] : entity_key;
+            if(!vault_paths[main_entity_key]){ // if not in vault path, it's a deleted item
               source_is_deleted = true;
               return;
             }
@@ -65,8 +64,9 @@ export class MultiFileSmartCollectionsAdapter extends SmartCollectionAdapter {
             if(!entity_key.includes("#")) main_entity = entity;
           })
         ;
-        if(source_is_deleted || !main_entity) await this.fs.remove(item_data_file_path);
-        else if(main_entity.ajson !== content) {
+        if(source_is_deleted || !main_entity){
+          await this.fs.remove(item_data_file_path);
+        }else if(main_entity.ajson !== content) {
           await this.fs.write(item_data_file_path, main_entity.ajson);
         }
       } catch (err) {
