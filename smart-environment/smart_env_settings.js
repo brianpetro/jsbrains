@@ -42,10 +42,15 @@ export class SmartEnvSettings {
 
   // TEMP: backwards compatibility
   async load_obsidian_settings() {
-    if (this._settings.is_obsidian_vault) {
-      if (await this.env.fs.exists('.obsidian')) {
-        if (await this.env.fs.exists('.obsidian/plugins/smart-connections/data.json')) {
-          const obsidian_settings = JSON.parse(await this.env.fs.read('.obsidian/plugins/smart-connections/data.json'));
+    if (this._settings.is_obsidian_vault) { 
+      const temp_fs = new this.env.smart_fs_class(this.env, {
+        adapter: this.env.opts.smart_fs_adapter_class,
+        fs_path: this.env.opts.env_path || '',
+        exclude_patterns: this.env.excluded_patterns || [],
+      });
+      if (await temp_fs.exists('.obsidian')) {
+        if (await temp_fs.exists('.obsidian/plugins/smart-connections/data.json')) {
+          const obsidian_settings = JSON.parse(await temp_fs.read('.obsidian/plugins/smart-connections/data.json'));
           deep_merge_no_overwrite(this._settings, obsidian_settings);
           await this.save();
         }
