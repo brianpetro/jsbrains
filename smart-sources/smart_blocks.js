@@ -7,6 +7,7 @@ export class SmartBlocks extends SmartEntities {
     super(env, opts);
     this.block_adapters = {
       "default": BlockAdapter,
+      "canvas": MarkdownBlockAdapter, // temporary until canvas is implemented
       "md": MarkdownBlockAdapter,
     };
   }
