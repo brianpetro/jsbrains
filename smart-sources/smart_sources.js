@@ -17,10 +17,6 @@ export class SmartSources extends SmartEntities {
     await super.init();
     await this.fs.init();
   }
-  async load(import_sources = true) {
-    await super.load();
-    if(import_sources) await this.import();
-  }
   async import(source_files) {
     if(!source_files?.length) source_files = await this.fs.list_files_recursive();
     if(this.env.smart_directories) {
