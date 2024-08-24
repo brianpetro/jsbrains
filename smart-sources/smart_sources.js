@@ -8,6 +8,7 @@ export class SmartSources extends SmartEntities {
     super(env, opts);
     this.source_adapters = {
       "md": MarkdownSourceAdapter,
+      "canvas": MarkdownSourceAdapter, // temp
       "default": SourceAdapter,
       ...(env.opts.source_adapters || {}),
       ...(opts.source_adapters || {}),
