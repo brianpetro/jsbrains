@@ -17,7 +17,14 @@ export class SmartSources extends SmartEntities {
   }
   async init() {
     await super.init();
+    // init smart blocks
+    this.env.smart_blocks = new this.env.collections.smart_blocks(this.env, {
+      custom_collection_name: 'smart_blocks'
+    });
+    await this.env.smart_blocks.init();
+    // init smart_fs
     await this.fs.init();
+    // init smart_sources
     this.env.main.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
     Object.values(this.fs.files)
       .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
@@ -32,124 +39,53 @@ export class SmartSources extends SmartEntities {
     }
     this.env.main.notices?.remove('initial scan');
     this.env.main.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    await this.process_load_queue(); // loads both smart_sources and smart_blocks
+    await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
   }
 
-  // async import(source_files) {
-  //   if(!source_files?.length) source_files = await this.fs.list_files_recursive();
-  //   source_files = source_files.filter(file => [
-  //     'md',
-  //     // 'canvas', // skip canvas until added canvas adapter
-  //     'txt'
-  //   ].includes(file.extension)); // filter available file types
-  //   let batch = [];
-  //   try {
-  //     const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
-  //     let i = 0;
-  //     for (i = 0; i < source_files.length; i++) {
-  //       const file = source_files[i];
-  //       if (typeof file.stat?.size !== 'number') console.warn("Unexpected source_file instance: file size is not a number: ", file);
-  //       if (file.stat.size > 1000000) {
-  //         console.log(`Smart Connections: Skipping large file: ${file.path}`);
-  //         continue;
-  //       }
-  //       if (batch.length % 10 === 0) {
-  //         this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${source_files.length} files`], { timeout: 0 });
-  //         // Promise.race to handle timeout
-  //         const batchPromise = Promise.all(batch);
-  //         const timeoutPromise = new Promise((resolve, reject) => {
-  //           setTimeout(() => {
-  //             reject(new Error('Batch processing timed out'));
-  //           }, timeoutDuration);
-  //         });
-  //         try {
-  //           await Promise.race([batchPromise, timeoutPromise]);
-  //         } catch (error) {
-  //           console.error('Batch processing error:', error);
-  //           // log files paths that were in batch via files
-  //           const files_in_batch = source_files.slice(i - batch.length, i);
-  //           console.log(`Smart Connections: Batch processing error: ${JSON.stringify(files_in_batch.map(file => file.path), null, 2)}`);
-  //         }
-  //         batch = [];
-  //       }
-  //       const note = this.get(file.path);
-  //       if (!note) batch.push(this.create_or_update({ path: file.path }));
-  //       else {
-  //         if (note.meta_changed) {
-  //           note.data.embeddings = {};
-  //           batch.push(this.create_or_update({ path: file.path }));
-  //         }
-  //       }
-  //     }
-
-  //     // Final batch processing outside the loop
-  //     if (batch.length > 0) {
-  //       this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${source_files.length} files`], { timeout: 0 });
-  //       const batchPromise = Promise.all(batch);
-  //       const timeoutPromise = new Promise((resolve, reject) => {
-  //         setTimeout(() => {
-  //           reject(new Error('Final batch processing timed out'));
-  //         }, timeoutDuration);
-  //       });
-
-  //       try {
-  //         await Promise.race([batchPromise, timeoutPromise]);
-  //       } catch (error) {
-  //         console.error('Final batch processing error:', error);
-  //       }
-  //     }
-  //     this.env.links = this.build_links_map();
-  //     this.env.main.notices?.remove('initial scan progress');
-  //     if(source_files.length > 1) this.env.main.notices?.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
-  //   } catch (e) {
-  //     console.warn("error importing notes: ", e);
-  //     console.warn({ batch });
-  //   }
-  // }
+  get data_fs() { return this.env.smart_env_settings.fs; }
+  // removes old data files
   async prune() {
-    const start = Date.now();
-    const remove = [];
-    const items_w_vec = Object.entries(this.items).filter(([key, note]) => note.vec);
-    const total_items_w_vec = items_w_vec.length;
-    const available_notes = (await this.fs.list_files_recursive('/')).reduce((acc, file) => {
-      acc[file.path] = true;
+    await this.fs.refresh(); // refresh source files in case they have changed
+    const remove_sources = Object.values(this.items)
+      .filter(item => item.is_gone || item.excluded)
+    ;
+    console.log("remove_sources", remove_sources);
+    for(let i = 0; i < remove_sources.length; i++){
+      const source = remove_sources[i];
+      await this.fs.remove(source.data_path);
+      delete this.items[source.key];
+    }
+    const data_files = await this.data_fs.list_files_recursive(this.adapter.data_folder);
+    const ajson_file_path_map = Object.values(this.items).reduce((acc, item) => {
+      acc[this.data_fs.fs_path + "/" + item.data_path] = item.key;
       return acc;
     }, {});
-    if (!total_items_w_vec) {
-      this.clear(); // clear if no items with vec (rebuilds in import)
-      return; // skip rest if no items with vec
+    // get data_files where ajson_file_paths don't exist
+    console.log("ajson_file_path_map", ajson_file_path_map);
+    const remove_data_files = data_files.filter(file => !ajson_file_path_map[file.path]);
+    console.log("remove_data_files", remove_data_files);
+    for(let i = 0; i < remove_data_files.length; i++){
+      await this.data_fs.remove(remove_data_files[i].path);
     }
-    for (const [key, note] of items_w_vec) {
-      Object.entries(note.data.embeddings).forEach(([model, embedding]) => {
+    const remove_smart_blocks = Object.values(this.env.smart_blocks.items).filter(item => item.is_gone);
+    console.log("remove_smart_blocks", remove_smart_blocks);
+    for(let i = 0; i < remove_smart_blocks.length; i++){
+      delete this.env.smart_blocks.items[remove_smart_blocks[i].key];
+    }
+    // queue_embed for meta_changed
+    const items_w_vec = Object.values(this.items).filter(item => item.vec);
+    for (const item of items_w_vec) {
+      Object.entries(item.data.embeddings).forEach(([model, embedding]) => {
         // only keep active model embeddings
-        if(model !== note.embed_model){
-          note.data.embeddings[model] = null;
-          note.queue_save();
+        if(model !== item.embed_model){
+          item.data.embeddings[model] = null;
+          item.queue_save();
         }
       });
-      if (!available_notes[note.data.path]) {
-        remove.push(key); // remove if not available
-        continue;
-      }
-      if (note.is_gone) {
-        remove.push(key); // remove if expired
-        continue;
-      }
-      if (note.meta_changed) {
-        const content = await note.get_content();
-        const hash = await create_hash(content);
-        if (hash !== note.last_history?.hash) {
-          remove.push(key); // remove if changed
-          continue;
-        }
-      }
+      if (item.meta_changed) item.queue_import();
+      else if (item.is_unembedded) item.queue_embed();
     }
-    const remove_ratio = remove.length / total_items_w_vec;
-    console.log(`Smart Connections: Pruning: Found ${remove.length} Smart Notes to remove in ${Date.now() - start}ms`);
-    if (remove_ratio < 0.5 || confirm(`Are you sure you want to delete ${remove.length} (${Math.floor(remove_ratio * 100)}%) Note-level Embeddings?`)) {
-      this.delete_many(remove);
-    }
-    await this.env.smart_blocks.prune();
-    this.env.save();
   }
   get current_note() { return this.get(this.env.main.app.workspace.getActiveFile().path); }
   build_links_map() {
@@ -164,15 +100,9 @@ export class SmartSources extends SmartEntities {
   }
   async refresh_embeddings() {
     await this.prune();
-    for (const source of Object.values(this.items)) {
-      if(source.excluded) continue;
-      if (source.is_unembedded) source.smart_embed.embed_entity(source);
-      else if (this.env.smart_blocks.smart_embed) {
-        source.blocks.forEach(block => {
-          if (block.is_unembedded) block.smart_embed.embed_entity(block);
-        });
-      }
-    }
+    await this.process_import_queue();
+    await this.env.smart_blocks.process_embed_queue();
+    await this.process_embed_queue();
   }
   // CRUD
   async create(key, content) {
@@ -209,6 +139,21 @@ export class SmartSources extends SmartEntities {
     ;
   }
 
+  async import_file(file){
+    console.log("importing file", file);
+    // add file to fs
+    this.fs.files[file.path] = file;
+    this.fs.file_paths.push(file.path);
+    // create source
+    const source = await this.create_or_update({ path: file.path });
+    // import
+    await source.import();
+    // process embed queue
+    await this.env.smart_blocks.process_embed_queue();
+    await this.process_embed_queue();
+    // process save queue
+    await this.process_save_queue();
+  }
 
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
@@ -223,6 +168,9 @@ export class SmartSources extends SmartEntities {
     this.env.main.notices?.remove('import progress');
     this.env.main.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
     console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
+    this.env.links = this.build_links_map();
+    await this.env.smart_blocks.process_embed_queue(); // may need to be first
+    await this.process_embed_queue();
     await this.process_save_queue();
   }
 

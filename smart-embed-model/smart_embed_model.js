@@ -83,27 +83,56 @@ class SmartEmbedModel {
   }
 
   /**
-   * Embed the input string into a numerical array.
-   * @param {string} input - The input string to embed.
-   * @returns {Promise<number[]>} A promise that resolves with the embedding array.
+   * Embed the input into a numerical array.
+   * @param {string|Object} input - The input to embed. Can be a string or an object with an "embed_input" property.
+   * @returns {Promise<Object>} A promise that resolves with an object containing the embedding vector.
    */
   async embed(input) {
-    if (this.adapter && typeof this.adapter.embed === 'function') {
-      return await this.adapter.embed(input);
+    if (!input) return console.log("input is empty");
+    
+    let embed_input, result;
+    if (typeof input === 'string') {
+      embed_input = input;
+    } else if (input && typeof input === 'object' && 'embed_input' in input) {
+      embed_input = input.embed_input;
+    } else {
+      throw new Error('Invalid input format');
     }
-    // Default embedding logic here if no adapter or adapter lacks the method
+
+    if (this.adapter && typeof this.adapter.embed === 'function') {
+      result = await this.adapter.embed(embed_input);
+    } else {
+      // Default embedding logic here if no adapter or adapter lacks the method
+      throw new Error('Embedding method not implemented');
+    }
+
+    if (typeof input === 'string') {
+      return result;
+    } else {
+      input.vec = result.vec;
+      input.tokens = result.tokens;
+      return input;
+    }
   }
 
   /**
-   * Embed a batch of input strings into arrays of numerical arrays.
-   * @param {string[]} input - The array of strings to embed.
-   * @returns {Promise<number[][]>} A promise that resolves with the array of embedding arrays.
+   * Embed a batch of inputs into arrays of numerical arrays.
+   * @param {Array<string|Object>} inputs - The array of inputs to embed. Each input can be a string or an object with an "embed_input" property.
+   * @returns {Promise<Array<Object>>} A promise that resolves with an array of objects containing the embedding vectors.
    */
-  async embed_batch(input) {
+  async embed_batch(inputs) {
+    inputs = inputs.filter(item => (typeof item === 'string' ? item : item.embed_input)?.length > 0);
+    if (inputs.length === 0) return console.log("empty batch (or all items have empty embed_input)");
+
+    let results;
     if (this.adapter && typeof this.adapter.embed_batch === 'function') {
-      return await this.adapter.embed_batch(input);
+      results = await this.adapter.embed_batch(inputs);
+    } else {
+      // Default batch embedding logic here if no adapter or adapter lacks the method
+      throw new Error('Batch embedding method not implemented');
     }
-    // Default batch embedding logic here if no adapter or adapter lacks the method
+
+    return results;
   }
 
   async unload() {

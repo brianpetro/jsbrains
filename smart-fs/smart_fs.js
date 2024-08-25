@@ -83,6 +83,13 @@ class SmartFs {
     this.file_paths = [];
     this.folder_paths = [];
   }
+  async refresh() {
+    this.files = {};
+    this.file_paths = [];
+    this.folders = {};
+    this.folder_paths = [];
+    await this.init();
+  }
   async init() {
     await this.load_gitignore();
     const all = await this.list_recursive();
@@ -247,7 +254,7 @@ class SmartFs {
       // console.log('Read completed');
       return content;
     } catch (error) {
-      console.error('Error during read:', error);
+      // console.error('Error during read:', error);
       throw error;
     }
   }

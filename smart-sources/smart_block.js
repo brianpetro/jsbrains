@@ -23,7 +23,7 @@ export class SmartBlock extends SmartEntity {
   /**
    * Queues the block for saving via the source.
    */
-  queue_save() { this.source.queue_save(); }
+  queue_save() { this.source?.queue_save(); }
 
   update_data(data) {
     if (this.should_clear_embeddings(data)) this.data.embeddings = {};
@@ -41,8 +41,7 @@ export class SmartBlock extends SmartEntity {
   }
 
   init() {
-    if (!this.source) return console.log({ "no source for block": this.data });
-    if(this.smart_embed && this.is_unembedded) this.smart_embed.embed_entity(this);
+    this.queue_embed();
   }
 
   async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }

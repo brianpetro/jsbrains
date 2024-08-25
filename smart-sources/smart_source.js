@@ -19,24 +19,16 @@ export class SmartSource extends SmartEntity {
     else this._source_adapter = new this.source_adapters["default"](this);
     return this._source_adapter;
   }
-  // may be deprecated
-  // async init() {
-  //   // normalize path
-  //   this.data.path = this.data.path.replace(/\\/g, "/");
-  //   await this.parse_content();
-  //   this.queue_save();
-  //   if(this.is_unembedded && this.smart_embed) this.smart_embed.embed_entity(this);
-  // }
-  get file() { return this.collection.fs.files[this.data.path]; }
-  async load() {
-    try{
-      await this.data_adapter.load();
-    }catch(err){
-      this._queue_import = true; // if fails to find collection data then queue import
-      console.error(err, err.stack);
+  on_load_error(err){
+    super.on_load_error(err);
+    // if ENOENT
+    if(err.code === "ENOENT"){
+      this._queue_load = false; // don't queue load again (re-queued by CollectionItem)
+      this.queue_import();
     }
   }
   // moved logic from SmartSources import() method
+  queue_import() { this._queue_import = true; }
   async import(){
     try{
       if(this.file.stat.size > 1000000) {
@@ -44,10 +36,9 @@ export class SmartSource extends SmartEntity {
         return;
       }
       await this.parse_content();
-      this._queue_embed = true;
-      if(this.is_unembedded && this.smart_embed) this.smart_embed.embed_entity(this);
+      this.queue_embed();
     }catch(err){
-      this._queue_import = true;
+      this.queue_import();
       console.error(err, err.stack);
     }
   }
@@ -77,6 +68,13 @@ export class SmartSource extends SmartEntity {
       const item = this.env.smart_blocks.create_or_update(block);
       this.last_history.blocks[item.key] = true;
     }
+    // remove blocks not in last_history.blocks
+    const block_keys = Object.keys(this.last_history.blocks);
+    Object.values(this.env.smart_blocks.items).forEach(block => {
+      if(block.key.startsWith(this.key) && !block_keys.includes(block.key)) {
+        delete this.env.smart_blocks.items[block.key];
+      }
+    });
   }
   find_connections(opts={}) {
     let connections = super.find_connections(opts);
@@ -129,9 +127,9 @@ export class SmartSource extends SmartEntity {
   get meta_changed() {
     try {
       if (!this.last_history) return true;
-      if (!this.t_file) return true;
-      if ((this.last_history?.mtime || 0) < this.t_file.stat.mtime) {
-        const size_diff = Math.abs(this.last_history.size - this.t_file.stat.size);
+      if (!this.file) return true;
+      if ((this.last_history?.mtime || 0) < this.file.stat.mtime) {
+        const size_diff = Math.abs(this.last_history.size - this.file.stat.size);
         const size_diff_ratio = size_diff / (this.last_history.size || 1);
         if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of last_history.size, assume file changed
         // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.data.path}`);
@@ -148,7 +146,7 @@ export class SmartSource extends SmartEntity {
   }
   get is_canvas() { return this.data.path.endsWith("canvas"); }
   get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
-  get is_gone() { return this.t_file === null; }
+  get is_gone() { return !this.file; }
   get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
   get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
   get median_block_vec() {
@@ -168,6 +166,10 @@ export class SmartSource extends SmartEntity {
 
     return this._median_block_vec;
   }
+  get file() { return this.fs.files[this.data.path]; }
+  /**
+   * @deprecated Use this.file instead
+   */
   get t_file() {
     // return this.env.main.get_tfile(this.data.path); // should be better handled using non-Obsidian API
     return this.fs.files[this.data.path];
@@ -358,7 +360,6 @@ export class SmartSource extends SmartEntity {
     }
   }
 
-  queue_import() { this._queue_import = true; }
 
 
   // DEPRECATED methods

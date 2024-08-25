@@ -8,6 +8,13 @@ export class SmartEntities extends Collection {
     super(env, opts);
     this.env = env; // env is the brain (brain is Deprecated)
     this.model_instance_id = null;
+    this.is_processing_queue = false;
+    this.queue_total = 0;
+    this.embedded_total = 0;
+    this.is_queue_halted = false;
+    this.total_tokens = 0;
+    this.start_time = null;
+    this.queue_process_timeout = null;
   }
   async init() {
     await super.init();
@@ -23,10 +30,6 @@ export class SmartEntities extends Collection {
       this.smart_embed.unload();
       this.smart_embed = null; // uses setter to update env.smart_embed_active_models
     }
-  }
-  async load() {
-    await super.load(); // MUST RUN BEFORE SMART EMBED async b/c Obsidian API is async
-    await this.load_smart_embed();
   }
   get SmartEmbedModel() { return this.env.smart_embed_model_class; }
   async load_smart_embed() {
@@ -210,10 +213,149 @@ export class SmartEntities extends Collection {
   get filter_config() { return filter_config; }
 
   async process_embed_queue() {
+    if (this.is_queue_halted || this.is_processing_queue) return;
+
     const queue = Object.values(this.items).filter(item => item._queue_embed);
     if(!queue.length) return console.log("Smart Connections: No items in embed queue");
     console.log(`Smart Connections: Processing embed queue: ${queue.length} items`);
-    await Promise.all(queue.map(item => item.embed()));
+    
+    this.queue_total = queue.length;
+    await this._process_embed_queue(queue);
+  }
+
+  async _process_embed_queue(queue) {
+    if (this.is_processing_queue) return;
+    this.is_processing_queue = true;
+    if(!this.start_time) this.start_time = Date.now();
+
+    try {
+      while (queue.length > 0 && !this.is_queue_halted) {
+        await this._process_embed_batch(queue);
+      }
+    } catch (error) {
+      console.error("Error in _process_embed_queue:", error);
+    } finally {
+      this.is_processing_queue = false;
+      if (queue.length === 0) this._embed_queue_complete();
+    }
+  }
+
+  async _process_embed_batch(queue) {
+    const batch_size = this.smart_embed.batch_size;
+    const batch = queue.splice(0, batch_size);
+    try {
+      await this._prepare_embed_batch(batch);
+      const resp = await this.smart_embed.embed_batch(batch);
+      if (!resp || resp.error) throw new Error(`Error embedding batch: ${JSON.stringify(resp, null, 2)}`);
+      await this._handle_embed_batch_response(batch, resp);
+    } catch (error) {
+      console.error("Error processing embed batch:", error);
+      queue.unshift(...batch);
+      throw error;
+    }
+  }
+
+  async _prepare_embed_batch(batch) {
+    await Promise.all(batch.map(item => item.get_embed_input()));
+  }
+
+  async _handle_embed_batch_response(batch, resp) {
+    for (let i = 0; i < batch.length; i++) {
+      const item = batch[i];
+      const response_item = resp[i];
+
+      item.vec = response_item.vec;
+      item._embed_input = null;
+      item._queue_embed = false;
+      item.queue_save();
+
+      if (response_item?.tokens) {
+        this.total_tokens += response_item.tokens;
+      } else {
+        console.warn("Unexpected response item:", response_item);
+      }
+
+      this.embedded_total++;
+      this._update_embed_progress();
+    }
+  }
+
+  _update_embed_progress() {
+    if (this.embedded_total % 100 === 0) {
+      this._show_embed_progress_notice();
+    }
+  }
+
+  _show_embed_progress_notice() {
+    const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
+    this.env.main.notices.show('embedding_progress', 
+      [
+        `Making Smart Connections...`,
+        `Embedding progress: ${this.embedded_total} / ${this.queue_total}`,
+        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.model_name}`
+      ],
+      { 
+        timeout: 0,
+        button: pause_btn
+      }
+    );
+  }
+
+  _calculate_embed_tokens_per_second() {
+    const elapsed_time = (Date.now() - this.start_time) / 1000;
+    return Math.round(this.total_tokens / elapsed_time);
+  }
+
+  _embed_queue_complete() {
+    if (this.completed_embed_queue_timeout) clearTimeout(this.completed_embed_queue_timeout);
+    this.completed_embed_queue_timeout = setTimeout(() => {
+      this._show_embed_completion_notice();
+      this._reset_embed_queue_stats();
+      this.env.save();
+    }, 3000);
+  }
+
+  _show_embed_completion_notice() {
+    this.env.main.notices.remove('embedding_progress');
+    this.env.main.notices.show('embedding_complete', [
+      `Embedding complete.`,
+      `${this.embedded_total} entities embedded.`,
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.model_name}`
+    ], { timeout: 10000 });
+  }
+
+  _reset_embed_queue_stats() {
+    this.embedded_total = 0;
+    this.queue_total = 0;
+    this.total_tokens = 0;
+    this.start_time = null;
+  }
+
+  halt_embed_queue_processing() {
+    this.is_queue_halted = true;
+    clearTimeout(this.queue_process_timeout);
+    console.log("Embed queue processing halted");
+    this.env.main.notices.remove('embedding_progress');
+    this.env.main.notices.show('embedding_paused', [
+      `Embedding paused.`,
+      `Progress: ${this.embedded_total} / ${this.queue_total}`,
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.model_name}`
+    ],
+    {
+      timeout: 0,
+      button: { text: "Resume", callback: this.resume_embed_queue_processing.bind(this) }
+    });
+    this.start_time = null;
+    this.env.save();
+  }
+
+  resume_embed_queue_processing(delay = 0) {
+    this.is_queue_halted = false;
+    clearTimeout(this.queue_process_timeout);
+    this.queue_process_timeout = setTimeout(() => {
+      console.log("Resuming embed queue processing");
+      this.process_embed_queue();
+    }, delay);
   }
 }
 

@@ -85,9 +85,8 @@ export class CollectionItem {
    * Initializes the item with input_data, potentially asynchronously.
    * Handles interactions with other collection items.
    */
-  init() { this.save(); } // should always call this.save() in child class init() overrides
+  init() { }
 
-  get data_adapter() { return new this.env.opts.smart_collection_adapter_class(this); }
   queue_save() { this._queue_save = true; }
   async save() {
     try{
@@ -97,27 +96,19 @@ export class CollectionItem {
       console.error(err, err.stack);
     }
   }
+  queue_load() { this._queue_load = true; }
   async load() {
     try{
       await this.data_adapter.load();
     }catch(err){
-      this._queue_load = true;
       this._load_error = err;
-      console.error(err, err.stack);
+      this.on_load_error(err);
+      // console.error(err, err.stack);
     }
   }
-  // /**
-  //  * Saves the current state of the item to its collection.
-  //  */
-  // save() {
-  //   if (!this.validate_save()) {
-  //     if (this.key) this.collection.delete(this.key);
-  //     return console.error("Invalid save: ", { data: this.data, stack: new Error().stack });
-  //   }
-  //   this.collection.set(this); // set entity in collection
-  //   this.queue_save();
-  //   this.collection.save(); // save collection
-  // }
+  on_load_error(err){
+    this.queue_load();
+  }
 
   /**
    * Validates the item's data before saving.
@@ -244,4 +235,7 @@ export class CollectionItem {
   get ajson() { return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? null : JSON.stringify(this.data)}`; }
 
   get ajson_key() { return this.constructor.name + ":" + this.key; }
+
+  get data_adapter() { return new this.env.opts.smart_collection_adapter_class(this); }
+  get data_path() { return this.data_adapter.data_path; }
 }
