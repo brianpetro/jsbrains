@@ -21,7 +21,7 @@ export class SmartSources extends SmartEntities {
     this.env.smart_blocks = new this.env.collections.smart_blocks(this.env, {
       custom_collection_name: 'smart_blocks'
     });
-    await this.env.smart_blocks.init();
+    await this.env.smart_blocks.init(); // loads smart-embed model
     // init smart_fs
     await this.fs.init();
     // init smart_sources
@@ -155,19 +155,25 @@ export class SmartSources extends SmartEntities {
     await this.process_save_queue();
   }
 
+  async process_load_queue(){
+    await super.process_load_queue();
+    Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
+  }
+
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
-    if(!import_queue.length) return console.log("Smart Connections: No items in import queue");
-    console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);
-    const time_start = Date.now();
-    // import 100 at a time
-    for (let i = 0; i < import_queue.length; i += 100) {
-      this.env.main.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
-      await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
-    }
-    this.env.main.notices?.remove('import progress');
-    this.env.main.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
-    console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
+    if(import_queue.length){
+      console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);
+      const time_start = Date.now();
+      // import 100 at a time
+      for (let i = 0; i < import_queue.length; i += 100) {
+        this.env.main.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
+        await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
+      }
+      this.env.main.notices?.remove('import progress');
+      this.env.main.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
+      console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
+    }else console.log("Smart Connections: No items in import queue");
     this.env.links = this.build_links_map();
     await this.env.smart_blocks.process_embed_queue(); // may need to be first
     await this.process_embed_queue();

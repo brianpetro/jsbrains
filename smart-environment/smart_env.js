@@ -124,6 +124,12 @@ export class SmartEnv {
   async init() {
     await this.smart_env_settings.load();
     await this.ready_to_load_collections();
+    await this.load_collections();
+    this.init_smart_change();
+  }
+  async ready_to_load_collections() { return true; } // override in subclasses with env-specific logic
+  async load_collections(){
+    this.loading_collections = true;
     const source_collection_opts = {
       adapter_class: this.main.smart_env_opts.smart_collection_adapter_class,
       custom_collection_name: 'smart_sources',
@@ -131,15 +137,8 @@ export class SmartEnv {
     if(this.opts.env_path) source_collection_opts.env_path = this.opts.env_path;
     this.smart_sources = new this.collections.smart_sources(this, source_collection_opts);
     await this.smart_sources.init();
-    await this.load_collections();
-    this.init_smart_change();
-  }
-  async ready_to_load_collections() { return true; } // override in subclasses with env-specific logic
-  async load_collections(){
-    this.loading_collections = true;
-    for (const key of Object.keys(this.collections)) {
-      await this[key].process_load_queue();
-    }
+    await this.smart_sources.process_load_queue();
+    await this.smart_sources.process_import_queue();
     this.loading_collections = false;
     this.collections_loaded = true;
   }
@@ -149,10 +148,8 @@ export class SmartEnv {
       this[key] = null;
     }
   }
-  // NEEDS REVIEW: saves all collections (Likely DEPRECATED: may only need to save smart_sources)
   save() {
     for(const key of Object.keys(this.collections)){
-      // this[key].save();
       this[key].process_save_queue();
     }
   }

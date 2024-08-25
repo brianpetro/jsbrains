@@ -61,7 +61,7 @@ export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdap
         if((await this.fs.exists(this.data_path))) await this.fs.remove(this.data_path);
       } else {
         await this.fs.write(this.data_path, this.item.ajson);
-        console.log("Saved item: ", this.item.key, this.data_path);
+        // console.log("Saved item: ", this.item.key, this.data_path);
       }
       this.item._queue_save = false;
       return true;

@@ -41,7 +41,7 @@ export class SmartBlock extends SmartEntity {
   }
 
   init() {
-    this.queue_embed();
+    if(!this.vec) this.queue_embed();
   }
 
   async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }
