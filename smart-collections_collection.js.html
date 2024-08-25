@@ -229,11 +229,11 @@ export class Collection {
    * Saves the current state of the collection.
    */
   async save() { await this.adapter.save(); }
-  async save_queue() { await this.adapter.save_queue(); }
-  queue_save(key) { this.adapter.queue_save(key); }
+  async save_queue() { await this.process_save_queue(); }
 
   /**
    * Loads the collection state.
+   * @deprecated use this.process_load_queue() instead
    */
   async load() { await this.adapter.load(); }
 
@@ -260,6 +260,28 @@ export class Collection {
   //  * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
   //  */
   // async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
+  async process_save_queue() {
+    if(this._saving) return console.log("Already saving");
+    this._saving = true;
+    setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
+    const save_queue = Object.values(this.items).filter(item => item._queue_save);
+    console.log("Saving " + this.collection_name + ": ", save_queue.length + " items");
+    const time_start = Date.now();
+    await Promise.all(save_queue.map(item => item.save()));
+    console.log("Saved " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
+    this._saving = false;
+  }
+  async process_load_queue() {
+    if(this._loading) return console.log("Already loading");
+    this._loading = true;
+    setTimeout(() => { this._loading = false; }, 10000); // set _loading to false after 10 seconds
+    const load_queue = Object.values(this.items).filter(item => item._queue_load);
+    console.log("Loading " + this.collection_name + ": ", load_queue.length + " items");
+    const time_start = Date.now();
+    await Promise.all(load_queue.map(item => item.load()));
+    console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
+    this._loading = false;
+  }
 }</code></pre>
         </article>
     </section>
@@ -270,13 +292,13 @@ export class Collection {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Aug 24 2024 20:39:08 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sun Aug 25 2024 17:00:57 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
