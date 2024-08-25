@@ -87,19 +87,37 @@ export class CollectionItem {
    */
   init() { this.save(); } // should always call this.save() in child class init() overrides
 
-  /**
-   * Saves the current state of the item to its collection.
-   */
-  save() {
-    if (!this.validate_save()) {
-      if (this.key) this.collection.delete(this.key);
-      return console.error("Invalid save: ", { data: this.data, stack: new Error().stack });
+  get data_adapter() { return new this.env.opts.smart_collection_adapter_class(this); }
+  queue_save() { this._queue_save = true; }
+  async save() {
+    try{
+      await this.data_adapter.save();
+    }catch(err){
+      this._queue_save = true;
+      console.error(err, err.stack);
     }
-    this.collection.set(this); // set entity in collection
-    this.queue_save();
-    this.collection.save(); // save collection
   }
-  queue_save() { this.collection.queue_save(this.key); }
+  async load() {
+    try{
+      await this.data_adapter.load();
+    }catch(err){
+      this._queue_load = true;
+      this._load_error = err;
+      console.error(err, err.stack);
+    }
+  }
+  // /**
+  //  * Saves the current state of the item to its collection.
+  //  */
+  // save() {
+  //   if (!this.validate_save()) {
+  //     if (this.key) this.collection.delete(this.key);
+  //     return console.error("Invalid save: ", { data: this.data, stack: new Error().stack });
+  //   }
+  //   this.collection.set(this); // set entity in collection
+  //   this.queue_save();
+  //   this.collection.save(); // save collection
+  // }
 
   /**
    * Validates the item's data before saving.

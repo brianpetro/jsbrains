@@ -8,6 +8,7 @@ export class SmartSources extends SmartEntities {
     super(env, opts);
     this.source_adapters = {
       "md": MarkdownSourceAdapter,
+      "txt": MarkdownSourceAdapter, // temp
       "canvas": MarkdownSourceAdapter, // temp
       "default": SourceAdapter,
       ...(env.opts.source_adapters || {}),
@@ -17,83 +18,93 @@ export class SmartSources extends SmartEntities {
   async init() {
     await super.init();
     await this.fs.init();
-  }
-  async import(source_files) {
-    if(!source_files?.length) source_files = await this.fs.list_files_recursive();
+    this.env.main.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
+    Object.values(this.fs.files)
+      .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
+      .forEach((file) => {
+        this.items[file.path] = new this.item_type(this.env, { path: file.path });
+      })
+    ;
     if(this.env.smart_directories) {
       this.fs.folder_paths.forEach(async (_path) => {
         await this.env.smart_directories.create_or_update({ path: _path });
       });
     }
-    source_files = source_files.filter(file => [
-      'md',
-      // 'canvas', // skip canvas until added canvas adapter
-      'txt'
-    ].includes(file.extension)); // filter available file types
-    let batch = [];
-    try {
-      const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
-      let i = 0;
-      for (i = 0; i < source_files.length; i++) {
-        const file = source_files[i];
-        if (typeof file.stat?.size !== 'number') console.warn("Unexpected source_file instance: file size is not a number: ", file);
-        if (file.stat.size > 1000000) {
-          console.log(`Smart Connections: Skipping large file: ${file.path}`);
-          continue;
-        }
-        if (batch.length % 10 === 0) {
-          this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${source_files.length} files`], { timeout: 0 });
-          // Promise.race to handle timeout
-          const batchPromise = Promise.all(batch);
-          const timeoutPromise = new Promise((resolve, reject) => {
-            setTimeout(() => {
-              reject(new Error('Batch processing timed out'));
-            }, timeoutDuration);
-          });
-          try {
-            await Promise.race([batchPromise, timeoutPromise]);
-          } catch (error) {
-            console.error('Batch processing error:', error);
-            // log files paths that were in batch via files
-            const files_in_batch = source_files.slice(i - batch.length, i);
-            console.log(`Smart Connections: Batch processing error: ${JSON.stringify(files_in_batch.map(file => file.path), null, 2)}`);
-          }
-          batch = [];
-        }
-        const note = this.get(file.path);
-        if (!note) batch.push(this.create_or_update({ path: file.path }));
-        else {
-          if (note.meta_changed) {
-            note.data.embeddings = {};
-            batch.push(this.create_or_update({ path: file.path }));
-          }
-        }
-      }
-
-      // Final batch processing outside the loop
-      if (batch.length > 0) {
-        this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${source_files.length} files`], { timeout: 0 });
-        const batchPromise = Promise.all(batch);
-        const timeoutPromise = new Promise((resolve, reject) => {
-          setTimeout(() => {
-            reject(new Error('Final batch processing timed out'));
-          }, timeoutDuration);
-        });
-
-        try {
-          await Promise.race([batchPromise, timeoutPromise]);
-        } catch (error) {
-          console.error('Final batch processing error:', error);
-        }
-      }
-      this.env.links = this.build_links_map();
-      this.env.main.notices?.remove('initial scan progress');
-      if(source_files.length > 1) this.env.main.notices?.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
-    } catch (e) {
-      console.warn("error importing notes: ", e);
-      console.warn({ batch });
-    }
+    this.env.main.notices?.remove('initial scan');
+    this.env.main.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
+
+  // async import(source_files) {
+  //   if(!source_files?.length) source_files = await this.fs.list_files_recursive();
+  //   source_files = source_files.filter(file => [
+  //     'md',
+  //     // 'canvas', // skip canvas until added canvas adapter
+  //     'txt'
+  //   ].includes(file.extension)); // filter available file types
+  //   let batch = [];
+  //   try {
+  //     const timeoutDuration = 10000; // Timeout duration in milliseconds (e.g., 10000 ms for 10 seconds)
+  //     let i = 0;
+  //     for (i = 0; i < source_files.length; i++) {
+  //       const file = source_files[i];
+  //       if (typeof file.stat?.size !== 'number') console.warn("Unexpected source_file instance: file size is not a number: ", file);
+  //       if (file.stat.size > 1000000) {
+  //         console.log(`Smart Connections: Skipping large file: ${file.path}`);
+  //         continue;
+  //       }
+  //       if (batch.length % 10 === 0) {
+  //         this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${source_files.length} files`], { timeout: 0 });
+  //         // Promise.race to handle timeout
+  //         const batchPromise = Promise.all(batch);
+  //         const timeoutPromise = new Promise((resolve, reject) => {
+  //           setTimeout(() => {
+  //             reject(new Error('Batch processing timed out'));
+  //           }, timeoutDuration);
+  //         });
+  //         try {
+  //           await Promise.race([batchPromise, timeoutPromise]);
+  //         } catch (error) {
+  //           console.error('Batch processing error:', error);
+  //           // log files paths that were in batch via files
+  //           const files_in_batch = source_files.slice(i - batch.length, i);
+  //           console.log(`Smart Connections: Batch processing error: ${JSON.stringify(files_in_batch.map(file => file.path), null, 2)}`);
+  //         }
+  //         batch = [];
+  //       }
+  //       const note = this.get(file.path);
+  //       if (!note) batch.push(this.create_or_update({ path: file.path }));
+  //       else {
+  //         if (note.meta_changed) {
+  //           note.data.embeddings = {};
+  //           batch.push(this.create_or_update({ path: file.path }));
+  //         }
+  //       }
+  //     }
+
+  //     // Final batch processing outside the loop
+  //     if (batch.length > 0) {
+  //       this.env.main.notices.show('initial scan progress', [`Making Smart Connections...`, `Progress: ${i} / ${source_files.length} files`], { timeout: 0 });
+  //       const batchPromise = Promise.all(batch);
+  //       const timeoutPromise = new Promise((resolve, reject) => {
+  //         setTimeout(() => {
+  //           reject(new Error('Final batch processing timed out'));
+  //         }, timeoutDuration);
+  //       });
+
+  //       try {
+  //         await Promise.race([batchPromise, timeoutPromise]);
+  //       } catch (error) {
+  //         console.error('Final batch processing error:', error);
+  //       }
+  //     }
+  //     this.env.links = this.build_links_map();
+  //     this.env.main.notices?.remove('initial scan progress');
+  //     if(source_files.length > 1) this.env.main.notices?.show('done initial scan', [`Making Smart Connections...`, `Completed initial scan.`], { timeout: 3000 });
+  //   } catch (e) {
+  //     console.warn("error importing notes: ", e);
+  //     console.warn({ batch });
+  //   }
+  // }
   async prune() {
     const start = Date.now();
     const remove = [];
@@ -197,4 +208,22 @@ export class SmartSources extends SmartEntities {
       .map(result => result.item)
     ;
   }
+
+
+  async process_import_queue(){
+    const import_queue = Object.values(this.items).filter(item => item._queue_import);
+    if(!import_queue.length) return console.log("Smart Connections: No items in import queue");
+    console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);
+    const time_start = Date.now();
+    // import 100 at a time
+    for (let i = 0; i < import_queue.length; i += 100) {
+      this.env.main.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
+      await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
+    }
+    this.env.main.notices?.remove('import progress');
+    this.env.main.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
+    console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
+    await this.process_save_queue();
+  }
+
 }

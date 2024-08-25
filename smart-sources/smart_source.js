@@ -9,6 +9,7 @@ export class SmartSource extends SmartEntity {
         history: [], // array of { mtime, hash, length, blocks[] }
       },
       _embed_input: null, // stored temporarily
+      _queue_load: true,
     };
   }
   get source_adapters() { return this.collection.source_adapters; }
@@ -18,12 +19,37 @@ export class SmartSource extends SmartEntity {
     else this._source_adapter = new this.source_adapters["default"](this);
     return this._source_adapter;
   }
-  async init() {
-    // normalize path
-    this.data.path = this.data.path.replace(/\\/g, "/");
-    await this.parse_content();
-    this.queue_save();
-    if(this.is_unembedded && this.smart_embed) this.smart_embed.embed_entity(this);
+  // may be deprecated
+  // async init() {
+  //   // normalize path
+  //   this.data.path = this.data.path.replace(/\\/g, "/");
+  //   await this.parse_content();
+  //   this.queue_save();
+  //   if(this.is_unembedded && this.smart_embed) this.smart_embed.embed_entity(this);
+  // }
+  get file() { return this.collection.fs.files[this.data.path]; }
+  async load() {
+    try{
+      await this.data_adapter.load();
+    }catch(err){
+      this._queue_import = true; // if fails to find collection data then queue import
+      console.error(err, err.stack);
+    }
+  }
+  // moved logic from SmartSources import() method
+  async import(){
+    try{
+      if(this.file.stat.size > 1000000) {
+        console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
+        return;
+      }
+      await this.parse_content();
+      this._queue_embed = true;
+      if(this.is_unembedded && this.smart_embed) this.smart_embed.embed_entity(this);
+    }catch(err){
+      this._queue_import = true;
+      console.error(err, err.stack);
+    }
   }
   async parse_content() {
     const content = await this.read();
@@ -38,6 +64,7 @@ export class SmartSource extends SmartEntity {
         hash
       }); // add history entry
       this.data.embeddings = {}; // clear embeddings
+      this._queue_embed = true;
     } else {
       this.last_history.mtime = file_stat.mtime; // update mtime
       this.last_history.size = file_stat.size; // update size
@@ -330,6 +357,8 @@ export class SmartSource extends SmartEntity {
       throw error;
     }
   }
+
+  queue_import() { this._queue_import = true; }
 
 
   // DEPRECATED methods

@@ -208,6 +208,13 @@ export class SmartEntities extends Collection {
   }
   get settings_config() { return settings_config; }
   get filter_config() { return filter_config; }
+
+  async process_embed_queue() {
+    const queue = Object.values(this.items).filter(item => item._queue_embed);
+    if(!queue.length) return console.log("Smart Connections: No items in embed queue");
+    console.log(`Smart Connections: Processing embed queue: ${queue.length} items`);
+    await Promise.all(queue.map(item => item.embed()));
+  }
 }
 
 export const settings_config = {

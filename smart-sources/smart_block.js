@@ -20,7 +20,10 @@ export class SmartBlock extends SmartEntity {
     };
   }
 
-  queue_save() { this.source.queue_save(this.key); }
+  /**
+   * Queues the block for saving via the source.
+   */
+  queue_save() { this.source.queue_save(); }
 
   update_data(data) {
     if (this.should_clear_embeddings(data)) this.data.embeddings = {};

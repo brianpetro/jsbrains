@@ -15,10 +15,6 @@ export class SmartEntity extends CollectionItem {
       },
     };
   }
-  save() {
-    this.collection.set(this);
-    this.env.save();
-  }
   nearest(filter = {}) { return this.collection.nearest_to(this, filter) }
   async get_as_context(params = {}) {
     return `---BEGIN NOTE${params.i ? " " + params.i : ""} [[${this.path}]]---\n${await this.get_content()}\n---END NOTE${params.i ? " " + params.i : ""}---`;
@@ -76,6 +72,9 @@ export class SmartEntity extends CollectionItem {
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }
+
+  async embed() {
+  }
 
   // ADAPTER METHODS
   get vec() { return this.entity_adapter.vec; }

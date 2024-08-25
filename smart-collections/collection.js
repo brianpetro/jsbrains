@@ -201,11 +201,11 @@ export class Collection {
    * Saves the current state of the collection.
    */
   async save() { await this.adapter.save(); }
-  async save_queue() { await this.adapter.save_queue(); }
-  queue_save(key) { this.adapter.queue_save(key); }
+  async save_queue() { await this.process_save_queue(); }
 
   /**
    * Loads the collection state.
+   * @deprecated use this.process_load_queue() instead
    */
   async load() { await this.adapter.load(); }
 
@@ -232,4 +232,26 @@ export class Collection {
   //  * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
   //  */
   // async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
+  async process_save_queue() {
+    if(this._saving) return console.log("Already saving");
+    this._saving = true;
+    setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
+    const save_queue = Object.values(this.items).filter(item => item._queue_save);
+    console.log("Saving " + this.collection_name + ": ", save_queue.length + " items");
+    const time_start = Date.now();
+    await Promise.all(save_queue.map(item => item.save()));
+    console.log("Saved " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
+    this._saving = false;
+  }
+  async process_load_queue() {
+    if(this._loading) return console.log("Already loading");
+    this._loading = true;
+    setTimeout(() => { this._loading = false; }, 10000); // set _loading to false after 10 seconds
+    const load_queue = Object.values(this.items).filter(item => item._queue_load);
+    console.log("Loading " + this.collection_name + ": ", load_queue.length + " items");
+    const time_start = Date.now();
+    await Promise.all(load_queue.map(item => item.load()));
+    console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
+    this._loading = false;
+  }
 }

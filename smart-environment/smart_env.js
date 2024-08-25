@@ -140,14 +140,10 @@ export class SmartEnv {
       await this[key].init();
     }
   }
-  async load_collections() {
-    try{
-      this.loading_collections = true;
-      for (const key of Object.keys(this.collections)) {
-        await this[key].load();
-      }
-    }catch(err){
-      console.error(err);
+  async load_collections(){
+    this.loading_collections = true;
+    for (const key of Object.keys(this.collections)) {
+      await this[key].process_load_queue();
     }
     this.loading_collections = false;
     this.collections_loaded = true;
@@ -161,7 +157,8 @@ export class SmartEnv {
   // NEEDS REVIEW: saves all collections (Likely DEPRECATED: may only need to save smart_sources)
   save() {
     for(const key of Object.keys(this.collections)){
-      this[key].save();
+      // this[key].save();
+      this[key].process_save_queue();
     }
   }
   // NEEDS REVIEW: Can unload/reload be handled better?
