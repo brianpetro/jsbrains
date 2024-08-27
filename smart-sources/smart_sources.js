@@ -15,10 +15,23 @@ export class SmartSources extends SmartEntities {
       ...(opts.source_adapters || {}),
     };
   }
+  static async load(env, opts = {}) {
+    console.log("Smart Sources: loading");
+    console.log("opts", opts);
+    console.log("env", env);
+    const source_collection_opts = {
+      adapter_class: opts.smart_collection_adapter_class,
+      custom_collection_name: 'smart_sources',
+    };
+    if(opts.env_path) source_collection_opts.env_path = opts.env_path;
+    env.smart_sources = new opts.collections.smart_sources(env, source_collection_opts);
+    console.log("env.smart_sources", env.smart_sources);
+    await env.smart_sources.init();
+  }
   async init() {
     await super.init();
     // init smart blocks
-    this.env.smart_blocks = new this.env.collections.smart_blocks(this.env, {
+    this.env.smart_blocks = new this.env.opts.collections.smart_blocks(this.env, {
       custom_collection_name: 'smart_blocks'
     });
     await this.env.smart_blocks.init(); // loads smart-embed model
@@ -157,7 +170,9 @@ export class SmartSources extends SmartEntities {
 
   async process_load_queue(){
     await super.process_load_queue();
-    Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
+    if(this.collection_name === 'smart_sourses'){ // excludes sub-classes
+      Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
+    }
   }
 
   async process_import_queue(){

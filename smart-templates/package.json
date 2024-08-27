@@ -19,7 +19,8 @@
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
-    "smart-chat-model": "file:../smart-chat-model"
+    "smart-chat-model": "file:../smart-chat-model",
+    "smart-sources": "file:../smart-sources"
   },
   "devDependencies": {
     "ava": "^6.1.3",

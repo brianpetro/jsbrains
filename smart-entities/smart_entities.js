@@ -18,7 +18,7 @@ export class SmartEntities extends Collection {
   }
   async init() {
     await super.init();
-    this.smart_chunks = new this.env.smart_chunks_class(this, {
+    this.smart_chunks = new this.env.opts.smart_chunks_class(this, {
       ...this.env.settings,
       skip_blocks_with_headings_only: true
     });

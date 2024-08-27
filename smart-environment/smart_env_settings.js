@@ -31,8 +31,9 @@ export class SmartEnvSettings {
   }
   async load() {
     if(!(await this.fs.exists('.smart_env.json'))) await this.save({});
-    this._settings = JSON.parse(await this.fs.read('.smart_env.json'));
-    deep_merge(this._settings, this.env.opts?.smart_env_settings || {});
+    if(this.env.opts.default_settings) this._settings = this.env.opts.default_settings || {}; // set defaults if provided
+    deep_merge(this._settings, JSON.parse(await this.fs.read('.smart_env.json'))); // load saved settings
+    deep_merge(this._settings, this.env.opts?.smart_env_settings || {}); // overrides saved settings
     for(const key of this.env.mains){
       this._settings[key] = await this.env[key].load_settings();
     }
