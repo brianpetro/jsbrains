@@ -28,8 +28,8 @@ class SmartSettings {
     if(typeof opts === 'string') opts = { template_name: opts }; // DEPRECATED handling
     this.template_name = opts.template_name;
     this.ejs = this.env.ejs || ejs;
-    this.views = opts.views || this.env.views;
-    this.templates = this.env.templates; // DEPRECATED in favor of views
+    this.templates = this.env.opts.templates; // DEPRECATE in favor of views???
+    this.views = this.templates;
   }
   // get settings() { return this.main.settings; }
   // set settings(settings) { this.main.settings = settings; }
@@ -38,7 +38,7 @@ class SmartSettings {
   async render() {
     const view_data = (typeof this.get_view_data === "function") ? await this.get_view_data() : this.view_data;
     this.render_template(view_data);
-    this.render_components();
+    await this.render_components();
   }
   render_template(view_data = null) {
     if (!this.template) throw new Error(`Settings template not found.`);
@@ -60,9 +60,9 @@ class SmartSettings {
     }
     await this.env.smart_env_settings.save(settings);
   }
-  render_components() {
+  async render_components() {
     if(!this.main.obsidian.Setting) console.warn("missing Obsidian Setting component");
-    this.container.querySelectorAll(".setting-component").forEach(elm => {
+    this.container.querySelectorAll(".setting-component").forEach(async elm => {
       const setting_elm = new this.main.obsidian.Setting(elm);
       if (elm.dataset.name) setting_elm.setName(elm.dataset.name);
       if (elm.dataset.description) setting_elm.descEl.innerHTML = elm.dataset.description;
@@ -106,15 +106,27 @@ class SmartSettings {
           });
         });
       } else if (elm.dataset.type === "dropdown") {
-        setting_elm.addDropdown(dropdown => {
-          Object.entries(elm.dataset)
+        const setting_value = this.get_setting(setting);
+        let options;
+        if (elm.dataset.optionsCallback) {
+          if (typeof this[elm.dataset.optionsCallback] !== 'function') {
+            console.error(`Options callback ${elm.dataset.optionsCallback} is not a function.`);
+            options = [];
+          } else {
+            options = await this[elm.dataset.optionsCallback]();
+          }
+        } else {
+          options = Object.entries(elm.dataset)
             .filter(([k, v]) => k.startsWith("option"))
-            .forEach(([k, v]) => {
+            .map(([k, v]) => {
               const [value, name] = v.split("|");
-              dropdown.addOption(value, name || value);
+              return { value, name: name || value };
             });
+        }
+        setting_elm.addDropdown(dropdown => {
+          options.forEach(option => dropdown.addOption(option.value, option.name));
           dropdown.onChange(async (value) => this.handle_on_change(setting, value, elm));
-          dropdown.setValue(this.get_setting(setting));
+          dropdown.setValue(setting_value);
         });
       } else if (elm.dataset.type === "button") {
         setting_elm.addButton(button => {

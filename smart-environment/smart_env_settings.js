@@ -53,9 +53,34 @@ export class SmartEnvSettings {
         if (await temp_fs.exists('.obsidian/plugins/smart-connections/data.json')) {
           const obsidian_settings = JSON.parse(await temp_fs.read('.obsidian/plugins/smart-connections/data.json'));
           deep_merge_no_overwrite(this._settings, obsidian_settings);
+          this.transform_backwards_compatible_settings(obsidian_settings);
           await this.save();
         }
       }
+    }
+  }
+  transform_backwards_compatible_settings(os) {
+    if(os.smart_sources_embed_model){
+      if(!this._settings.smart_sources) this._settings.smart_sources = {};
+      if(!this._settings.smart_sources.embed_model_key) this._settings.smart_sources.embed_model_key = os.smart_sources_embed_model;
+      if(!this._settings.smart_sources.embed_model) this._settings.smart_sources.embed_model = {};
+      if(!this._settings.smart_sources.embed_model[os.smart_sources_embed_model]) this._settings.smart_sources.embed_model[os.smart_sources_embed_model] = {};
+    }
+    if(os.smart_blocks_embed_model){
+      if(!this._settings.smart_blocks) this._settings.smart_blocks = {};
+      if(!this._settings.smart_blocks.embed_model_key) this._settings.smart_blocks.embed_model_key = os.smart_blocks_embed_model;
+      if(!this._settings.smart_blocks.embed_model) this._settings.smart_blocks.embed_model = {};
+      if(!this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model]) this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model] = {};
+    }
+    if(os.api_key){
+      Object.entries(this._settings.smart_sources?.embed_model || {}).forEach(([key, value]) => {
+        if(key.startsWith('text')) value.api_key = os.api_key;
+        if(os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
+      });
+      Object.entries(this._settings.smart_blocks?.embed_model || {}).forEach(([key, value]) => {
+        if(key.startsWith('text')) value.api_key = os.api_key;
+        if(os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
+      });
     }
   }
 }
