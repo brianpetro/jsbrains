@@ -71,16 +71,23 @@ export class SmartEntity extends CollectionItem {
     if(!this.data.embeddings[this.embed_model]) this.data.embeddings[this.embed_model] = {};
     this.data.embeddings[this.embed_model].tokens = tokens;
   }
+  get embed_model_key() { return this.collection.embed_model_key; }
+  get model_opts() { return this.env.settings[this.collection_name]?.embed_model?.[this.embed_model_key] || {}; }
   get is_unembedded() {
     if(this.vec) return false;
-    if(this.size < (this.env.settings?.embed_input_min_chars || 300)) return false;
+    if(this.size < (this.model_opts.min_chars || 300)) return false;
+    if(this.size < (this.env.settings?.embed_input_min_chars || 300)) return false; // DEPRECATED
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }
 
   // ADAPTER METHODS
   get vec() { return this.entity_adapter.vec; }
-  set vec(vec) { this.entity_adapter.vec = vec; }
+  set vec(vec) {
+    this.entity_adapter.vec = vec;
+    this._queue_embed = false;
+    this.queue_save();
+  }
 
   // SmartSources (how might this be better done?)
   get_key() { return this.data.path.replace(/\\/g, "/"); }

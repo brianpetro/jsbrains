@@ -23,57 +23,35 @@ export class SmartEntities extends Collection {
       skip_blocks_with_headings_only: true
     });
     await this.load_smart_embed();
+    if (!this.smart_embed) {
+      console.log(`SmartEmbed not loaded for ${this.collection_name}. Continuing without embedding capabilities.`);
+    }
   }
-  // async _save() { await this.adapter._save_queue(); } // async b/c Obsidian API is async
   unload() {
     if (typeof this.smart_embed?.unload === 'function') {
       this.smart_embed.unload();
       this.smart_embed = null; // uses setter to update env.smart_embed_active_models
     }
   }
-  get SmartEmbedModel() { return this.env.smart_embed_model_class; }
+  get embed_model_key() {
+    return this.env.settings?.[this.collection_name]?.embed_model_key
+      || this.env.settings?.[this.collection_name + "_embed_model"] // DEPRECATED: backwards compatibility
+      || "TaylorAI/bge-micro-v2"
+    ;
+  }
+  get embed_model_opts() {
+    return this.env.settings?.[this.collection_name]?.embed_model?.[this.embed_model_key] || {};
+  }
   async load_smart_embed() {
-    if (!this.SmartEmbedModel) return console.log("SmartEmbedModel must be included in the `env.modules` property");
-    if (this.smart_embed_model_key === "None") return; // console.log("SmartEmbed disabled for ", this.collection_name);
-    if (this.env.smart_embed_active_models[this.smart_embed_model_key] instanceof this.SmartEmbedModel) {
-      this.smart_embed = this.env.smart_embed_active_models[this.smart_embed_model_key];
-      console.log("SmartEmbed already loaded for " + this.collection_name + ": Model: " + this.smart_embed_model_key);
-    } else {
-      const model = { model_key: this.smart_embed_model_key };
-      if (this.smart_embed_model_key.includes("/")) { // TODO: better way to detect local model
-        console.log(this.env.local_model_type);
-        this.model_instance_id = this.smart_embed_model_key;
-        const local_max = this.env.config.local_embedding_max_tokens;
-        if (local_max < model.max_tokens) model.max_tokens = local_max;
-        // check if http://localhost:37420/embed is available
-        console.log('Checking for local Smart Connect server...');
-        try {
-          const request_adapter = this.env.main.obsidian?.requestUrl || null;
-          const sc_local = !request_adapter ? await fetch('http://localhost:37421/') : await request_adapter({ url: 'http://localhost:37421/', method: 'GET' });
-          // console.log(sc_local);
-          if (sc_local.status === 200) {
-            console.log('Local Smart Connect server found');
-            this.smart_embed = await this.SmartEmbedModel.create(this.env, { ...model, request_adapter: request_adapter, adapter: 'local_api', local_endpoint: 'http://localhost:37421/embed_batch' });
-            return;
-          }
-        } catch (err) {
-          console.log('Could not connect to local Smart Connect server');
-        }
-        if (this.env.local_model_type === 'Web') {
-          this.model_instance_id += '_web'; // model registry name
-          if (this.smart_embed) console.log(`Existing WebAdapter for ${this.collection_name} model: ${this.smart_embed_model_key}`);
-          else this.smart_embed = await this.SmartEmbedModel.create(this.env, { ...model, adapter: 'iframe', container: this.smart_embed_container });
-        } else {
-          this.model_instance_id += '_node'; // model registry name
-          if (this.smart_embed) console.log(`Existing NodeAdapter for ${this.collection_name} model: ${this.smart_embed_model_key}`); // Check if a connection for this model already exists
-          else this.smart_embed = await this.SmartEmbedModel.create(this.env, { ...model, adapter: 'transformers' });
-        }
-      } else { // is API model
-        this.model_instance_id += '_api'; // model registry name
-        if (this.smart_embed) console.log(`Existing ApiAdapter for ${this.collection_name} model: ${this.smart_embed_model_key}`); // Check if a connection for this model already exists
-        else this.smart_embed = await this.SmartEmbedModel.create(this.env, { ...model, request_adapter: this.env.main.obsidian?.requestUrl, api_key: this.config.api_key });
-      }
+    if(this.smart_embed) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
+    if (!this.env.opts.smart_embed_model_class) {
+      console.log("smart_embed_model_class must be included in the `env.opts` property");
+      return;
     }
+    await this.env.opts.smart_embed_model_class.load(this.env, {
+      model_key: this.embed_model_key,
+      ...this.embed_model_opts
+    });
   }
   get smart_embed_container() {
     if (!this.model_instance_id) return console.log('model_key not set');
@@ -85,12 +63,12 @@ export class SmartEntities extends Collection {
     window.document.body.appendChild(container);
     return container;
   }
-  get smart_embed() { return this.env.smart_embed_active_models?.[this.model_instance_id]; }
-  set smart_embed(val) {
-    if (!this.model_instance_id) this.model_instance_id = val.model_name + "_" + val.constructor.name;
-    if (!this.env.smart_embed_active_models) this.env.smart_embed_active_models = {};
-    this.env.smart_embed_active_models[this.model_instance_id] = val;
-  }
+  get smart_embed() { return this.env.smart_embed_active_models?.[this.embed_model_key]; }
+  // set smart_embed(val) {
+  //   if (!val) return; // Don't set if val is null or undefined
+  //   if (!this.env.smart_embed_active_models) this.env.smart_embed_active_models = {};
+  //   this.env.smart_embed_active_models[this.embed_model_key] = val;
+  // }
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
   // DEPRECATED in favor of entity-based nearest_to(entity, filter)
   nearest(vec, filter = {}) {
@@ -209,90 +187,42 @@ export class SmartEntities extends Collection {
     console.log(`Found and returned ${top_k.length} ${this.collection_name}.`);
     return top_k;
   }
-  get settings_config() { return settings_config; }
+  get settings_config() {
+    return {
+      ...super.settings_config,
+      ...settings_config,
+    }
+  }
   get filter_config() { return filter_config; }
 
   async process_embed_queue() {
     if (this.is_queue_halted || this.is_processing_queue) return;
-
-    const queue = Object.values(this.items).filter(item => item._queue_embed);
-    if(!queue.length) return console.log("Smart Connections: No items in embed queue");
-    console.log(`Smart Connections: Processing embed queue: ${queue.length} items`);
-    
-    this.queue_total = queue.length;
-    await this._process_embed_queue(queue);
-  }
-
-  async _process_embed_queue(queue) {
-    if (this.is_processing_queue) return;
     this.is_processing_queue = true;
-    if(!this.start_time) this.start_time = Date.now();
-
-    try {
-      while (queue.length > 0 && !this.is_queue_halted) {
-        await this._process_embed_batch(queue);
-      }
-    } catch (error) {
-      console.error("Error in _process_embed_queue:", error);
-    } finally {
-      this.is_processing_queue = false;
-      if (queue.length === 0) this._embed_queue_complete();
-    }
-  }
-
-  async _process_embed_batch(queue) {
-    const batch_size = this.smart_embed.batch_size;
-    const batch = queue.splice(0, batch_size);
-    try {
-      await this._prepare_embed_batch(batch);
-      const resp = await this.smart_embed.embed_batch(batch);
-      if (!resp || resp.error) throw new Error(`Error embedding batch: ${JSON.stringify(resp, null, 2)}`);
-      await this._handle_embed_batch_response(batch, resp);
-    } catch (error) {
-      console.error("Error processing embed batch:", error);
-      queue.unshift(...batch);
-      throw error;
-    }
-  }
-
-  async _prepare_embed_batch(batch) {
-    await Promise.all(batch.map(item => item.get_embed_input()));
-  }
-
-  async _handle_embed_batch_response(batch, resp) {
-    for (let i = 0; i < batch.length; i++) {
-      const item = batch[i];
-      const response_item = resp[i];
-
-      item.vec = response_item.vec;
-      item._embed_input = null;
-      item._queue_embed = false;
-      item.queue_save();
-
-      if (response_item?.tokens) {
-        this.total_tokens += response_item.tokens;
-      } else {
-        console.warn("Unexpected response item:", response_item);
-      }
-
-      this.embedded_total++;
-      this._update_embed_progress();
-    }
-  }
-
-  _update_embed_progress() {
-    if (this.embedded_total % 100 === 0) {
+    const queue = Object.values(this.items).filter(item => item._queue_embed);
+    this.queue_total = queue.length;
+    if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_name} embed queue`);
+    console.log(`Processing ${this.collection_name} embed queue: ${this.queue_total} items`);
+    this.start_time = Date.now();
+    for(let i=0; i<this.queue_total; i+=this.smart_embed.batch_size) {
+      if(this.is_queue_halted) break;
+      const batch = queue.slice(i, i + this.smart_embed.batch_size);
+      await Promise.all(batch.map(item => item.get_embed_input())); // decided/future: may be handled in SmartEmbedModel
+      await this.smart_embed.embed_batch(batch);
+      this.embedded_total += batch.length;
+      this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
       this._show_embed_progress_notice();
     }
+    if(!this.is_queue_halted) this._embed_queue_complete();
   }
-
   _show_embed_progress_notice() {
+    if(this.embedded_total - this.last_notice_embedded_total < 100) return;
+    this.last_notice_embedded_total = this.embedded_total;
     const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
     this.env.main.notices.show('embedding_progress', 
       [
         `Making Smart Connections...`,
         `Embedding progress: ${this.embedded_total} / ${this.queue_total}`,
-        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.model_name}`
+        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
       ],
       { 
         timeout: 0,
@@ -300,13 +230,20 @@ export class SmartEntities extends Collection {
       }
     );
   }
-
+  _show_embed_completion_notice() {
+    this.env.main.notices.remove('embedding_progress');
+    this.env.main.notices.show('embedding_complete', [
+      `Embedding complete.`,
+      `${this.embedded_total} entities embedded.`,
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
+    ], { timeout: 10000 });
+  }
   _calculate_embed_tokens_per_second() {
     const elapsed_time = (Date.now() - this.start_time) / 1000;
     return Math.round(this.total_tokens / elapsed_time);
   }
-
   _embed_queue_complete() {
+    this.is_processing_queue = false;
     if (this.completed_embed_queue_timeout) clearTimeout(this.completed_embed_queue_timeout);
     this.completed_embed_queue_timeout = setTimeout(() => {
       this._show_embed_completion_notice();
@@ -314,23 +251,12 @@ export class SmartEntities extends Collection {
       this.env.save();
     }, 3000);
   }
-
-  _show_embed_completion_notice() {
-    this.env.main.notices.remove('embedding_progress');
-    this.env.main.notices.show('embedding_complete', [
-      `Embedding complete.`,
-      `${this.embedded_total} entities embedded.`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.model_name}`
-    ], { timeout: 10000 });
-  }
-
   _reset_embed_queue_stats() {
     this.embedded_total = 0;
     this.queue_total = 0;
     this.total_tokens = 0;
     this.start_time = null;
   }
-
   halt_embed_queue_processing() {
     this.is_queue_halted = true;
     clearTimeout(this.queue_process_timeout);
@@ -339,7 +265,7 @@ export class SmartEntities extends Collection {
     this.env.main.notices.show('embedding_paused', [
       `Embedding paused.`,
       `Progress: ${this.embedded_total} / ${this.queue_total}`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.model_name}`
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
     ],
     {
       timeout: 0,
@@ -348,8 +274,8 @@ export class SmartEntities extends Collection {
     this.start_time = null;
     this.env.save();
   }
-
   resume_embed_queue_processing(delay = 0) {
+    this.start_time = Date.now();
     this.is_queue_halted = false;
     clearTimeout(this.queue_process_timeout);
     this.queue_process_timeout = setTimeout(() => {
@@ -360,23 +286,39 @@ export class SmartEntities extends Collection {
 }
 
 export const settings_config = {
-  smart_sources_embed_model: {
-    name: 'Notes Embedding Model',
+  // smart_sources_embed_model: {
+  //   name: 'Notes Embedding Model',
+  //   type: "dropdown",
+  //   description: "Select a model to use for embedding your notes.",
+  //   options_callback: 'get_embedding_model_options',
+  //   callback: 'restart',
+  //   // required: true
+  // },
+  // smart_blocks_embed_model: {
+  //   name: 'Blocks Embedding Model',
+  //   type: "dropdown",
+  //   description: "Select a model to use for embedding your blocks.",
+  //   options_callback: 'get_embedding_model_options',
+  //   callback: 'restart',
+  //   // required: true
+  // },
+  embed_model_key: {
+    name: 'Embedding Model',
     type: "dropdown",
-    description: "Select a model to use for embedding your notes.",
+    description: "Select an embedding model.",
     options_callback: 'get_embedding_model_options',
     callback: 'restart',
     // required: true
   },
-  smart_blocks_embed_model: {
-    name: 'Blocks Embedding Model',
-    type: "dropdown",
-    description: "Select a model to use for embedding your blocks.",
-    options_callback: 'get_embedding_model_options',
-    callback: 'restart',
-    // required: true
-  },
-  embed_input_min_chars: {
+  // embed_input_min_chars: {
+  //   name: 'Minimum Embedding Length',
+  //   type: "number",
+  //   description: "Minimum length of note to embed.",
+  //   placeholder: "Enter a number",
+  //   // callback: 'refresh_embeddings',
+  //   // required: true,
+  // },
+  "embed_model.min_chars": {
     name: 'Minimum Embedding Length',
     type: "number",
     description: "Minimum length of note to embed.",
@@ -384,7 +326,7 @@ export const settings_config = {
     // callback: 'refresh_embeddings',
     // required: true,
   },
-  api_key: {
+  "embed_model.api_key": {
     name: 'OpenAI API Key for embeddings',
     type: "password",
     description: "Required for OpenAI embedding models",
@@ -392,6 +334,20 @@ export const settings_config = {
     callback: 'test_api_key_openai_embeddings',
     conditional_callback: (settings) => !settings.smart_sources_embed_model.includes('/') || !settings.smart_blocks_embed_model.includes('/')
   },
+  // use_gpu: {
+  //   name: 'Use GPU',
+  //   type: "toggle",
+  //   description: "Use GPU for embeddings if available.",
+  //   callback: 'restart',
+  // },
+  "embed_model.gpu_batch_size": {
+    name: 'GPU Batch Size',
+    type: "number",
+    description: "Number of embeddings to process per batch on GPU.",
+    placeholder: "Enter a number",
+    callback: 'restart',
+  },
+  // DEPRECATED???
   local_embedding_max_tokens: {
     name: 'Local Embedding Max Tokens',
     type: "dropdown",
