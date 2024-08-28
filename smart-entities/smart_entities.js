@@ -14,7 +14,6 @@ export class SmartEntities extends Collection {
     this.is_queue_halted = false;
     this.total_tokens = 0;
     this.start_time = null;
-    this.queue_process_timeout = null;
   }
   async init() {
     await super.init();
@@ -256,10 +255,10 @@ export class SmartEntities extends Collection {
     this.queue_total = 0;
     this.total_tokens = 0;
     this.start_time = null;
+    this.last_notice_embedded_total = 0;
   }
   halt_embed_queue_processing() {
     this.is_queue_halted = true;
-    clearTimeout(this.queue_process_timeout);
     console.log("Embed queue processing halted");
     this.env.main.notices.remove('embedding_progress');
     this.env.main.notices.show('embedding_paused', [
@@ -277,11 +276,7 @@ export class SmartEntities extends Collection {
   resume_embed_queue_processing(delay = 0) {
     this.start_time = Date.now();
     this.is_queue_halted = false;
-    clearTimeout(this.queue_process_timeout);
-    this.queue_process_timeout = setTimeout(() => {
-      console.log("Resuming embed queue processing");
-      this.process_embed_queue();
-    }, delay);
+    this.process_embed_queue();
   }
 }
 
@@ -347,19 +342,19 @@ export const settings_config = {
     placeholder: "Enter a number",
     callback: 'restart',
   },
-  // DEPRECATED???
-  local_embedding_max_tokens: {
-    name: 'Local Embedding Max Tokens',
-    type: "dropdown",
-    description: "Reduce max tokens depending on available resources (CPU, RAM).",
-    option_1: "512",
-    option_2: "1024",
-    option_3: "2048|2048 (default)",
-    option_4: "4096",
-    option_5: "8192",
-    callback: 'reload_env',
-    conditional_callback: (settings) => settings.smart_sources_embed_model.includes('/') || settings.smart_blocks_embed_model.includes('/')
-  },
+  // // DEPRECATED??? probably
+  // local_embedding_max_tokens: {
+  //   name: 'Local Embedding Max Tokens',
+  //   type: "dropdown",
+  //   description: "Reduce max tokens depending on available resources (CPU, RAM).",
+  //   option_1: "512",
+  //   option_2: "1024",
+  //   option_3: "2048|2048 (default)",
+  //   option_4: "4096",
+  //   option_5: "8192",
+  //   callback: 'reload_env',
+  //   conditional_callback: (settings) => settings.smart_sources_embed_model.includes('/') || settings.smart_blocks_embed_model.includes('/')
+  // },
   // "cohere_api_key": {
   //   type: "text",
   //   name: "Cohere API Key",

@@ -75,8 +75,7 @@ export class SmartEntity extends CollectionItem {
   get model_opts() { return this.env.settings[this.collection_name]?.embed_model?.[this.embed_model_key] || {}; }
   get is_unembedded() {
     if(this.vec) return false;
-    if(this.size < (this.model_opts.min_chars || 300)) return false;
-    if(this.size < (this.env.settings?.embed_input_min_chars || 300)) return false; // DEPRECATED
+    if(this.size < (this.model_opts?.min_chars || this.env.settings?.embed_input_min_chars || 300)) return false;
     return true;
   }
   get smart_embed() { return this.collection.smart_embed; }

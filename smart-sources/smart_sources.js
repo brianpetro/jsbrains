@@ -114,6 +114,7 @@ export class SmartSources extends SmartEntities {
   async refresh_embeddings() {
     await this.prune();
     await this.process_import_queue();
+    if(this.env.smart_blocks.smart_embed) Object.values(this.env.smart_blocks.items).forEach(item => !item.vec ? item.queue_embed() : null);
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
   }
