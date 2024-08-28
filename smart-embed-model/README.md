@@ -1,85 +1,60 @@
-# Smart Embed
-Smart Embed is a library that provides a standardized interface for embedding content. It supports various local and remote embedding models, making it a versatile tool for your development needs.
+# SmartEmbedModel
 
-## install
-```bash
-npm install smart-embed-model
-```
+A universal interface for embedding models.
 
-## usage
-
-### Initializing SmartEmbedModel with Adapters
-
-To initialize the `SmartEmbedModel` with a specific adapter, follow these steps:
-
-1. **Configure the Model and Adapter:**
-   Define the configuration for your model and specify the adapter you want to use. Here's an example configuration:
-
-   ```javascript
-   const config = {
-     model_key: 'default_model', // Assuming 'default_model' is a valid key in your models configuration
-     api_key: 'your_api_key_here', // Replace with your actual API key
-     adapter: 'api' // Specify the adapter type, e.g., 'api' (default), 'local_api', 'transformers' (huggingface)
-   };
-   ```
-
-2. **Create an Instance of SmartEmbedModel:**
-   Use the `create` static method of `SmartEmbedModel` to initialize an instance with the environment and configuration:
-
-   ```javascript
-   SmartEmbedModel.create({}, config)
-     .then(model => {
-       console.log('SmartEmbedModel initialized successfully:', model);
-       // You can now use model to embed inputs or count tokens, etc.
-     })
-     .catch(error => {
-       console.error('Failed to initialize SmartEmbedModel:', error);
-     });
-   ```
-
-This setup will allow you to utilize the specified adapter for embedding operations or token counting with the `SmartEmbedModel`.
-
-
-
-### `embed(input)`
-
-Generates an embedding for a single input string.
-
-#### Parameters
-
-- `input` (String): The input text for which the embedding will be generated.
-
-#### Returns
-
-- (Object): An object containing:
-    - `vec` (Array): The embedding vector for the input.
-    - `tokens` (Number): The count of tokens used for the input.
-
-#### Description
-
-The `embed` method processes a single input string to obtain its embedding. It sends the input to an external service (such as OpenAI's API) and receives an embedding vector in response. The method returns an object containing the embedding vector and the total number of tokens used in the embedding process. This method is ideal for applications where individual text processing is required.
-
-### `embed_batch(items)`
-
-Processes a batch of inputs to generate embeddings for each.
-
-#### Parameters
-
-- `items` (Array): An array of objects, each containing an `embed_input` property with the input text.
-
-#### Returns
-
-- (Array): An array of updated items, each including:
-    - `vec` (Array): The embedding vector.
-    - `tokens` (Number): The proportional count of tokens used for the input.
-
-#### Description
-
-The `embed_batch` method is designed for batch processing multiple text inputs. It accepts an array of items and processes them simultaneously to generate embeddings. Each item in the input array is updated with its respective embedding vector and a proportionally calculated token count, based on the length of its input text. This method is particularly useful in scenarios where efficiency is key and multiple texts need to be processed in parallel.
-
-## about
-Designed for use with [Smart Collections](https://github.com/brianpetro/smart-collections) library and the [Smart Connections](https://smartconnections.app) Obsidian plugin.
-
-
-## development
-- `node build_web.js` is used to compile the web connector for loading via the web adapter.
+## specs
+- `SmartEmbedModel` class
+	- `constructor(env, opts)`
+		- `env` SmartEnv instance
+			- used to set `env.smart_embed_active_models[opts.model_key] = this`
+		- `opts` object used to specify model
+			- `adapter` (required)
+				- specifies which embedding platform to use (openai, transformers, etc)
+				- sets `this.adapter = new this.env.embed_adapters[opts.adapter](this)`
+			- `model_key` (required)
+				- used to import `model_config` from `models.json`
+			- required but may be imported from `model.json`
+				- `batch_size`
+				- `max_tokens`
+			- other properties vary by model and can be provided or else imported from `model.json`
+				- cloud models (openai, cohere, etc)
+					- `api_key`
+				- local models (transformers)
+					- `use_gpu`
+	- `static async load`
+		- initiates and calls adapter `load` method
+	- `async embed_batch(inputs)`
+		- accepts array of objects with `embed_input` property or `get_embed_input` async method
+		- returns array of `inputs` objects with added `vec` property
+	- `async count_tokens(input)`
+		- used for token limit checks
+		- returns object with `tokens` property
+	- `embed(input)` convenience method
+		- simple wrapper for `embed_batch`
+		- allows string as input in addition to object with properties required by `embed_batch`
+- Adapters (subclasses of `SmartEmbedAdapter` base class)
+	- `SmartEmbedOpenaiAdapter` class
+	- `SmartEmbedTransformersAdapter` class
+	- `SmartEmbedIframeAdapter` class
+    - uses `postMessage` to communicate with iframe content script
+    - uses `onmessage` to receive data from iframe content script
+    - adds `vec` to each `input` object and returns modified objects
+		- `SmartEmbedTransformersIframeAdapter` class
+      - initiates iframe with script from `connectors/transformers_iframe_script.js`
+	- `SmartEmbedWorkerAdapter` class
+		- `SmartEmbedTransformersWorkerAdapter` class
+- Adapter wrappers
+	- *important*: passes object with `embed_input` property only to iframe/worker
+		- prevents 'not clonable' error
+		- after receiving vecs back from iframe/worker, adds `vec` to original objects and returns modified objects
+	- `build/` scripts are run by `npm run build`
+		- each imports necessary dependencies
+		- esbuild bundles each into a single file as a string exported (ex. `export const transformers_connector = "..."`) 
+    - `transformers_iframe_script.js`
+      - creates message listener for base class methods (`load`, `embed_batch`, `count_tokens`)
+      - after receiving message, calls appropriate method on the SmartEmbedModel instance and sends result back to parent via `postMessage`
+      - for use with `IframeAdapter`
+      - outputs to `connectors/ADAPTER_NAME_iframe.js`
+    - `transformers_worker_script.js`
+      - creates script for use with `WorkerAdapter`
+      - outputs to `connectors/ADAPTER_NAME_worker.js`
