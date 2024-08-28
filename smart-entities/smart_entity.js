@@ -18,6 +18,13 @@ export class SmartEntity extends CollectionItem {
   async load(){
     await super.load();
     if(!this.vec) this.queue_embed();
+    // only keep active model embeddings
+    Object.entries(this.data.embeddings).forEach(([model, embedding]) => {
+      if(model !== this.embed_model_key){
+        this.data.embeddings[model] = null;
+        delete this.data.embeddings[model];
+      }
+    });
   }
   queue_embed(){ this._queue_embed = true; }
   nearest(filter = {}) { return this.collection.nearest_to(this, filter) }
@@ -57,28 +64,28 @@ export class SmartEntity extends CollectionItem {
   }
 
   // getters
-  get smart_chunks() { return this.collection.smart_chunks; }
   get embed_link() { return `![[${this.data.path}]]`; }
-  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get should_show_full_path() { return this.env.settings.show_full_path; }
-  get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
-  get tokens() { return this.data.embeddings[this.embed_model]?.tokens; }
-  get embed_model() { return this.collection?.smart_embed_model_key || "None"; }
-  // setters
-  set error(error) { this.data.embeddings[this.embed_model].error = error; }
-  set tokens(tokens) {
-    if(!this.data.embeddings) this.data.embeddings = {};
-    if(!this.data.embeddings[this.embed_model]) this.data.embeddings[this.embed_model] = {};
-    this.data.embeddings[this.embed_model].tokens = tokens;
-  }
   get embed_model_key() { return this.collection.embed_model_key; }
+  get embed_model_opts() { return this.collection?.embed_model_opts || {}; }
   get model_opts() { return this.env.settings[this.collection_name]?.embed_model?.[this.embed_model_key] || {}; }
+  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
+  get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
+  get should_show_full_path() { return this.env.settings.show_full_path; }
+  get smart_chunks() { return this.collection.smart_chunks; }
+  get smart_embed() { return this.collection.smart_embed; }
+  get tokens() { return this.data.embeddings[this.embed_model_key]?.tokens; }
   get is_unembedded() {
     if(this.vec) return false;
     if(this.size < (this.model_opts?.min_chars || this.env.settings?.embed_input_min_chars || 300)) return false;
     return true;
   }
-  get smart_embed() { return this.collection.smart_embed; }
+  // setters
+  set error(error) { this.data.embeddings[this.embed_model_key].error = error; }
+  set tokens(tokens) {
+    if(!this.data.embeddings) this.data.embeddings = {};
+    if(!this.data.embeddings[this.embed_model_key]) this.data.embeddings[this.embed_model_key] = {};
+    this.data.embeddings[this.embed_model_key].tokens = tokens;
+  }
 
   // ADAPTER METHODS
   get vec() { return this.entity_adapter.vec; }

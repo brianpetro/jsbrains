@@ -94,7 +94,9 @@ test('SmartEntity getters work correctly', t => {
   t.truthy(entity.smart_chunks);
   t.truthy(entity.embed_link);
   t.truthy(entity.name);
-  t.truthy(entity.embed_model);
+  t.truthy(entity.embed_model_key);
+  t.truthy(entity.embed_model_opts);
+  t.truthy(entity.is_unembedded);
 });
 
 test('SmartEntity vec getter and setter work correctly', t => {

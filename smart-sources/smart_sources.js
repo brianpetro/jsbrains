@@ -89,13 +89,6 @@ export class SmartSources extends SmartEntities {
     // queue_embed for meta_changed
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
-      Object.entries(item.data.embeddings).forEach(([model, embedding]) => {
-        // only keep active model embeddings
-        if(model !== item.embed_model){
-          item.data.embeddings[model] = null;
-          item.queue_save();
-        }
-      });
       if (item.meta_changed) item.queue_import();
       else if (item.is_unembedded) item.queue_embed();
     }
@@ -114,7 +107,7 @@ export class SmartSources extends SmartEntities {
   async refresh_embeddings() {
     await this.prune();
     await this.process_import_queue();
-    if(this.env.smart_blocks.smart_embed) Object.values(this.env.smart_blocks.items).forEach(item => !item.vec ? item.queue_embed() : null);
+    if(this.env.smart_blocks.smart_embed) Object.values(this.env.smart_blocks.items).filter(item => !item.vec).forEach(item => item.queue_embed());
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
   }

@@ -80,7 +80,7 @@ export class SmartSource extends SmartEntity {
     let connections = super.find_connections(opts);
     const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
     if(!opts.exclude_blocks_from_source_connections) {
-      const use_source_vec = this.env.smart_blocks.embed_model === this.embed_model;
+      const use_source_vec = this.env.smart_blocks.embed_model_key === this.embed_model_key;
       const vec_to_use = use_source_vec ? this.vec : this.median_block_vec;
       
       if (vec_to_use) {

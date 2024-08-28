@@ -13,7 +13,7 @@ export class SmartEntities extends Collection {
     this.embedded_total = 0;
     this.is_queue_halted = false;
     this.total_tokens = 0;
-    this.start_time = null;
+    this.total_time = 0;
   }
   async init() {
     await super.init();
@@ -196,24 +196,27 @@ export class SmartEntities extends Collection {
 
   async process_embed_queue() {
     if (this.is_queue_halted || this.is_processing_queue) return;
-    this.is_processing_queue = true;
     const queue = Object.values(this.items).filter(item => item._queue_embed);
     this.queue_total = queue.length;
     if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_name} embed queue`);
     console.log(`Processing ${this.collection_name} embed queue: ${this.queue_total} items`);
-    this.start_time = Date.now();
-    for(let i=0; i<this.queue_total; i+=this.smart_embed.batch_size) {
+    this.is_processing_queue = true;
+    for(let i = this.embedded_total; i < this.queue_total; i += this.smart_embed.batch_size) {
       if(this.is_queue_halted) break;
       const batch = queue.slice(i, i + this.smart_embed.batch_size);
       await Promise.all(batch.map(item => item.get_embed_input())); // decided/future: may be handled in SmartEmbedModel
+      const start_time = Date.now();
       await this.smart_embed.embed_batch(batch);
+      this.total_time += Date.now() - start_time;
       this.embedded_total += batch.length;
       this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
       this._show_embed_progress_notice();
     }
+    this.is_processing_queue = false;
     if(!this.is_queue_halted) this._embed_queue_complete();
   }
   _show_embed_progress_notice() {
+    if(this.is_queue_halted) return;
     if(this.embedded_total - this.last_notice_embedded_total < 100) return;
     this.last_notice_embedded_total = this.embedded_total;
     const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
@@ -238,7 +241,7 @@ export class SmartEntities extends Collection {
     ], { timeout: 10000 });
   }
   _calculate_embed_tokens_per_second() {
-    const elapsed_time = (Date.now() - this.start_time) / 1000;
+    const elapsed_time = this.total_time / 1000;
     return Math.round(this.total_tokens / elapsed_time);
   }
   _embed_queue_complete() {
@@ -254,8 +257,10 @@ export class SmartEntities extends Collection {
     this.embedded_total = 0;
     this.queue_total = 0;
     this.total_tokens = 0;
-    this.start_time = null;
+    this.total_time = 0;
     this.last_notice_embedded_total = 0;
+    this.is_processing_queue = false;
+    this.is_queue_halted = false;
   }
   halt_embed_queue_processing() {
     this.is_queue_halted = true;
@@ -268,15 +273,15 @@ export class SmartEntities extends Collection {
     ],
     {
       timeout: 0,
-      button: { text: "Resume", callback: this.resume_embed_queue_processing.bind(this) }
+      button: { text: "Resume", callback: () => this.resume_embed_queue_processing(0) }
     });
-    this.start_time = null;
     this.env.save();
   }
   resume_embed_queue_processing(delay = 0) {
-    this.start_time = Date.now();
     this.is_queue_halted = false;
-    this.process_embed_queue();
+    setTimeout(() => {
+      this.process_embed_queue();
+    }, delay);
   }
 }
 
@@ -338,7 +343,7 @@ export const settings_config = {
   "embed_model.gpu_batch_size": {
     name: 'GPU Batch Size',
     type: "number",
-    description: "Number of embeddings to process per batch on GPU.",
+    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter a number",
     callback: 'restart',
   },

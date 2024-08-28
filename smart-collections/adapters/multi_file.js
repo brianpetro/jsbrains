@@ -24,8 +24,8 @@ export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdap
    */
   async load() {
     const exists = await this.fs.exists(this.data_path);
-    if(!exists) await this.item.queue_import();
-    const data_ajson = (await this.fs.read(this.data_path)).trim();
+    const data_ajson = exists ? (await this.fs.read(this.data_path)).trim() : '';
+    if(!exists || !data_ajson) return await this.item.queue_import(); // queue import and return early if data file missing or empty
     const parsed_data = data_ajson
       .split('\n')
       .reduce((acc, line) => {
