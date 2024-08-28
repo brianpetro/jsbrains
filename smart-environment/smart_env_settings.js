@@ -44,7 +44,7 @@ export class SmartEnvSettings {
   // TEMP: backwards compatibility
   async load_obsidian_settings() {
     if (this._settings.is_obsidian_vault) { 
-      const temp_fs = new this.env.smart_fs_class(this.env, {
+      const temp_fs = new this.env.opts.smart_fs_class(this.env, {
         adapter: this.env.opts.smart_fs_adapter_class,
         fs_path: this.env.opts.env_path || '',
         exclude_patterns: this.env.excluded_patterns || [],

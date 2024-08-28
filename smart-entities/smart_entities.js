@@ -63,11 +63,6 @@ export class SmartEntities extends Collection {
     return container;
   }
   get smart_embed() { return this.env.smart_embed_active_models?.[this.embed_model_key]; }
-  // set smart_embed(val) {
-  //   if (!val) return; // Don't set if val is null or undefined
-  //   if (!this.env.smart_embed_active_models) this.env.smart_embed_active_models = {};
-  //   this.env.smart_embed_active_models[this.embed_model_key] = val;
-  // }
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
   // DEPRECATED in favor of entity-based nearest_to(entity, filter)
   nearest(vec, filter = {}) {

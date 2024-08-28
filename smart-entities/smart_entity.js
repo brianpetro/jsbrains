@@ -19,7 +19,7 @@ export class SmartEntity extends CollectionItem {
     await super.load();
     if(!this.vec) this.queue_embed();
     // only keep active model embeddings
-    Object.entries(this.data.embeddings).forEach(([model, embedding]) => {
+    Object.entries(this.data.embeddings || {}).forEach(([model, embedding]) => {
       if(model !== this.embed_model_key){
         this.data.embeddings[model] = null;
         delete this.data.embeddings[model];

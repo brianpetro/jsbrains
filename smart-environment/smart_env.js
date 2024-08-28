@@ -27,7 +27,7 @@ import { ObsidianMarkdownAdapter } from 'smart-change/adapters/obsidian_markdown
 export class SmartEnv {
   constructor(main, opts={}) {
     if(opts.global_ref) this._global_ref = opts.global_ref;
-    delete opts.global_ref;
+    this.global_ref.smart_env = this;
     this.opts = opts;
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main; // ex. smart_connections_plugin
@@ -41,7 +41,7 @@ export class SmartEnv {
      * @deprecated Use this.main_class_name instead of this.plugin
      */
     this.plugin = this.main; // DEPRECATED in favor of main
-    Object.assign(this, opts); // DEPRECATED in favor using via this.opts
+    // Object.assign(this, opts); // DEPRECATED in favor using via this.opts
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
@@ -51,7 +51,7 @@ export class SmartEnv {
     return this._global_ref;
   }
   get fs() {
-    if(!this.smart_fs) this.smart_fs = new this.smart_fs_class(this, {
+    if(!this.smart_fs) this.smart_fs = new this.opts.smart_fs_class(this, {
       adapter: this.opts.smart_fs_adapter_class,
       fs_path: this.opts.env_path || '',
       exclude_patterns: this.excluded_patterns || [],
@@ -73,17 +73,34 @@ export class SmartEnv {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
 
-    main.env = opts.global_ref?.smart_env;
+    let existing_env = opts.global_ref?.smart_env;
 
     try {
-      if (!main.env) {
+      if (!existing_env) {
         main.env = new main.smart_env_class(main, opts);
-        main.env.global_ref.smart_env = main.env;
         await main.env.init(main);
+      } else if (!(existing_env instanceof this)) {
+        // Create a new instance of the current class
+        const new_env = new main.smart_env_class(main, opts);
+        
+        // Re-add existing mains to the new instance
+        for (const main_name of existing_env.mains) {
+          if (main_name !== camel_case_to_snake_case(main.constructor.name)) {
+            await new_env.add_main(existing_env[main_name], existing_env[main_name + "_opts"]);
+          }
+        }
+        
+        // Initialize the new environment
+        await new_env.init(main);
+        
+        // Replace the existing environment with the new one
+        opts.global_ref.smart_env = new_env;
+        main.env = new_env;
       } else {
         // wait a second for any other plugins to finish initializing
         await new Promise(resolve => setTimeout(resolve, 1000));
-        await main.env.add_main(main, opts);
+        await existing_env.add_main(main, opts);
+        main.env = existing_env;
       }
 
       return main.env;
@@ -93,6 +110,10 @@ export class SmartEnv {
       return main.env;
     }
   }
+  get views() { return this.opts.views; }
+  get templates() { return this.opts.templates; }
+  get item_types() { return this.opts.item_types; }
+  get collections() { return this.opts.collections; }
 
   /**
    * Adds a new main object to the SmartEnv instance.
@@ -103,7 +124,6 @@ export class SmartEnv {
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main;
     this.mains.push(main_name);
-    delete opts.global_ref;
     this.merge_options(opts);
     // TODO: should special init be called (only init collections/modules not already initialized)
     await this.init(main);
@@ -115,6 +135,7 @@ export class SmartEnv {
    */
   merge_options(opts) {
     for (const [key, value] of Object.entries(opts)) {
+      if(key === 'global_ref') continue;
       if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
           this.opts[key] = [...(this.opts[key] || []), ...value];

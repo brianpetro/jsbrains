@@ -13,7 +13,7 @@ class SmartChatsUI {
     this.env = env;
     this.main = this.env; // DEPRECATED
     this.container = container;
-    this.templates = this.env.templates;
+    this.templates = this.env.opts.templates;
   }
 
   /**
