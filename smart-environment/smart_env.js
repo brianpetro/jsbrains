@@ -97,8 +97,6 @@ export class SmartEnv {
         opts.global_ref.smart_env = new_env;
         main.env = new_env;
       } else {
-        // wait a second for any other plugins to finish initializing
-        await new Promise(resolve => setTimeout(resolve, 1000));
         await existing_env.add_main(main, opts);
         main.env = existing_env;
       }
@@ -110,10 +108,11 @@ export class SmartEnv {
       return main.env;
     }
   }
-  get views() { return this.opts.views; }
-  get templates() { return this.opts.templates; }
-  get item_types() { return this.opts.item_types; }
   get collections() { return this.opts.collections; }
+  get ejs() { return this.opts.ejs; }
+  get item_types() { return this.opts.item_types; }
+  get templates() { return this.opts.templates; }
+  get views() { return this.opts.views; }
 
   /**
    * Adds a new main object to the SmartEnv instance.
@@ -121,6 +120,7 @@ export class SmartEnv {
    * @param {Object} [opts={}] - Options to be merged into the SmartEnv instance.
    */
   async add_main(main, opts = {}) {
+    main.env = this;
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main;
     this.mains.push(main_name);
