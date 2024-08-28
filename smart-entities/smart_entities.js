@@ -195,6 +195,7 @@ export class SmartEntities extends Collection {
   get filter_config() { return filter_config; }
 
   async process_embed_queue() {
+    if(!this.smart_embed) return console.log(`Smart Connections: No active embedding model for ${this.collection_name}, skipping embedding`);
     if (this.is_queue_halted || this.is_processing_queue) return;
     const queue = Object.values(this.items).filter(item => item._queue_embed);
     this.queue_total = queue.length;

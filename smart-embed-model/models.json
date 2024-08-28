@@ -17,7 +17,7 @@
     "description": "Local, 4,096 tokens, 384 dim",
     "adapter": "transformers"
   },
-  "Xenova/jina-embeddings-v2-base-zh-8192": {
+  "Xenova/jina-embeddings-v2-base-zh": {
     "model_key": "Xenova/jina-embeddings-v2-base-zh",
     "batch_size": 1,
     "dims": 512,
@@ -85,7 +85,7 @@
     "description": "Local, 8,192 tokens, 512 dim",
     "adapter": "transformers"
   },
-  "nomic-ai/nomic-embed-text-v1.5-256": {
+  "nomic-ai/nomic-embed-text-v1.5": {
     "model_key": "nomic-ai/nomic-embed-text-v1.5",
     "batch_size": 1,
     "dims": 256,

@@ -40,7 +40,6 @@ export class SmartEmbedModel {
     if(this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
     // init adapter
     this.adapter = new this.env.opts.smart_embed_adapters[this.opts.adapter](this);
-    env.smart_embed_active_models[opts.model_key] = this;
   }
   /**
    * Used to load a model with a given configuration.
@@ -48,9 +47,16 @@ export class SmartEmbedModel {
    * @param {*} opts 
    */
   static async load(env, opts = {}) {
-    const model = new SmartEmbedModel(env, opts);
-    await model.adapter.load();
-    return model;
+    try {
+      const model = new SmartEmbedModel(env, opts);
+      await model.adapter.load();
+      env.smart_embed_active_models[opts.model_key] = model;
+      return model;
+    } catch (error) {
+      console.error(`Error loading model ${opts.model_key}:`, error);
+      // this.unload(env, opts); // TODO: unload model if error
+      return null;
+    }
   }
   /**
    * Count the number of tokens in the input string.

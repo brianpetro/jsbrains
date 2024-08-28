@@ -89,7 +89,8 @@ export class SmartEnv {
       return main.env;
     } catch (error) {
       console.error('SmartEnv: Error creating or updating SmartEnv instance', error);
-      throw error;
+      // throw error;
+      return main.env;
     }
   }
 
