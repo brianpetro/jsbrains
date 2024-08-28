@@ -33,8 +33,10 @@ export class SmartEmbedModel {
       ...opts,
     };
     console.log(this.opts);
-    if(!this.opts.adapter) throw new Error('SmartEmbedModel adapter not set');
-    if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) throw new Error(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    // if(!this.opts.adapter) throw new Error('SmartEmbedModel adapter not set');
+    if(!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
+    // if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) throw new Error(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
     if(this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;

@@ -53,7 +53,7 @@ export class SmartSources extends SmartEntities {
     this.env.main.notices?.remove('initial scan');
     this.env.main.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
     await this.process_load_queue(); // loads both smart_sources and smart_blocks
-    await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
+    if(!this.prevent_import) await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
   }
 
   get data_fs() { return this.env.smart_env_settings.fs; }
