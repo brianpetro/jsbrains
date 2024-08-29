@@ -119,7 +119,7 @@ export class SmartSource extends SmartEntity {
     this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 4);
     return this._embed_input;
   }
-  open() { this.env.main.open_note(this.data.path); }
+  open() { this.env.smart_connections_plugin.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
   get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
@@ -171,7 +171,7 @@ export class SmartSource extends SmartEntity {
    * @deprecated Use this.file instead
    */
   get t_file() {
-    // return this.env.main.get_tfile(this.data.path); // should be better handled using non-Obsidian API
+    // return this.env.smart_connections_plugin.get_tfile(this.data.path); // should be better handled using non-Obsidian API
     return this.fs.files[this.data.path];
   } 
   // v2.2

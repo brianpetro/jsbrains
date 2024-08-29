@@ -38,7 +38,7 @@ export class SmartSources extends SmartEntities {
     // init smart_fs
     await this.fs.init();
     // init smart_sources
-    this.env.main.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
+    this.env.smart_connections_plugin.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
     Object.values(this.fs.files)
       .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
       .forEach((file) => {
@@ -50,8 +50,8 @@ export class SmartSources extends SmartEntities {
         await this.env.smart_directories.create_or_update({ path: _path });
       });
     }
-    this.env.main.notices?.remove('initial scan');
-    this.env.main.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    this.env.smart_connections_plugin.notices?.remove('initial scan');
+    this.env.smart_connections_plugin.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
     await this.process_load_queue(); // loads both smart_sources and smart_blocks
     await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
   }
@@ -93,7 +93,7 @@ export class SmartSources extends SmartEntities {
       else if (item.is_unembedded) item.queue_embed();
     }
   }
-  get current_note() { return this.get(this.env.main.app.workspace.getActiveFile().path); }
+  get current_note() { return this.get(this.env.smart_connections_plugin.app.workspace.getActiveFile().path); }
   build_links_map() {
     const links_map = {};
     for (const source of Object.values(this.items)) {
@@ -177,11 +177,11 @@ export class SmartSources extends SmartEntities {
       const time_start = Date.now();
       // import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
-        this.env.main.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
+        this.env.smart_connections_plugin.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
-      this.env.main.notices?.remove('import progress');
-      this.env.main.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
+      this.env.smart_connections_plugin.notices?.remove('import progress');
+      this.env.smart_connections_plugin.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
       console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
     }else console.log("Smart Connections: No items in import queue");
     this.env.links = this.build_links_map();

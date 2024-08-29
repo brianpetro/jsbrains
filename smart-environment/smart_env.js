@@ -46,20 +46,6 @@ export class SmartEnv {
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
   }
-  get global_ref() {
-    if(!this._global_ref) this._global_ref = (typeof window !== 'undefined' ? window : global);
-    return this._global_ref;
-  }
-  get fs() {
-    if(!this.smart_fs) this.smart_fs = new this.opts.smart_fs_class(this, {
-      adapter: this.opts.smart_fs_adapter_class,
-      fs_path: this.opts.env_path || '',
-      exclude_patterns: this.excluded_patterns || [],
-    });
-    return this.smart_fs;
-  }
-  get settings() { return this.smart_env_settings._settings; }
-  set settings(settings) { this.smart_env_settings._settings = settings; }
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
@@ -110,7 +96,21 @@ export class SmartEnv {
   }
   get collections() { return this.opts.collections; }
   get ejs() { return this.opts.ejs; }
+  get fs() {
+    if(!this.smart_fs) this.smart_fs = new this.opts.smart_fs_class(this, {
+      adapter: this.opts.smart_fs_adapter_class,
+      fs_path: this.opts.env_path || '',
+      exclude_patterns: this.smart_env_settings.excluded_patterns || [],
+    });
+    return this.smart_fs;
+  }
+  get global_ref() {
+    if(!this._global_ref) this._global_ref = (typeof window !== 'undefined' ? window : global);
+    return this._global_ref;
+  }
   get item_types() { return this.opts.item_types; }
+  get settings() { return this.smart_env_settings._settings; }
+  set settings(settings) { this.smart_env_settings._settings = settings; }
   get templates() { return this.opts.templates; }
   get views() { return this.opts.views; }
 
@@ -175,17 +175,6 @@ export class SmartEnv {
     this.loading_collections = false;
     this.collections_loaded = true;
   }
-  // async load_smart_sources(){
-  //   const source_collection_opts = {
-  //     adapter_class: this.main.smart_env_opts.smart_collection_adapter_class,
-  //     custom_collection_name: 'smart_sources',
-  //   };
-  //   if(this.opts.env_path) source_collection_opts.env_path = this.opts.env_path;
-  //   this.smart_sources = new this.collections.smart_sources(this, source_collection_opts);
-  //   await this.smart_sources.init();
-  //   await this.smart_sources.process_load_queue();
-  //   await this.smart_sources.process_import_queue();
-  // }
   unload_main(main_key) {
     this.unload_collections(main_key);
     this.unload_opts(main_key);

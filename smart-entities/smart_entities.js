@@ -48,7 +48,7 @@ export class SmartEntities extends Collection {
       return;
     }
     await this.env.opts.smart_embed_model_class.load(this.env, {
-      model_key: this.embed_model_key,
+      embed_model_key: this.embed_model_key,
       ...this.embed_model_opts
     });
   }
@@ -216,7 +216,7 @@ export class SmartEntities extends Collection {
     if(this.embedded_total - this.last_notice_embedded_total < 100) return;
     this.last_notice_embedded_total = this.embedded_total;
     const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
-    this.env.main.notices.show('embedding_progress', 
+    this.env.smart_connections_plugin?.notices.show('embedding_progress', 
       [
         `Making Smart Connections...`,
         `Embedding progress: ${this.embedded_total} / ${this.queue_total}`,
@@ -229,8 +229,8 @@ export class SmartEntities extends Collection {
     );
   }
   _show_embed_completion_notice() {
-    this.env.main.notices.remove('embedding_progress');
-    this.env.main.notices.show('embedding_complete', [
+    this.env.smart_connections_plugin?.notices.remove('embedding_progress');
+    this.env.smart_connections_plugin?.notices.show('embedding_complete', [
       `Embedding complete.`,
       `${this.embedded_total} entities embedded.`,
       `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
@@ -261,8 +261,8 @@ export class SmartEntities extends Collection {
   halt_embed_queue_processing() {
     this.is_queue_halted = true;
     console.log("Embed queue processing halted");
-    this.env.main.notices.remove('embedding_progress');
-    this.env.main.notices.show('embedding_paused', [
+    this.env.smart_connections_plugin?.notices.remove('embedding_progress');
+    this.env.smart_connections_plugin?.notices.show('embedding_paused', [
       `Embedding paused.`,
       `Progress: ${this.embedded_total} / ${this.queue_total}`,
       `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`

@@ -2,12 +2,11 @@ export class SmartEnvSettings {
   constructor(env, opts={}) {
     this.env = env;
     if(!opts.smart_fs_class) throw new Error('smart_fs_class is required to instantiate SmartEnvSettings');
-    this.fs = new opts.smart_fs_class(this.env, {
-      adapter: opts.smart_fs_adapter_class,
-      fs_path: opts.env_data_dir
-    });
+    this.opts = opts;
+    this._fs = null;
     this._settings = {};
     this._saved = false;
+    this._excluded_headings = null;
   }
   async save(settings=null) {
     if(settings) this._settings = settings;
@@ -24,15 +23,32 @@ export class SmartEnvSettings {
     }
     if(!await this.fs.exists('')) await this.fs.mkdir('');
     await this.fs.write(
-      '.smart_env.json',
+      'smart_env.json',
       JSON.stringify(smart_env_settings, null, 2)
     );
     this._saved = true;
   }
+  get fs() {
+    if(!this._fs) this._fs = new this.opts.smart_fs_class(this.env, {
+      adapter: this.opts.smart_fs_adapter_class,
+      fs_path: this.opts.env_data_dir
+    });
+    return this._fs;
+  }
   async load() {
-    if(!(await this.fs.exists('.smart_env.json'))) await this.save({});
+    if(!this.opts.env_data_dir) await this.get_env_data_dir();
+    if(!(await this.fs.exists('smart_env.json'))){
+      // temp: check if .smart_env.json exists in old location
+      if(await this.fs.exists('.smart_env.json')){
+        const old_settings = JSON.parse(await this.fs.read('.smart_env.json'));
+        await this.save(old_settings);
+        await this.fs.remove('.smart_env.json');
+      }else{
+        await this.save({});
+      }
+    }
     if(this.env.opts.default_settings) this._settings = this.env.opts.default_settings || {}; // set defaults if provided
-    deep_merge(this._settings, JSON.parse(await this.fs.read('.smart_env.json'))); // load saved settings
+    deep_merge(this._settings, JSON.parse(await this.fs.read('smart_env.json'))); // load saved settings
     deep_merge(this._settings, this.env.opts?.smart_env_settings || {}); // overrides saved settings
     for(const key of this.env.mains){
       this._settings[key] = await this.env[key].load_settings();
@@ -47,7 +63,7 @@ export class SmartEnvSettings {
       const temp_fs = new this.env.opts.smart_fs_class(this.env, {
         adapter: this.env.opts.smart_fs_adapter_class,
         fs_path: this.env.opts.env_path || '',
-        exclude_patterns: this.env.excluded_patterns || [],
+        exclude_patterns: this.excluded_patterns || [],
       });
       if (await temp_fs.exists('.obsidian')) {
         if (await temp_fs.exists('.obsidian/plugins/smart-connections/data.json')) {
@@ -83,7 +99,54 @@ export class SmartEnvSettings {
       });
     }
   }
+  get excluded_patterns() {
+    return [
+      ...(this.file_exclusions?.map(file => `${file}**`) || []),
+      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
+      this.env.smart_connections_plugin.env_data_dir + "/**",
+    ];
+  }
+
+  get file_exclusions() {
+    return (this._settings.file_exclusions?.length) ? this._settings.file_exclusions.split(",").map((file) => file.trim()) : [];
+  }
+
+  get folder_exclusions() {
+    return (this._settings.folder_exclusions?.length) ? this._settings.folder_exclusions.split(",").map((folder) => {
+      folder = folder.trim();
+      if (folder.slice(-1) !== "/") return folder + "/";
+      return folder;
+    }) : [];
+  }
+
+  get excluded_headings() {
+    if (!this._excluded_headings){
+      this._excluded_headings = (this._settings.excluded_headings?.length) ? this._settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
+    }
+    return this._excluded_headings;
+  }
+  async get_env_data_dir() {
+    console.log("get_env_data_dir", this.env.opts.env_path);
+    const temp_fs = new this.env.opts.smart_fs_class(this.env, {
+      adapter: this.env.opts.smart_fs_adapter_class,
+      fs_path: this.env.opts.env_path || '',
+    });
+    const all = await temp_fs.list_recursive();
+    let detected_env_data_folder = '.smart-env';
+    all.forEach(file => {
+      if(file.name === 'smart_env.json'){
+        detected_env_data_folder = file.path.split(temp_fs.sep).slice(0, -1).join(temp_fs.sep);
+        console.log("detected_env_data_folder", detected_env_data_folder);
+      }
+    });
+    this.opts.env_data_dir = detected_env_data_folder;
+    this._fs = null; // reset fs to force reload
+    this.env[this.env.mains[0]].settings.env_data_dir = detected_env_data_folder;
+    await this.env[this.env.mains[0]].save_settings();
+    console.log("saved env_data_dir: ", this.opts.env_data_dir);
+  }
 }
+
 /**
  * Deeply merges two objects without overwriting existing properties in the target object.
  * @param {Object} target - The target object to merge properties into.
@@ -109,6 +172,7 @@ export function deep_merge_no_overwrite(target, source) {
     return (item && typeof item === 'object' && !Array.isArray(item));
   }
 }
+
 /**
  * Deeply merges two objects, giving precedence to the properties of the source object.
  * @param {Object} target - The target object to merge properties into.

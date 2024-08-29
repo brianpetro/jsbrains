@@ -36,7 +36,7 @@ test.beforeEach(async (t) => {
     fs_path: "/",
     env_data_dir: ".smart-env"
   });
-  await t.context.smart_env_settings.fs.smart_env_data.write(".smart_env.json", JSON.stringify(smart_env_json));
+  await t.context.smart_env_settings.fs.smart_env_data.write("smart_env.json", JSON.stringify(smart_env_json));
 });
 
 test("SmartEnvSettings constructor initializes correctly", (t) => {
@@ -58,7 +58,7 @@ test("save method saves settings correctly", async (t) => {
 
   t.deepEqual(env.mock_main.settings, { main_setting: "main_value" });
   
-  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read(".smart_env.json"));
+  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read("smart_env.json"));
   t.deepEqual(saved_json, { other_setting: "other_value" });
   
   t.true(smart_env_settings._saved);
@@ -86,7 +86,7 @@ test("save method without arguments uses existing settings", async (t) => {
 
   await smart_env_settings.save();
 
-  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read(".smart_env.json"));
+  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read("smart_env.json"));
   t.deepEqual(saved_json, { other_setting: "other_value" });
 });
 
@@ -94,13 +94,13 @@ test("save method handles empty settings", async (t) => {
   const { smart_env_settings } = t.context;
   await smart_env_settings.save({});
 
-  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read(".smart_env.json"));
+  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read("smart_env.json"));
   t.deepEqual(saved_json, {});
 });
 
 test("load method handles missing smart_env.json", async (t) => {
   const { smart_env_settings } = t.context;
-  await smart_env_settings.fs.smart_env_data.remove(".smart_env.json");
+  await smart_env_settings.fs.smart_env_data.remove("smart_env.json");
 
   await t.throwsAsync(async () => {
     await smart_env_settings.load();
@@ -136,7 +136,7 @@ test("save method handles multiple mains", async (t) => {
   t.deepEqual(env.mock_main.settings, { main_setting: "main_value" });
   t.deepEqual(env.another_main.settings, { another_setting: "another_value" });
 
-  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read(".smart_env.json"));
+  const saved_json = JSON.parse(await smart_env_settings.fs.smart_env_data.read("smart_env.json"));
   t.deepEqual(saved_json, { other_setting: "other_value" });
 });
 

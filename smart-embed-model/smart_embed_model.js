@@ -29,7 +29,7 @@ export class SmartEmbedModel {
   constructor(env, opts={}) {
     this.env = env;
     this.opts = {
-      ...embed_models[opts.model_key], // DEPRECATED for backwards compatibility
+      ...embed_models[opts.embed_model_key],
       ...opts,
     };
     console.log(this.opts);
@@ -52,7 +52,7 @@ export class SmartEmbedModel {
     try {
       const model = new SmartEmbedModel(env, opts);
       await model.adapter.load();
-      env.smart_embed_active_models[opts.model_key] = model;
+      env.smart_embed_active_models[opts.embed_model_key] = model;
       return model;
     } catch (error) {
       console.error(`Error loading model ${opts.model_key}:`, error);
