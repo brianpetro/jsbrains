@@ -26,6 +26,7 @@ export class SmartEntities extends Collection {
     }
   }
   async load_smart_embed() {
+    if(this.embed_model_key === 'None') return;
     if(this.smart_embed) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
     if (!this.env.opts.smart_embed_model_class) {
       console.log("smart_embed_model_class must be included in the `env.opts` property");

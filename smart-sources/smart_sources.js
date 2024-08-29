@@ -168,7 +168,6 @@ export class SmartSources extends SmartEntities {
 
   async process_import_queue(){
     if(this.env.prevent_import) return;
-    this.notices?.show('import progress', "Importing...", { timeout: 0 });
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     if(import_queue.length){
       console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);

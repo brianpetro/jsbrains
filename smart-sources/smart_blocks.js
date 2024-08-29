@@ -32,4 +32,22 @@ export class SmartBlocks extends SmartEntities {
     const block = this.get(key);
     return block;
   }
+
+  get settings_config(){
+    return {
+      ...super.settings_config,
+      ...settings_config,
+    };
+  }
+}
+
+export const settings_config = {
+  embed_model_key: {
+    name: 'Embedding Model',
+    type: "dropdown",
+    description: "Select an embedding model.",
+    options_callback: 'get_block_embedding_model_options',
+    callback: 'restart',
+    // required: true
+  },
 }
