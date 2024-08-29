@@ -1,0 +1,23 @@
+{
+  "name": "smart-views",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "type": "module",
+  "version": "1.0.1",
+  "description": "Minimal dependency renderer for settings components designed for Smart Environments.",
+  "main": "smart_settings.js",
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "dependencies": {
+    "lucide-static": "^0.414.0"
+  },
+  "homepage": "https://jsbrains.org"
+}

@@ -70,13 +70,11 @@ export class SmartSources extends SmartEntities {
     }
     const data_files = await this.data_fs.list_files_recursive(this.adapter.data_folder);
     const ajson_file_path_map = Object.values(this.items).reduce((acc, item) => {
-      acc[this.data_fs.fs_path + "/" + item.data_path] = item.key;
+      acc[item.data_path] = item.key;
       return acc;
     }, {});
     // get data_files where ajson_file_paths don't exist
-    console.log("ajson_file_path_map", ajson_file_path_map);
     const remove_data_files = data_files.filter(file => !ajson_file_path_map[file.path]);
-    console.log("remove_data_files", remove_data_files);
     for(let i = 0; i < remove_data_files.length; i++){
       await this.data_fs.remove(remove_data_files[i].path);
     }
@@ -103,7 +101,7 @@ export class SmartSources extends SmartEntities {
     }
     return links_map;
   }
-  async refresh_embeddings() {
+  async refresh(){
     await this.prune();
     await this.process_import_queue();
     if(this.env.smart_blocks.smart_embed) Object.values(this.env.smart_blocks.items).filter(item => !item.vec).forEach(item => item.queue_embed());
@@ -190,4 +188,20 @@ export class SmartSources extends SmartEntities {
     await this.process_save_queue();
   }
 
+  get settings_config(){
+    return {
+      ...super.settings_config,
+      ...settings_config,
+    };
+  }
+
 }
+
+export const settings_config = {
+  "refresh_sources": {
+    "name": "Refresh Sources",
+    "description": "Prunes old data and re-imports all sources and blocks.",
+    "type": "button",
+    "callback": "refresh_sources",
+  }
+};

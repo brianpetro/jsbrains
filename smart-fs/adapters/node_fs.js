@@ -139,7 +139,7 @@ export class NodeFsSmartFsAdapter {
       const folder = item.parentPath.replace(this.smart_fs.fs_path, '').replace(/\\/g, '/').slice(1);
       const file = {
         basename: item.name.split('.')[0],
-        extension: item.name.slice(item.name.indexOf('.') + 1),
+        extension: item.name.split('.').pop(),
         name: item.name,
         path: folder ? folder + '/' + item.name : item.name,
       };

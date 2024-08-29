@@ -260,4 +260,18 @@ export class Collection {
     this.loaded = true;
     this.notices?.remove('loading');
   }
+  get settings_config() { return {}; }
+  get settings_html() {
+    return Object.entries(this.settings_config).map(([setting_name, setting_config]) => {
+      return this.get_setting_html(setting_name, setting_config);
+    }).join('\n');
+  }
+  get_setting_html(setting_name, setting_config) {
+    if(setting_config.conditional && !setting_config.conditional(this)) return "";
+    const attributes = Object.entries(setting_config)
+      .map(([attr, value]) => `data-${attr.replace(/_/g, '-')}="${value}"`)
+      .join('\n')
+    ;
+    return `<div class="setting-component"\ndata-setting="${this.collection_name}.${setting_name}"\n${attributes}\n></div>`;
+  }
 }

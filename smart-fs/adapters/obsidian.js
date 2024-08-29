@@ -70,6 +70,7 @@ export class ObsidianSmartFsAdapter {
     if(rel_path.includes('.')){ 
       const {files: file_paths} = await this.obsidian_adapter.list(rel_path);
       const files = file_paths.map(file_path => {
+        if(this.smart_fs.fs_path) file_path = file_path.replace(this.smart_fs.fs_path, '').slice(1);
         const file_name = file_path.split('/').pop();
         const file = {
           basename: file_name.split('.')[0],
@@ -107,6 +108,7 @@ export class ObsidianSmartFsAdapter {
           if(opts.type === 'file') return false;
           file.type = 'folder';
         }
+        if(this.smart_fs.fs_path) file.path = file.path.replace(this.smart_fs.fs_path, '').slice(1);
         return true;
       })
     ;

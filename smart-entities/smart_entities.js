@@ -186,6 +186,12 @@ export class SmartEntities extends Collection {
       ...settings_config,
     }
   }
+  get_setting_html(setting_name, setting_config) {
+    if (setting_name.startsWith('embed_model')) {
+      setting_name = setting_name.replace('embed_model.', `embed_model.${this.embed_model_key}.`);
+    }
+    return super.get_setting_html(setting_name, setting_config);
+  }
   get filter_config() { return filter_config; }
 
   async process_embed_queue() {
