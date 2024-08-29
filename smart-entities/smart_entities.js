@@ -6,7 +6,6 @@ import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 export class SmartEntities extends Collection {
   constructor(env, opts) {
     super(env, opts);
-    this.env = env; // env is the brain (brain is Deprecated)
     this.model_instance_id = null;
     this.is_processing_queue = false;
     this.queue_total = 0;
@@ -26,6 +25,17 @@ export class SmartEntities extends Collection {
       console.log(`SmartEmbed not loaded for ${this.collection_name}. Continuing without embedding capabilities.`);
     }
   }
+  async load_smart_embed() {
+    if(this.smart_embed) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
+    if (!this.env.opts.smart_embed_model_class) {
+      console.log("smart_embed_model_class must be included in the `env.opts` property");
+      return;
+    }
+    await this.env.opts.smart_embed_model_class.load(this.env, {
+      embed_model_key: this.embed_model_key,
+      ...this.embed_model_opts
+    });
+  }
   unload() {
     if (typeof this.smart_embed?.unload === 'function') {
       this.smart_embed.unload();
@@ -40,17 +50,6 @@ export class SmartEntities extends Collection {
   }
   get embed_model_opts() {
     return this.env.settings?.[this.collection_name]?.embed_model?.[this.embed_model_key] || {};
-  }
-  async load_smart_embed() {
-    if(this.smart_embed) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
-    if (!this.env.opts.smart_embed_model_class) {
-      console.log("smart_embed_model_class must be included in the `env.opts` property");
-      return;
-    }
-    await this.env.opts.smart_embed_model_class.load(this.env, {
-      embed_model_key: this.embed_model_key,
-      ...this.embed_model_opts
-    });
   }
   get smart_embed_container() {
     if (!this.model_instance_id) return console.log('model_key not set');

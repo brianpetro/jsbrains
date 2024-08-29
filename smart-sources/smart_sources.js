@@ -16,18 +16,15 @@ export class SmartSources extends SmartEntities {
     };
   }
   static async load(env, opts = {}) {
-    console.log("Smart Sources: loading");
-    console.log("opts", opts);
-    console.log("env", env);
     const source_collection_opts = {
       adapter_class: opts.smart_collection_adapter_class,
       custom_collection_name: 'smart_sources',
     };
     if(opts.env_path) source_collection_opts.env_path = opts.env_path;
     env.smart_sources = new opts.collections.smart_sources(env, source_collection_opts);
-    console.log("env.smart_sources", env.smart_sources);
     await env.smart_sources.init();
   }
+  get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async init() {
     await super.init();
     // init smart blocks
@@ -35,10 +32,10 @@ export class SmartSources extends SmartEntities {
       custom_collection_name: 'smart_blocks'
     });
     await this.env.smart_blocks.init(); // loads smart-embed model
+    this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
     // init smart_fs
     await this.fs.init();
     // init smart_sources
-    this.env.smart_connections_plugin.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
     Object.values(this.fs.files)
       .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
       .forEach((file) => {
@@ -50,10 +47,12 @@ export class SmartSources extends SmartEntities {
         await this.env.smart_directories.create_or_update({ path: _path });
       });
     }
-    this.env.smart_connections_plugin.notices?.remove('initial scan');
-    this.env.smart_connections_plugin.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
-    await this.process_load_queue(); // loads both smart_sources and smart_blocks
-    await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
+    this.notices?.remove('initial scan');
+    this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    if(!this.env.opts.prevent_load_on_init){
+      await this.process_load_queue(); // loads both smart_sources and smart_blocks
+      await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
+    }
   }
 
   get data_fs() { return this.env.smart_env_settings.fs; }
@@ -171,17 +170,18 @@ export class SmartSources extends SmartEntities {
 
   async process_import_queue(){
     if(this.env.prevent_import) return;
+    this.notices?.show('import progress', "Importing...", { timeout: 0 });
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     if(import_queue.length){
       console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);
       const time_start = Date.now();
       // import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
-        this.env.smart_connections_plugin.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
+        this.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
-      this.env.smart_connections_plugin.notices?.remove('import progress');
-      this.env.smart_connections_plugin.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
+      this.notices?.remove('import progress');
+      this.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
       console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
     }else console.log("Smart Connections: No items in import queue");
     this.env.links = this.build_links_map();

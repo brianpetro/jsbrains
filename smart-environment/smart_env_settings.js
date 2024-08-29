@@ -6,7 +6,6 @@ export class SmartEnvSettings {
     this._fs = null;
     this._settings = {};
     this._saved = false;
-    this._excluded_headings = null;
   }
   async save(settings=null) {
     if(settings) this._settings = settings;
@@ -63,11 +62,11 @@ export class SmartEnvSettings {
       const temp_fs = new this.env.opts.smart_fs_class(this.env, {
         adapter: this.env.opts.smart_fs_adapter_class,
         fs_path: this.env.opts.env_path || '',
-        exclude_patterns: this.excluded_patterns || [],
       });
-      if (await temp_fs.exists('.obsidian')) {
-        if (await temp_fs.exists('.obsidian/plugins/smart-connections/data.json')) {
-          const obsidian_settings = JSON.parse(await temp_fs.read('.obsidian/plugins/smart-connections/data.json'));
+      let obsidian_folder = '.obsidian'; // TODO check smart_env.json for obsidian_folder setting
+      if (await temp_fs.exists(obsidian_folder)) {
+        if (await temp_fs.exists(obsidian_folder + '/plugins/smart-connections/data.json')) {
+          const obsidian_settings = JSON.parse(await temp_fs.read(obsidian_folder + '/plugins/smart-connections/data.json'));
           deep_merge_no_overwrite(this._settings, obsidian_settings);
           this.transform_backwards_compatible_settings(obsidian_settings);
           await this.save();
@@ -98,32 +97,6 @@ export class SmartEnvSettings {
         if(os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
       });
     }
-  }
-  get excluded_patterns() {
-    return [
-      ...(this.file_exclusions?.map(file => `${file}**`) || []),
-      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
-      this.env.smart_connections_plugin.env_data_dir + "/**",
-    ];
-  }
-
-  get file_exclusions() {
-    return (this._settings.file_exclusions?.length) ? this._settings.file_exclusions.split(",").map((file) => file.trim()) : [];
-  }
-
-  get folder_exclusions() {
-    return (this._settings.folder_exclusions?.length) ? this._settings.folder_exclusions.split(",").map((folder) => {
-      folder = folder.trim();
-      if (folder.slice(-1) !== "/") return folder + "/";
-      return folder;
-    }) : [];
-  }
-
-  get excluded_headings() {
-    if (!this._excluded_headings){
-      this._excluded_headings = (this._settings.excluded_headings?.length) ? this._settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
-    }
-    return this._excluded_headings;
   }
   async get_env_data_dir() {
     console.log("get_env_data_dir", this.env.opts.env_path);

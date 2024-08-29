@@ -26,9 +26,8 @@ import { MarkdownAdapter } from 'smart-change/adapters/markdown.js';
 import { ObsidianMarkdownAdapter } from 'smart-change/adapters/obsidian_markdown.js';
 export class SmartEnv {
   constructor(main, opts={}) {
-    if(opts.global_ref) this._global_ref = opts.global_ref;
-    this.global_ref.smart_env = this;
     this.opts = opts;
+    this.global_ref = this;
     const main_name = camel_case_to_snake_case(main.constructor.name);
     this[main_name] = main; // ex. smart_connections_plugin
     this[main_name+"_opts"] = opts;
@@ -45,7 +44,11 @@ export class SmartEnv {
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
+    this._excluded_headings = null;
   }
+  get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
+  get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
+  set global_ref(env) { this.global_ref[this.global_prop] = env; }
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
@@ -58,14 +61,16 @@ export class SmartEnv {
     if (!main || typeof main !== 'object'){ // || typeof main.constructor !== 'function') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
+    console.log('opts', opts);
 
-    let existing_env = opts.global_ref?.smart_env;
+    let existing_env = opts.global_ref instanceof SmartEnv ? opts.global_ref : null;
 
     try {
       if (!existing_env) {
         main.env = new main.smart_env_class(main, opts);
         await main.env.init(main);
-      } else if (!(existing_env instanceof this)) {
+        return main.env;
+      } else if (!(existing_env instanceof this)) { // SHOULD THIS BE REMOVED?
         // Create a new instance of the current class
         const new_env = new main.smart_env_class(main, opts);
         
@@ -80,7 +85,7 @@ export class SmartEnv {
         await new_env.init(main);
         
         // Replace the existing environment with the new one
-        opts.global_ref.smart_env = new_env;
+        this.global_ref = new_env;
         main.env = new_env;
       } else {
         await existing_env.add_main(main, opts);
@@ -100,13 +105,9 @@ export class SmartEnv {
     if(!this.smart_fs) this.smart_fs = new this.opts.smart_fs_class(this, {
       adapter: this.opts.smart_fs_adapter_class,
       fs_path: this.opts.env_path || '',
-      exclude_patterns: this.smart_env_settings.excluded_patterns || [],
+      exclude_patterns: this.excluded_patterns || [],
     });
     return this.smart_fs;
-  }
-  get global_ref() {
-    if(!this._global_ref) this._global_ref = (typeof window !== 'undefined' ? window : global);
-    return this._global_ref;
   }
   get item_types() { return this.opts.item_types; }
   get settings() { return this.smart_env_settings._settings; }
@@ -157,6 +158,7 @@ export class SmartEnv {
   async init(main) {
     this.smart_env_settings = new SmartEnvSettings(this, this.opts);
     await this.smart_env_settings.load();
+    console.log('smart_env_settings', this.smart_env_settings);
     await this.ready_to_load_collections(main);
     await this.load_collections();
     this.init_smart_change();
@@ -167,9 +169,10 @@ export class SmartEnv {
   } // override in subclasses with env-specific logic
   async load_collections(){
     this.loading_collections = true;
-    for(const key of Object.keys(this.collections)){
+    for(const key of Object.keys(this.opts.collections)){
       if(!this[key]){
-        await this.collections[key].load(this, this.opts);
+        console.log('loading collection', key);
+        await this.opts.collections[key].load(this, this.opts);
       }
     }
     this.loading_collections = false;
@@ -180,7 +183,7 @@ export class SmartEnv {
     this.unload_opts(main_key);
     this[main_key] = null;
     this.mains = this.mains.filter(key => key !== main_key);
-    if(this.mains.length === 0) this.global_ref.smart_env = null;
+    if(this.mains.length === 0) this.global_ref = null;
   }
   unload_collections(main_key) {
     for(const key of Object.keys(this.collections)){
@@ -214,6 +217,30 @@ export class SmartEnv {
       markdown: new MarkdownAdapter(),
       obsidian_markdown: new ObsidianMarkdownAdapter(),
     };
+  }
+  // NEEDS REVIEW
+  get excluded_patterns() {
+    return [
+      ...(this.file_exclusions?.map(file => `${file}**`) || []),
+      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
+      this.opts.env_data_dir + "/**",
+    ];
+  }
+  get file_exclusions() {
+    return (this.settings.file_exclusions?.length) ? this.settings.file_exclusions.split(",").map((file) => file.trim()) : [];
+  }
+  get folder_exclusions() {
+    return (this.settings.folder_exclusions?.length) ? this.settings.folder_exclusions.split(",").map((folder) => {
+      folder = folder.trim();
+      if (folder.slice(-1) !== "/") return folder + "/";
+      return folder;
+    }) : [];
+  }
+  get excluded_headings() {
+    if (!this._excluded_headings){
+      this._excluded_headings = (this.settings.excluded_headings?.length) ? this.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
+    }
+    return this._excluded_headings;
   }
 }
 

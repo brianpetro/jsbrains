@@ -15,6 +15,7 @@ export class Collection {
     this.env = env;
     this.opts = opts;
     if(opts.custom_collection_name) this.collection_name = opts.custom_collection_name;
+    this.env[this.collection_name] = this;
     this.config = this.env.config;
     this.items = {};
     if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
@@ -233,6 +234,7 @@ export class Collection {
   //  */
   // async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
   async process_save_queue() {
+    this.notices?.show('saving', "Saving " + this.collection_name + "...", { timeout: 0 });
     if(this._saving) return console.log("Already saving");
     this._saving = true;
     setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
@@ -242,8 +244,10 @@ export class Collection {
     await Promise.all(save_queue.map(item => item.save()));
     console.log("Saved " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
     this._saving = false;
+    this.notices?.remove('saving');
   }
   async process_load_queue() {
+    this.notices?.show('loading', "Loading " + this.collection_name + "...", { timeout: 0 });
     if(this._loading) return console.log("Already loading");
     this._loading = true;
     setTimeout(() => { this._loading = false; }, 10000); // set _loading to false after 10 seconds
@@ -253,5 +257,7 @@ export class Collection {
     await Promise.all(load_queue.map(item => item.load()));
     console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
     this._loading = false;
+    this.loaded = true;
+    this.notices?.remove('loading');
   }
 }
