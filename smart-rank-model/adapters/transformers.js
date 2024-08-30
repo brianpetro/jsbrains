@@ -17,9 +17,9 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
     if (this.quantized) {
       console.log('Quantized model loading');
     }
-    this.model = await AutoModelForSequenceClassification.from_pretrained(model_id, { quantized: this.quantized || false });
+    this.model = await AutoModelForSequenceClassification.from_pretrained(this.smart_rank.opts.model_key, { quantized: this.quantized || false });
     console.log('Model loaded');
-    this.tokenizer = await AutoTokenizer.from_pretrained(model_id);
+    this.tokenizer = await AutoTokenizer.from_pretrained(this.smart_rank.opts.model_key);
     console.log('Tokenizer loaded');
     console.log('TransformersAdapter initialized');
   }

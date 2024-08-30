@@ -34,10 +34,10 @@ test('jina-reranker-v1-tiny-en rank function returns expected results', async t 
   t.timeout(30000);
   const model = await SmartRankModel.load(t.context.env, {model_key});
   const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
-  console.log({response});
+  // console.log({response});
   t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
   const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
-  console.log({response2});
+  // console.log({response2});
   t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 test('jina-reranker-v1-turbo-en rank function returns expected results', async t => {
@@ -45,10 +45,10 @@ test('jina-reranker-v1-turbo-en rank function returns expected results', async t
   t.timeout(30000);
   const model = await SmartRankModel.load(t.context.env, {model_key});
   const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
-  console.log({response});
+  // console.log({response});
   t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
   const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
-  console.log({response2});
+  // console.log({response2});
   t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
@@ -57,10 +57,10 @@ test('mxbai-rerank-xsmall-v1 rank function returns expected results', async t =>
   t.timeout(30000);
   const model = await SmartRankModel.load(t.context.env, {model_key});
   const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
-  console.log({response});
+  // console.log({response});
   t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
   const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
-  console.log({response2});
+  // console.log({response2});
   t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
@@ -70,10 +70,10 @@ test('bge-reranker-base rank function returns expected results', async t => {
   t.timeout(30000);
   const model = await SmartRankModel.load(t.context.env, {model_key, quantized: true});
   const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
-  console.log({response});
+  // console.log({response});
   t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
   const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
-  console.log({response2});
+  // console.log({response2});
   t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
