@@ -1,2 +1,1 @@
-Universal Re-Rankers Interface
-
+Use `SmartRankModel` instead. This folder will be removed in the future.

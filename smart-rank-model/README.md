@@ -1,0 +1,60 @@
+# SmartEmbedModel
+
+A universal interface for embedding models.
+
+## specs
+- `SmartEmbedModel` class
+	- `constructor(env, opts)`
+		- `env` SmartEnv instance
+			- used to set `env.smart_embed_active_models[opts.model_key] = this`
+		- `opts` object used to specify model
+			- `adapter` (required)
+				- specifies which embedding platform to use (openai, transformers, etc)
+				- sets `this.adapter = new this.env.embed_adapters[opts.adapter](this)`
+			- `model_key` (required)
+				- used to import `model_config` from `models.json`
+			- required but may be imported from `model.json`
+				- `batch_size`
+				- `max_tokens`
+			- other properties vary by model and can be provided or else imported from `model.json`
+				- cloud models (openai, cohere, etc)
+					- `api_key`
+				- local models (transformers)
+					- `use_gpu`
+	- `static async load`
+		- initiates and calls adapter `load` method
+	- `async embed_batch(inputs)`
+		- accepts array of objects with `embed_input` property or `get_embed_input` async method
+		- returns array of `inputs` objects with added `vec` property
+	- `async count_tokens(input)`
+		- used for token limit checks
+		- returns object with `tokens` property
+	- `embed(input)` convenience method
+		- simple wrapper for `embed_batch`
+		- allows string as input in addition to object with properties required by `embed_batch`
+- Adapters (subclasses of `SmartEmbedAdapter` base class)
+	- `SmartEmbedOpenaiAdapter` class
+	- `SmartEmbedTransformersAdapter` class
+	- `SmartEmbedIframeAdapter` class
+    - uses `postMessage` to communicate with iframe content script
+    - uses `onmessage` to receive data from iframe content script
+    - adds `vec` to each `input` object and returns modified objects
+		- `SmartEmbedTransformersIframeAdapter` class
+      - initiates iframe with script from `connectors/transformers_iframe_script.js`
+	- `SmartEmbedWorkerAdapter` class
+		- `SmartEmbedTransformersWorkerAdapter` class
+- Adapter wrappers
+	- *important*: passes object with `embed_input` property only to iframe/worker
+		- prevents 'not clonable' error
+		- after receiving vecs back from iframe/worker, adds `vec` to original objects and returns modified objects
+	- `build/` scripts are run by `npm run build`
+		- each imports necessary dependencies
+		- esbuild bundles each into a single file as a string exported (ex. `export const transformers_connector = "..."`) 
+    - `transformers_iframe_script.js`
+      - creates message listener for base class methods (`load`, `embed_batch`, `count_tokens`)
+      - after receiving message, calls appropriate method on the SmartEmbedModel instance and sends result back to parent via `postMessage`
+      - for use with `IframeAdapter`
+      - outputs to `connectors/ADAPTER_NAME_iframe.js`
+    - `transformers_worker_script.js`
+      - creates script for use with `WorkerAdapter`
+      - outputs to `connectors/ADAPTER_NAME_worker.js`
