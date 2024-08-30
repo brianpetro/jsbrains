@@ -19,6 +19,8 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import rank_models from './models.json' assert { type: 'json' };
+
 export class SmartRankModel {
   /**
    * Create a SmartRank instance.
@@ -28,16 +30,15 @@ export class SmartRankModel {
   constructor(env, opts={}) {
     this.env = env;
     this.opts = {
-      // ...rank_models[opts.rank_model_key],
+      ...(rank_models[opts.model_key] || {}),
       ...opts,
     };
-    console.log(this.opts);
     // if(!this.opts.adapter) throw new Error('SmartRankModel adapter not set');
     if(!this.opts.adapter) return console.warn('SmartRankModel adapter not set');
     // if(!this.env.opts.smart_rank_adapters[this.opts.adapter]) throw new Error(`SmartRankModel adapter ${this.opts.adapter} not found`);
     if(!this.env.opts.smart_rank_adapters[this.opts.adapter]) return console.warn(`SmartRankModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
-    this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
+    if(typeof navigator !== 'undefined') this.opts.use_gpu = !!navigator?.gpu && this.opts.gpu_batch_size !== 0;
     if(this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
     // init adapter
     this.adapter = new this.env.opts.smart_rank_adapters[this.opts.adapter](this);
@@ -52,7 +53,7 @@ export class SmartRankModel {
       const model = new SmartRankModel(env, opts);
       await model.adapter.load();
       if(!env.smart_rank_active_models) env.smart_rank_active_models = {};
-      env.smart_rank_active_models[opts.rank_model_key] = model;
+      env.smart_rank_active_models[opts.model_key] = model;
       return model;
     } catch (error) {
       console.error(`Error loading rank model ${opts.model_key}:`, error);

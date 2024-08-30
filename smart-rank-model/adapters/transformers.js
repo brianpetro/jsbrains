@@ -1,12 +1,12 @@
-import { SmartEmbedAdapter } from "./_adapter.js";
+import { SmartRankAdapter } from "./_adapter.js";
 
-export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
-  constructor(smart_embed) {
-    super(smart_embed);
+export class SmartRankTransformersAdapter extends SmartRankAdapter {
+  constructor(smart_rank) {
+    super(smart_rank);
     this.model = null;
     this.tokenizer = null;
   }
-  get use_gpu() { return this.smart_embed.opts.use_gpu || false; }
+  get use_gpu() { return this.smart_rank.opts.use_gpu || false; }
 
   async load() {
     console.log('TransformersAdapter initializing');

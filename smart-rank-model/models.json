@@ -1,2 +1,27 @@
 {
+  "cohere-rerank-english-v3.0": {
+    "adapter": "Cohere",
+    "model_name": "rerank-english-v3.0",
+    "model_description": "Cohere Rerank English v3.0",
+    "model_version": "3.0",
+    "endpoint": "https://api.cohere.ai/v1/rerank"
+  },
+  "jinaai/jina-reranker-v1-tiny-en": {
+    "adapter": "transformers",
+    "model_key": "jinaai/jina-reranker-v1-tiny-en"
+  },
+  "jinaai/jina-reranker-v1-turbo-en": {
+    "adapter": "transformers",
+    "model_key": "jinaai/jina-reranker-v1-turbo-en"
+  },
+  "mixedbread-ai/mxbai-rerank-xsmall-v1": {
+    "adapter": "transformers",
+    "model_key": "mixedbread-ai/mxbai-rerank-xsmall-v1"
+  },
+  "Xenova/bge-reranker-base": {
+    "adapter": "transformers",
+    "model_key": "Xenova/bge-reranker-base"
+  }
 }
+
+

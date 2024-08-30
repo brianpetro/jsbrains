@@ -1,34 +1,80 @@
 import test from 'ava';
 import { load_test_env } from './_env.js';
-import { SmartEmbedTransformersAdapter } from '../adapters/transformers.js';
+import { SmartRankModel } from '../smart_rank_model.js';
 
 test.before(async t => {
   await load_test_env(t);
 });
 
-test('init', t => {
-  t.true(t.context.env.smart_embed_active_models['TaylorAI/bge-micro-v2'].adapter instanceof SmartEmbedTransformersAdapter);
+const query = "Organic skincare products for sensitive skin";
+const documents = [
+    "Eco-friendly kitchenware for modern homes",
+    "Biodegradable cleaning supplies for eco-conscious consumers",
+    "Organic cotton baby clothes for sensitive skin",
+    "Natural organic skincare range for sensitive skin",
+    "Tech gadgets for smart homes: 2024 edition",
+    "Sustainable gardening tools and compost solutions",
+    "Sensitive skin-friendly facial cleansers and toners",
+    "Organic food wraps and storage solutions",
+    "All-natural pet food for dogs with allergies",
+    "Yoga mats made from recycled materials",
+];
+const expected_top = "Natural organic skincare range for sensitive skin";
+const query2 = "What is the capital of the United States?";
+const docs2 = [
+  "Carson City is the capital city of the American state of Nevada.",
+  "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.",
+  "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
+  "Capital punishment (the death penalty) has existed in the United States since before the United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states."
+];
+const expected_top2 = "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.";
+
+test('jina-reranker-v1-tiny-en rank function returns expected results', async t => {
+  const model_key = 'jinaai/jina-reranker-v1-tiny-en';
+  t.timeout(30000);
+  const model = await SmartRankModel.load(t.context.env, {model_key});
+  const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
+  console.log({response});
+  t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
+  const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
+  console.log({response2});
+  t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
+});
+test('jina-reranker-v1-turbo-en rank function returns expected results', async t => {
+  const model_key = 'jinaai/jina-reranker-v1-turbo-en';
+  t.timeout(30000);
+  const model = await SmartRankModel.load(t.context.env, {model_key});
+  const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
+  console.log({response});
+  t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
+  const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
+  console.log({response2});
+  t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
-test('count_tokens', async t => {
-  const adapter = t.context.env.smart_embed_active_models['TaylorAI/bge-micro-v2'].adapter;
-  const result = await adapter.count_tokens('Hello, world!');
-  t.is(result.tokens, 6);
+test('mxbai-rerank-xsmall-v1 rank function returns expected results', async t => {
+  const model_key = 'mixedbread-ai/mxbai-rerank-xsmall-v1';
+  t.timeout(30000);
+  const model = await SmartRankModel.load(t.context.env, {model_key});
+  const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
+  console.log({response});
+  t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
+  const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
+  console.log({response2});
+  t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
-test('embed', async t => {
-  const adapter = t.context.env.smart_embed_active_models['TaylorAI/bge-micro-v2'].adapter;
-  const embedding = await adapter.embed('Hello, world!');
-  t.is(embedding.vec.length, 384);
+// Xenova/bge-reranker-base
+test('bge-reranker-base rank function returns expected results', async t => {
+  const model_key = 'Xenova/bge-reranker-base';
+  t.timeout(30000);
+  const model = await SmartRankModel.load(t.context.env, {model_key, quantized: true});
+  const response = await model.rank(query, documents, { return_documents: true, top_k: 3 });
+  console.log({response});
+  t.is(documents[response[0].corpus_id], expected_top, 'The top document should correctly identify the best strategy for sustainable agriculture');
+  const response2 = await model.rank(query2, docs2, { return_documents: true, top_k: 3 });
+  console.log({response2});
+  t.is(docs2[response2[0].corpus_id], expected_top2, 'The top document should correctly identify Washington, D.C. as the capital');
 });
 
-test('embed_batch', async t => {
-  const adapter = t.context.env.smart_embed_active_models['TaylorAI/bge-micro-v2'].adapter;
-  adapter.smart_embed.opts.batch_size = 2;
-  const entity_1 = { embed_input: 'Hello, world!' };
-  const entity_2 = { embed_input: 'Hello, universe!' };
-  const embeddings = await adapter.embed_batch([entity_1, entity_2]);
-  t.is(embeddings.length, 2);
-  t.is(entity_1.vec?.length, 384);
-  t.is(entity_2.vec?.length, 384);
-});
+
