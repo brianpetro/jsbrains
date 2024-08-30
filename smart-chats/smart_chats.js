@@ -32,12 +32,13 @@ class SmartChats {
    */
   constructor(env, opts={}) {
     this.env = env;
-    this.folder = 'smart-chats';
     this.items = {};
     this.default_file_type = 'md';
     this.chat_class = SmartChat;
     Object.assign(this, opts); // merge opts into this (adapter)
   }
+  get folder() { return this.env.settings.smart_chats_folder || 'smart-chats'; }
+  set folder(folder) { this.env.settings.smart_chats_folder = folder; }
 
   /**
    * Creates a new chat instance and initializes the chat UI.
