@@ -1,42 +1,30 @@
 // merge two objects, overwriting existing properties with new_obj properties
 export function ajson_merge(existing, new_obj) {
-  if(new_obj === null) return null;
-  for (const key in new_obj) {
-    if (Array.isArray(existing[key]) && Array.isArray(new_obj[key])) {
-      // // Check if the first element of the array is also an array, indicating nested arrays
-      // if (existing[key].length > 0 && Array.isArray(existing[key][0])) {
-      //   // For nested arrays, merge the inner arrays by appending elements
-      //   existing[key].forEach((item, index) => {
-      //     if (Array.isArray(item) && new_obj[key][index] !== undefined) {
-      //       existing[key][index] = item.concat(new_obj[key][index]);
-      //     }
-      //   });
-      //   // If new_obj[key] has more items than existing[key], add them as well
-      //   if (new_obj[key].length > existing[key].length) {
-      //     existing[key] = existing[key].concat(new_obj[key].slice(existing[key].length));
-      //   }
-      // } else {
-      //   // For non-nested arrays, merge elements
-      //   existing[key] = existing[key].map((item, index) => {
-      //     if (isObject(item) && isObject(new_obj[key][index])) {
-      //       return deep_merge(item, new_obj[key][index]);
-      //     }
-      //     return item;
-      //   });
-      // }
-      // replace existing array with new array
-      existing[key] = new_obj[key];
-    } else if (isObject(existing[key]) && isObject(new_obj[key])) {
-      // Recursively merge objects
-      existing[key] = ajson_merge(existing[key], new_obj[key]);
-    } else {
-      // Directly set the value for non-object and non-array types
-      existing[key] = new_obj[key];
+  if (new_obj === null) return null;
+  if (new_obj === undefined) return existing;
+  if (typeof new_obj !== 'object') return new_obj;
+  if (typeof existing !== 'object' || existing === null) existing = {};
+
+  const keys = Object.keys(new_obj);
+  const length = keys.length;
+  
+  for (let i = 0; i < length; i++) {
+    const key = keys[i];
+    const new_val = new_obj[key];
+    const existing_val = existing[key];
+
+    if (Array.isArray(new_val)) {
+      existing[key] = new_val.slice(); // Create a shallow copy
+    } else if (is_object(new_val)) {
+      existing[key] = ajson_merge(is_object(existing_val) ? existing_val : {}, new_val);
+    } else if (new_val !== undefined) {
+      existing[key] = new_val;
     }
   }
+  
   return existing;
 }
 
-function isObject(obj) {
-  return obj && typeof obj === 'object' && !Array.isArray(obj);
+function is_object(obj) {
+  return obj !== null && typeof obj === 'object' && !Array.isArray(obj);
 }

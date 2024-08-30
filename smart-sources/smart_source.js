@@ -30,6 +30,7 @@ export class SmartSource extends SmartEntity {
   // moved logic from SmartSources import() method
   queue_import() { this._queue_import = true; }
   async import(){
+    this._queue_import = false;
     try{
       if(this.file.stat.size > 1000000) {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);

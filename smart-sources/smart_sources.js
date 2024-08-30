@@ -15,23 +15,9 @@ export class SmartSources extends SmartEntities {
       ...(opts.source_adapters || {}),
     };
   }
-  static async load(env, opts = {}) {
-    const source_collection_opts = {
-      adapter_class: opts.smart_collection_adapter_class,
-      custom_collection_name: 'smart_sources',
-    };
-    if(opts.env_path) source_collection_opts.env_path = opts.env_path;
-    env.smart_sources = new opts.collections.smart_sources(env, source_collection_opts);
-    await env.smart_sources.init();
-  }
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async init() {
     await super.init();
-    // init smart blocks
-    this.env.smart_blocks = new this.env.opts.collections.smart_blocks(this.env, {
-      custom_collection_name: 'smart_blocks'
-    });
-    await this.env.smart_blocks.init(); // loads smart-embed model
     this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
     // init smart_fs
     await this.fs.init();
@@ -49,10 +35,6 @@ export class SmartSources extends SmartEntities {
     }
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
-    if(!this.env.opts.prevent_load_on_init){
-      await this.process_load_queue(); // loads both smart_sources and smart_blocks
-      await this.process_import_queue(); // imports both smart_sources and smart_blocks (includes embedding)
-    }
   }
 
   get data_fs() { return this.env.smart_env_settings.fs; }
@@ -164,10 +146,10 @@ export class SmartSources extends SmartEntities {
     if(this.collection_name === 'smart_sourses'){ // excludes sub-classes
       Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
     }
+    await this.process_import_queue();
   }
 
   async process_import_queue(){
-    if(this.env.prevent_import) return;
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     if(import_queue.length){
       console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);

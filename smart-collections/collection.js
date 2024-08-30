@@ -21,6 +21,10 @@ export class Collection {
     if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
     this.merge_defaults();
   }
+  static async init(env, opts = {}) {
+    env[this.collection_name] = new this(env, opts);
+    await env[this.collection_name].init();
+  }
 
   /**
    * Gets the collection name derived from the class name.
@@ -204,12 +208,6 @@ export class Collection {
   async save() { await this.adapter.save(); }
   async save_queue() { await this.process_save_queue(); }
 
-  /**
-   * Loads the collection state.
-   * @deprecated use this.process_load_queue() instead
-   */
-  async load() { await this.adapter.load(); }
-
   // UTILITY METHODS
   /**
    * Merges default configurations from all classes in the inheritance chain for Collection types; 
@@ -254,7 +252,13 @@ export class Collection {
     const load_queue = Object.values(this.items).filter(item => item._queue_load);
     console.log("Loading " + this.collection_name + ": ", load_queue.length + " items");
     const time_start = Date.now();
-    await Promise.all(load_queue.map(item => item.load()));
+    // await Promise.all(load_queue.map(item => item.load()));
+    const chunk_size = 100;
+    for (let i = 0; i < load_queue.length; i += chunk_size) {
+        const chunk = load_queue.slice(i, i + chunk_size);
+        await Promise.all(chunk.map(item => item.load()));
+        // console.log(`Loaded ${i + chunk.length} / ${load_queue.length} items`);
+    }
     console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
     this._loading = false;
     this.loaded = true;

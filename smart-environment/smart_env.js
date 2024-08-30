@@ -160,19 +160,25 @@ export class SmartEnv {
     await this.smart_env_settings.load();
     console.log('smart_env_settings', this.smart_env_settings);
     await this.ready_to_load_collections(main);
-    await this.load_collections();
+    await this.init_collections();
     this.init_smart_change();
   }
   async ready_to_load_collections(main) {
     if(typeof main?.ready_to_load_collections === 'function') await main.ready_to_load_collections();
     return true;
   } // override in subclasses with env-specific logic
+  async init_collections(){
+    for(const key of Object.keys(this.opts.collections)){
+      await this.opts.collections[key].init(this, this.opts);
+    }
+    if(!this.opts.prevent_load_on_init) await this.load_collections();
+  }
   async load_collections(){
     this.loading_collections = true;
     for(const key of Object.keys(this.opts.collections)){
-      if(!this[key]){
+      if(typeof this[key]?.process_load_queue === 'function'){
         console.log('loading collection', key);
-        await this.opts.collections[key].load(this, this.opts);
+        await this[key].process_load_queue();
       }
     }
     this.loading_collections = false;
