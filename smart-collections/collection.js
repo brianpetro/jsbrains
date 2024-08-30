@@ -18,7 +18,8 @@ export class Collection {
     this.env[this.collection_name] = this;
     this.config = this.env.config;
     this.items = {};
-    if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this);
+    if (this.opts.smart_collection_adapter_class) this.adapter = new this.opts.smart_collection_adapter_class(this);
+    else if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this); // DEPRECATED: use smart_collection_adapter_class instead
     this.merge_defaults();
   }
   static async init(env, opts = {}) {
