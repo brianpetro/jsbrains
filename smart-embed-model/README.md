@@ -1,60 +1,51 @@
 # SmartEmbedModel
 
-A universal interface for embedding models.
+SmartEmbedModel is a versatile and convenient interface for utilizing various embedding models via API and locally. It provides a unified way to work with different embedding models, making it easy to switch between models or use multiple models in your projects.
 
-## specs
-- `SmartEmbedModel` class
-	- `constructor(env, opts)`
-		- `env` SmartEnv instance
-			- used to set `env.smart_embed_active_models[opts.model_key] = this`
-		- `opts` object used to specify model
-			- `adapter` (required)
-				- specifies which embedding platform to use (openai, transformers, etc)
-				- sets `this.adapter = new this.env.embed_adapters[opts.adapter](this)`
-			- `model_key` (required)
-				- used to import `model_config` from `models.json`
-			- required but may be imported from `model.json`
-				- `batch_size`
-				- `max_tokens`
-			- other properties vary by model and can be provided or else imported from `model.json`
-				- cloud models (openai, cohere, etc)
-					- `api_key`
-				- local models (transformers)
-					- `use_gpu`
-	- `static async load`
-		- initiates and calls adapter `load` method
-	- `async embed_batch(inputs)`
-		- accepts array of objects with `embed_input` property or `get_embed_input` async method
-		- returns array of `inputs` objects with added `vec` property
-	- `async count_tokens(input)`
-		- used for token limit checks
-		- returns object with `tokens` property
-	- `embed(input)` convenience method
-		- simple wrapper for `embed_batch`
-		- allows string as input in addition to object with properties required by `embed_batch`
-- Adapters (subclasses of `SmartEmbedAdapter` base class)
-	- `SmartEmbedOpenaiAdapter` class
-	- `SmartEmbedTransformersAdapter` class
-	- `SmartEmbedIframeAdapter` class
-    - uses `postMessage` to communicate with iframe content script
-    - uses `onmessage` to receive data from iframe content script
-    - adds `vec` to each `input` object and returns modified objects
-		- `SmartEmbedTransformersIframeAdapter` class
-      - initiates iframe with script from `connectors/transformers_iframe_script.js`
-	- `SmartEmbedWorkerAdapter` class
-		- `SmartEmbedTransformersWorkerAdapter` class
-- Adapter wrappers
-	- *important*: passes object with `embed_input` property only to iframe/worker
-		- prevents 'not clonable' error
-		- after receiving vecs back from iframe/worker, adds `vec` to original objects and returns modified objects
-	- `build/` scripts are run by `npm run build`
-		- each imports necessary dependencies
-		- esbuild bundles each into a single file as a string exported (ex. `export const transformers_connector = "..."`) 
-    - `transformers_iframe_script.js`
-      - creates message listener for base class methods (`load`, `embed_batch`, `count_tokens`)
-      - after receiving message, calls appropriate method on the SmartEmbedModel instance and sends result back to parent via `postMessage`
-      - for use with `IframeAdapter`
-      - outputs to `connectors/ADAPTER_NAME_iframe.js`
-    - `transformers_worker_script.js`
-      - creates script for use with `WorkerAdapter`
-      - outputs to `connectors/ADAPTER_NAME_worker.js`
+## Features
+
+- Support for multiple embedding models
+- Easy-to-use API for embedding text
+- Batch processing capabilities
+- Token counting functionality
+- Flexible configuration options
+- Support for both local and API-based models
+
+## Configuration
+
+SmartEmbedModel can be configured with various options:
+
+- `embed_model_key`: The key of the embedding model to use (defined in `models.json`)
+- `adapter`: The adapter to use for the chosen model
+- `batch_size`: The number of inputs to process in a single batch
+- `max_tokens`: The maximum number of tokens the model can handle
+- `use_gpu`: Whether to use GPU acceleration (if available)
+- `gpu_batch_size`: The batch size to use when GPU acceleration is enabled
+
+## Available Models
+
+The available models are defined in the `models.json` file. Some of the included models are:
+
+- TaylorAI/bge-micro-v2
+- andersonbcdefg/bge-small-4096
+- Xenova/jina-embeddings-v2-base-zh
+- text-embedding-3-small
+- text-embedding-3-large
+- And more...
+
+## Adapters
+
+SmartEmbedModel uses adapters to interface with different embedding models. The available adapters are:
+
+- OpenAI
+- Transformers
+- TransformersIframe
+- TransformersWorker
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](MIT_LICENSE) file for details.
+
+## Author
+
+Brian Joseph Petro (🌴 Brian)
