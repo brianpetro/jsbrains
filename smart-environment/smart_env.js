@@ -65,39 +65,33 @@ export class SmartEnv {
 
     let existing_env = opts.global_ref instanceof SmartEnv ? opts.global_ref : null;
 
-    try {
-      if (!existing_env) {
-        main.env = new main.smart_env_class(main, opts);
-        await main.env.init(main);
-        return main.env;
-      } else if (!(existing_env instanceof this)) { // SHOULD THIS BE REMOVED?
-        // Create a new instance of the current class
-        const new_env = new main.smart_env_class(main, opts);
-        
-        // Re-add existing mains to the new instance
-        for (const main_name of existing_env.mains) {
-          if (main_name !== camel_case_to_snake_case(main.constructor.name)) {
-            await new_env.add_main(existing_env[main_name], existing_env[main_name + "_opts"]);
-          }
+    if (!existing_env) {
+      main.env = new main.smart_env_class(main, opts);
+      await main.env.init(main);
+      return main.env;
+    } else if (!(existing_env instanceof this)) { // SHOULD THIS BE REMOVED?
+      // Create a new instance of the current class
+      const new_env = new main.smart_env_class(main, opts);
+      
+      // Re-add existing mains to the new instance
+      for (const main_name of existing_env.mains) {
+        if (main_name !== camel_case_to_snake_case(main.constructor.name)) {
+          await new_env.add_main(existing_env[main_name], existing_env[main_name + "_opts"]);
         }
-        
-        // Initialize the new environment
-        await new_env.init(main);
-        
-        // Replace the existing environment with the new one
-        this.global_ref = new_env;
-        main.env = new_env;
-      } else {
-        await existing_env.add_main(main, opts);
-        main.env = existing_env;
       }
-
-      return main.env;
-    } catch (error) {
-      console.error('SmartEnv: Error creating or updating SmartEnv instance', error);
-      // throw error;
-      return main.env;
+      
+      // Initialize the new environment
+      await new_env.init(main);
+      
+      // Replace the existing environment with the new one
+      this.global_ref = new_env;
+      main.env = new_env;
+    } else {
+      await existing_env.add_main(main, opts);
+      main.env = existing_env;
     }
+
+    return main.env;
   }
   get collections() { return this.opts.collections; }
   get ejs() { return this.opts.ejs; }
