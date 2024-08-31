@@ -1,9 +1,9 @@
-import { SmartEmbedIframeAdapter } from "./iframe.js";
+import { SmartRankIframeAdapter } from "./iframe.js";
 import { transformers_connector } from "../connectors/transformers_iframe.js";
 
-export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter {
-  constructor(smart_embed) {
-    super(smart_embed);
+export class SmartRankTransformersIframeAdapter extends SmartRankIframeAdapter {
+  constructor(smart_rank) {
+    super(smart_rank);
     this.connector = transformers_connector;
   }
 }

@@ -3,9 +3,9 @@ import { SmartRankTransformersAdapter } from '../adapters/transformers.js';
 
 let model = null;
 let smart_env = {
-  smart_embed_active_models: {},
+  smart_rank_active_models: {},
   opts: {
-    smart_embed_adapters: {
+    smart_rank_adapters: {
       transformers: SmartRankTransformersAdapter
     }
   }

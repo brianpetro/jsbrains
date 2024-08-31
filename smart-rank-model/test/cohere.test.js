@@ -1,7 +1,14 @@
-const test = require('ava');
-const { CohereAdapter } = require('./cohere');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
+import test from 'ava';
+import { CohereAdapter } from './cohere.js';
+import path from 'path';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+config({ path: path.join(__dirname, '..', '..', '.env') });
 
 // Ensure that the API key and other necessary environment variables are set
 const api_key = process.env.COHERE_API_KEY;

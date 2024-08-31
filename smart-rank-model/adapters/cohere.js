@@ -15,6 +15,10 @@
 import { SmartRankApiAdapter } from './api.js';
 
 export class SmartRankCohereAdapter extends SmartRankApiAdapter{
+  get api_key() {
+    return this.smart_rank.env.settings?.smart_view_filter?.cohere_api_key; // TODO: handle this better
+  }
+  async load() { return true; }
   async rank(query, documents) {
     const json = await this.request({
       url: this.endpoint,
@@ -30,7 +34,13 @@ export class SmartRankCohereAdapter extends SmartRankApiAdapter{
         // top_n: 3,
       }),
     });
-    // console.log({json});
-    return json;
+    if(!json.results) return {
+      message: json.message,
+      resp: json,
+    }
+    return json.results.map((r, i) => ({
+      index: r.index,
+      score: r.relevance_score,
+    }));
   }
 }

@@ -8,6 +8,7 @@ import { SmartRankAdapter } from "./_adapter.js";
  * Requires model_config.request_adapter to be set.
  */
 export class SmartRankApiAdapter extends SmartRankAdapter {
+  get endpoint() { return this.smart_rank.opts.endpoint; }
   /**
    * Checks if the response JSON indicates an error.
    * @param {object} resp_json - The response JSON to check.

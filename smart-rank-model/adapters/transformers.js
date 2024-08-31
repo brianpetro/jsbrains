@@ -12,12 +12,19 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
     console.log('TransformersAdapter initializing');
     const { env, AutoTokenizer, AutoModelForSequenceClassification } = await import('@xenova/transformers');
     console.log('Transformers loaded');
-    env.allowLocalModels = true;
-    const model_id = this.model_key;
-    if (this.quantized) {
-      console.log('Quantized model loading');
+    env.allowLocalModels = false;
+    const pipeline_opts = {
+      quantized: true,
+    };
+    if (this.use_gpu) {
+      console.log("[Transformers] Using GPU");
+      pipeline_opts.device = 'webgpu';
+      pipeline_opts.dtype = 'fp32';
+    } else {
+      console.log("[Transformers] Using CPU");
+      env.backends.onnx.wasm.numThreads = 8;
     }
-    this.model = await AutoModelForSequenceClassification.from_pretrained(this.smart_rank.opts.model_key, { quantized: this.quantized || false });
+    this.model = await AutoModelForSequenceClassification.from_pretrained(this.smart_rank.opts.model_key, pipeline_opts);
     console.log('Model loaded');
     this.tokenizer = await AutoTokenizer.from_pretrained(this.smart_rank.opts.model_key);
     console.log('Tokenizer loaded');
@@ -33,7 +40,7 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
     const { logits } = await this.model(inputs);
     return logits.sigmoid().tolist()
       .map(([score], i) => ({
-        corpus_id: i,
+        index: i,
         score,
         ...(return_documents ? { text: documents[i] } : {})
       })).sort((a, b) => b.score - a.score).slice(0, top_k);

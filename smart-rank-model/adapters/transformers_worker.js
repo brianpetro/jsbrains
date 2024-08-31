@@ -1,9 +1,9 @@
-import { SmartEmbedWorkerAdapter } from "./worker.js";
+import { SmartRankWorkerAdapter } from "./worker.js";
 // import { transformers_connector } from "../connectors/transformers_worker.js";
 
-export class SmartEmbedTransformersWorkerAdapter extends SmartEmbedWorkerAdapter {
-    constructor(smart_embed) {
-        super(smart_embed);
+export class SmartRankTransformersWorkerAdapter extends SmartRankWorkerAdapter {
+    constructor(smart_rank) {
+        super(smart_rank);
         this.connector = "../connectors/transformers_worker.js";
     }
 }

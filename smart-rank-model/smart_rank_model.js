@@ -39,7 +39,7 @@ export class SmartRankModel {
     if(!this.env.opts.smart_rank_adapters[this.opts.adapter]) return console.warn(`SmartRankModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
     if(typeof navigator !== 'undefined') this.opts.use_gpu = !!navigator?.gpu && this.opts.gpu_batch_size !== 0;
-    if(this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
+    this.opts.use_gpu = false; // DISABLED for now
     // init adapter
     this.adapter = new this.env.opts.smart_rank_adapters[this.opts.adapter](this);
   }
@@ -49,6 +49,7 @@ export class SmartRankModel {
    * @param {*} opts 
    */
   static async load(env, opts = {}) {
+    if(env.smart_rank_active_models?.[opts.model_key]) return env.smart_rank_active_models[opts.model_key];
     try {
       const model = new SmartRankModel(env, opts);
       await model.adapter.load();
