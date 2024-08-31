@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: smart-collections/adapters/single_file.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: smart-collections/adapters/single_file.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * THIS ADAPTER NEEDS MORE TESTING AND LOGIC VALIDATION
+ */
+import { ajson_merge } from '../utils/ajson_merge.js';
+import { SmartCollectionItemDataAdapter } from './_adapter.js';
+
+
+// DO: replace this better way in future
+const class_to_collection_name = {
+  'SmartSource': 'smart_sources',
+  'SmartBlock': 'smart_blocks',
+  'SmartDirectory': 'smart_directories',
+};
+export class SingleFileSmartCollectionDataAdapter extends SmartCollectionItemDataAdapter {
+  get fs() { return this.env.smart_env_settings.fs; }
+  /**
+   * @returns {string} The data folder that contains .ajson files.
+   */
+  get data_folder() { return 'single'; }
+  /**
+   * @returns {string} The data path for .ajson file.
+   */
+  get data_path() { return this.data_folder + this.fs.sep + this.collection_name + '.ajson'; }
+
+  /**
+   * Asynchronously loads collection item data from .ajson file specified by data_path.
+   */
+  async load() {
+    if(this.collection.is_loading) return;
+    this.collection.is_loading = true;
+    try{
+      const data_ajson = (await this.fs.read(this.data_path)).trim();
+      const parsed_data = data_ajson
+        .split('\n')
+        .reduce((acc, line) => {
+          const parsed = JSON.parse(`{${line}}`);
+          if(Object.values(parsed)[0] === null){
+            if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
+            return acc;
+          }
+          return ajson_merge(acc, parsed);
+        }, {})
+      ;
+      // array with same length as parsed_data
+      const rebuilt_ajson = Array(Object.keys(parsed_data).length).fill(null);
+      Object.entries(parsed_data)
+        .forEach(([ajson_key, value], index) => {
+          if(!value) return; // handle null values (deleted)
+          rebuilt_ajson[index] = `${JSON.stringify(ajson_key)}: ${JSON.stringify(value)}`;
+          const [class_name, ...key_parts] = ajson_key.split(":");
+          const entity_key = key_parts.join(":"); // key is file path
+          const collection = this.env[class_to_collection_name[class_name]];
+          if(!collection) return console.warn(`Collection class not found: ${class_name}`);
+          if(collection.items[entity_key]) collection.items[entity_key].data = value;
+          else collection.items[entity_key] = new this.env.item_types[class_name](this.env, value);
+        })
+      ;
+      const rebuilt_ajson_str = rebuilt_ajson.join('\n');
+      if(data_ajson !== rebuilt_ajson_str) await this.fs.write(this.data_path, rebuilt_ajson_str);
+    } catch (err) {
+      console.warn("Error loading collection: ", this.collection_name);
+      console.warn(err.stack);
+    } finally {
+      this.collection.is_loading = false;
+    }
+  }
+
+  async save() {
+    if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
+    try {
+      if(this.item.deleted){
+        this.collection.delete_item(this.key);
+        if((await this.fs.exists(this.data_path))) await this.fs.remove(this.data_path);
+      } else {
+        // await this.fs.write(this.data_path, this.item.ajson);
+        await this.fs.append(this.data_path, '\n' + this.item.ajson); // prevent overwriting the file
+        // console.log("Saved item: ", this.item.key, this.data_path);
+      }
+      this.item._queue_save = false;
+      return true;
+    } catch (err) {
+      if(err.message.includes("ENOENT")) return; // already deleted
+      console.warn("Error saving collection item: ", this.key);
+      console.warn(err.stack);
+      this.item.queue_save();
+      return false;
+    }
+  }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Aug 31 2024 11:57:56 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
