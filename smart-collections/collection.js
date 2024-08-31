@@ -21,6 +21,7 @@ export class Collection {
     if (this.opts.smart_collection_adapter_class) this.adapter = new this.opts.smart_collection_adapter_class(this);
     else if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this); // DEPRECATED: use smart_collection_adapter_class instead
     this.merge_defaults();
+    this.filter_results_ct = 0;
   }
   static async init(env, opts = {}) {
     env[this.collection_name] = new this(env, opts);
@@ -80,7 +81,12 @@ export class Collection {
    */
   filter(filter_opts={}) {
     this.filter_opts = this.prepare_filter(filter_opts);
-    return Object.entries(this.items).filter(([key, item]) => item.filter(filter_opts)).map(([key, item]) => item);
+    return Object.entries(this.items).filter(([key, item]) => {
+      if(item.filter(this.filter_opts)){
+        this.filter_results_ct++;
+        return true;
+      } else return false;
+    }).map(([key, item]) => item);
   }
   // alias for filter
   list(filter_opts) { return this.filter(filter_opts); }
@@ -224,14 +230,6 @@ export class Collection {
       current_class = Object.getPrototypeOf(current_class);
     }
   }
-  // /**
-  //  * Retrieves items from the collection based on the provided strategy and options.
-  //  * @param {Function[]} strategy - The strategy used to retrieve the items.
-  //  * @param {Object} opts - The options used to retrieve the items.
-  //  * @return {CollectionItem[]} The retrieved items.
-  //  * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
-  //  */
-  // async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }
   async process_save_queue() {
     this.notices?.show('saving', "Saving " + this.collection_name + "...", { timeout: 0 });
     if(this._saving) return console.log("Already saving");

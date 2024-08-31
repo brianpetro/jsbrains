@@ -1,6 +1,6 @@
 import fs from 'fs';
-import { SmartCollectionDataAdapter } from './_adapter.js';
-export class TestSmartCollectionDataAdapter extends SmartCollectionDataAdapter{
+import { SmartCollectionItemDataAdapter } from './_adapter.js';
+export class TestSmartCollectionDataAdapter extends SmartCollectionItemDataAdapter{
   constructor(collection) {
     super(collection);
     this.test_data = JSON.parse(fs.readFileSync(this.data_path, 'utf8'));

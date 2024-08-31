@@ -26,3 +26,12 @@ export async function sequential_async_processor(funcs, initial_value, opts = {}
 
   return value;
 }
+
+  // /**
+  //  * Retrieves items from the collection based on the provided strategy and options.
+  //  * @param {Function[]} strategy - The strategy used to retrieve the items.
+  //  * @param {Object} opts - The options used to retrieve the items.
+  //  * @return {CollectionItem[]} The retrieved items.
+  //  * @throws {Error} Throws an error if any function in the strategy array is not actually a function or if an async function throws an error.
+  //  */
+  // async retrieve(strategy=[], opts={}) { return await sequential_async_processor(funcs, this.filter(opts), opts); }

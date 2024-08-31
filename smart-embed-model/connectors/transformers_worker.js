@@ -129,10 +129,13 @@ var SmartEmbedModel = class _SmartEmbedModel {
       ...opts
     };
     console.log(this.opts);
-    if (!this.opts.adapter) return console.warn("SmartEmbedModel adapter not set");
-    if (!this.env.opts.smart_embed_adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    if (!this.opts.adapter)
+      return console.warn("SmartEmbedModel adapter not set");
+    if (!this.env.opts.smart_embed_adapters[this.opts.adapter])
+      return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
-    if (this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
+    if (this.opts.use_gpu)
+      this.opts.batch_size = this.opts.gpu_batch_size || 10;
     this.adapter = new this.env.opts.smart_embed_adapters[this.opts.adapter](this);
   }
   /**
@@ -165,7 +168,8 @@ var SmartEmbedModel = class _SmartEmbedModel {
    * @returns {Promise<Object>} A promise that resolves with an object containing the embedding vector at `vec` and the number of tokens at `tokens`.
    */
   async embed(input) {
-    if (typeof input === "string") input = { embed_input: input };
+    if (typeof input === "string")
+      input = { embed_input: input };
     return (await this.embed_batch([input]))[0];
   }
   /**
@@ -211,7 +215,8 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     this.tokenizer = null;
   }
   get batch_size() {
-    if (this.use_gpu && this.smart_embed.opts.gpu_batch_size) return this.smart_embed.opts.gpu_batch_size;
+    if (this.use_gpu && this.smart_embed.opts.gpu_batch_size)
+      return this.smart_embed.opts.gpu_batch_size;
     return this.smart_embed.opts.batch_size || 1;
   }
   get max_tokens() {
@@ -238,20 +243,24 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     this.tokenizer = await AutoTokenizer.from_pretrained(this.smart_embed.opts.model_key);
   }
   async count_tokens(input) {
-    if (!this.tokenizer) await this.load();
+    if (!this.tokenizer)
+      await this.load();
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
   async embed_batch(inputs) {
-    if (!this.model) await this.load();
+    if (!this.model)
+      await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
-    if (!filtered_inputs.length) return [];
+    if (!filtered_inputs.length)
+      return [];
     if (filtered_inputs.length > this.batch_size) {
       throw new Error(`Input size (${filtered_inputs.length}) exceeds maximum batch size (${this.batch_size})`);
     }
     const tokens = await Promise.all(filtered_inputs.map((item) => this.count_tokens(item.embed_input)));
     const embed_inputs = await Promise.all(filtered_inputs.map(async (item, i) => {
-      if (tokens[i].tokens < this.max_tokens) return item.embed_input;
+      if (tokens[i].tokens < this.max_tokens)
+        return item.embed_input;
       let token_ct = tokens[i].tokens;
       let truncated_input = item.embed_input;
       while (token_ct > this.max_tokens) {
@@ -298,11 +307,13 @@ async function process_message(data) {
         result = { model_loaded: true };
         break;
       case "embed_batch":
-        if (!model) throw new Error("Model not loaded");
+        if (!model)
+          throw new Error("Model not loaded");
         result = await model.embed_batch(params.inputs);
         break;
       case "count_tokens":
-        if (!model) throw new Error("Model not loaded");
+        if (!model)
+          throw new Error("Model not loaded");
         result = await model.count_tokens(params);
         break;
       default:
@@ -315,7 +326,6 @@ async function process_message(data) {
   }
 }
 self.addEventListener("message", async (event) => {
-  console.log("message", event.data);
   const response = await process_message(event.data);
   self.postMessage(response);
 });

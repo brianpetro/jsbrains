@@ -1,5 +1,5 @@
 import { ajson_merge } from '../utils/ajson_merge.js';
-import { SmartCollectionDataAdapter } from './_adapter.js';
+import { SmartCollectionItemDataAdapter } from './_adapter.js';
 
 
 // DO: replace this better way in future
@@ -8,7 +8,7 @@ const class_to_collection_name = {
   'SmartBlock': 'smart_blocks',
   'SmartDirectory': 'smart_directories',
 };
-export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdapter {
+export class MultiFileSmartCollectionDataAdapter extends SmartCollectionItemDataAdapter {
   get fs() { return this.env.smart_env_settings.fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
@@ -29,20 +29,29 @@ export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdap
         console.log("Data file not found: ", this.data_path, data_ajson);
         return this.item.queue_import(); // queue import and return early if data file missing or empty
       }
-      const parsed_data = data_ajson
-        .split('\n')
+      const ajson_lines = data_ajson.split('\n');
+      const parsed_data = ajson_lines
         .reduce((acc, line) => {
-          const parsed = JSON.parse(`{${line}}`);
-          if(Object.values(parsed)[0] === null){
-            if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
+          try{
+            const parsed = JSON.parse(`{${line}}`);
+            if(Object.values(parsed)[0] === null){
+              if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
+              return acc;
+            }
+            return ajson_merge(acc, parsed);
+          }catch(err){
+            console.warn("Error parsing line: ", line);
+            console.warn(err.stack);
             return acc;
           }
-          return ajson_merge(acc, parsed);
         }, {})
       ;
+      // array with same length as parsed_data
+      const rebuilt_ajson = [];
       Object.entries(parsed_data)
-        .forEach(([ajson_key, value]) => {
+        .forEach(([ajson_key, value], index) => {
           if(!value) return; // handle null values (deleted)
+          rebuilt_ajson.push(`${JSON.stringify(ajson_key)}: ${JSON.stringify(value)}`);
           const [class_name, ...key_parts] = ajson_key.split(":");
           const entity_key = key_parts.join(":"); // key is file path
           if(entity_key === this.key) this.item.data = value;
@@ -53,7 +62,7 @@ export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdap
         })
       ;
       this.item._queue_load = false;
-      if(data_ajson !== this.item.ajson) await this.fs.write(this.data_path, this.item.ajson);
+      if(ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(this.data_path, rebuilt_ajson.join('\n'));
     }catch(err){
       // if file not found, queue import
       if(err.message.includes("ENOENT")) return this.item.queue_import();
