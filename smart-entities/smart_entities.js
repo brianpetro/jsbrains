@@ -334,7 +334,8 @@ export const settings_config = {
     type: "password",
     description: "Required for OpenAI embedding models",
     placeholder: "Enter your OpenAI API Key",
-    callback: 'test_api_key_openai_embeddings',
+    // callback: 'test_api_key_openai_embeddings',
+    callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
     conditional_callback: (settings) => !settings.smart_sources_embed_model.includes('/') || !settings.smart_blocks_embed_model.includes('/')
   },
   // use_gpu: {

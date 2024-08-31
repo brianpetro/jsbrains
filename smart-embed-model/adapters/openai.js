@@ -5,13 +5,17 @@ import cl100k_base from "../cl100k_base.json" assert { type: "json" };
 export class SmartEmbedOpenAIAdapter extends SmartEmbedAdapter {
   constructor(smart_embed) {
     super(smart_embed);
-    this.api_key = smart_embed.opts.api_key;
     this.model_key = smart_embed.opts.model_key || "text-embedding-ada-002";
     this.endpoint = "https://api.openai.com/v1/embeddings";
     this.max_tokens = 8191;  // Default max tokens for OpenAI embeddings
     this.dims = smart_embed.opts.dims || 1536;  // Default dimensions for OpenAI embeddings
     this.enc = null;
     this.request_adapter = smart_embed.env.opts.request_adapter;
+  }
+  get api_key() {
+    return this.smart_embed.opts.api_key
+      || this.smart_embed.env.smart_connections_plugin?.settings?.api_key // temporary for backwards compatibility in SC OP
+    ;
   }
 
   async load() {
