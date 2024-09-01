@@ -13,10 +13,9 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
   async load() {
     console.log('loading worker adapter', this.smart_embed.opts);
 
-    // Create worker using a relative path
-    const worker_url = new URL(this.connector, import.meta.url);
-    this.worker = new Worker(worker_url, { type: 'module' });
+    this.worker = new Worker(this.worker_url, { type: 'module' });
     console.log('worker', this.worker);
+    console.log('worker_url', this.worker_url);
 
 
     // Set up message listener

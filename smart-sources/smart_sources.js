@@ -179,6 +179,12 @@ export class SmartSources extends SmartEntities {
 }
 
 export const settings_config = {
+  "import_sources": {
+    "name": "Import Sources",
+    "description": "Import sources from file system.",
+    "type": "button",
+    "callback": "import_sources",
+  },
   "refresh_sources": {
     "name": "Refresh Sources",
     "description": "Prunes old data and re-imports all sources and blocks.",
