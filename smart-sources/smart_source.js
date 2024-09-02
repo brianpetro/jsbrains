@@ -123,7 +123,8 @@ export class SmartSource extends SmartEntity {
   open() { this.env.smart_connections_plugin.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
-  get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
+  // get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
+  get blocks() { return this.env.smart_blocks?.filter({key_starts_with: this.key}) || []; } // filter out blocks that don't exist
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get meta_changed() {
     try {
