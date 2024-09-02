@@ -19,7 +19,7 @@ async function build_transformers_iframe_connector() {
 
     const outputContent = result.outputFiles[0].text;
     const wrappedContent = `export const transformers_connector = ${JSON.stringify(outputContent)};`
-      .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.13')
+      // .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.13')
       // escape ${}
       // .replace(/\$\{([\w.]+)\}/g, '\\`+$1+\\`')
     ;
