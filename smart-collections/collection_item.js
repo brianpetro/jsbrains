@@ -204,7 +204,7 @@ export class CollectionItem {
    * Retrieves the collection name for the instance, either from data or the class method.
    * @returns {string} The collection name.
    */
-  get collection_name() { return this.data.collection_name ? this.data.collection_name : collection_instance_name_from(this.data.class_name || this.constructor.name); }
+  get collection_name() { return collection_instance_name_from(this.constructor.name); }
 
   /**
    * Retrieves the collection this item belongs to.

@@ -5,6 +5,7 @@ import { SmartCollectionItemDataAdapter } from './_adapter.js';
 // DO: replace this better way in future
 const class_to_collection_name = {
   'SmartSource': 'smart_sources',
+  'SmartNote': 'smart_sources', // DEPRECATED: added for backward compatibility
   'SmartBlock': 'smart_blocks',
   'SmartDirectory': 'smart_directories',
 };
