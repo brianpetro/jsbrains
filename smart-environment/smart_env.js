@@ -209,6 +209,7 @@ export class SmartEnv {
   // should probably be moved
   // smart-change
   init_smart_change() {
+    if(typeof this.settings?.smart_changes?.active !== 'undefined' && !this.settings.smart_changes.active) return console.warn('smart_changes disabled by settings');
     this.smart_change = new SmartChange(this, { adapters: this.smart_change_adapters });
   }
   get smart_change_adapters() {

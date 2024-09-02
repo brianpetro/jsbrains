@@ -123,10 +123,12 @@ class SmartFs {
         .forEach(pattern => this.add_ignore_pattern(pattern))
       ;
     }
-    this.add_ignore_pattern('**/*.excalidraw.md');
     // exclude all hidden files and folders
+    this.add_ignore_pattern('.**');
     this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
     this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
+    // temporary
+    this.add_ignore_pattern('**/*.excalidraw.md');
   }
 
   /**
