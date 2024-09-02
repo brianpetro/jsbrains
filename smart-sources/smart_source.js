@@ -231,11 +231,12 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<number>} A promise that resolves to the number of matching keywords.
    */
   async search(search_filter = {}) {
-    const { keywords, type = 'any' } = search_filter;
+    const { keywords, type = 'any', limit } = search_filter;
     if (!keywords || !Array.isArray(keywords)) {
       console.warn("Entity.search: keywords not set or is not an array");
       return 0;
     }
+    if(limit && this.collection.search_results_ct >= limit) return 0;
     const lowercased_keywords = keywords.map(keyword => keyword.toLowerCase());
     const content = await this.read();
     const lowercased_content = content.toLowerCase();

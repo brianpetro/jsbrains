@@ -106,6 +106,8 @@ export class ObsidianSmartFsAdapter {
           file.type = 'file';
         }else if(file instanceof this.obsidian.TFolder){
           if(opts.type === 'file') return false;
+          delete file.basename;
+          delete file.extension;
           file.type = 'folder';
         }
         if(this.smart_fs.fs_path) file.path = file.path.replace(this.smart_fs.fs_path, '').slice(1);

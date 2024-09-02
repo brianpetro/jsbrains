@@ -80,13 +80,16 @@ export class Collection {
    * @return {CollectionItem[]} The filtered items.
    */
   filter(filter_opts={}) {
+    this.filter_results_ct = 0;
     this.filter_opts = this.prepare_filter(filter_opts);
-    return Object.entries(this.items).filter(([key, item]) => {
+    const results = Object.entries(this.items).map(([key, item]) => {
+      if(filter_opts.limit && this.filter_results_ct >= filter_opts.limit) return null;
       if(item.filter(this.filter_opts)){
         this.filter_results_ct++;
-        return true;
-      } else return false;
-    }).map(([key, item]) => item);
+        return item;
+      } else return null;
+    }).filter(Boolean);
+    return results;
   }
   // alias for filter
   list(filter_opts) { return this.filter(filter_opts); }

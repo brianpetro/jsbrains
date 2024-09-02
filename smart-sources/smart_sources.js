@@ -14,6 +14,7 @@ export class SmartSources extends SmartEntities {
       ...(env.opts.source_adapters || {}),
       ...(opts.source_adapters || {}),
     };
+    this.search_results_ct = 0;
   }
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async init() {
@@ -103,23 +104,39 @@ export class SmartSources extends SmartEntities {
    * @returns {Promise<Array<Entity>>} A promise that resolves to an array of matching entities.
    */
   async search(search_filter = {}) {
-    if(!search_filter.keywords){
+    const {
+      keywords,
+      limit,
+      ...filter_opts
+    } = search_filter;
+    if(!keywords){
       console.warn("search_filter.keywords not set");
       return [];
     }
-    const search_results = await Promise.all(
-      this.filter(search_filter).map(async (item) => {
-        try {
-          const matches = await item.search(search_filter);
-          return matches ? { item, score: matches } : null;
-        } catch (error) {
-          console.error(`Error searching item ${item.id || 'unknown'}:`, error);
-          return null;
-        }
-      })
-    );
+    console.log("search_filter", search_filter);
+    this.search_results_ct = 0;
+    const initial_results = this.filter(filter_opts);
+    const search_results = [];
+    for (let i = 0; i < initial_results.length; i += 10) {
+      const batch = initial_results.slice(i, i + 10);
+      const batch_results = await Promise.all(
+        batch.map(async (item) => {
+          try {
+            const matches = await item.search(search_filter);
+            if (matches) {
+              this.search_results_ct++;
+              return { item, score: matches };
+            } else return null;
+          } catch (error) {
+            console.error(`Error searching item ${item.id || 'unknown'}:`, error);
+            return null;
+          }
+        })
+      );
+      search_results.push(...batch_results.filter(Boolean));
+    }
+    console.log("search_results_ct", this.search_results_ct);
     return search_results
-      .filter(Boolean)
       .sort((a, b) => b.score - a.score) // sort by relevance 
       .map(result => result.item)
     ;
