@@ -8,15 +8,23 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
     this.message_id = 0;
     this.connector = null; // override in subclass
     this.worker_id = `smart_embed_worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.message_prefix = `msg_${Math.random().toString(36).substr(2, 9)}_`;
   }
+  get main() { return this.smart_embed.env.main; }
 
   async load() {
     console.log('loading worker adapter', this.smart_embed.opts);
 
-    this.worker = new Worker(this.worker_url, { type: 'module' });
+    const global_key = `smart_embed_worker_${this.smart_embed.opts.embed_model_key}`;
+    
+    if (!this.main[global_key]) {
+      this.main[global_key] = new Worker(this.worker_url, { type: 'module' });
+      console.log('new worker created', this.main[global_key]);
+    }
+    
+    this.worker = this.main[global_key];
     console.log('worker', this.worker);
     console.log('worker_url', this.worker_url);
-
 
     // Set up message listener
     this.worker.addEventListener('message', this._handle_message.bind(this));
@@ -39,7 +47,7 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
 
   async _send_message(method, params) {
     return new Promise((resolve, reject) => {
-      const id = this.message_id++;
+      const id = `${this.message_prefix}${this.message_id++}`;
       this.message_queue[id] = { resolve, reject };
       this.worker.postMessage({ method, params, id, worker_id: this.worker_id });
     });
@@ -48,6 +56,7 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
   _handle_message(event) {
     const { id, result, error, worker_id } = event.data;
     if (worker_id !== this.worker_id) return;
+    if (!id.startsWith(this.message_prefix)) return;
 
     if (result?.model_loaded) {
       console.log('model loaded');
