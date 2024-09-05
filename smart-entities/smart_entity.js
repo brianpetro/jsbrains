@@ -40,16 +40,18 @@ export class SmartEntity extends CollectionItem {
       entity: this,
     };
     const {limit = 50} = opts;
+    const cache_key = this.key + JSON.stringify(opts); // no objects/instances in cache key
+    console.log({cache_key});
     if(!this.env.connections_cache) this.env.connections_cache = {};
-    if(!this.env.connections_cache[this.key]){
-      console.log("finding connections for", this.key);
+    if(!this.env.connections_cache[cache_key]){
+      console.log("finding connections for", this.key, this.filter_opts);
       const connections = this.nearest(this.filter_opts)
         .sort(sort_by_score)
         .slice(0, limit)
       ;
-      this.connections_to_cache(this.key, connections);
+      this.connections_to_cache(cache_key, connections);
     }
-    return this.connections_from_cache(this.key);
+    return this.connections_from_cache(cache_key);
   }
   connections_from_cache(cache_key) {
     return this.env.connections_cache[cache_key].map(cache_item => {

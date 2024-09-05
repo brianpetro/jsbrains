@@ -157,19 +157,30 @@ export class SmartEntities extends Collection {
     const { hypotheticals = [] } = params;
     if(!hypotheticals?.length) return {error: "hypotheticals is required"};
     if(!this.smart_embed) return {error: "Embedding search is not enabled."};
-    const embeddings = await this.smart_embed.embed_batch(hypotheticals.map(h => ({embed_input: h})));
+    const hyp_vecs = await this.smart_embed.embed_batch(hypotheticals.map(h => ({embed_input: h})));
     const filter = {
       ...(this.env.chats?.current?.scope || {}),
       ...(params.filter || {}),
     };
     console.log({filter});
-    const results = embeddings.flatMap((embedding, i) => {
-      return this.nearest(embedding.vec, filter);
-    });
+    const results = hyp_vecs
+      .reduce((acc, embedding, i) => {
+        const nearests = this.nearest(embedding.vec, filter);
+        nearests.forEach(entity => {
+          if(!acc[entity.data.path] || entity.score > acc[entity.data.path].score){
+            acc[entity.data.path] = {key: entity.key, score: entity.score, entity, hypothetical_i: i};
+          }else{
+            // DEPRECATED: handling when last score added to entity is not top score (needs to be fixed in Entities.nearest handling)
+            entity.score = acc[entity.data.path].score;
+          }
+        });
+        return acc;
+      }, {})
+    ;
     const k = params.k || this.env.settings.lookup_k || 10;
-    const top_k = results
+    console.log({results});
+    const top_k = Object.values(results)
       .sort(sort_by_score)
-      .filter((r, i, a) => a.findIndex(t => t.data.path === r.data.path) === i)
       .slice(0, k)
     ;
     // DO: decided how to re-implement these functions

@@ -66,7 +66,7 @@ export class SmartSource extends SmartEntity {
     this.data.outlinks = outlinks;
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
-      const item = this.env.smart_blocks.create_or_update(block);
+      const item = await this.env.smart_blocks.create_or_update(block);
       this.last_history.blocks[item.key] = true;
     }
     // remove blocks not in last_history.blocks
@@ -85,7 +85,7 @@ export class SmartSource extends SmartEntity {
       const vec_to_use = use_source_vec ? this.vec : this.median_block_vec;
       
       if (vec_to_use) {
-        const cache_key = this.key + "_blocks";
+        const cache_key = this.key + JSON.stringify(opts) + "_blocks";
         if(!this.env.connections_cache[cache_key]){
           const nearest = this.env.smart_blocks.nearest(vec_to_use, this.filter_opts)
           nearest.sort(sort_by_score)

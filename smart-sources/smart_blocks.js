@@ -28,7 +28,7 @@ export class SmartBlocks extends SmartEntities {
     }else{
       await source.update(content_with_all_headings, { mode: 'merge_append' });
     }
-    await source.parse_content();
+    await source.import();
     const block = this.get(key);
     return block;
   }
