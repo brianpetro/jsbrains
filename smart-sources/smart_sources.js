@@ -94,7 +94,9 @@ export class SmartSources extends SmartEntities {
   // CRUD
   async create(key, content) {
     await this.env.fs.write(key, content);
+    await this.env.fs.refresh();
     const source = await this.create_or_update({ path: key });
+    await source.import();
     return source;
   }
   // SEARCH

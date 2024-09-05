@@ -81,7 +81,8 @@ export class MarkdownSourceAdapter extends SourceAdapter {
       await target_source.merge(current_content, { mode: 'append_blocks' });
     } else {
       await this.smart_source.fs.rename(this.smart_source.data.path, target_source_key);
-      await this.smart_source.collection.create_or_update({ path: target_source_key, content: current_content });
+      const new_source = await this.smart_source.collection.create_or_update({ path: target_source_key, content: current_content });
+      await new_source.import();
     }
 
     if (this.smart_source.key !== target_source_key) await this.remove();

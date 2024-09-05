@@ -289,7 +289,10 @@ class SmartFs {
    * @param {string} new_rel_path - The new relative path
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async rename(rel_path, new_rel_path) { return await this.use_adapter('rename', [rel_path, new_rel_path]); }
+  async rename(rel_path, new_rel_path) { 
+    await this.use_adapter('rename', [rel_path, new_rel_path]);
+    await this.refresh();
+  }
 
   /**
    * Get file or directory statistics

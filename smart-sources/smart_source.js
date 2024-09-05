@@ -275,7 +275,8 @@ export class SmartSource extends SmartEntity {
     try {
       // console.log('Updating source:', this.data.path);
       await this.source_adapter.update(full_content, opts);
-      await this.parse_content();
+      // await this.parse_content();
+      await this.import(); // also queues embed
       // console.log('Update completed');
     } catch (error) {
       console.error('Error during update:', error);

@@ -107,3 +107,17 @@ test.serial('SmartChunks (MarkdownAdapter) should return the expected v2c blocks
   // fs.writeFileSync(path.join(__dirname, `../test_env/test_markdown_v2c.json`), JSON.stringify(parsed, null, 2).replace(/\r\n/g, '\n'));
   t.deepEqual(parsed.blocks, t.context.expected_v2c.blocks);
 });
+
+test.serial('SmartChunks (MarkdownAdapter) should return the expected block with one heading', async t => {
+  const parsed = await t.context.smart_chunks.parse({
+    get_content: async () => "# New Block\nThis is a new block.",
+    file_path: "test/new_source.md"
+  });
+  t.deepEqual(parsed.blocks, [{
+    "text": "test > new_source: New Block:\nThis is a new block.",
+    "length": 20,
+    "path": "test/new_source.md#New Block",
+    "heading": "New Block",
+    "lines": [0, 1]
+  }]);
+});
