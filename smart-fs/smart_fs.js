@@ -280,7 +280,7 @@ class SmartFs {
    * @param {string} rel_path - The relative path of the directory to remove
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async remove_dir(rel_path) { return await this.use_adapter('remove_dir', [rel_path]); }
+  async remove_dir(rel_path, recursive=false) { return await this.use_adapter('remove_dir', [rel_path], recursive); }
 
   /**
    * Rename a file or directory

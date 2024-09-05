@@ -162,6 +162,8 @@ export class NodeFsSmartFsAdapter {
       }else if(item.isDirectory()){
         if(opts.type === 'file') return acc;
         file.type = 'folder';
+        delete file.basename;
+        delete file.extension;
         Object.defineProperty(file, 'children', {
           get: () => {
             return Object.values(this.smart_fs.files).filter(f => f.path.startsWith(file.path));
@@ -204,7 +206,7 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the directory to remove
    * @returns {Promise<void>}
    */
-  async remove_dir(rel_path) { return await this.rmdir(rel_path); }
+  async remove_dir(rel_path, recursive=false) { return await this.rmdir(rel_path, { recursive }); }
 
   /**
    * Rename a file or directory

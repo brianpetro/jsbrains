@@ -174,9 +174,9 @@ export class ObsidianSmartFsAdapter {
    * @param {string} rel_path - The relative path of the directory to remove
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
-  async remove_dir(rel_path) {
+  async remove_dir(rel_path, recursive=false) {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
-    return await this.obsidian_adapter.rmdir(rel_path);
+    return await this.obsidian_adapter.rmdir(rel_path, { recursive });
   }
 
   /**
