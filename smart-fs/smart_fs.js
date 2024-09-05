@@ -93,8 +93,13 @@ class SmartFs {
   async init() {
     await this.load_gitignore();
     const all = await this.list_recursive();
+    this.file_paths = [];
+    this.folder_paths = [];
     all.forEach(file => {
-      if(file.path.endsWith('.ajson')) return;
+      // ignore hidden files and folders (allows specifying by not adding to exclusions)
+      if(file.name.startsWith('.')) return;
+      if(file.path.startsWith('.')) return;
+      if(file.path.endsWith('.ajson')) return; // ignore .ajson files
       if(file.type === 'file'){
         this.files[file.path] = file;
         this.file_paths.push(file.path);
@@ -123,10 +128,10 @@ class SmartFs {
         .forEach(pattern => this.add_ignore_pattern(pattern))
       ;
     }
-    // exclude all hidden files and folders
-    this.add_ignore_pattern('.**');
-    this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
-    this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
+    // // exclude all hidden files and folders
+    // this.add_ignore_pattern('.**');
+    // this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
+    // this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
     // temporary
     this.add_ignore_pattern('**/*.excalidraw.md');
   }
