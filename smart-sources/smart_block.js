@@ -1,15 +1,6 @@
 import { SmartEntity } from "smart-entities";
 
 export class SmartBlock extends SmartEntity {
-
-  get block_adapters() { return this.collection.block_adapters; }
-  get block_adapter() {
-    if(this._block_adapter) return this._block_adapter;
-    if(this.block_adapters[this.file_type]) this._block_adapter = new this.block_adapters[this.file_type](this);
-    else this._block_adapter = new this.block_adapters["default"](this);
-    return this._block_adapter;
-  }
-  get file_type() { return this.source.file_type; }
   static get defaults() {
     return {
       data: {
@@ -19,6 +10,15 @@ export class SmartBlock extends SmartEntity {
       _embed_input: '', // stored temporarily
     };
   }
+
+  get block_adapters() { return this.collection.block_adapters; }
+  get block_adapter() {
+    if(this._block_adapter) return this._block_adapter;
+    if(this.block_adapters[this.file_type]) this._block_adapter = new this.block_adapters[this.file_type](this);
+    else this._block_adapter = new this.block_adapters["default"](this);
+    return this._block_adapter;
+  }
+  get file_type() { return this.source.file_type; }
 
   /**
    * Queues the block for saving via the source.
