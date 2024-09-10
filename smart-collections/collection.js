@@ -254,12 +254,10 @@ export class Collection {
     const load_queue = Object.values(this.items).filter(item => item._queue_load);
     console.log("Loading " + this.collection_name + ": ", load_queue.length + " items");
     const time_start = Date.now();
-    // await Promise.all(load_queue.map(item => item.load()));
-    const chunk_size = 100;
-    for (let i = 0; i < load_queue.length; i += chunk_size) {
-        const chunk = load_queue.slice(i, i + chunk_size);
-        await Promise.all(chunk.map(item => item.load()));
-        // console.log(`Loaded ${i + chunk.length} / ${load_queue.length} items`);
+    const batch_size = 100;
+    for (let i = 0; i < load_queue.length; i += batch_size) {
+      const batch = load_queue.slice(i, i + batch_size);
+      await Promise.all(batch.map(item => item.load()));
     }
     console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
     this._loading = false;

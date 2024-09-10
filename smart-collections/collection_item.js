@@ -229,11 +229,15 @@ export class CollectionItem {
    * @returns {string} A string representing the item.
    */
   get ajson() { return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? 'null' : JSON.stringify(this.data)}`; }
-
   get ajson_key() { return this.constructor.name + ":" + this.key; }
-
-  // get data_adapter() { return new this.env.opts.smart_collection_adapter_class(this); }
   get data_adapter() { return this.collection.data_adapter; }
   get multi_ajson_file_name() { return this.key.replace(/[\s\/\.]/g, '_').replace(".md", ""); }
   get data_path() { return this.data_adapter.data_folder + (this.env.fs?.sep || "/") + this.multi_ajson_file_name + '.ajson'; }
+
+  // settings convenience methods
+  get settings() { return this.env.settings[this.collection_name]; }
+  set settings(settings) {
+    this.env.settings[this.collection_name] = settings;
+    this.env.smart_env_settings.save();
+  }
 }

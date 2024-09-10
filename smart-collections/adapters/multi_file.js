@@ -58,9 +58,11 @@ export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdap
             if (!this.env[class_to_collection_name[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
             this.env[class_to_collection_name[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
           }
-        });
+        })
+      ;
       item._queue_load = false;
       if (ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(data_path, rebuilt_ajson.join('\n'));
+      item.loaded_at = Date.now();
     }catch(err){
       // if file not found, queue import
       if(err.message.includes("ENOENT")) return item.queue_import();
