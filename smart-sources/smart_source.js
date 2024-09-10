@@ -19,6 +19,8 @@ export class SmartSource extends SmartEntity {
     else this._source_adapter = new this.source_adapters["default"](this);
     return this._source_adapter;
   }
+  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
+  get data_path() { return this.data_adapter.data_folder + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
   on_load_error(err){
     super.on_load_error(err);
     // if ENOENT
@@ -176,13 +178,16 @@ export class SmartSource extends SmartEntity {
     // return this.env.smart_connections_plugin.get_tfile(this.data.path); // should be better handled using non-Obsidian API
     return this.fs.files[this.data.path];
   } 
-  // v2.2
-  get ajson() {
-    if(this.deleted) return `${JSON.stringify(this.ajson_key)}: null`;
-    return [
+  async save() {
+    if(this.deleted) return await super.save();
+    const blocks_to_save = this.blocks.filter(block => block._queue_save);
+    const ajson = [
       super.ajson,
-      ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
+      ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
     ].join("\n");
+    console.log({ajson});
+    await super.save(ajson);
+    blocks_to_save.forEach(block => block._queue_save = false);
   }
   get file_path() { return this.data.path; }
   // get file_type() { return this.t_file.extension; }
@@ -214,7 +219,7 @@ export class SmartSource extends SmartEntity {
   async has_source_file() { return await this.fs.exists(this.data.path); }
 
   // CRUD
-  get smart_change_opts() { 
+  get smart_change_opts() {
     return {
       adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
     };

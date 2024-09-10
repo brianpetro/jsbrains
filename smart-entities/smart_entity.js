@@ -70,7 +70,6 @@ export class SmartEntity extends CollectionItem {
   get embed_model_key() { return this.collection.embed_model_key; }
   get embed_model_opts() { return this.collection?.embed_model_opts || {}; }
   get model_opts() { return this.env.settings[this.collection_name]?.embed_model?.[this.embed_model_key] || {}; }
-  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
   get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get should_show_full_path() { return this.env.settings.show_full_path; }
   get smart_chunks() { return this.collection.smart_chunks; }

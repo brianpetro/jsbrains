@@ -280,4 +280,9 @@ export class Collection {
     ;
     return `<div class="setting-component"\ndata-setting="${this.collection_name}.${setting_name}"\n${attributes}\n></div>`;
   }
+
+  get data_adapter() {
+    if(!this._data_adapter) this._data_adapter = new this.env.opts.smart_collection_adapter_class(this);
+    return this._data_adapter;
+  }
 }
