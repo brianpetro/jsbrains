@@ -6,8 +6,12 @@ export class SmartThreads extends SmartSources {
   get container() { return this.opts.container; }
   set container(container) { this.opts.container = container; }
   async render(container=this.container, thread=null) {
-    const frag = await template.call(this.env.smart_view, this, thread);
-    container.empty().appendChild(frag);
+    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
+    this.component = await template.call(this.env.smart_view, this, thread);
+    container.empty().appendChild(this.component);
+    this.thread_container = this.component.querySelector('.sc-chat-box');
+    await this.thread.render(this.thread_container);
+    return this.component;
   }
 }
 
@@ -31,9 +35,13 @@ export class SmartThread extends SmartSource {
     return this._chat_data_adapter;
   }
   async render(container=null) {
-    const thread_frag = await thread_template.call(this.env.smart_view, this);
-    if(container) container.appendChild(thread_frag);
-    else return thread_frag;
+    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
+    this.component = await thread_template.call(this.env.smart_view, this);
+    if(container){
+      container.empty();
+      container.appendChild(this.component);
+    }
+    return this.component;
   }
   async new_response(response) {
     const {turns, messages} = await this.parse_response(response);
@@ -77,9 +85,10 @@ export class SmartTurn extends SmartBlock {
     }
   }
   async render(container=null) {
-    const turn_frag = await turn_template.call(this.env.smart_view, this);
-    if(container) container.appendChild(turn_frag);
-    else return turn_frag;
+    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
+    this.component = await turn_template.call(this.env.smart_view, this);
+    if(container) container.appendChild(this.component);
+    return this.component;
   }
 }
 
@@ -109,8 +118,9 @@ export class SmartMessage extends SmartBlock {
     this.turn.data.messages[this.key] = true;
   }
   async render(container=null) {
-    const message_frag = await message_template.call(this.env.smart_view, this);
-    if(container) container.appendChild(message_frag);
-    else return message_frag;
+    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
+    this.component = await message_template.call(this.env.smart_view, this);
+    if(container) container.appendChild(this.component);
+    return this.component;
   }
 }
