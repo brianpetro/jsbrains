@@ -1,0 +1,22 @@
+{
+  "name": "smart-http-request",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "type": "module",
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "no-nonsense adapter for various HTTP clients",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "keywords": [
+  ],
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org"
+}
