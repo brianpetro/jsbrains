@@ -194,7 +194,7 @@ export class SmartSource extends SmartEntity {
       super.ajson,
       ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
     ].join("\n");
-    console.log({ajson});
+    // console.log({ajson});
     await super.save(ajson);
     blocks_to_save.forEach(block => block._queue_save = false);
   }
