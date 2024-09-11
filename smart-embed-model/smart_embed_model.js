@@ -19,9 +19,10 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import { SmartModel } from "smart-model";
 import embed_models from './models.json' with { type: 'json' };
 // import embed_models from './models.json' assert { type: 'json' };
-export class SmartEmbedModel {
+export class SmartEmbedModel extends SmartModel {
   /**
    * Create a SmartEmbed instance.
    * @param {string} env - The environment to use.
@@ -91,4 +92,48 @@ export class SmartEmbedModel {
 
   get batch_size() { return this.opts.batch_size || 1; }
   get max_tokens() { return this.opts.max_tokens || 512; }
+
+  // TODO: replace static opts with dynamic reference to canonical settings via opts.settings (like smart-chat-model-v2)
+  get settings() { return this.opts.settings; } // ref to canonical settings
+
+  get settings_config() { return this.process_settings_config(settings_config); }
+  process_setting_key(key) {
+    return key.replace(/\[EMBED_MODEL\]/g, this.embed_model_key);
+  }
+
 }
+
+export const settings_config = {
+  embed_model_key: {
+    name: 'Embedding Model',
+    type: "dropdown",
+    description: "Select an embedding model.",
+    options_callback: 'get_embedding_model_options',
+    callback: 'restart',
+    // required: true
+  },
+  "[EMBED_MODEL].min_chars": {
+    name: 'Minimum Embedding Length',
+    type: "number",
+    description: "Minimum length of note to embed.",
+    placeholder: "Enter a number",
+    // callback: 'refresh_embeddings',
+    // required: true,
+  },
+  "[EMBED_MODEL].api_key": {
+    name: 'OpenAI API Key for embeddings',
+    type: "password",
+    description: "Required for OpenAI embedding models",
+    placeholder: "Enter your OpenAI API Key",
+    // callback: 'test_api_key_openai_embeddings',
+    callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
+    conditional_callback: (settings) => !settings.smart_sources_embed_model.includes('/') || !settings.smart_blocks_embed_model.includes('/')
+  },
+  "[EMBED_MODEL].gpu_batch_size": {
+    name: 'GPU Batch Size',
+    type: "number",
+    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
+    placeholder: "Enter a number",
+    callback: 'restart',
+  },
+};

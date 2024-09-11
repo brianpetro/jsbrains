@@ -62,7 +62,11 @@ export class SmartEntities extends Collection {
     window.document.body.appendChild(container);
     return container;
   }
-  get smart_embed() { return this.env.smart_embed_active_models?.[this.embed_model_key]; }
+  /**
+   * @deprecated use embed_model instead
+   */
+  get smart_embed() { return this.embed_model; }
+  get embed_model() { return this.env.smart_embed_active_models?.[this.embed_model_key]; }
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
   // DEPRECATED in favor of entity-based nearest_to(entity, filter)
   nearest(vec, filter = {}) {
@@ -192,12 +196,20 @@ export class SmartEntities extends Collection {
     console.log(`Found and returned ${top_k.length} ${this.collection_name}.`);
     return top_k;
   }
-  get settings_config() {
-    return {
-      ...super.settings_config,
-      ...settings_config,
-    }
+  get embed_model_settings_config() {
+    return this.process_settings_config(
+      this.embed_model?.settings_config || {},
+      'embed_model' // prefixes with 'embed_model.'
+    );
   }
+  get settings_config() {
+    return this.process_settings_config({
+      ...super.settings_config,
+      ...this.embed_model_settings_config,
+      ...settings_config,
+    });
+  }
+
   get_setting_html(setting_name, setting_config) {
     if (setting_name.startsWith('embed_model')) {
       setting_name = setting_name.replace('embed_model.', `embed_model.${this.embed_model_key}.`);
@@ -300,88 +312,7 @@ export class SmartEntities extends Collection {
 }
 
 export const settings_config = {
-  // smart_sources_embed_model: {
-  //   name: 'Notes Embedding Model',
-  //   type: "dropdown",
-  //   description: "Select a model to use for embedding your notes.",
-  //   options_callback: 'get_embedding_model_options',
-  //   callback: 'restart',
-  //   // required: true
-  // },
-  // smart_blocks_embed_model: {
-  //   name: 'Blocks Embedding Model',
-  //   type: "dropdown",
-  //   description: "Select a model to use for embedding your blocks.",
-  //   options_callback: 'get_embedding_model_options',
-  //   callback: 'restart',
-  //   // required: true
-  // },
-  embed_model_key: {
-    name: 'Embedding Model',
-    type: "dropdown",
-    description: "Select an embedding model.",
-    options_callback: 'get_embedding_model_options',
-    callback: 'restart',
-    // required: true
-  },
-  // embed_input_min_chars: {
-  //   name: 'Minimum Embedding Length',
-  //   type: "number",
-  //   description: "Minimum length of note to embed.",
-  //   placeholder: "Enter a number",
-  //   // callback: 'refresh_embeddings',
-  //   // required: true,
-  // },
-  "embed_model.min_chars": {
-    name: 'Minimum Embedding Length',
-    type: "number",
-    description: "Minimum length of note to embed.",
-    placeholder: "Enter a number",
-    // callback: 'refresh_embeddings',
-    // required: true,
-  },
-  "embed_model.api_key": {
-    name: 'OpenAI API Key for embeddings',
-    type: "password",
-    description: "Required for OpenAI embedding models",
-    placeholder: "Enter your OpenAI API Key",
-    // callback: 'test_api_key_openai_embeddings',
-    callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
-    conditional_callback: (settings) => !settings.smart_sources_embed_model.includes('/') || !settings.smart_blocks_embed_model.includes('/')
-  },
-  // use_gpu: {
-  //   name: 'Use GPU',
-  //   type: "toggle",
-  //   description: "Use GPU for embeddings if available.",
-  //   callback: 'restart',
-  // },
-  "embed_model.gpu_batch_size": {
-    name: 'GPU Batch Size',
-    type: "number",
-    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter a number",
-    callback: 'restart',
-  },
-  // // DEPRECATED??? probably
-  // local_embedding_max_tokens: {
-  //   name: 'Local Embedding Max Tokens',
-  //   type: "dropdown",
-  //   description: "Reduce max tokens depending on available resources (CPU, RAM).",
-  //   option_1: "512",
-  //   option_2: "1024",
-  //   option_3: "2048|2048 (default)",
-  //   option_4: "4096",
-  //   option_5: "8192",
-  //   callback: 'reload_env',
-  //   conditional_callback: (settings) => settings.smart_sources_embed_model.includes('/') || settings.smart_blocks_embed_model.includes('/')
-  // },
-  // "cohere_api_key": {
-  //   type: "text",
-  //   name: "Cohere API Key",
-  //   description: "API Key required to use Cohere re-ranker.",
-  //   placeholder: "Enter an API Key",
-  //   button: "Save",
-  // },
+  // TODO
 };
 
 

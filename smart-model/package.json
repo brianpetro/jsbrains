@@ -1,0 +1,22 @@
+{
+  "name": "smart-model",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "type": "module",
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "base class for smart-*-model packages",
+  "main": "smart_model.js",
+  "scripts": {
+    "test": "npx ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "keywords": [
+  ],
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org"
+}

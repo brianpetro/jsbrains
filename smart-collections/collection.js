@@ -217,6 +217,10 @@ export class Collection {
    */
   async save() { await this.adapter.save(); }
   async save_queue() { await this.process_save_queue(); }
+  get data_adapter() {
+    if(!this._data_adapter) this._data_adapter = new this.env.opts.smart_collection_adapter_class(this);
+    return this._data_adapter;
+  }
 
   // UTILITY METHODS
   /**
@@ -264,7 +268,24 @@ export class Collection {
     this.loaded = true;
     this.notices?.remove('loading');
   }
-  get settings_config() { return {}; }
+  get settings_config() { return this.process_settings_config({}); }
+  process_settings_config(_settings_config, prefix = this.collection_name) {
+    return Object.entries(_settings_config)
+      .reduce((acc, [key, val]) => {
+        if (val.conditional) {
+          if (!val.conditional(this.settings)) return acc;
+          delete val.conditional; // remove conditional to prevent re-checking downstream
+        }
+        const new_key = (prefix ? prefix + "." : "") + this.process_setting_key(key);
+        acc[new_key] = val;
+        return acc;
+      }, {})
+    ;
+  }
+  process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
+  get settings() { return this.env.settings[this.collection_name]; }
+  
+  // TODO REPLACE WITH COMPONENTS ARCHITECTURE
   get settings_html() {
     return Object.entries(this.settings_config).map(([setting_name, setting_config]) => {
       return this.get_setting_html(setting_name, setting_config);
@@ -277,10 +298,5 @@ export class Collection {
       .join('\n')
     ;
     return `<div class="setting-component"\ndata-setting="${this.collection_name}.${setting_name}"\n${attributes}\n></div>`;
-  }
-
-  get data_adapter() {
-    if(!this._data_adapter) this._data_adapter = new this.env.opts.smart_collection_adapter_class(this);
-    return this._data_adapter;
   }
 }

@@ -14,76 +14,23 @@ export class SmartThreads extends SmartSources {
     return this.component;
   }
   get settings_config() {
-    return {
-      ...super.settings_config,
+    const chat_model_settings_config = Object.entries(this.chat_model.settings_config).reduce((acc, [key, val]) => {
+      const new_key = 'chat_model.' + key;
+      if(val.callback) val.callback = 'chat_model.' + val.callback;
+      if(val.options_callback) val.options_callback = 'chat_model.' + val.options_callback;
+      acc[new_key] = val;
+      return acc;
+    }, {});
+    return this.process_settings_config({
+      // ...super.settings_config, // necessary?
+      ...chat_model_settings_config,
       ...settings_config,
-    }
+    });
   }
 }
 
 export const settings_config = {
-  chat_model_platform_key: {
-    name: 'Chat Model Platform',
-    type: "dropdown",
-    description: "Select a chat model platform to use with Smart Chat.",
-    options_callback: 'chat_model.get_platforms',
-    callback: 'changed_chat_model_platform',
-  },
-  "[CHAT_PLATFORM].model_key": {
-    name: 'Chat Model',
-    type: "dropdown",
-    description: "Select a chat model to use with Smart Chat.",
-    options_callback: 'chat_model.get_models',
-    callback: 'changed_chat_model',
-  },
-  "[CHAT_PLATFORM].api_key": {
-    name: '[CHAT_MODEL_PLATFORM.name] API Key',
-    type: "password",
-    description: "Enter your API key for the chat model platform.",
-    callback: 'test_api_key',
-  },
-  "[CHAT_MODEL].protocol": {
-    name: '[CHAT_MODEL_PLATFORM.name] Protocol',
-    type: "text",
-    description: "Enter the protocol for the chat model platform.",
-    callback: 'changed_chat_model',
-    conditional: (collection) => collection.settings.chat_model_platform_key.startsWith('custom_local'),
-  },
-  "[CHAT_MODEL].hostname": {
-    name: '[CHAT_MODEL_PLATFORM.name] Hostname',
-    type: "text",
-    description: "Enter the hostname for the chat model platform.",
-    callback: 'changed_chat_model',
-    conditional: (collection) => collection.settings.chat_model_platform_key.startsWith('custom_local'),
-  },
-  "[CHAT_MODEL].port": {
-    name: '[CHAT_MODEL_PLATFORM.name] Port',
-    type: "number",
-    description: "Enter the port for the chat model platform.",
-    callback: 'changed_chat_model',
-    conditional: (collection) => collection.settings.chat_model_platform_key.startsWith('custom_local'),
-  },
-  "[CHAT_MODEL].path": {
-    name: '[CHAT_MODEL_PLATFORM.name] Path',
-    type: "text",
-    description: "Enter the path for the chat model platform.",
-    callback: 'changed_chat_model',
-    conditional: (collection) => collection.settings.chat_model_platform_key.startsWith('custom_local'),
-  },
-  "[CHAT_MODEL].streaming": {
-    name: '[CHAT_MODEL_PLATFORM.name] Streaming',
-    type: "toggle",
-    description: "Enable streaming for the chat model platform.",
-    callback: 'changed_chat_model',
-    conditional: (collection) => collection.settings.chat_model_platform_key.startsWith('custom_local'),
-  },
-  "[CHAT_MODEL].max_input_tokens": {
-    name: '[CHAT_MODEL_PLATFORM.name] Max Input Tokens',
-    type: "number",
-    description: "Enter the maximum number of input tokens for the chat model platform.",
-    callback: 'changed_chat_model',
-    conditional: (collection) => collection.settings.chat_model_platform_key.startsWith('custom_local'),
-  },
+  // TODO
 }
 
 import {template as thread_template} from "./components/thread.js";
