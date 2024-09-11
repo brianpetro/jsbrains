@@ -1,0 +1,70 @@
+{
+  "openai": {
+    "description": "OpenAI",
+    "type": "API",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "streaming": true,
+    "actions": true,
+    "fetch_models": true,
+    "default_model": "gpt-3.5-turbo",
+    "signup_url": "https://platform.openai.com/api-keys"
+  },
+  "google_gemini": {
+    "description": "Google Gemini",
+    "type": "API",
+    "api_key_header": "none",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
+    "endpoint_streaming": "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:streamGenerateContent",
+    "streaming": true,
+    "actions": true,
+    "adapter": "Gemini",
+    "fetch_models": true,
+    "default_model": "gemini-1.5-pro",
+    "signup_url": "https://ai.google.dev/"
+  },
+  "open_router": {
+    "description": "Open Router",
+    "type": "API",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "streaming": true,
+    "adapter": "OpenRouter",
+    "fetch_models": true,
+    "default_model": "mistralai/mistral-7b-instruct:free",
+    "signup_url": "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys"
+  },
+  "cohere": {
+    "description": "Cohere Command-R",
+    "type": "API",
+    "endpoint": "https://api.cohere.ai/v1/chat",
+    "streaming": false,
+    "adapter": "Cohere",
+    "fetch_models": true,
+    "default_model": "command-r",
+    "signup_url": "https://dashboard.cohere.com/welcome/register?redirect_uri=%2Fapi-keys"
+  },
+  "anthropic": {
+    "description": "Anthropic Claude",
+    "type": "API",
+    "endpoint": "https://api.anthropic.com/v1/messages",
+    "streaming": false,
+    "api_key_header": "x-api-key",
+    "headers": {
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "tools-2024-04-04"
+    },
+    "adapter": "Anthropic",
+    "actions": true,
+    "fetch_models": true,
+    "default_model": "claude-3-sonnet-20240229",
+    "signup_url": "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
+  },
+  "custom_local": {
+    "description": "Custom Local (OpenAI format)",
+    "type": "API"
+  },
+  "custom_api": {
+    "description": "Custom API (OpenAI format)",
+    "type": "API"
+  }
+}
+
