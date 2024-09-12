@@ -7,6 +7,8 @@ export class SmartEnvSettings {
     this._settings = {};
     this._saved = false;
   }
+  get settings() { return observe_object(this._settings, (property, value, target) => this.save()); }
+  set settings(settings) { this._settings = settings; }
   async save(settings=null) {
     if(settings) this._settings = settings;
     this._saved = false;
@@ -162,4 +164,38 @@ export function deep_merge(target, source) {
   }
   return target;
   function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
+}
+
+/**
+ * Creates a proxy object that calls a function when a property is changed.
+ * @param {Object} obj - The object to observe.
+ * @param {Function} on_change - The function to call when a property is changed.
+ * @returns {Object} The proxy object.
+ */
+function observe_object(obj, on_change) {
+  function create_proxy(target) {
+      return new Proxy(target, {
+          set(target, property, value) {
+              if (target[property] !== value) {
+                  target[property] = value;
+                  on_change(property, value, target);
+              }
+              // If the value being set is an object or array, apply a proxy to it as well
+              if (typeof value === 'object' && value !== null) {
+                  target[property] = create_proxy(value);
+              }
+              return true;
+          },
+          get(target, property) {
+              const result = target[property];
+              // If a property is an object or array, apply a proxy to it
+              if (typeof result === 'object' && result !== null) {
+                  return create_proxy(result);
+              }
+              return result;
+          }
+      });
+  }
+
+  return create_proxy(obj);
 }

@@ -104,8 +104,10 @@ export class SmartEnv {
     return this.smart_fs;
   }
   get item_types() { return this.opts.item_types; }
-  get settings() { return this.smart_env_settings._settings; }
-  set settings(settings) { this.smart_env_settings._settings = settings; }
+  // get settings() { return this.smart_env_settings._settings; }
+  // set settings(settings) { this.smart_env_settings._settings = settings; }
+  get settings() { return this.smart_env_settings.settings; }
+  set settings(settings) { this.smart_env_settings.settings = settings; }
   get templates() { return this.opts.templates; }
   get views() { return this.opts.views; }
 
