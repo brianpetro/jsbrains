@@ -1,0 +1,86 @@
+{
+  "type": "object",
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "object",
+            "properties": {
+              "parts": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "text": { "type": "string" }
+                      },
+                      "required": ["text"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "functionCall": {
+                          "type": "object",
+                          "properties": {
+                            "name": { "type": "string" },
+                            "args": { "type": "object" }
+                          },
+                          "required": ["name", "args"]
+                        }
+                      },
+                      "required": ["functionCall"]
+                    }
+                  ]
+                }
+              }
+            },
+            "required": ["parts"]
+          },
+          "finishReason": {
+            "type": ["string", "null"],
+            "enum": ["STOP", "LENGTH", "function_call", null],
+            "description": "Reason for completion of generation"
+          }
+        },
+        "required": ["content", "finishReason"]
+      }
+    },
+    "safetyRatings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string" },
+          "probability": { "type": "string" }
+        }
+      }
+    },
+    "usageMetadata": {
+      "type": "object",
+      "properties": {
+        "promptTokenCount": {
+          "type": "integer",
+          "description": "Number of tokens in the prompt, including cached content if applicable"
+        },
+        "cachedContentTokenCount": {
+          "type": "integer",
+          "description": "Number of tokens in the cached part of the prompt"
+        },
+        "candidatesTokenCount": {
+          "type": "integer",
+          "description": "Total number of tokens across all generated response candidates"
+        },
+        "totalTokenCount": {
+          "type": "integer",
+          "description": "Total token count for the entire generation request (prompt + response candidates)"
+        }
+      },
+      "required": ["promptTokenCount", "candidatesTokenCount", "totalTokenCount"]
+    }
+  },
+  "required": ["candidates", "usage"]
+}

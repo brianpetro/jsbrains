@@ -1,0 +1,103 @@
+{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Required. The user's input for the model to respond to."
+    },
+    "stream": {
+      "type": "boolean",
+      "description": "Defaults to false. Set to true for a streamed response."
+    },
+    "model": {
+      "type": "string",
+      "description": "Optional. The model name (e.g., 'command-r-plus')."
+    },
+    "preamble": {
+      "type": "string",
+      "description": "Optional. Adds SYSTEM role preamble content at the start of the conversation."
+    },
+    "chat_history": {
+      "type": "array",
+      "description": "Optional. List of previous messages providing conversational context.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["USER", "CHATBOT", "SYSTEM"]
+          },
+          "message": {
+            "type": "string",
+            "description": "The content of the message."
+          }
+        },
+        "required": ["role", "message"]
+      }
+    },
+    "conversation_id": {
+      "type": "string",
+      "description": "Optional. A user-defined ID for persistent conversations."
+    },
+    "response_format": {
+      "type": "object",
+      "description": "Optional. Configuration for forcing the model to output JSON objects.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["json_object"],
+          "description": "Specifies the output format."
+        },
+        "schema": {
+          "type": "object",
+          "description": "Optional. JSON schema that the output will adhere to."
+        }
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "description": "Optional. List of connectors to enrich the response using RAG (Retrieval-Augmented Generation).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The identifier of the connector."
+          },
+          "user_access_token": {
+            "type": "string",
+            "description": "Optional. User access token for connector authorization."
+          }
+        }
+      }
+    },
+    "documents": {
+      "type": "array",
+      "description": "Optional. List of documents to provide citations for generating responses.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the document."
+          },
+          "text": {
+            "type": "string",
+            "description": "Main content of the document."
+          }
+        }
+      }
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Optional. Controls randomness in the model’s responses."
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Optional. Maximum number of tokens in the model's response."
+    }
+  },
+  "required": ["message"]
+}

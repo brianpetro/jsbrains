@@ -1,0 +1,146 @@
+{
+  "type": "object",
+  "properties": {
+    "model": {
+      "type": "string",
+      "description": "Specifies the Claude model version to use, e.g., claude-2, claude-3."
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant"],
+            "description": "The role of the message sender. 'user' represents the input, and 'assistant' represents the AI's responses."
+          },
+          "content": {
+            "type": ["string", "array"],
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["text", "image"],
+                  "description": "Type of content. Text or image."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Text content of the message."
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["base64"],
+                      "description": "Encoding type of the image."
+                    },
+                    "media_type": {
+                      "type": "string",
+                      "enum": ["image/jpeg", "image/png", "image/gif", "image/webp"],
+                      "description": "Media type of the image."
+                    },
+                    "data": {
+                      "type": "string",
+                      "description": "Base64 encoded image data."
+                    }
+                  },
+                  "required": ["type", "media_type", "data"]
+                }
+              },
+              "required": ["type"]
+            },
+            "description": "The content of the message. Can be a string for text or an array of objects for complex content (text, image)."
+          }
+        },
+        "required": ["role", "content"]
+      },
+      "description": "An array of message objects, each specifying the sender's role and the content of the message."
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Maximum number of tokens the model will generate before stopping. Some models may stop before this limit."
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Controls randomness in response generation, where 0 is deterministic and 1 is highly creative.",
+      "default": 1.0,
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "top_p": {
+      "type": "number",
+      "description": "Controls nucleus sampling. The model will select tokens until a cumulative probability threshold is reached.",
+      "default": 1.0,
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "top_k": {
+      "type": "integer",
+      "description": "Controls the number of top options considered when sampling tokens. Lower values reduce creativity.",
+      "default": 500,
+      "minimum": 0,
+      "maximum": 500
+    },
+    "stop_sequences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "A list of custom sequences that will cause the model to stop generating further content."
+    },
+    "stream": {
+      "type": "boolean",
+      "description": "If true, the model streams output incrementally via server-sent events.",
+      "default": false
+    },
+    "system": {
+      "type": "string",
+      "description": "Optional system prompt to provide context and guidelines for how the assistant should respond."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata relevant to the request."
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the tool the model may use."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional, but recommended, description of what the tool does."
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "JSON schema specifying the expected input format for the tool."
+          }
+        },
+        "required": ["name", "input_schema"]
+      },
+      "description": "Definitions of tools the model can use during the conversation."
+    },
+    "tool_choice": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["auto", "any", "tool"],
+          "description": "Specifies how the model should use the tools. Can be 'auto', 'any', or 'tool'."
+        },
+        "name": {
+          "type": "string",
+          "description": "Specifies which tool the model should use."
+        }
+      },
+      "required": ["type"]
+    }
+  },
+  "required": ["model", "messages"]
+}

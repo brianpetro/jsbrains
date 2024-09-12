@@ -1,0 +1,101 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the chat session."
+    },
+    "object": {
+      "type": "string",
+      "enum": ["chat.completion"],
+      "description": "Type of object returned. In this case, 'chat.completion'."
+    },
+    "created": {
+      "type": "integer",
+      "description": "UNIX timestamp (seconds since epoch) when the response was created."
+    },
+    "choices": {
+      "type": "array",
+      "description": "Array of completion choices.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "description": "Index of the completion choice in the response array."
+          },
+          "message": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["system", "user", "assistant", "function"],
+                "description": "The role of the entity producing this message."
+              },
+              "content": {
+                "type": ["string", "null"],
+                "description": "The content of the message, or null if not applicable."
+              },
+              "name": {
+                "type": ["string", "null"],
+                "pattern": "^[a-zA-Z0-9_-]{1,64}$",
+                "description": "Optional name for the function or user associated with this message, matching the pattern a-z, A-Z, 0-9, underscores, or dashes."
+              },
+              "tool_calls": {
+                "type": ["array", "null"],
+                "description": "Tool calls made by the assistant, or null if none.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tool_name": {
+                      "type": "string",
+                      "description": "Name of the tool called."
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "description": "Parameters passed to the tool."
+                    }
+                  },
+                  "required": ["tool_name", "parameters"]
+                }
+              },
+              "image_url": {
+                "type": ["string", "null"],
+                "format": "uri",
+                "description": "URL of the image contained in the message, or null if not present."
+              }
+            },
+            "required": ["role"]
+          },
+          "finish_reason": {
+            "type": ["string", "null"],
+            "enum": ["stop", "length", "function_call", null],
+            "description": "Reason why the completion process ended (e.g., length, function call, or stop)."
+          }
+        },
+        "required": ["index", "message"]
+      }
+    },
+    "usage": {
+      "type": "object",
+      "description": "Details about token usage in the request.",
+      "properties": {
+        "prompt_tokens": {
+          "type": "integer",
+          "description": "Number of tokens used in the prompt."
+        },
+        "completion_tokens": {
+          "type": "integer",
+          "description": "Number of tokens used in the completion."
+        },
+        "total_tokens": {
+          "type": "integer",
+          "description": "Total number of tokens used (prompt + completion)."
+        }
+      },
+      "required": ["prompt_tokens", "completion_tokens", "total_tokens"]
+    }
+  },
+  "required": ["id", "object", "created", "choices", "usage"],
+  "additionalProperties": false
+}

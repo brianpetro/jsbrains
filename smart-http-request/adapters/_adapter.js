@@ -2,7 +2,7 @@ export class SmartHttpRequestAdapter {
   constructor(main) {
     this.main = main;
   }
-  async request(url, opts={}) { throw new Error("request not implemented"); }
+  async request(request_params) { throw new Error("request not implemented"); }
 }
 
 export class SmartHttpResponseAdapter {

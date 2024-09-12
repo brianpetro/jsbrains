@@ -1,0 +1,93 @@
+{
+  "type": "object",
+  "properties": {
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["system", "user", "assistant", "function"],
+            "description": "Role of the message sender."
+          },
+          "content": {
+            "type": ["string", "null"],
+            "description": "Content of the message, or null if not applicable."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "pattern": "^[a-zA-Z0-9_-]{1,64}$",
+            "description": "Optional name for the message sender, such as a function name or user name. Must be 1-64 characters and match the pattern a-z, A-Z, 0-9, underscores or dashes."
+          },
+          "tool_calls": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool_name": {
+                  "type": "string",
+                  "description": "Name of the tool being called."
+                },
+                "parameters": {
+                  "type": "object",
+                  "description": "Parameters passed to the tool. The structure depends on the tool."
+                }
+              },
+              "required": ["tool_name", "parameters"]
+            },
+            "description": "Calls to external tools made by the assistant, or null if none."
+          },
+          "image_url": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "URL of an image if the message contains one, or null if none."
+          }
+        },
+        "required": ["role"]
+      },
+      "description": "Array of messages exchanged in the conversation."
+    },
+    "tools": {
+      "type": ["array", "null"],
+      "description": "Optional list of tools available for the model to call. Currently, only functions are supported.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "description": "Specifies that the tool is a function."
+          },
+          "function": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,64}$",
+                "description": "Name of the function to be called. Must be 1-64 characters long and match the pattern a-z, A-Z, 0-9, underscores, or dashes."
+              },
+              "description": {
+                "type": ["string", "null"],
+                "description": "Optional description of what the function does. Can be null if not provided."
+              },
+              "parameters": {
+                "type": "object",
+                "description": "Parameters the function accepts, described as a JSON Schema object."
+              },
+              "strict": {
+                "type": "boolean",
+                "default": false,
+                "description": "Specifies if strict schema adherence is required for the function call. Default is false."
+              }
+            },
+            "required": ["name"]
+          }
+        },
+        "required": ["type", "function"]
+      }
+    }
+  },
+  "required": ["messages"],
+  "additionalProperties": false
+}

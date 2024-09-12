@@ -12,12 +12,21 @@ export class SmartHttpRequest {
   }
   /**
    * Returns a well-formed response object
-   * @param {*} url 
-   * @param {*} opts 
+   * @param {object} request_params - Parameters for the HTTP request
+   * @param {string} request_params.url - The URL to make the request to
+   * @param {string} [request_params.method='GET'] - The HTTP method to use
+   * @param {object} [request_params.headers] - Headers to include in the request
+   * @param {*} [request_params.body] - The body of the request (for POST, PUT, etc.)
    * @returns {SmartHttpResponseAdapter} instance of the SmartHttpResponseAdapter class
    * @example
-   * const response = await smart_http_request.request('https://api.example.com/data', { method: 'GET' });
-   * console.log(response.data);
+   * const response = await smart_http_request.request({
+   *   url: 'https://api.example.com/data',
+   *   method: 'GET',
+   *   headers: { 'Content-Type': 'application/json' }
+   * });
+   * console.log(await response.json());
    */
-  async request(url, opts={}) { return await this.adapter.request(url, opts); }
+  async request(request_params) {
+    return await this.adapter.request(request_params);
+  }
 }

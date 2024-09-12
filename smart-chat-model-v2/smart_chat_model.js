@@ -8,7 +8,11 @@ export class SmartChatModel extends SmartModel {
     this._http_adapter = null;
   }
   async complete(req){ return await this.adapter.complete(req); }
+  async get_models(refresh=false){ return await this.adapter.get_models(refresh); }
   async stream(req, handlers={}){ return await this.adapter.stream(req, handlers); }
+  stop_stream() { this.adapter.stop_stream(); }
+  async test_api_key(){ return await this.adapter.test_api_key(); }
+  async count_tokens(input){ return await this.adapter.count_tokens(input); }
   get adapters() { return this.opts.adapters; }
   get adapter() { 
     if(!this._adapters[this.platform_key]){

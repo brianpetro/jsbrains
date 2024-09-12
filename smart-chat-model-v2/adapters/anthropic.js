@@ -1,159 +1,205 @@
-/**
- * AnthropicAdapter class provides methods to adapt the chat model interactions specifically for the Anthropic model.
- * It includes methods to prepare request bodies, count and estimate tokens, and handle tool calls and messages.
- */
-class AnthropicAdapter {
-  /**
-   * Prepares the request body for the Anthropic API by converting ChatML format to a format compatible with Anthropic.
-   * @param {Object} opts - The options object containing messages and other parameters in ChatML format.
-   * @returns {Object} The request body formatted for the Anthropic API.
-   */
-  prepare_request_body(opts) { return chatml_to_anthropic(opts); }
-  /**
-   * Counts the tokens in the input by estimating them, as the Anthropic model does not provide a direct method.
-   * @param {string|Object} input - The input text or object to count tokens in.
-   * @returns {Promise<number>} The estimated number of tokens in the input.
-   */
-  async count_tokens(input) {
-    // Currently, the Anthropic model does not provide a way to count tokens
-    return this.estimate_tokens(input);
+import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
+
+export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
+  get res_adapter() { return SmartChatModelAnthropicResponseAdapter; }
+  get req_adapter() { return SmartChatModelAnthropicRequestAdapter; }
+  // Implement Anthropic-specific methods here
+  async get_models() {
+    return [
+      {
+        "key": "claude-3-opus-20240229",
+        "model_name": "claude-3-opus-20240229",
+        "description": "Anthropic's Claude Opus",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      },
+      {
+        key: "claude-3-5-sonnet-20240620",
+        "model_name": "claude-3.5-sonnet-20240620",
+        "description": "Anthropic's Claude Sonnet",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      },
+      {
+        key: "claude-3-haiku-20240307",
+        "model_name": "claude-3-haiku-20240307",
+        "description": "Anthropic's Claude Haiku",
+        "max_input_tokens": 200000,
+          "max_output_tokens": 4000,
+          "multimodal": true
+      },
+      {
+        key: "claude-3-sonnet-20240229",
+        "model_name": "claude-3-sonnet-20240229",
+        "description": "Anthropic's Claude Sonnet",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      },
+    ];
   }
-  /**
-   * Estimates the number of tokens in the input based on a rough average token size.
-   * @param {string|Object} input - The input text or object to estimate tokens in.
-   * @returns {number} The estimated number of tokens.
-   */
-  estimate_tokens(input){
-    if(typeof input === 'object') input = JSON.stringify(input);
-    // Note: The division by 6 is a rough estimate based on observed average token size.
-    return Math.ceil(input.length / 6); // Use Math.ceil for a more accurate count
-  }
-  /**
-   * Extracts the first tool call from the JSON response content.
-   * @param {Object} json - The JSON response from which to extract the tool call.
-   * @returns {Object|null} The first tool call found, or null if none exist.
-   */
-  get_tool_call(json){
-    return json.content.find(msg => msg.type === 'tool_use');
-  }
-  /**
-   * Retrieves the input content of a tool call.
-   * @param {Object} tool_call - The tool call object from which to extract the input.
-   * @returns {Object} The input of the tool call.
-   */
-  get_tool_call_content(tool_call){
-    return tool_call.input;
-  }
-  /**
-   * Retrieves the name of the tool from a tool call object.
-   * @param {Object} tool_call - The tool call object from which to extract the name.
-   * @returns {string} The name of the tool.
-   */
-  get_tool_name(tool_call){
-    return tool_call.name;
-  }
-  /**
-   * Extracts the first message from the JSON response content.
-   * @param {Object} json - The JSON response from which to extract the message.
-   * @returns {Object|null} The first message found, or null if none exist.
-   */
-  get_message(json){ return json.content?.[0]; }
-  /**
-   * Retrieves the content of the first message from the JSON response.
-   * @param {Object} json - The JSON response from which to extract the message content.
-   * @returns {string|null} The content of the first message, or null if no message is found.
-   */
-  get_message_content(json) { return this.get_message(json)?.[this.get_message(json)?.type]; }
 }
-exports.AnthropicAdapter = AnthropicAdapter;
-// https://docs.anthropic.com/claude/reference/messages_post
-/**
- * Convert a ChatML object to an Anthropic object
- * @param {Object} opts - The ChatML object
- * @description This function converts a ChatML object to an Anthropic object. It filters out system messages and adds a system message prior to the last user message.
- * @returns {Object} - The Anthropic object
- */
-function chatml_to_anthropic(opts) {
-  let tool_counter = 0;
-  const messages = opts.messages
-    .filter(msg => msg.role !== 'system')
-    .map(m => {
-      if(m.role === 'tool'){
-        return { role: 'user', content: [
-          {
-            type: 'tool_result',
-            tool_use_id: `tool-${tool_counter}`,
-            content: m.content
-          }
-        ]};
+
+export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequestAdapter {
+
+  to_platform() { return this.to_anthropic(); }
+
+  to_anthropic() {
+    this.anthropic_body = {};
+    this.anthropic_body.model = this.model;
+    this.anthropic_body.messages = this._transform_messages_to_anthropic();
+    this.anthropic_body.max_tokens = this.max_tokens;
+    this.anthropic_body.temperature = this.temperature;
+    this.anthropic_body.stream = this.stream;
+    if (this.tools) this.anthropic_body.tools = this._transform_tools_to_anthropic();
+    if (this.tool_choice) {
+      if (this.tool_choice === 'auto') {
+        this.anthropic_body.tool_choice = { type: 'auto' };
+      } else if (typeof this.tool_choice === 'object' && this.tool_choice.function) {
+        this.anthropic_body.tool_choice = { type: 'tool', name: this.tool_choice.function.name };
       }
-      if(m.role === 'assistant' && m.tool_calls){
-        tool_counter++;
-        const out = {
-          role: m.role, 
-          content: m.tool_calls.map(c => ({
-            type: 'tool_use',
-            id: `tool-${tool_counter}`,
-            name: c.function.name,
-            input: (typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : c.function.arguments
-          }))
-        };
-        if(m.content){
-          if(typeof m.content === 'string') out.content.push({type: 'text', text: m.content});
-          else m.content.forEach(c => out.content.push(c));
-        }
-        return out;
-      }
-      if(typeof m.content === 'string') return { role: m.role, content: m.content };
-      if(Array.isArray(m.content)){
-        const content = m.content.map(c => {
-          if(c.type === 'text') return {type: 'text', text: c.text};
-          if(c.type === 'image_url'){
-            const image_url = c.image_url.url;
-            let media_type = image_url.split(":")[1].split(";")[0];
-            if(media_type === 'image/jpg') media_type = 'image/jpeg';
-            return {type: 'image', source: {type: 'base64', media_type: media_type, data: image_url.split(",")[1]}};
-          }
+    }
+
+    return {
+      url: this.adapter.endpoint,
+      method: 'POST',
+      headers: this.get_headers(),
+      body: JSON.stringify(this.anthropic_body)
+    };
+  }
+
+  _transform_messages_to_anthropic() {
+    let anthropic_messages = [];
+
+    for (const message of this.messages) {
+      if (message.role === 'system') {
+        if(!this.anthropic_body.system) this.anthropic_body.system = '';
+        else this.anthropic_body.system += '\n\n';
+        this.anthropic_body.system += message.content;
+      } else {
+        anthropic_messages.push({
+          role: this._get_anthropic_role(message.role),
+          content: this._get_anthropic_content(message.content)
         });
-        return { role: m.role, content };
       }
-      return m;
-    })
-  ;
-  const { model, max_tokens, temperature, tools, tool_choice } = opts;
-  // DO: handled better (Smart Connections specific)
-  // get index of last system message
-  const last_system_idx = opts.messages.findLastIndex(msg => msg.role === 'system' && msg.content.includes('---BEGIN'));
-  if (last_system_idx > -1) {
-    const system_prompt = '<context>\n' + opts.messages[last_system_idx].content + '\n</context>\n';
-    messages[messages.length - 1].content = system_prompt + messages[messages.length - 1].content;
+    }
+
+
+    return anthropic_messages;
   }
-  console.log(messages);
-  const out = {
-    messages,
-    model,
-    max_tokens,
-    temperature,
+
+  _get_anthropic_role(role) {
+    const role_map = {
+      function: 'assistant' // Anthropic doesn't have a function role, so we'll treat it as assistant
+    };
+    return role_map[role] || role;
   }
-  if(tools){
-    out.tools = tools.map(tool => ({
+
+  _get_anthropic_content(content) {
+    if (Array.isArray(content)) {
+      return content.map(item => {
+        if (item.type === 'text') return { type: 'text', text: item.text };
+        if (item.type === 'image_url') {
+          return {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: item.image_url.url.split(';')[0].split(':')[1],
+              data: item.image_url.url.split(',')[1]
+            }
+          };
+        }
+        return item;
+      });
+    }
+    return content;
+  }
+
+  _transform_tools_to_anthropic() {
+    if (!this.tools) return undefined;
+    return this.tools.map(tool => ({
       name: tool.function.name,
       description: tool.function.description,
-      input_schema: tool.function.parameters,
+      parameters: tool.function.parameters
     }));
-    if(tool_choice?.type === 'function'){
-      // add "Use the ${tool.name} tool" to the last user message
-      const tool_prompt = `Use the "${tool_choice.function.name}" tool!`;
-      const last_user_idx = out.messages.findLastIndex(msg => msg.role === 'user');
-      out.messages[last_user_idx].content += '\n' + tool_prompt;
-      out.system = `Required: use the "${tool_choice.function.name}" tool!`;
-    }
   }
-  // DO: handled better (Smart Connections specific)
-  // if system message exists prior to last_system_idx AND does not include "---BEGIN" then add to body.system
-  const last_non_context_system_idx = opts.messages.findLastIndex(msg => msg.role === 'system' && !msg.content.includes('---BEGIN'));
-  if(last_non_context_system_idx > -1) out.system = opts.messages[last_non_context_system_idx].content;
-  return out;
 }
-exports.chatml_to_anthropic = chatml_to_anthropic;
+
+export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelResponseAdapter {
+  to_openai() {
+    return {
+      id: this._res.id,
+      object: 'chat.completion',
+      created: Date.now(),
+      choices: [
+        {
+          index: 0,
+          message: this._transform_message_to_openai(),
+          finish_reason: this._get_openai_finish_reason(this._res.stop_reason)
+        }
+      ],
+      usage: this._transform_usage_to_openai()
+    };
+  }
+
+  _transform_message_to_openai() {
+    const message = {
+      role: 'assistant',
+      content: '',
+      tool_calls: []
+    };
+
+    if (Array.isArray(this._res.content)) {
+      for (const content of this._res.content) {
+        if (content.type === 'text') {
+          message.content += (message.content ? '\n\n' : '') + content.text;
+        } else if (content.type === 'tool_use') {
+          message.tool_calls.push({
+            id: content.tool_use.id,
+            type: 'function',
+            function: {
+              name: content.tool_use.name,
+              arguments: JSON.stringify(content.tool_use.input)
+            }
+          });
+        }
+      }
+    } else {
+      message.content = this._res.content;
+    }
+
+    if (message.tool_calls.length === 0) {
+      delete message.tool_calls;
+    }
+
+    return message;
+  }
+
+  _get_openai_finish_reason(stop_reason) {
+    const reason_map = {
+      'end_turn': 'stop',
+      'max_tokens': 'length',
+      'tool_use': 'function_call'
+    };
+    return reason_map[stop_reason] || stop_reason;
+  }
+
+  _transform_usage_to_openai() {
+    if (!this._res.usage) {
+      return {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0
+      };
+    }
+    return {
+      prompt_tokens: this._res.usage.input_tokens || 0,
+      completion_tokens: this._res.usage.output_tokens || 0,
+      total_tokens: (this._res.usage.input_tokens || 0) + (this._res.usage.output_tokens || 0)
+    };
+  }
+}
+
 

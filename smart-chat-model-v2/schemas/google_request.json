@@ -1,0 +1,83 @@
+{
+  "type": "object",
+  "properties": {
+    "contents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "system", "assistant"]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": { "type": "string" }
+                  },
+                  "required": ["text"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "inline_data": {
+                      "type": "object",
+                      "properties": {
+                        "mime_type": { "type": "string" },
+                        "data": { "type": "string", "description": "Base64 encoded data" }
+                      },
+                      "required": ["mime_type", "data"]
+                    }
+                  },
+                  "required": ["inline_data"]
+                }
+              ]
+            }
+          }
+        },
+        "required": ["role", "parts"]
+      }
+    },
+    "tools": {
+      "type": ["array", "null"],
+      "description": "Functions the model can call, specified using OpenAPI schema",
+      "items": {
+        "type": "object",
+        "properties": {
+          "function_declarations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["object"] },
+                    "properties": {
+                      "location": { "type": "string" },
+                      "movie": { "type": "string" }
+                    },
+                    "required": ["location", "movie"]
+                  }
+                }
+              },
+              "required": ["name", "parameters"]
+            }
+          }
+        }
+      }
+    },
+    "system_instructions": {
+      "type": ["string", "null"],
+      "description": "Instructions to guide the model's behavior"
+    }
+  },
+  "required": ["contents"],
+  "additionalProperties": false
+}

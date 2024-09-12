@@ -1,12 +1,24 @@
 import { SmartHttpRequestAdapter, SmartHttpResponseAdapter } from "./_adapter.js";
-export class SmartHttpFetchAdapter extends SmartHttpRequestAdapter {
-  async request(url, opts={}) {
-    return new SmartHttpFetchResponseAdapter(await fetch(url, opts));
+
+export class SmartHttpRequestFetchAdapter extends SmartHttpRequestAdapter {
+  async request(request_params) {
+    const { url, ...opts } = request_params;
+    return new SmartHttpResponseFetchAdapter(await fetch(url, opts));
   }
 }
-export class SmartHttpFetchResponseAdapter extends SmartHttpResponseAdapter {
+export class SmartHttpResponseFetchAdapter extends SmartHttpResponseAdapter {
   async headers() { return this.response.headers; }
-  async json() { return await this.response.json(); }
+  async json() {
+    if(!this._json) {
+      this._json = await this.response.json();
+    }
+    return this._json;
+  }
   async status() { return this.response.status; }
-  async text() { return await this.response.text(); }
+  async text() {
+    if(!this._text) {
+      this._text = await this.response.text();
+    }
+    return this._text;
+  }
 }
