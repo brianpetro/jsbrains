@@ -283,7 +283,13 @@ export class Collection {
     ;
   }
   process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
-  get settings() { return this.env.settings[this.collection_name]; }
+  get default_settings() { return {}; }
+  get settings() {
+    if(!this.env.settings[this.collection_name]){
+      this.env.settings[this.collection_name] = this.default_settings;
+    }
+    return this.env.settings[this.collection_name];
+  }
   
   // TODO REPLACE WITH COMPONENTS ARCHITECTURE
   get settings_html() {

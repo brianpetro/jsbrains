@@ -1,10 +1,29 @@
 import { SmartSources, SmartSource } from "smart-sources";
 import { template } from "./components/_component.js";
-import { SmartThreadDataJsonAdapter } from "./adapters/json.js";
+import {template as settings_template} from "./components/settings.js";
+import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json.js";
 
 export class SmartThreads extends SmartSources {
-  get container() { return this.opts.container; }
-  set container(container) { this.opts.container = container; }
+  async init() {
+    await super.init();
+    await this.load_chat_model();
+  }
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.env.fs.sep : '') + 'multi' + this.env.fs.sep + 'chats'; }
+  get data_fs() {
+    if(!this._data_fs) this._data_fs = new this.env.opts.smart_fs_class(this.env, {
+      adapter: this.env.opts.smart_fs_adapter_class,
+      fs_path: this.data_folder,
+      exclude_patterns: [],
+    });
+    return this._data_fs;
+  }
+  get fs() { return this.data_fs; } // TODO: if chat_history NOT json and history folder setting is set then use that as fs_path
+  async load_chat_model() {
+    this.chat_model = new this.env.opts.smart_chat_model_class({
+      settings: this.settings.chat_model,
+      adapters: this.env.opts.smart_chat_model_adapters,
+    });
+  }
   async render(container=this.container, thread=null) {
     if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
     this.component = await template.call(this.env.smart_view, this, thread);
@@ -13,11 +32,40 @@ export class SmartThreads extends SmartSources {
     await this.thread.render(this.thread_container);
     return this.component;
   }
+  async render_settings(container=this.settings_container) {
+    if(!this.settings_container || this.settings_container !== container) this.settings_container = container;
+    this.settings_container.empty();
+    this.settings_container.innerHTML = '<div class="sc-loading">Loading settings...</div>';
+    const frag = await settings_template.call(this.env.smart_view, this, this.settings_container);
+    this.settings_container.empty();
+    this.settings_container.appendChild(frag);
+  }
+  get container() { return this.opts.container; }
+  set container(container) { this.opts.container = container; }
+  get default_settings() {
+    return {
+      chat_model: {
+        platform_key: 'openai',
+        openai: {
+          model_key: 'gpt-4o',
+        },
+      },
+    };
+  }
   get settings_config() {
     const chat_model_settings_config = Object.entries(this.chat_model.settings_config).reduce((acc, [key, val]) => {
       const new_key = 'chat_model.' + key;
-      if(val.callback) val.callback = 'chat_model.' + val.callback;
-      if(val.options_callback) val.options_callback = 'chat_model.' + val.options_callback;
+      // string callback may be deprecated in favor of function
+      // if(typeof val.callback === 'string') val.callback = 'chat_model.' + val.callback;
+      // if(typeof val.options_callback === 'string') val.options_callback = 'chat_model.' + val.options_callback;
+      if(typeof val.callback === 'string'){
+        console.log('val.callback', val.callback);
+        this[val.callback] = this.chat_model[val.callback].bind(this.chat_model);
+      }
+      if(typeof val.options_callback === 'string'){
+        console.log('val.options_callback', val.options_callback);
+        this[val.options_callback] = this.chat_model[val.options_callback].bind(this.chat_model);
+      }
       acc[new_key] = val;
       return acc;
     }, {});
@@ -46,12 +94,6 @@ export class SmartThread extends SmartSource {
     }
   }
   get_key() { return this.data.created_at; }
-  get chat_data_adapter() {
-    if(!this._chat_data_adapter) {
-      this._chat_data_adapter = new SmartThreadDataJsonAdapter(this);
-    }
-    return this._chat_data_adapter;
-  }
   async render(container=null) {
     if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
     this.component = await thread_template.call(this.env.smart_view, this);
@@ -70,6 +112,19 @@ export class SmartThread extends SmartSource {
   // should always be converted to openai compatible format in Smart Chat Model (for now)
   async parse_response(response) { return await this.chat_data_adapter.parse_response(response); }
   async to_request() { return await this.chat_data_adapter.to_request(); }
+  async complete() {
+    const request = await this.to_request();
+    const response = await this.chat_model.complete(request);
+    await this.new_response(response);
+  }
+  // GETTERS
+  get chat_data_adapter() {
+    if(!this._chat_data_adapter) {
+      this._chat_data_adapter = new SmartThreadDataOpenaiJsonAdapter(this);
+    }
+    return this._chat_data_adapter;
+  }
+  get chat_model() { return this.thread.chat_model; }
 }
 
 import { SmartBlocks, SmartBlock } from "smart-sources";
@@ -80,6 +135,9 @@ import { SmartBlocks, SmartBlock } from "smart-sources";
  * multiple same-role messages in a row.
  */
 export class SmartTurns extends SmartBlocks {
+  process_load_queue() {}
+  process_import_queue() {}
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.env.fs.sep : '') + 'multi' + this.env.fs.sep + 'chats'; }
 }
 import {template as turn_template} from "./components/turn.js";
 export class SmartTurn extends SmartBlock {
@@ -111,6 +169,9 @@ export class SmartTurn extends SmartBlock {
 }
 
 export class SmartMessages extends SmartBlocks {
+  process_load_queue() {}
+  process_import_queue() {}
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.env.fs.sep : '') + 'multi' + this.env.fs.sep + 'chats'; }
 }
 
 import {template as message_template} from "./components/message.js";
@@ -131,9 +192,10 @@ export class SmartMessage extends SmartBlock {
   get turn() { return this.source; }
   get thread() { return this.turn.thread; }
   get role() { return this.turn.role; }
-  init() {
+  async init() {
     this.thread.data.messages[this.key] = true;
     this.turn.data.messages[this.key] = true;
+    if(this.role === 'user') await this.thread.complete();
   }
   async render(container=null) {
     if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)

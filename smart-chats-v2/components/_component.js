@@ -37,7 +37,6 @@ export async function template(collection, thread) {
     `;
   const frag = create_document_fragment(main_html);
   const thread_container = frag.querySelector('.sc-chat-box');
-  const thread = collection.get(data.key);
   if (thread) await thread.render(thread_container);
   return post_process(collection, frag);
 }

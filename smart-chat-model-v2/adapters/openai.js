@@ -2,6 +2,7 @@ import { SmartChatModelApiAdapter } from "./_api.js";
 
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   parse_model_data(model_data) {
+    console.log('model_data', model_data);
     return model_data.data
       .filter(model => model.id.startsWith('gpt-') && !model.id.includes('-instruct'))
       .map(model => {
@@ -19,6 +20,11 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
       })
       .sort((a, b) => a.model_name.localeCompare(b.model_name))
     ;
+  }
+  get models_endpoint_method() { return 'GET'; }
+  async test_api_key() {
+    const models = await this.get_models();
+    return models.length > 0;
   }
 }
 // Manual model context for now since OpenAI doesn't provide this info in the API response

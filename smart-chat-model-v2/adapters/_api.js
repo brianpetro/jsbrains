@@ -48,7 +48,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       if(Array.isArray(this.platform.models)) return this.platform.models;
       else throw new Error("models_endpoint or models array is required in platforms.json");
     }
-    if(!refresh && this.platform_settings.models) return this.platform_settings.models; // return cached models if not refreshing
+    if(!refresh && this.platform_settings?.models) return this.platform_settings.models; // return cached models if not refreshing
     if(!this.api_key) {
       console.warn('No API key provided to retrieve models');
       return [];

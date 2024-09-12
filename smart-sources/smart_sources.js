@@ -183,7 +183,7 @@ export class SmartSources extends SmartEntities {
       console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
     }else console.log("Smart Connections: No items in import queue");
     this.env.links = this.build_links_map();
-    await this.env.smart_blocks.process_embed_queue(); // may need to be first
+    await this.env.smart_blocks?.process_embed_queue(); // may need to be first
     await this.process_embed_queue();
     await this.process_save_queue();
   }

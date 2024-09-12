@@ -28,6 +28,7 @@ export class SmartSettings {
     this._container = null;
     this.debouncer = {}; // debounce changes
   }
+  get rel_instance() { return this.opts.rel_instance ?? this; }
   get setting_class() { return this.opts.smart_setting_class; }
   get settings() { return this.main.settings; }
   set settings(settings) { this.main.settings = settings; }
@@ -36,6 +37,9 @@ export class SmartSettings {
     await Promise.all(Array.from(components).map(async (elm) => {
       await this.render_component(new this.setting_class(elm), elm);
     }));
+  }
+  get_callback_fx(callback_str) {
+    return this.rel_instance[callback_str];
   }
   async render_component(setting_elm, elm) {
     if (elm.dataset.name) setting_elm.setName(elm.dataset.name);
@@ -75,7 +79,7 @@ export class SmartSettings {
     } else if (elm.dataset.type === "dropdown") {
       const setting_value = this.get_setting(setting);
       const options = elm.dataset.optionsCallback
-        ? await this[elm.dataset.optionsCallback]()
+        ? await this.get_callback_fx(elm.dataset.optionsCallback)()
         : Object.entries(elm.dataset).reduce((acc, [k, v]) => {
           if (!k.startsWith('option')) return acc;
           const [value, name] = v.split("|");
@@ -85,7 +89,7 @@ export class SmartSettings {
       ;
       setting_elm.addDropdown(dropdown => {
         if(elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
-        options.forEach(option => dropdown.addOption(option.value, option.name, option.value === setting_value));
+        options.forEach(option => dropdown.addOption(option.value, option.name ?? option.value, option.value === setting_value));
         dropdown.onChange(async (value) => this.handle_on_change(setting, value, elm));
         dropdown.setValue(setting_value);
       });
@@ -98,7 +102,7 @@ export class SmartSettings {
             if (!confirm(confirmation_message)) return;
           }
           if (elm.dataset.href) this.open_url(elm.dataset.href);
-          if (elm.dataset.callback) this[elm.dataset.callback](setting, null, setting_elm);
+          if (elm.dataset.callback) this.get_callback_fx(elm.dataset.callback)(setting, null, setting_elm);
         });
       });
     } else if (elm.dataset.type === "toggle") {
@@ -150,7 +154,7 @@ export class SmartSettings {
         button.inputEl.addEventListener("click", (e) => {
           if (elm.dataset.btnCallback && typeof this[elm.dataset.btnCallback] === "function") this[elm.dataset.btnCallback](setting, null, setting_elm);
           else if (elm.dataset.btnHref) this.open_url(elm.dataset.btnHref);
-          else if (elm.dataset.callback && typeof this[elm.dataset.callback] === "function") this[elm.dataset.callback](setting, null, setting_elm);
+          else if (elm.dataset.callback && typeof this.get_callback_fx(elm.dataset.callback) === "function") this.get_callback_fx(elm.dataset.callback)(setting, null, setting_elm);
           else if (elm.dataset.href) this.open_url(elm.dataset.href);
           else console.error("No callback or href found for button.");
         });
@@ -171,12 +175,14 @@ export class SmartSettings {
       const changed = await this.update(setting, value, elm); // save setting
       console.log("setting changed: " + changed);
       if(changed && elm?.dataset.callback){ // call callback if setting changed
-        if(!this[elm.dataset.callback]) return console.error(`Callback ${elm.dataset.callback} not found.`);
-        this[elm.dataset.callback](setting, value, elm);
+        if(!this.get_callback_fx(elm.dataset.callback)) return console.error(`Callback ${elm.dataset.callback} not found.`);
+        this.get_callback_fx(elm.dataset.callback)(setting, value, elm);
       }
+      if(elm?.dataset.isScope) this.re_render();
       this.debouncer[setting] = null;
     }, 500);
   }
+  re_render() { this.opts['re_render']?.(); }
   get_setting(setting_path) {
     // should handle progress_labels.success.msg_vars.1
     const setting_keys = setting_path.split(".");
