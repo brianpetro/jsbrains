@@ -155,8 +155,11 @@ export class SmartEnv {
     this.smart_env_settings = new SmartEnvSettings(this, this.opts);
     await this.smart_env_settings.load();
     console.log('smart_env_settings', this.smart_env_settings);
+    await this.init_collections(); // init so settings can be accessed
     await this.ready_to_load_collections(main);
-    await this.init_collections();
+    if(!this.opts.prevent_load_on_init){ // remove when collection-specific opt is used in sc app
+      await this.load_collections(true);
+    }
     this.init_smart_change();
   }
   async ready_to_load_collections(main) {
@@ -167,11 +170,11 @@ export class SmartEnv {
     for(const key of Object.keys(this.opts.collections)){
       await this.opts.collections[key].init(this, this.opts);
     }
-    if(!this.opts.prevent_load_on_init) await this.load_collections();
   }
-  async load_collections(){
+  async load_collections(is_init=false){
     this.loading_collections = true;
     for(const key of Object.keys(this.opts.collections)){
+      if(is_init && this[key].opts.prevent_load_on_init) continue;
       if(typeof this[key]?.process_load_queue === 'function'){
         console.log('loading collection', key);
         await this[key].process_load_queue();
