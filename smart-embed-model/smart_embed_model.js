@@ -29,6 +29,7 @@ export class SmartEmbedModel extends SmartModel {
    * @param {object} opts - Full model configuration object or at least a model_key and adapter
    */
   constructor(env, opts={}) {
+    super(opts);
     this.env = env;
     this.opts = {
       ...embed_models[opts.embed_model_key],

@@ -39,6 +39,10 @@ export class SmartBlocks extends SmartEntities {
       ...settings_config,
     };
   }
+  // handled by sources
+  async process_save_queue() {
+    await this.env.smart_sources.process_save_queue();
+  }
 }
 
 export const settings_config = {
