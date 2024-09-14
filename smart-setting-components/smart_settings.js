@@ -22,7 +22,7 @@ export class SmartSettings {
   constructor(main, opts={}) {
     this.main = main;
     this.opts = {
-      ...(this.main.smart_env_opts || this.main.opts || {}),
+      ...(this.main.smart_env_config || this.main.opts || {}),
       ...opts,
     };
     this._container = null;

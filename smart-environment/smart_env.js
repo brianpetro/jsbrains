@@ -143,7 +143,7 @@ export class SmartEnv {
       } else {
         if (this.opts[key] !== undefined) {
           // console.warn(`SmartEnv: Overwriting existing property ${key} with ${value}`);
-          console.warn(`SmartEnv: Overwriting existing property ${key} with ${this.mains[this.mains.length-1]} smart_env_opts`);
+          console.warn(`SmartEnv: Overwriting existing property ${key} with ${this.mains[this.mains.length-1]} smart_env_config`);
         }
         this.opts[key] = value;
       }
@@ -192,16 +192,16 @@ export class SmartEnv {
   }
   unload_collections(main_key) {
     for(const key of Object.keys(this.collections)){
-      if(!this[main_key]?.smart_env_opts?.collections[key]) continue;
+      if(!this[main_key]?.smart_env_config?.collections[key]) continue;
       this[key]?.unload();
       this[key] = null;
     }
   }
   unload_opts(main_key) {
     for(const opts_key of Object.keys(this.opts)){
-      if(!this[main_key]?.smart_env_opts?.[opts_key]) continue;
+      if(!this[main_key]?.smart_env_config?.[opts_key]) continue;
       // if exists in another main, don't delete it
-      if(this.mains.filter(m => m !== main_key).some(m => this[m]?.smart_env_opts?.[opts_key])) continue;
+      if(this.mains.filter(m => m !== main_key).some(m => this[m]?.smart_env_config?.[opts_key])) continue;
       this.opts[opts_key] = null;
     }
   }

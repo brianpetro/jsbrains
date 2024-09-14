@@ -4,7 +4,7 @@ export class SmartViews {
     this.main = main;
     // support main as Main or Env
     this.opts = {
-      ...(this.main.smart_env_opts || this.main.opts || {}),
+      ...(this.main.smart_env_config || this.main.opts || {}),
       ...opts,
     };
   }

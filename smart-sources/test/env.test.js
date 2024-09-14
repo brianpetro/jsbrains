@@ -31,7 +31,7 @@ test('load_test_env initializes the environment correctly', t => {
 });
 
 test('SmartEnv is initialized with correct options', t => {
-    const env_opts = t.context.env.main.smart_env_opts;
+    const env_opts = t.context.env.main.smart_env_config;
     t.is(env_opts.env_data_dir, 'test');
     t.is(env_opts.smart_chunks_class, SmartChunks);
     t.is(env_opts.smart_collection_adapter_class, TestSmartCollectionAdapter);

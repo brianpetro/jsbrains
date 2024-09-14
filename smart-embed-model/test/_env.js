@@ -7,7 +7,7 @@ class TestMain {
   load_settings() { return {}; }
   save_settings() {}
   get settings() { return {}; }
-  get smart_env_opts() {
+  get smart_env_config() {
     return {
       env_path: __dirname,
       env_data_dir: 'test',
@@ -20,7 +20,7 @@ class TestMain {
 }
 export async function load_test_env(t) {
   const main = new TestMain();
-  const env = new SmartEnv(main, main.smart_env_opts);
+  const env = new SmartEnv(main, main.smart_env_config);
   // await env.init();
   await env.opts.smart_embed_model_class.load(env, {
     model_key: 'TaylorAI/bge-micro-v2',
