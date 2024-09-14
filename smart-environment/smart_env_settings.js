@@ -1,66 +1,106 @@
+/**
+ * Represents settings for the Smart Environment.
+ */
 export class SmartEnvSettings {
-  constructor(env, opts={}) {
+  /**
+   * Creates an instance of SmartEnvSettings.
+   * @param {Object} env - The environment object.
+   * @param {Object} [opts={}] - Configuration options.
+   * @param {Function} opts.smart_fs_class - The class to handle file system operations.
+   * @param {Function} opts.smart_fs_adapter_class - The adapter class for the file system.
+   * @param {string} opts.env_data_dir - The directory path for environment data.
+   */
+  constructor(env, opts = {}) {
     this.env = env;
-    if(!opts.smart_fs_class) throw new Error('smart_fs_class is required to instantiate SmartEnvSettings');
+    if (!opts.smart_fs_class) throw new Error('smart_fs_class is required to instantiate SmartEnvSettings');
     this.opts = opts;
     this._fs = null;
     this._settings = {};
     this._saved = false;
   }
+
+  /**
+   * Gets the current settings, wrapped with an observer to handle changes.
+   * @returns {Proxy} A proxy object that observes changes to the settings.
+   */
   get settings() { return observe_object(this._settings, (property, value, target) => this.save()); }
+
+  /**
+   * Sets the current settings.
+   * @param {Object} settings - The new settings to apply.
+   */
   set settings(settings) { this._settings = settings; }
-  async save(settings=null) {
-    if(settings) this._settings = settings;
+
+  /**
+   * Saves the current settings to the file system.
+   * @param {Object|null} [settings=null] - Optional settings to override the current settings before saving.
+   * @returns {Promise<void>} A promise that resolves when the settings have been saved.
+   */
+  async save(settings = null) {
+    if (settings) this._settings = settings;
     this._saved = false;
     const settings_keys = Object.keys(this._settings);
     const smart_env_settings = {};
-    for(const key of settings_keys){
-      if(this.env.mains.includes(key)){
+    for (const key of settings_keys) {
+      if (this.env.mains.includes(key)) {
         await this.env[key].save_settings(this._settings[key]);
-      }else{
+      } else {
         smart_env_settings[key] = this._settings[key];
         // TODO: decided: may check if present in main.settings and remove
       }
     }
-    if(!await this.fs.exists('')) await this.fs.mkdir('');
+    if (!await this.fs.exists('')) await this.fs.mkdir('');
     await this.fs.write(
       'smart_env.json',
       JSON.stringify(smart_env_settings, null, 2)
     );
     this._saved = true;
   }
+
+  /**
+   * Gets the file system instance, initializing it if necessary.
+   * @returns {Object} The file system instance.
+   */
   get fs() {
-    if(!this._fs) this._fs = new this.opts.smart_fs_class(this.env, {
+    if (!this._fs) this._fs = new this.opts.smart_fs_class(this.env, {
       adapter: this.opts.smart_fs_adapter_class,
       fs_path: this.opts.env_data_dir
     });
     return this._fs;
   }
+
+  /**
+   * Loads the settings from the file system.
+   * @returns {Promise<void>} A promise that resolves when the settings have been loaded.
+   */
   async load() {
-    if(!this.opts.env_data_dir) await this.get_env_data_dir();
-    if(!(await this.fs.exists('smart_env.json'))){
+    if (!this.opts.env_data_dir) await this.get_env_data_dir();
+    if (!(await this.fs.exists('smart_env.json'))) {
       // temp: check if .smart_env.json exists in old location
-      if(await this.fs.exists('.smart_env.json')){
+      if (await this.fs.exists('.smart_env.json')) {
         const old_settings = JSON.parse(await this.fs.read('.smart_env.json'));
         await this.save(old_settings);
         await this.fs.remove('.smart_env.json');
-      }else{
+      } else {
         await this.save({});
       }
     }
-    if(this.env.opts.default_settings) this._settings = this.env.opts.default_settings || {}; // set defaults if provided
+    if (this.env.opts.default_settings) this._settings = this.env.opts.default_settings || {}; // set defaults if provided
     deep_merge(this._settings, JSON.parse(await this.fs.read('smart_env.json'))); // load saved settings
     deep_merge(this._settings, this.env.opts?.smart_env_settings || {}); // overrides saved settings
-    for(const key of this.env.mains){
+    for (const key of this.env.mains) {
       this._settings[key] = await this.env[key].load_settings();
     }
     await this.load_obsidian_settings();
     this._saved = true;
   }
 
-  // TEMP: backwards compatibility
+  /**
+   * Loads settings specific to Obsidian for backwards compatibility.
+   * @returns {Promise<void>} A promise that resolves when Obsidian settings have been loaded.
+   */
   async load_obsidian_settings() {
-    if (this._settings.is_obsidian_vault) { 
+    if (this._settings.is_obsidian_vault) {
       const temp_fs = new this.env.opts.smart_fs_class(this.env, {
         adapter: this.env.opts.smart_fs_adapter_class,
         fs_path: this.env.opts.env_path || '',
@@ -76,30 +116,40 @@ export class SmartEnvSettings {
       }
     }
   }
+
+  /**
+   * Transforms settings to maintain backwards compatibility with older configurations.
+   * @param {Object} os - The old settings object to transform.
+   */
   transform_backwards_compatible_settings(os) {
-    if(os.smart_sources_embed_model){
-      if(!this._settings.smart_sources) this._settings.smart_sources = {};
-      if(!this._settings.smart_sources.embed_model_key) this._settings.smart_sources.embed_model_key = os.smart_sources_embed_model;
-      if(!this._settings.smart_sources.embed_model) this._settings.smart_sources.embed_model = {};
-      if(!this._settings.smart_sources.embed_model[os.smart_sources_embed_model]) this._settings.smart_sources.embed_model[os.smart_sources_embed_model] = {};
+    if (os.smart_sources_embed_model) {
+      if (!this._settings.smart_sources) this._settings.smart_sources = {};
+      if (!this._settings.smart_sources.embed_model_key) this._settings.smart_sources.embed_model_key = os.smart_sources_embed_model;
+      if (!this._settings.smart_sources.embed_model) this._settings.smart_sources.embed_model = {};
+      if (!this._settings.smart_sources.embed_model[os.smart_sources_embed_model]) this._settings.smart_sources.embed_model[os.smart_sources_embed_model] = {};
     }
-    if(os.smart_blocks_embed_model){
-      if(!this._settings.smart_blocks) this._settings.smart_blocks = {};
-      if(!this._settings.smart_blocks.embed_model_key) this._settings.smart_blocks.embed_model_key = os.smart_blocks_embed_model;
-      if(!this._settings.smart_blocks.embed_model) this._settings.smart_blocks.embed_model = {};
-      if(!this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model]) this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model] = {};
+    if (os.smart_blocks_embed_model) {
+      if (!this._settings.smart_blocks) this._settings.smart_blocks = {};
+      if (!this._settings.smart_blocks.embed_model_key) this._settings.smart_blocks.embed_model_key = os.smart_blocks_embed_model;
+      if (!this._settings.smart_blocks.embed_model) this._settings.smart_blocks.embed_model = {};
+      if (!this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model]) this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model] = {};
     }
-    if(os.api_key){
+    if (os.api_key) {
       Object.entries(this._settings.smart_sources?.embed_model || {}).forEach(([key, value]) => {
-        if(key.startsWith('text')) value.api_key = os.api_key;
-        if(os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
+        if (key.startsWith('text')) value.api_key = os.api_key;
+        if (os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
       });
       Object.entries(this._settings.smart_blocks?.embed_model || {}).forEach(([key, value]) => {
-        if(key.startsWith('text')) value.api_key = os.api_key;
-        if(os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
+        if (key.startsWith('text')) value.api_key = os.api_key;
+        if (os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
       });
     }
   }
+
+  /**
+   * Determines and sets the environment data directory.
+   * @returns {Promise<void>} A promise that resolves when the environment data directory has been set.
+   */
   async get_env_data_dir() {
     console.log("get_env_data_dir", this.env.opts.env_path);
     const temp_fs = new this.env.opts.smart_fs_class(this.env, {
@@ -109,7 +159,7 @@ export class SmartEnvSettings {
     const all = await temp_fs.list_recursive();
     let detected_env_data_folder = '.smart-env';
     all.forEach(file => {
-      if(file.name === 'smart_env.json'){
+      if (file.name === 'smart_env.json') {
         detected_env_data_folder = file.path.split(temp_fs.sep).slice(0, -1).join(temp_fs.sep);
         console.log("detected_env_data_folder", detected_env_data_folder);
       }
@@ -170,31 +220,31 @@ export function deep_merge(target, source) {
  * Creates a proxy object that calls a function when a property is changed.
  * @param {Object} obj - The object to observe.
  * @param {Function} on_change - The function to call when a property is changed.
- * @returns {Object} The proxy object.
+ * @returns {Proxy} The proxy object that observes changes.
  */
 function observe_object(obj, on_change) {
   function create_proxy(target) {
-      return new Proxy(target, {
-          set(target, property, value) {
-              if (target[property] !== value) {
-                  target[property] = value;
-                  on_change(property, value, target);
-              }
-              // If the value being set is an object or array, apply a proxy to it as well
-              if (typeof value === 'object' && value !== null) {
-                  target[property] = create_proxy(value);
-              }
-              return true;
-          },
-          get(target, property) {
-              const result = target[property];
-              // If a property is an object or array, apply a proxy to it
-              if (typeof result === 'object' && result !== null) {
-                  return create_proxy(result);
-              }
-              return result;
-          }
-      });
+    return new Proxy(target, {
+      set(target, property, value) {
+        if (target[property] !== value) {
+          target[property] = value;
+          on_change(property, value, target);
+        }
+        // If the value being set is an object or array, apply a proxy to it as well
+        if (typeof value === 'object' && value !== null) {
+          target[property] = create_proxy(value);
+        }
+        return true;
+      },
+      get(target, property) {
+        const result = target[property];
+        // If a property is an object or array, apply a proxy to it
+        if (typeof result === 'object' && result !== null) {
+          return create_proxy(result);
+        }
+        return result;
+      }
+    });
   }
 
   return create_proxy(obj);

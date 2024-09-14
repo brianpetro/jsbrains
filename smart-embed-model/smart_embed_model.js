@@ -32,6 +32,11 @@ export class SmartEmbedModel extends SmartModel {
     super(opts);
     this.env = env;
     this.opts = {
+      ...(
+        this.env.opts.modules.smart_embed_model?.class // if is module object (not class, has class key)
+        ? { ...this.env.opts.modules.smart_embed_model, class: null }
+        : {}
+      ),
       ...embed_models[opts.embed_model_key],
       ...opts,
     };
@@ -39,12 +44,14 @@ export class SmartEmbedModel extends SmartModel {
     // if(!this.opts.adapter) throw new Error('SmartEmbedModel adapter not set');
     if(!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
     // if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) throw new Error(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
-    if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    // if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    if(!this.env.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
     if(this.opts.adapter === 'transformers' && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
     // init adapter
-    this.adapter = new this.env.opts.smart_embed_adapters[this.opts.adapter](this);
+    // this.adapter = new this.env.opts.smart_embed_adapters[this.opts.adapter](this);
+    this.adapter = new this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter](this);
   }
   /**
    * Used to load a model with a given configuration.
