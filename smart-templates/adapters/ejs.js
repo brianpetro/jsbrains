@@ -1,4 +1,4 @@
-export class EjsSmartTemplateAdapter {
+export class SmartTemplateEjsAdapter {
   constructor(template) {
     this.template = template;
   }

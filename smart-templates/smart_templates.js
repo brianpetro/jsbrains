@@ -25,13 +25,14 @@ import { SmartTemplate } from './smart_template.js';
 export class SmartTemplates extends SmartSources {
   constructor(env, opts = {}) {
     super(env, opts);
-    this.template_adapters = {};
     this.default_output_mode = opts.default_output_mode || 'append-blocks';
     this.max_content_length = opts.max_content_length || 10000;
-    this.template_adapters = opts.template_adapters || {};
     console.log("SmartTemplates: constructor");
     console.log("opts", opts);
     console.log("env", env);
+  }
+  get template_adapters() {
+    return this.opts.template_adapters || {};
   }
   static async load(env, opts = {}) {
     // prevent load of sources 

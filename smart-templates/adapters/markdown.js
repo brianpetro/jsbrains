@@ -1,4 +1,4 @@
-export class MarkdownSmartTemplateAdapter {
+export class SmartTemplateMarkdownAdapter {
   constructor(template) {
     this.template = template;
   }
