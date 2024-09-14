@@ -10,7 +10,7 @@ const class_to_collection_name = {
   'SmartDirectory': 'smart_directories',
 };
 
-export class MultiFileSmartCollectionDataAdapter extends SmartCollectionDataAdapter {
+export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdapter {
   get fs() { return this.collection.data_fs || this.env.smart_env_settings.fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
@@ -190,7 +190,7 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
 
 
 /**
- * @deprecated use MultiFileSmartCollectionDataAdapter
+ * @deprecated use SmartCollectionMultiFileDataAdapter
  */
 export class MultiFileSmartCollectionsAdapter {
 

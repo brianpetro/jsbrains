@@ -18,8 +18,6 @@ export class Collection {
     this.env[this.collection_name] = this;
     this.config = this.env.config;
     this.items = {};
-    if (this.opts.smart_collection_adapter_class) this.adapter = new this.opts.smart_collection_adapter_class(this);
-    else if(this.opts.adapter_class) this.adapter = new opts.adapter_class(this); // DEPRECATED: use smart_collection_adapter_class instead
     this.merge_defaults();
     this.filter_results_ct = 0;
   }
@@ -201,26 +199,38 @@ export class Collection {
    */
   get item_type() { return this.env.item_types[this.item_class_name]; }
 
+
+  // may be moved to SmartSources (should not be needed in this or SmartEntities)
+  get fs() { return this.env.fs; }
+
+  // DATA ADAPTER
+  get data_adapter() {
+    if(!this._data_adapter) this._data_adapter = new this.data_adapter_class(this);
+    return this._data_adapter;
+  }
+  get data_adapter_class() {
+    return this.opts.data_adapter
+      ?? this.env.opts.collections?.smart_collections?.data_adapter
+      ?? this.opts.smart_collection_adapter_class
+      ?? this.opts.adapter_class // DEPRECATED: use smart_collection_adapter_class instead
+    ;
+  }
+  /**
+   * @deprecated use data_adapter instead (2024-09-14)
+   */
+  get adapter(){ return this.data_adapter; }
   /**
    * Gets the data path from the environment.
    * @deprecated use env.settings.env_data_dir
    * @returns {string} The data path.
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
-
-  // may be moved to SmartSources (should not be needed in this or SmartEntities)
-  get fs() { return this.env.fs; }
-
   // ADAPTER METHODS
   /**
    * Saves the current state of the collection.
    */
-  async save() { await this.adapter.save(); }
+  async save() { await this.data_adapter.save(); }
   async save_queue() { await this.process_save_queue(); }
-  get data_adapter() {
-    if(!this._data_adapter) this._data_adapter = new this.env.opts.smart_collection_adapter_class(this);
-    return this._data_adapter;
-  }
 
   // UTILITY METHODS
   /**

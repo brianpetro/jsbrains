@@ -1,5 +1,5 @@
 /**
- * ObsidianSmartFsAdapter class
+ * SmartFsObsidianAdapter class
  * 
  * This class provides an adapter for the Obsidian vault adapter to work with SmartFs.
  * It wraps Obsidian vault adapter methods for file system operations.
@@ -7,9 +7,9 @@
  * @class
  * @classdesc Adapter for Obsidian vault file system operations compatible with SmartFs
  */
-export class ObsidianSmartFsAdapter {
+export class SmartFsObsidianAdapter {
   /**
-   * Create an ObsidianSmartFsAdapter instance
+   * Create an SmartFsObsidianAdapter instance
    * 
    * @param {Object} smart_fs - The SmartFs instance
    */
