@@ -37,7 +37,7 @@ export class SmartEmbedModel extends SmartModel {
         ? { ...this.env.opts.modules.smart_embed_model, class: null }
         : {}
       ),
-      ...embed_models[opts.embed_model_key],
+      ...embed_models[opts.model_key],
       ...opts,
     };
     console.log(this.opts);
@@ -45,7 +45,7 @@ export class SmartEmbedModel extends SmartModel {
     if(!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
     // if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) throw new Error(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     // if(!this.env.opts.smart_embed_adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
-    if(!this.env.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    if(!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
     if(this.opts.adapter === 'transformers' && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
@@ -62,7 +62,7 @@ export class SmartEmbedModel extends SmartModel {
     try {
       const model = new SmartEmbedModel(env, opts);
       await model.adapter.load();
-      env.smart_embed_active_models[opts.embed_model_key] = model;
+      env.smart_embed_active_models[opts.model_key] = model;
       return model;
     } catch (error) {
       console.error(`Error loading model ${opts.model_key}:`, error);
@@ -106,13 +106,13 @@ export class SmartEmbedModel extends SmartModel {
 
   get settings_config() { return this.process_settings_config(settings_config); }
   process_setting_key(key) {
-    return key.replace(/\[EMBED_MODEL\]/g, this.embed_model_key);
+    return key.replace(/\[EMBED_MODEL\]/g, this.opts.model_key);
   }
 
 }
 
 export const settings_config = {
-  embed_model_key: {
+  model_key: {
     name: 'Embedding Model',
     type: "dropdown",
     description: "Select an embedding model.",

@@ -44,7 +44,10 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
         await new Promise(resolve => this.iframe.onload = resolve);
 
         // Initialize the model in the iframe
-        await this._send_message('load', this.smart_embed.opts);
+        await this._send_message('load', {
+            ...this.smart_embed.opts,
+            adapters: null, // cannot clone classes
+        });
         return new Promise(resolve => {
             const check_model_loaded = () => {
                 if (this.smart_embed.model_loaded) {

@@ -122,27 +122,36 @@ export class SmartEnvSettings {
    * @param {Object} os - The old settings object to transform.
    */
   transform_backwards_compatible_settings(os) {
+    if(this._settings.smart_sources.embed_model_key){
+      if(!this._settings.smart_sources.embed_model) this._settings.smart_sources.embed_model = {};
+      this._settings.smart_sources.embed_model.model_key = this._settings.smart_sources.embed_model_key;
+      delete this._settings.smart_sources.embed_model_key;
+    }
     if (os.smart_sources_embed_model) {
       if (!this._settings.smart_sources) this._settings.smart_sources = {};
-      if (!this._settings.smart_sources.embed_model_key) this._settings.smart_sources.embed_model_key = os.smart_sources_embed_model;
       if (!this._settings.smart_sources.embed_model) this._settings.smart_sources.embed_model = {};
+      if (!this._settings.smart_sources.embed_model.model_key) this._settings.smart_sources.embed_model.model_key = os.smart_sources_embed_model;
       if (!this._settings.smart_sources.embed_model[os.smart_sources_embed_model]) this._settings.smart_sources.embed_model[os.smart_sources_embed_model] = {};
+      delete os.smart_sources_embed_model;
     }
     if (os.smart_blocks_embed_model) {
       if (!this._settings.smart_blocks) this._settings.smart_blocks = {};
-      if (!this._settings.smart_blocks.embed_model_key) this._settings.smart_blocks.embed_model_key = os.smart_blocks_embed_model;
       if (!this._settings.smart_blocks.embed_model) this._settings.smart_blocks.embed_model = {};
+      if (!this._settings.smart_blocks.embed_model.model_key) this._settings.smart_blocks.embed_model.model_key = os.smart_blocks_embed_model;
       if (!this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model]) this._settings.smart_blocks.embed_model[os.smart_blocks_embed_model] = {};
+      delete os.smart_blocks_embed_model;
     }
     if (os.api_key) {
       Object.entries(this._settings.smart_sources?.embed_model || {}).forEach(([key, value]) => {
         if (key.startsWith('text')) value.api_key = os.api_key;
-        if (os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
+        if (os.embed_input_min_chars && typeof value === 'object' && !value.min_chars) value.min_chars = os.embed_input_min_chars;
       });
       Object.entries(this._settings.smart_blocks?.embed_model || {}).forEach(([key, value]) => {
         if (key.startsWith('text')) value.api_key = os.api_key;
-        if (os.embed_input_min_chars && !value.min_chars) value.min_chars = os.embed_input_min_chars;
+        if (os.embed_input_min_chars && typeof value === 'object' && !value.min_chars) value.min_chars = os.embed_input_min_chars;
       });
+      delete os.api_key;
+      delete os.embed_input_min_chars;
     }
   }
 

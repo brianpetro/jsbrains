@@ -33,7 +33,7 @@ export class SmartEntities extends Collection {
       return;
     }
     await this.env.opts.smart_embed_model_class.load(this.env, {
-      embed_model_key: this.embed_model_key,
+      model_key: this.embed_model_key,
       ...this.embed_model_opts
     });
   }
@@ -44,7 +44,7 @@ export class SmartEntities extends Collection {
     }
   }
   get embed_model_key() {
-    return this.env.settings?.[this.collection_name]?.embed_model_key
+    return this.env.settings?.[this.collection_name]?.embed_model?.model_key
       || this.env.settings?.[this.collection_name + "_embed_model"] // DEPRECATED: backwards compatibility
       || "TaylorAI/bge-micro-v2"
     ;

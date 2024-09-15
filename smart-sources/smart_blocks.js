@@ -33,25 +33,8 @@ export class SmartBlocks extends SmartEntities {
     return block;
   }
 
-  get settings_config(){
-    return {
-      ...super.settings_config,
-      ...settings_config,
-    };
-  }
   // handled by sources
   async process_save_queue() {
     await this.env.smart_sources.process_save_queue();
   }
-}
-
-export const settings_config = {
-  embed_model_key: {
-    name: 'Embedding Model',
-    type: "dropdown",
-    description: "Select an embedding model.",
-    options_callback: 'get_block_embedding_model_options',
-    callback: 'restart',
-    // required: true
-  },
 }
