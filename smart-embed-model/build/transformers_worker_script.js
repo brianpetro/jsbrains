@@ -5,8 +5,12 @@ let model = null;
 let smart_env = {
   smart_embed_active_models: {},
   opts: {
-    smart_embed_adapters: {
-      transformers: SmartEmbedTransformersAdapter
+    modules: {
+      smart_embed_model: {
+        adapters: {
+          transformers: SmartEmbedTransformersAdapter
+        }
+      }
     }
   }
 }

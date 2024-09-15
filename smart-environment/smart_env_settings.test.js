@@ -21,8 +21,10 @@ class MockEnv {
   constructor() {
     this.mock_main = new MockMain();
     this.mains = ["mock_main"];
-    this.smart_fs_class = SmartFs;
-    this.smart_fs_adapter_class = TestSmartFsAdapter;
+    this.opts.modules.smart_fs = {
+      class: SmartFs,
+      adapter: TestSmartFsAdapter,
+    };
   }
 }
 

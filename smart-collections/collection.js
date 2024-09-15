@@ -205,15 +205,15 @@ export class Collection {
 
   // DATA ADAPTER
   get data_adapter() {
-    if(!this._data_adapter) this._data_adapter = new this.data_adapter_class(this);
+    if(!this._data_adapter){
+      const config = this.env.opts.collections?.[this.collection_name];
+      const data_adapter_class = config?.data_adapter
+        ?? this.env.opts.collections?.smart_collections?.data_adapter
+      ;
+      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_name + " or smart_collections");
+      this._data_adapter = new data_adapter_class(this);
+    }
     return this._data_adapter;
-  }
-  get data_adapter_class() {
-    return this.opts.data_adapter
-      ?? this.env.opts.collections?.smart_collections?.data_adapter
-      ?? this.opts.smart_collection_adapter_class
-      ?? this.opts.adapter_class // DEPRECATED: use smart_collection_adapter_class instead
-    ;
   }
   /**
    * @deprecated use data_adapter instead (2024-09-14)

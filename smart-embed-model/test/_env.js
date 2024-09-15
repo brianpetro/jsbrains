@@ -11,9 +11,13 @@ class TestMain {
     return {
       env_path: __dirname,
       env_data_dir: 'test',
-      smart_embed_model_class: SmartEmbedModel,
-      smart_embed_adapters: {
-        transformers: SmartEmbedTransformersAdapter,
+      modules: {
+        smart_embed_model: {
+          class: SmartEmbedModel,
+          adapters: {
+            transformers: SmartEmbedTransformersAdapter,
+          },
+        },
       },
     };
   }
@@ -22,7 +26,7 @@ export async function load_test_env(t) {
   const main = new TestMain();
   const env = new SmartEnv(main, main.smart_env_config);
   // await env.init();
-  await env.opts.smart_embed_model_class.load(env, {
+  await env.opts.modules.smart_embed_model.class.load(env, {
     model_key: 'TaylorAI/bge-micro-v2',
   });
   t.context.env = env;

@@ -14,33 +14,41 @@ export class SmartEntities extends Collection {
     this.total_tokens = 0;
     this.total_time = 0;
   }
+  get smart_chunks() {
+    if(!this._smart_chunks) {
+      const config = this.env.opts.modules.smart_chunks;
+      const _class = config?.class ?? config;
+      if(!_class) throw new Error("No class in `env.opts.modules.smart_chunks`");
+      this._smart_chunks = new _class(this, {
+        ...this.env.settings,
+        skip_blocks_with_headings_only: true
+      });
+    }
+    return this._smart_chunks;
+  }
   async init() {
     await super.init();
-    this.smart_chunks = new this.env.opts.smart_chunks_class(this, {
-      ...this.env.settings,
-      skip_blocks_with_headings_only: true
-    });
     await this.load_smart_embed();
-    if (!this.smart_embed) {
+    if (!this.embed_model) {
       console.log(`SmartEmbed not loaded for ${this.collection_name}. Continuing without embedding capabilities.`);
     }
   }
   async load_smart_embed() {
     if(this.embed_model_key === 'None') return;
-    if(this.smart_embed) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
-    if (!this.env.opts.smart_embed_model_class) {
-      console.log("smart_embed_model_class must be included in the `env.opts` property");
+    if(this.embed_model) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
+    if (!this.env.opts.modules.smart_embed_model.class) {
+      console.log("smart_embed_model must be included in the `env.opts.modules` property");
       return;
     }
-    await this.env.opts.smart_embed_model_class.load(this.env, {
+    await this.env.opts.modules.smart_embed_model.class.load(this.env, {
       model_key: this.embed_model_key,
       ...this.embed_model_opts
     });
   }
   unload() {
-    if (typeof this.smart_embed?.unload === 'function') {
-      this.smart_embed.unload();
-      this.smart_embed = null; // uses setter to update env.smart_embed_active_models
+    if (typeof this.embed_model?.unload === 'function') {
+      this.embed_model.unload();
+      this.embed_model = null; // uses setter to update env.smart_embed_active_models
     }
   }
   get embed_model_key() {

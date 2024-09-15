@@ -96,11 +96,15 @@ export class SmartEnv {
   get collections() { return this.opts.collections; }
   get ejs() { return this.opts.ejs; }
   get fs() {
-    if(!this.smart_fs) this.smart_fs = new this.opts.smart_fs_class(this, {
-      adapter: this.opts.smart_fs_adapter_class,
-      fs_path: this.opts.env_path || '',
-      exclude_patterns: this.excluded_patterns || [],
-    });
+    if(!this.smart_fs){
+      const fs_config = this.opts.modules.smart_fs;
+      const fs_class = fs_config?.class ?? fs_config;
+      this.smart_fs = new fs_class(this, {
+        adapter: fs_config.adapter,
+        fs_path: this.opts.env_path || '',
+        exclude_patterns: this.excluded_patterns || [],
+      });
+    }
     return this.smart_fs;
   }
   get item_types() { return this.opts.item_types; }

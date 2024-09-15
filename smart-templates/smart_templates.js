@@ -38,7 +38,7 @@ export class SmartTemplates extends SmartSources {
     // prevent load of sources 
     const templates_collection_opts = {
       ...opts,
-      adapter_class: env.opts.smart_collection_adapter_class,
+      adapter_class: env.opts.collections.smart_templates.data_adapter,
       custom_collection_name: 'smart_templates',
     };
     if(env.opts.env_path) templates_collection_opts.env_path = env.opts.env_path;

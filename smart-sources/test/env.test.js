@@ -33,12 +33,12 @@ test('load_test_env initializes the environment correctly', t => {
 test('SmartEnv is initialized with correct options', t => {
     const env_opts = t.context.env.main.smart_env_config;
     t.is(env_opts.env_data_dir, 'test');
-    t.is(env_opts.smart_chunks_class, SmartChunks);
-    t.is(env_opts.smart_collection_adapter_class, TestSmartCollectionAdapter);
-    t.is(env_opts.smart_embed_model_class, SmartEmbedModel);
-    t.is(env_opts.smart_fs_class, SmartFs);
-    t.is(env_opts.smart_fs_adapter_class, TestSmartFsAdapter);
+    t.is(env_opts.modules.smart_chunks, SmartChunks);
+    t.is(env_opts.modules.smart_embed_model, SmartEmbedModel);
+    t.is(env_opts.modules.smart_fs.class, SmartFs);
+    t.is(env_opts.modules.smart_fs.adapter, TestSmartFsAdapter);
     t.is(env_opts.collections.smart_sources, SmartSources);
+    t.is(env_opts.collections.smart_sources.adapter_class, TestSmartCollectionAdapter);
     t.is(env_opts.collections.smart_blocks, SmartBlocks);
     t.is(env_opts.item_types.SmartSource, SmartSource);
     t.is(env_opts.item_types.SmartBlock, SmartBlock);

@@ -22,13 +22,19 @@ class TestMain {
     return {
       env_path: __dirname,
       env_data_dir: 'test',
-      smart_chunks_class: SmartChunks,
-      smart_collection_adapter_class: TestSmartCollectionAdapter,
-      smart_embed_model_class: SmartEmbedModel,
-      smart_fs_class: SmartFs,
-      smart_fs_adapter_class: TestSmartFsAdapter,
+      modules: {
+        smart_chunks: SmartChunks,
+        smart_embed_model: SmartEmbedModel,
+        smart_fs: {
+          class: SmartFs,
+          adapter: TestSmartFsAdapter,
+        }
+      },
       collections: {
-        smart_sources: SmartSources,
+        smart_sources: {
+          class: SmartSources,
+          data_adapter: TestSmartCollectionAdapter,
+        },
         smart_blocks: SmartBlocks,
         smart_directories: SmartDirectories,
       },

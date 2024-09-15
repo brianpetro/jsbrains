@@ -131,12 +131,12 @@ var SmartEmbedModel = class _SmartEmbedModel {
     console.log(this.opts);
     if (!this.opts.adapter)
       return console.warn("SmartEmbedModel adapter not set");
-    if (!this.env.opts.smart_embed_adapters[this.opts.adapter])
+    if (!this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter])
       return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
     if (this.opts.adapter === "transformers" && this.opts.use_gpu)
       this.opts.batch_size = this.opts.gpu_batch_size || 10;
-    this.adapter = new this.env.opts.smart_embed_adapters[this.opts.adapter](this);
+    this.adapter = new this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter](this);
   }
   /**
    * Used to load a model with a given configuration.
@@ -291,8 +291,12 @@ var model = null;
 var smart_env = {
   smart_embed_active_models: {},
   opts: {
-    smart_embed_adapters: {
-      transformers: SmartEmbedTransformersAdapter
+    modules: {
+      smart_embed_model: {
+        adapters: {
+          transformers: SmartEmbedTransformersAdapter
+        }
+      }
     }
   }
 };

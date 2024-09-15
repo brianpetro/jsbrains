@@ -6,13 +6,11 @@ export class SmartEnvSettings {
    * Creates an instance of SmartEnvSettings.
    * @param {Object} env - The environment object.
    * @param {Object} [opts={}] - Configuration options.
-   * @param {Function} opts.smart_fs_class - The class to handle file system operations.
-   * @param {Function} opts.smart_fs_adapter_class - The adapter class for the file system.
    * @param {string} opts.env_data_dir - The directory path for environment data.
    */
   constructor(env, opts = {}) {
     this.env = env;
-    if (!opts.smart_fs_class) throw new Error('smart_fs_class is required to instantiate SmartEnvSettings');
+    if (!opts.modules.smart_fs) throw new Error('smart_fs is required in smart_env_config');
     this.opts = opts;
     this._fs = null;
     this._settings = {};
@@ -62,10 +60,14 @@ export class SmartEnvSettings {
    * @returns {Object} The file system instance.
    */
   get fs() {
-    if (!this._fs) this._fs = new this.opts.smart_fs_class(this.env, {
-      adapter: this.opts.smart_fs_adapter_class,
-      fs_path: this.opts.env_data_dir
-    });
+    if (!this._fs){
+      const config = this.opts.modules.smart_fs;
+      const _class = config?.class ?? config;
+      this._fs = new _class(this.env, {
+        adapter: config.adapter,
+        fs_path: this.opts.env_data_dir
+      });
+    }
     return this._fs;
   }
 
@@ -101,8 +103,10 @@ export class SmartEnvSettings {
    */
   async load_obsidian_settings() {
     if (this._settings.is_obsidian_vault) {
-      const temp_fs = new this.env.opts.smart_fs_class(this.env, {
-        adapter: this.env.opts.smart_fs_adapter_class,
+      const config = this.opts.modules.smart_fs;
+      const _class = config?.class ?? config;
+      const temp_fs = new _class(this.env, {
+        adapter: config.adapter,
         fs_path: this.env.opts.env_path || '',
       });
       let obsidian_folder = '.obsidian'; // TODO check smart_env.json for obsidian_folder setting
@@ -161,8 +165,10 @@ export class SmartEnvSettings {
    */
   async get_env_data_dir() {
     console.log("get_env_data_dir", this.env.opts.env_path);
-    const temp_fs = new this.env.opts.smart_fs_class(this.env, {
-      adapter: this.env.opts.smart_fs_adapter_class,
+    const fs_config = this.opts.modules.smart_fs;
+    const fs_class = fs_config?.class ?? fs_config;
+    const temp_fs = new fs_class(this.env, {
+      adapter: fs_config.adapter,
       fs_path: this.env.opts.env_path || '',
     });
     const all = await temp_fs.list_recursive();
