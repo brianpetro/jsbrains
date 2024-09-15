@@ -6,7 +6,7 @@ import { SmartCollectionItemDataAdapter } from './_adapter.js';
 
 
 // DO: replace this better way in future
-const class_to_collection_name = {
+const class_to_collection_key = {
   'SmartSource': 'smart_sources',
   'SmartBlock': 'smart_blocks',
   'SmartDirectory': 'smart_directories',
@@ -20,7 +20,7 @@ export class SingleFileSmartCollectionDataAdapter extends SmartCollectionItemDat
   /**
    * @returns {string} The data path for .ajson file.
    */
-  get data_path() { return this.data_folder + this.fs.sep + this.collection_name + '.ajson'; }
+  get data_path() { return this.data_folder + this.fs.sep + this.collection_key + '.ajson'; }
 
   /**
    * Asynchronously loads collection item data from .ajson file specified by data_path.
@@ -49,7 +49,7 @@ export class SingleFileSmartCollectionDataAdapter extends SmartCollectionItemDat
           rebuilt_ajson[index] = `${JSON.stringify(ajson_key)}: ${JSON.stringify(value)}`;
           const [class_name, ...key_parts] = ajson_key.split(":");
           const entity_key = key_parts.join(":"); // key is file path
-          const collection = this.env[class_to_collection_name[class_name]];
+          const collection = this.env[class_to_collection_key[class_name]];
           if(!collection) return console.warn(`Collection class not found: ${class_name}`);
           if(collection.items[entity_key]) collection.items[entity_key].data = value;
           else collection.items[entity_key] = new this.env.item_types[class_name](this.env, value);
@@ -58,7 +58,7 @@ export class SingleFileSmartCollectionDataAdapter extends SmartCollectionItemDat
       const rebuilt_ajson_str = rebuilt_ajson.join('\n');
       if(data_ajson !== rebuilt_ajson_str) await this.fs.write(this.data_path, rebuilt_ajson_str);
     } catch (err) {
-      console.warn("Error loading collection: ", this.collection_name);
+      console.warn("Error loading collection: ", this.collection_key);
       console.warn(err.stack);
     } finally {
       this.collection.is_loading = false;

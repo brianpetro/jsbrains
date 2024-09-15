@@ -14,24 +14,24 @@ export class Collection {
   constructor(env, opts = {}) {
     this.env = env;
     this.opts = opts;
-    if(opts.custom_collection_name) this.collection_name = opts.custom_collection_name;
-    this.env[this.collection_name] = this;
+    if(opts.custom_collection_key) this.collection_key = opts.custom_collection_key;
+    this.env[this.collection_key] = this;
     this.config = this.env.config;
     this.items = {};
     this.merge_defaults();
     this.filter_results_ct = 0;
   }
   static async init(env, opts = {}) {
-    env[this.collection_name] = new this(env, opts);
-    await env[this.collection_name].init();
-    env.collections[this.collection_name] = 'init';
+    env[this.collection_key] = new this(env, opts);
+    await env[this.collection_key].init();
+    env.collections[this.collection_key] = 'init';
   }
 
   /**
    * Gets the collection name derived from the class name.
    * @return {String} The collection name.
    */
-  static get collection_name() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+  static get collection_key() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
 
   // INSTANCE METHODS
   async init() {}
@@ -172,8 +172,8 @@ export class Collection {
    * Gets or sets the collection name. If a name is set, it overrides the default name.
    * @param {String} name - The new collection name.
    */
-  get collection_name() { return (this._collection_name) ? this._collection_name : this.constructor.collection_name; }
-  set collection_name(name) { this._collection_name = name; }
+  get collection_key() { return (this._collection_key) ? this._collection_key : this.constructor.collection_key; }
+  set collection_key(name) { this._collection_key = name; }
   /**
    * Gets the keys of the items in the collection.
    * @return {String[]} The keys of the items.
@@ -207,11 +207,11 @@ export class Collection {
   // DATA ADAPTER
   get data_adapter() {
     if(!this._data_adapter){
-      const config = this.env.opts.collections?.[this.collection_name];
+      const config = this.env.opts.collections?.[this.collection_key];
       const data_adapter_class = config?.data_adapter
         ?? this.env.opts.collections?.smart_collections?.data_adapter
       ;
-      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_name + " or smart_collections");
+      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_key + " or smart_collections");
       this._data_adapter = new data_adapter_class(this);
     }
     return this._data_adapter;
@@ -241,7 +241,7 @@ export class Collection {
   merge_defaults() {
     let current_class = this.constructor;
     while (current_class) { // merge collection config into item config
-      const col_conf = this.config?.collections?.[current_class.collection_name];
+      const col_conf = this.config?.collections?.[current_class.collection_key];
       Object.entries((typeof col_conf === 'object') ? col_conf : {})
         .forEach(([key, value]) => this[key] = value)
       ;
@@ -249,39 +249,39 @@ export class Collection {
     }
   }
   async process_save_queue() {
-    this.notices?.show('saving', "Saving " + this.collection_name + "...", { timeout: 0 });
+    this.notices?.show('saving', "Saving " + this.collection_key + "...", { timeout: 0 });
     if(this._saving) return console.log("Already saving");
     this._saving = true;
     setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
     const save_queue = Object.values(this.items).filter(item => item._queue_save);
-    console.log("Saving " + this.collection_name + ": ", save_queue.length + " items");
+    console.log("Saving " + this.collection_key + ": ", save_queue.length + " items");
     const time_start = Date.now();
     await Promise.all(save_queue.map(item => item.save()));
-    console.log("Saved " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
+    console.log("Saved " + this.collection_key + " in " + (Date.now() - time_start) + "ms");
     this._saving = false;
     this.notices?.remove('saving');
   }
   async process_load_queue() {
-    this.notices?.show('loading', "Loading " + this.collection_name + "...", { timeout: 0 });
+    this.notices?.show('loading', "Loading " + this.collection_key + "...", { timeout: 0 });
     if(this._loading) return console.log("Already loading");
     this._loading = true;
     setTimeout(() => { this._loading = false; }, 10000); // set _loading to false after 10 seconds
     const load_queue = Object.values(this.items).filter(item => item._queue_load);
-    console.log("Loading " + this.collection_name + ": ", load_queue.length + " items");
+    console.log("Loading " + this.collection_key + ": ", load_queue.length + " items");
     const time_start = Date.now();
     const batch_size = 100;
     for (let i = 0; i < load_queue.length; i += batch_size) {
       const batch = load_queue.slice(i, i + batch_size);
       await Promise.all(batch.map(item => item.load()));
     }
-    this.env.collections[this.collection_name] = 'loaded';
-    console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
+    this.env.collections[this.collection_key] = 'loaded';
+    console.log("Loaded " + this.collection_key + " in " + (Date.now() - time_start) + "ms");
     this._loading = false;
     this.loaded = true;
     this.notices?.remove('loading');
   }
   get settings_config() { return this.process_settings_config({}); }
-  process_settings_config(_settings_config, prefix = this.collection_name) {
+  process_settings_config(_settings_config, prefix = this.collection_key) {
     return Object.entries(_settings_config)
       .reduce((acc, [key, val]) => {
         if (val.conditional) {
@@ -297,10 +297,10 @@ export class Collection {
   process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
   get default_settings() { return {}; }
   get settings() {
-    if(!this.env.settings[this.collection_name]){
-      this.env.settings[this.collection_name] = this.default_settings;
+    if(!this.env.settings[this.collection_key]){
+      this.env.settings[this.collection_key] = this.default_settings;
     }
-    return this.env.settings[this.collection_name];
+    return this.env.settings[this.collection_key];
   }
   
   // TODO REPLACE WITH COMPONENTS ARCHITECTURE
@@ -315,6 +315,6 @@ export class Collection {
       .map(([attr, value]) => `data-${attr.replace(/_/g, '-')}="${value}"`)
       .join('\n')
     ;
-    return `<div class="setting-component"\ndata-setting="${this.collection_name}.${setting_name}"\n${attributes}\n></div>`;
+    return `<div class="setting-component"\ndata-setting="${this.collection_key}.${setting_name}"\n${attributes}\n></div>`;
   }
 }

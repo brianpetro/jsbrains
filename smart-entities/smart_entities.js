@@ -30,7 +30,7 @@ export class SmartEntities extends Collection {
     await super.init();
     await this.load_smart_embed();
     if (!this.embed_model) {
-      console.log(`SmartEmbed not loaded for ${this.collection_name}. Continuing without embedding capabilities.`);
+      console.log(`SmartEmbed not loaded for ${this.collection_key}. Continuing without embedding capabilities.`);
     }
   }
   async load_smart_embed() {
@@ -52,13 +52,13 @@ export class SmartEntities extends Collection {
     }
   }
   get embed_model_key() {
-    return this.env.settings?.[this.collection_name]?.embed_model?.model_key
-      || this.env.settings?.[this.collection_name + "_embed_model"] // DEPRECATED: backwards compatibility
+    return this.env.settings?.[this.collection_key]?.embed_model?.model_key
+      || this.env.settings?.[this.collection_key + "_embed_model"] // DEPRECATED: backwards compatibility
       || "TaylorAI/bge-micro-v2"
     ;
   }
   get embed_model_opts() {
-    return this.env.settings?.[this.collection_name]?.embed_model?.[this.embed_model_key] || {};
+    return this.env.settings?.[this.collection_key]?.embed_model?.[this.embed_model_key] || {};
   }
   get smart_embed_container() {
     if (!this.model_instance_id) return console.log('model_key not set');
@@ -92,11 +92,11 @@ export class SmartEntities extends Collection {
       }, { min: 0, items: new Set() });
     return Array.from(nearest.items);
   }
-  get file_name() { return this.collection_name + '-' + this.smart_embed_model_key.split("/").pop(); }
+  get file_name() { return this.collection_key + '-' + this.smart_embed_model_key.split("/").pop(); }
   get smart_embed_model_key() {
     return (
-      this.env.settings?.[this.collection_name]?.embed_model
-      || this.env.settings?.[this.collection_name + "_embed_model"] // DEPRECATED: backwards compatibility
+      this.env.settings?.[this.collection_key]?.embed_model
+      || this.env.settings?.[this.collection_key + "_embed_model"] // DEPRECATED: backwards compatibility
       || "None"
     );
   }
@@ -201,7 +201,7 @@ export class SmartEntities extends Collection {
     // console.log("nearest after std dev slice", top_k.length);
     // top_k = sort_by_len_adjusted_similarity(top_k); // tested
     // console.log(top_k);
-    console.log(`Found and returned ${top_k.length} ${this.collection_name}.`);
+    console.log(`Found and returned ${top_k.length} ${this.collection_key}.`);
     return top_k;
   }
   get embed_model_settings_config() {
@@ -228,12 +228,12 @@ export class SmartEntities extends Collection {
   
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async process_embed_queue() {
-    if(!this.smart_embed) return console.log(`Smart Connections: No active embedding model for ${this.collection_name}, skipping embedding`);
+    if(!this.smart_embed) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
     if (this.is_queue_halted || this.is_processing_queue) return;
     const queue = Object.values(this.items).filter(item => item._queue_embed);
     this.queue_total = queue.length;
-    if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_name} embed queue`);
-    console.log(`Processing ${this.collection_name} embed queue: ${this.queue_total} items`);
+    if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
+    console.log(`Processing ${this.collection_key} embed queue: ${this.queue_total} items`);
     this.is_processing_queue = true;
     for(let i = this.embedded_total; i < this.queue_total; i += this.smart_embed.batch_size) {
       if(this.is_queue_halted) break;

@@ -9,7 +9,7 @@ test('Collection.load creates a new collection instance', async t => {
   const test_collection = env.collection;
 
   t.true(test_collection instanceof Collection);
-  t.is(test_collection.collection_name, 'collection');
+  t.is(test_collection.collection_key, 'collection');
 });
 
 test('Collection.create_or_update creates a new item', async t => {

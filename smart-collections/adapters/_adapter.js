@@ -10,7 +10,7 @@ export class SmartCollectionItemDataAdapter{
   get env() { return this.item.env; }
   get data_path() { return 'collection_item.json'; }
   get key() { return this.item.key; }
-  get collection_name() { return this.item.collection_name; }
+  get collection_key() { return this.item.collection_key; }
   get collection() { return this.item.collection; }
 
 }
@@ -26,6 +26,6 @@ export class SmartCollectionDataAdapter{
 
   get env() { return this.collection.env; }
   get data_path() { return 'collection.json'; }
-  get collection_name() { return this.collection.collection_name; }
+  get collection_key() { return this.collection.collection_key; }
 
 }

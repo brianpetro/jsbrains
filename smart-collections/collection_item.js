@@ -198,19 +198,19 @@ export class CollectionItem {
    * Retrieves the collection name derived from the class name.
    * @returns {string} The collection name.
    */
-  static get collection_name() { return collection_instance_name_from(this.name); }
+  static get collection_key() { return collection_instance_name_from(this.name); }
 
   /**
    * Retrieves the collection name for the instance, either from data or the class method.
    * @returns {string} The collection name.
    */
-  get collection_name() { return collection_instance_name_from(this.constructor.name); }
+  get collection_key() { return collection_instance_name_from(this.constructor.name); }
 
   /**
    * Retrieves the collection this item belongs to.
    * @returns {Object} The collection object.
    */
-  get collection() { return this.env[this.collection_name]; }
+  get collection() { return this.env[this.collection_key]; }
 
   /**
    * Retrieves or generates the key for this item.
@@ -222,7 +222,7 @@ export class CollectionItem {
    * Provides a reference object for this item, containing the collection name and key.
    * @returns {Object} The reference object.
    */
-  get ref() { return { collection_name: this.collection_name, key: this.key }; }
+  get ref() { return { collection_key: this.collection_key, key: this.key }; }
 
   /**
    * Retrieves string representation of the item, including its key and data.
@@ -235,9 +235,9 @@ export class CollectionItem {
   get data_path() { return this.data_adapter.data_folder + (this.env.fs?.sep || "/") + this.multi_ajson_file_name + '.ajson'; }
 
   // settings convenience methods
-  get settings() { return this.env.settings[this.collection_name]; }
+  get settings() { return this.env.settings[this.collection_key]; }
   set settings(settings) {
-    this.env.settings[this.collection_name] = settings;
+    this.env.settings[this.collection_key] = settings;
     this.env.smart_env_settings.save();
   }
 }

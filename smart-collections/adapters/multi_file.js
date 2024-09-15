@@ -3,7 +3,7 @@ import { SmartCollectionItemDataAdapter, SmartCollectionDataAdapter } from './_a
 
 
 // DO: replace this better way in future
-const class_to_collection_name = {
+const class_to_collection_key = {
   'SmartSource': 'smart_sources',
   'SmartNote': 'smart_sources', // DEPRECATED: added for backward compatibility
   'SmartBlock': 'smart_blocks',
@@ -55,8 +55,8 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
           const entity_key = key_parts.join(":"); // key is file path
           if (entity_key === item.key) item.data = value;
           else {
-            if (!this.env[class_to_collection_name[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
-            this.env[class_to_collection_name[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
+            if (!this.env[class_to_collection_key[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
+            this.env[class_to_collection_key[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
           }
         })
       ;
@@ -148,8 +148,8 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
           const entity_key = key_parts.join(":"); // key is file path
           if(entity_key === this.key) this.item.data = value;
           else {
-            if(!this.env[class_to_collection_name[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
-            this.env[class_to_collection_name[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
+            if(!this.env[class_to_collection_key[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
+            this.env[class_to_collection_key[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
           }
         })
       ;
@@ -249,7 +249,7 @@ export class MultiFileSmartCollectionsAdapter {
   //             source_is_deleted = true;
   //             return;
   //           }
-  //           if(value.class_name === 'SmartNote') value.class_name = "SmartSource"; // v1 backward compatibility (depended on by CollectionItem.collection_name)
+  //           if(value.class_name === 'SmartNote') value.class_name = "SmartSource"; // v1 backward compatibility (depended on by CollectionItem.collection_key)
   //           if(class_name === 'SmartNote') class_name = 'SmartSource'; // v1 backward compatibility
   //           const entity = new (this.env.item_types[class_name])(this.env, value);
   //           this.add_to_collection(entity);
@@ -302,10 +302,10 @@ export class MultiFileSmartCollectionsAdapter {
 
   // // override save_queue to log time
   // async save_queue() {
-  //   console.log("Saving " + this.collection.collection_name);
+  //   console.log("Saving " + this.collection.collection_key);
   //   const queue_length = Object.keys(this._save_queue).length;
   //   const start = Date.now();
   //   await super.save_queue();
-  //   console.log(`Saved ${queue_length} ${this.collection.collection_name} in ${Date.now() - start}ms`);
+  //   console.log(`Saved ${queue_length} ${this.collection.collection_key} in ${Date.now() - start}ms`);
   // }
 }

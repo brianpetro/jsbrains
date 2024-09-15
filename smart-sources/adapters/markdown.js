@@ -264,8 +264,8 @@ export class MarkdownBlockAdapter extends BlockAdapter {
   }
 
   async move_to(to_key) {
-    const to_collection_name = to_key.includes("#") ? "smart_blocks" : "smart_sources";
-    const to_entity = this.smart_block.env[to_collection_name].get(to_key);
+    const to_collection_key = to_key.includes("#") ? "smart_blocks" : "smart_sources";
+    const to_entity = this.smart_block.env[to_collection_key].get(to_key);
     let content = await this.read({ no_changes: "before", headings: "last" });
     try {
       if(this.smart_block.env.smart_change){

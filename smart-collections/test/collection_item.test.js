@@ -66,16 +66,16 @@ test('CollectionItem.filter correctly filters items', t => {
   t.true(item.filter({ exclude_key: 'other_item' }));
 });
 
-test('CollectionItem.get collection_name returns correct name', t => {
+test('CollectionItem.get collection_key returns correct name', t => {
   const { env } = t.context;
   const item = new CollectionItem(env);
 
-  t.is(item.collection_name, 'collection');
+  t.is(item.collection_key, 'collection');
 });
 
 test('CollectionItem.get ref returns correct reference object', t => {
   const { env } = t.context;
   const item = new CollectionItem(env, { key: 'test_item' });
 
-  t.deepEqual(item.ref, { collection_name: 'collection', key: 'test_item' });
+  t.deepEqual(item.ref, { collection_key: 'collection', key: 'test_item' });
 });
