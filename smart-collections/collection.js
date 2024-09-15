@@ -24,6 +24,7 @@ export class Collection {
   static async init(env, opts = {}) {
     env[this.collection_name] = new this(env, opts);
     await env[this.collection_name].init();
+    env.collections[this.collection_name] = 'init';
   }
 
   /**
@@ -273,6 +274,7 @@ export class Collection {
       const batch = load_queue.slice(i, i + batch_size);
       await Promise.all(batch.map(item => item.load()));
     }
+    this.env.collections[this.collection_name] = 'loaded';
     console.log("Loaded " + this.collection_name + " in " + (Date.now() - time_start) + "ms");
     this._loading = false;
     this.loaded = true;

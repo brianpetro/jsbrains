@@ -45,6 +45,7 @@ export class SmartEnv {
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
     this._excluded_headings = null;
+    this.collections = {}; // collection names to initialized classes
   }
   get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
   get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
@@ -93,7 +94,6 @@ export class SmartEnv {
 
     return main.env;
   }
-  get collections() { return this.opts.collections; }
   get ejs() { return this.opts.ejs; }
   get fs() {
     if(!this.smart_fs){
@@ -172,12 +172,14 @@ export class SmartEnv {
   } // override in subclasses with env-specific logic
   async init_collections(){
     for(const key of Object.keys(this.opts.collections)){
-      await this.opts.collections[key].init(this, this.opts);
+      const _class = this.opts.collections[key]?.class ?? this.opts.collections[key];
+      if(typeof _class?.init !== 'function') continue; // skip if not a class or does not have init method
+      await _class.init(this, this.opts);
     }
   }
   async load_collections(is_init=false){
     this.loading_collections = true;
-    for(const key of Object.keys(this.opts.collections)){
+    for(const key of Object.keys(this.collections)){
       if(is_init && this[key].opts.prevent_load_on_init) continue;
       if(typeof this[key]?.process_load_queue === 'function'){
         console.log('loading collection', key);
