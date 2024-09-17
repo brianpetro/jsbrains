@@ -24,6 +24,8 @@ import { SmartChange } from 'smart-change/smart_change.js';
 import { DefaultAdapter } from 'smart-change/adapters/default.js';
 import { MarkdownAdapter } from 'smart-change/adapters/markdown.js';
 import { ObsidianMarkdownAdapter } from 'smart-change/adapters/obsidian_markdown.js';
+import { template as settings_template } from './components/settings.js';
+
 export class SmartEnv {
   constructor(main, opts={}) {
     this.opts = opts;
@@ -50,6 +52,12 @@ export class SmartEnv {
   get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
   get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
   set global_ref(env) { this.global_ref[this.global_prop] = env; }
+  get smart_view() {
+    if(!this._smart_view){
+      this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
+    }
+    return this._smart_view;
+  }
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
@@ -254,6 +262,45 @@ export class SmartEnv {
     }
     return this._excluded_headings;
   }
+
+
+  get smart_view() {
+    if(!this._smart_view) this._smart_view = this.init_module('smart_view');
+    return this._smart_view;
+  }
+  init_module(module_name, opts={}) {
+    if(!this.opts.modules[module_name]) return console.warn(`SmartEnv: module ${module_name} not found`);
+    if(this.opts.modules[module_name].class){
+      const _class = this.opts.modules[module_name].class;
+      opts = {
+        ...{...this.opts.modules[module_name], class: null},
+        ...opts,
+      }
+      return new _class(this, opts);
+    }else{
+      return new this.opts.modules[module_name](this, opts);
+    }
+  }
+  async render_settings(opts = {}) {
+    const frag = await settings_template.call(this.smart_view, this, opts);
+    console.log('frag', frag);
+    if(opts.container){
+      opts.container.innerHTML = '';
+      opts.container.appendChild(frag);
+    }
+    return frag;
+  }
+  get settings_config(){
+    return {
+      "env_data_dir": {
+        type: 'folder',
+        name: 'Environment Data Directory',
+        description: 'The directory where the environment data is stored.',
+        default: '.smart-env'
+      }
+    }
+  }
+
 }
 
 function camel_case_to_snake_case(str) {

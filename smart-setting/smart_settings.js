@@ -106,7 +106,7 @@ class SmartSettings {
           });
         });
       } else if (elm.dataset.type === "dropdown") {
-        const setting_value = this.get_setting(setting);
+        const setting_value = this.get_setting(setting) || elm.dataset.value;
         let options;
         if (elm.dataset.optionsCallback) {
           if (typeof this[elm.dataset.optionsCallback] !== 'function') {

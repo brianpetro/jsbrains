@@ -30,6 +30,7 @@ export class SmartEmbedModel extends SmartModel {
    */
   constructor(env, opts={}) {
     super(opts);
+    if(this.opts.model_key === "None") return console.log(`Smart Embed Model: No active embedding model for ${this.collection_key}, skipping embedding`);
     this.env = env;
     this.opts = {
       ...(
@@ -49,22 +50,11 @@ export class SmartEmbedModel extends SmartModel {
     // init adapter
     this.adapter = new this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter](this);
   }
-  /**
-   * Used to load a model with a given configuration.
-   * @param {*} env 
-   * @param {*} opts 
-   */
-  static async load(env, opts = {}) {
-    try {
-      const model = new SmartEmbedModel(env, opts);
-      await model.adapter.load();
-      env.smart_embed_active_models[opts.model_key] = model;
-      return model;
-    } catch (error) {
-      console.error(`Error loading model ${opts.model_key}:`, error);
-      // this.unload(env, opts); // TODO: unload model if error
-      return null;
-    }
+  async load() {
+    this.loading = true;
+    await this.adapter.load();
+    this.loading = false;
+    this.loaded = true;
   }
   /**
    * Count the number of tokens in the input string.
@@ -96,13 +86,22 @@ export class SmartEmbedModel extends SmartModel {
 
   get batch_size() { return this.opts.batch_size || 1; }
   get max_tokens() { return this.opts.max_tokens || 512; }
+  get dims() { return this.opts.dims; }
 
   // TODO: replace static opts with dynamic reference to canonical settings via opts.settings (like smart-chat-model-v2)
   get settings() { return this.opts.settings; } // ref to canonical settings
 
-  get settings_config() { return this.process_settings_config(settings_config); }
+  get settings_config() { return this.process_settings_config(settings_config, 'embed_model'); }
   process_setting_key(key) {
     return key.replace(/\[EMBED_MODEL\]/g, this.opts.model_key);
+  }
+  get_embedding_model_options() {
+    return Object.entries(embed_models).map(([key, model]) => ({ value: key, name: key }));
+  }
+  get_block_embedding_model_options() {
+    const options = this.get_embedding_model_options();
+    options.unshift({ value: 'None', name: 'None' });
+    return options;
   }
 
 }
@@ -112,15 +111,16 @@ export const settings_config = {
     name: 'Embedding Model',
     type: "dropdown",
     description: "Select an embedding model.",
-    options_callback: 'get_embedding_model_options',
-    callback: 'restart',
+    options_callback: 'embed_model.get_embedding_model_options',
+    callback: 'embed_model_changed',
+    default: 'TaylorAI/bge-micro-v2',
     // required: true
   },
   "[EMBED_MODEL].min_chars": {
     name: 'Minimum Embedding Length',
     type: "number",
     description: "Minimum length of note to embed.",
-    placeholder: "Enter a number",
+    placeholder: "Enter a number (ex. 300)",
     // callback: 'refresh_embeddings',
     // required: true,
   },
@@ -131,13 +131,13 @@ export const settings_config = {
     placeholder: "Enter your OpenAI API Key",
     // callback: 'test_api_key_openai_embeddings',
     callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
-    conditional_callback: (settings) => !settings.smart_sources_embed_model.includes('/') || !settings.smart_blocks_embed_model.includes('/')
+    conditional: (settings) => !settings.smart_sources.embed_model?.model_key?.includes('/') || !settings.smart_blocks.embed_model?.model_key?.includes('/')
   },
   "[EMBED_MODEL].gpu_batch_size": {
     name: 'GPU Batch Size',
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter a number",
+    placeholder: "Enter a number (ex. 10)",
     callback: 'restart',
   },
 };

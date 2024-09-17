@@ -38,12 +38,13 @@ export class SmartBlock extends SmartEntity {
 
   should_clear_embeddings(data) {
     if(this.is_new) return true;
-    if(this.smart_embed && this.vec?.length !== this.smart_embed.dims) return true;
+    if(this.embed_model_key !== "None" && this.vec?.length !== this.embed_model.dims) return true;
     if(this.data.length !== data.length) return true;
     return false;
   }
 
   init() {
+    super.init();
     if(!this.vec) this.queue_embed();
   }
 
@@ -85,8 +86,8 @@ export class SmartBlock extends SmartEntity {
   get folder() { return this.data.path.split("/").slice(0, -1).join("/"); }
   get is_block() { return this.data.path.includes("#"); }
   get is_gone() {
-    if (!this.source?.t_file) return true; // gone if missing entity or file
-    if (!this.source.last_history.blocks[this.key]) return true;
+    if (!this.source?.file) return true; // gone if missing entity or file
+    if (!this.source.last_history?.blocks?.[this.key]) return true;
     return false;
   }
   // use text length to detect changes

@@ -20,7 +20,7 @@ export class SmartSource extends SmartEntity {
     return this._source_adapter;
   }
   get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get data_path() { return this.data_adapter.data_folder + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
+  get data_path() { return this.collection.data_dir + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
   on_load_error(err){
     super.on_load_error(err);
     // if ENOENT

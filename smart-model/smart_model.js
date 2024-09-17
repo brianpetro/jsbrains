@@ -32,7 +32,7 @@ export class SmartModel {
     return Object.entries(_settings_config)
       .reduce((acc, [key, val]) => {
         if (val.conditional) {
-          if (!val.conditional(this.settings)) return acc;
+          if (!val.conditional(this.env?.settings || this.opts.settings)) return acc;
           delete val.conditional; // remove conditional to prevent re-checking downstream
         }
         const new_key = (prefix ? prefix + "." : "") + this.process_setting_key(key);

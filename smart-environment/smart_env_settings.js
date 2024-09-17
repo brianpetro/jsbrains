@@ -53,6 +53,7 @@ export class SmartEnvSettings {
       JSON.stringify(smart_env_settings, null, 2)
     );
     this._saved = true;
+    console.log("saved smart_env settings", smart_env_settings);
   }
 
   /**
@@ -65,7 +66,7 @@ export class SmartEnvSettings {
       const _class = config?.class ?? config;
       this._fs = new _class(this.env, {
         adapter: config.adapter,
-        fs_path: this.opts.env_data_dir
+        fs_path: this.env[this.env.mains[0]].settings.env_data_dir
       });
     }
     return this._fs;
@@ -102,22 +103,11 @@ export class SmartEnvSettings {
    * @returns {Promise<void>} A promise that resolves when Obsidian settings have been loaded.
    */
   async load_obsidian_settings() {
-    if (this._settings.is_obsidian_vault) {
-      const config = this.opts.modules.smart_fs;
-      const _class = config?.class ?? config;
-      const temp_fs = new _class(this.env, {
-        adapter: config.adapter,
-        fs_path: this.env.opts.env_path || '',
-      });
-      let obsidian_folder = '.obsidian'; // TODO check smart_env.json for obsidian_folder setting
-      if (await temp_fs.exists(obsidian_folder)) {
-        if (await temp_fs.exists(obsidian_folder + '/plugins/smart-connections/data.json')) {
-          const obsidian_settings = JSON.parse(await temp_fs.read(obsidian_folder + '/plugins/smart-connections/data.json'));
-          deep_merge_no_overwrite(this._settings, obsidian_settings);
-          this.transform_backwards_compatible_settings(obsidian_settings);
-          await this.save();
-        }
-      }
+    if (this._settings.is_obsidian_vault && this.env.smart_connections_plugin) {
+      const obsidian_settings = this._settings.smart_connections_plugin;
+      this.transform_backwards_compatible_settings(obsidian_settings);
+      await this.save();
+      this.env.smart_connections_plugin.save_settings(obsidian_settings);
     }
   }
 
@@ -126,7 +116,7 @@ export class SmartEnvSettings {
    * @param {Object} os - The old settings object to transform.
    */
   transform_backwards_compatible_settings(os) {
-    if(this._settings.smart_sources.embed_model_key){
+    if(this._settings.smart_sources?.embed_model_key){
       if(!this._settings.smart_sources.embed_model) this._settings.smart_sources.embed_model = {};
       this._settings.smart_sources.embed_model.model_key = this._settings.smart_sources.embed_model_key;
       delete this._settings.smart_sources.embed_model_key;
@@ -156,6 +146,18 @@ export class SmartEnvSettings {
       });
       delete os.api_key;
       delete os.embed_input_min_chars;
+    }
+    if(os.muted_notices) {
+      this._settings.smart_notices.muted = {...os.muted_notices};
+      delete os.muted_notices;
+    }
+    if(os.smart_connections_folder){
+      os.env_data_dir = os.smart_connections_folder;
+      delete os.smart_connections_folder;
+    }
+    if(os.smart_connections_folder_last){
+      os.env_data_dir_last = os.smart_connections_folder_last;
+      delete os.smart_connections_folder_last;
     }
   }
 
@@ -193,16 +195,17 @@ export class SmartEnvSettings {
  * @param {Object} source - The source object from which properties are sourced.
  * @returns {Object} The merged object.
  */
-export function deep_merge_no_overwrite(target, source) {
+export function deep_merge_and_delete_no_overwrite(target, source) {
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       if (is_obj(source[key])) {
         if (!target.hasOwnProperty(key) || !is_obj(target[key])) {
           target[key] = {};
         }
-        deep_merge_no_overwrite(target[key], source[key]);
+        deep_merge_and_delete_no_overwrite(target[key], source[key]);
       } else if (!target.hasOwnProperty(key)) {
         target[key] = source[key];
+        delete source[key];
       }
     }
   }

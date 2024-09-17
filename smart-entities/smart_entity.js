@@ -68,16 +68,18 @@ export class SmartEntity extends CollectionItem {
   // getters
   get embed_link() { return `![[${this.data.path}]]`; }
   get embed_model_key() { return this.collection.embed_model_key; }
-  get embed_model_opts() { return this.collection?.embed_model_opts || {}; }
-  get model_opts() { return this.env.settings[this.collection_key]?.embed_model?.[this.embed_model_key] || {}; }
   get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get should_show_full_path() { return this.env.settings.show_full_path; }
   get smart_chunks() { return this.collection.smart_chunks; }
-  get smart_embed() { return this.collection.smart_embed; }
+  /**
+   * @deprecated Use this.embed_model instead
+   */
+  get smart_embed() { return this.embed_model; }
+  get embed_model() { return this.collection.embed_model; }
   get tokens() { return this.data.embeddings[this.embed_model_key]?.tokens; }
   get is_unembedded() {
     if(this.vec) return false;
-    if(this.size < (this.model_opts?.min_chars || this.env.settings?.embed_input_min_chars || 300)) return false;
+    if(this.size < (this.collection.embed_model_settings?.min_chars || 300)) return false;
     return true;
   }
   // setters

@@ -1,21 +1,11 @@
 import { create_hash } from "./utils/create_hash.js";
 import { SmartEntities } from "smart-entities";
-import { SourceAdapter } from "./adapters/_adapter.js";
-import { MarkdownSourceAdapter } from "./adapters/markdown.js";
-// DO: Extract to separate files
 export class SmartSources extends SmartEntities {
   constructor(env, opts = {}) {
     super(env, opts);
-    this.source_adapters = {
-      "md": MarkdownSourceAdapter,
-      "txt": MarkdownSourceAdapter, // temp
-      "canvas": MarkdownSourceAdapter, // temp
-      "default": SourceAdapter,
-      ...(env.opts.source_adapters || {}),
-      ...(opts.source_adapters || {}),
-    };
     this.search_results_ct = 0;
   }
+  get source_adapters() { return this.env.opts.collections?.[this.collection_key]?.source_adapters || {}; }
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async init() {
     await super.init();
@@ -51,7 +41,7 @@ export class SmartSources extends SmartEntities {
       await this.fs.remove(source.data_path);
       delete this.items[source.key];
     }
-    const data_files = await this.data_fs.list_files_recursive(this.adapter.data_folder);
+    const data_files = await this.data_fs.list_files_recursive(this.data_adapter.data_folder);
     const ajson_file_path_map = Object.values(this.items).reduce((acc, item) => {
       acc[item.data_path] = item.key;
       return acc;
@@ -84,10 +74,15 @@ export class SmartSources extends SmartEntities {
     }
     return links_map;
   }
+  async import(){
+    Object.values(this.env.smart_blocks.items).forEach(item => item.init());
+    await this.env.smart_blocks.process_embed_queue();
+    await this.process_embed_queue();
+    await this.process_save_queue();
+  }
   async refresh(){
     await this.prune();
     await this.process_import_queue();
-    if(this.env.smart_blocks.smart_embed) Object.values(this.env.smart_blocks.items).filter(item => !item.vec).forEach(item => item.queue_embed());
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
   }
@@ -191,7 +186,7 @@ export class SmartSources extends SmartEntities {
   get settings_config(){
     return {
       ...super.settings_config,
-      ...settings_config,
+      ...this.process_settings_config(settings_config),
     };
   }
 
@@ -202,12 +197,12 @@ export const settings_config = {
     "name": "Import Sources",
     "description": "Import sources from file system.",
     "type": "button",
-    "callback": "import_sources",
+    "callback": "process_import_queue",
   },
   "refresh_sources": {
     "name": "Refresh Sources",
     "description": "Prunes old data and re-imports all sources and blocks.",
     "type": "button",
-    "callback": "refresh_sources",
+    "callback": "refresh",
   }
 };

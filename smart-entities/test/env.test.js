@@ -95,7 +95,6 @@ test('SmartEntity getters work correctly', t => {
   t.truthy(entity.embed_link);
   t.truthy(entity.name);
   t.truthy(entity.embed_model_key);
-  t.truthy(entity.embed_model_opts);
   t.truthy(entity.is_unembedded);
 });
 

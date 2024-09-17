@@ -20,7 +20,7 @@ test('Collection.create_or_update creates a new item', async t => {
 
   t.is(new_item.key, 'test_item');
   t.is(new_item.data.data, 'test_data');
-  t.true(new_item.is_new);
+  t.true(new_item._queue_save);
 });
 
 test('Collection.create_or_update updates an existing item', async t => {
@@ -32,7 +32,7 @@ test('Collection.create_or_update updates an existing item', async t => {
 
   t.is(updated_item.key, 'test_item');
   t.is(updated_item.data.data, 'updated_data');
-  t.false(updated_item.is_new);
+  t.false(updated_item._queue_save);
 });
 
 test('Collection.find_by returns the correct item', async t => {

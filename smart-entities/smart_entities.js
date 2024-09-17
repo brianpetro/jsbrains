@@ -35,30 +35,27 @@ export class SmartEntities extends Collection {
   }
   async load_smart_embed() {
     if(this.embed_model_key === 'None') return;
-    if(this.embed_model) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
-    if (!this.env.opts.modules.smart_embed_model.class) {
-      console.log("smart_embed_model must be included in the `env.opts.modules` property");
-      return;
-    }
-    await this.env.opts.modules.smart_embed_model.class.load(this.env, {
-      model_key: this.embed_model_key,
-      ...this.embed_model_opts
-    });
+    if(this.embed_model.loading) return console.warn(`SmartEmbedModel already loading for ${this.embed_model_key}`);
+    if(this.embed_model.loaded) return console.warn(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
+    await this.embed_model.load();
   }
   unload() {
     if (typeof this.embed_model?.unload === 'function') {
       this.embed_model.unload();
       this.embed_model = null; // uses setter to update env.smart_embed_active_models
     }
+    super.unload();
   }
   get embed_model_key() {
-    return this.env.settings?.[this.collection_key]?.embed_model?.model_key
-      || this.env.settings?.[this.collection_key + "_embed_model"] // DEPRECATED: backwards compatibility
-      || "TaylorAI/bge-micro-v2"
-    ;
+    // return this.env.settings?.[this.collection_key]?.embed_model?.model_key
+    //   || this.env.settings?.[this.collection_key + "_embed_model"] // DEPRECATED: backwards compatibility
+    //   || "TaylorAI/bge-micro-v2"
+    // ;
+    return this.settings?.embed_model?.model_key || "TaylorAI/bge-micro-v2";
   }
-  get embed_model_opts() {
-    return this.env.settings?.[this.collection_key]?.embed_model?.[this.embed_model_key] || {};
+  get embed_model_settings() {
+    if(!this.settings.embed_model?.[this.embed_model_key]) this.settings.embed_model[this.embed_model_key] = {};
+    return this.settings.embed_model[this.embed_model_key];
   }
   get smart_embed_container() {
     if (!this.model_instance_id) return console.log('model_key not set');
@@ -74,7 +71,16 @@ export class SmartEntities extends Collection {
    * @deprecated use embed_model instead
    */
   get smart_embed() { return this.embed_model; }
-  get embed_model() { return this.env.smart_embed_active_models?.[this.embed_model_key]; }
+  get embed_model() {
+    // if(this.embed_model_key === "None") return;
+    if(!this.env.smart_embed_active_models?.[this.embed_model_key]){
+      this.env.smart_embed_active_models[this.embed_model_key] = new this.env.opts.modules.smart_embed_model.class(this.env, {
+        model_key: this.embed_model_key,
+        ...(this.settings.embed_model?.[this.embed_model_key] || {})
+      });
+    }
+    return this.env.smart_embed_active_models?.[this.embed_model_key];
+  }
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
   // DEPRECATED in favor of entity-based nearest_to(entity, filter)
   nearest(vec, filter = {}) {
@@ -100,6 +106,7 @@ export class SmartEntities extends Collection {
       || "None"
     );
   }
+  get data_dir() { return this.env.settings.env_data_dir + this.fs.sep + this.embed_model_key.replace("/", "_"); }
 
   /**
    * Calculates the relevance of an item based on the search filter.
@@ -204,43 +211,32 @@ export class SmartEntities extends Collection {
     console.log(`Found and returned ${top_k.length} ${this.collection_key}.`);
     return top_k;
   }
-  get embed_model_settings_config() {
-    return this.process_settings_config(
-      this.embed_model?.settings_config || {},
-      'embed_model' // prefixes with 'embed_model.'
-    );
-  }
   get settings_config() {
     return this.process_settings_config({
       ...super.settings_config,
-      ...this.embed_model_settings_config,
+      ...(this.embed_model?.settings_config || {}),
       ...settings_config,
     });
   }
 
-  get_setting_html(setting_name, setting_config) {
-    if (setting_name.startsWith('embed_model')) {
-      setting_name = setting_name.replace('embed_model.', `embed_model.${this.embed_model_key}.`);
-    }
-    return super.get_setting_html(setting_name, setting_config);
-  }
   get filter_config() { return filter_config; }
   
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async process_embed_queue() {
-    if(!this.smart_embed) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
+    if(this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
+    if(!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
     if (this.is_queue_halted || this.is_processing_queue) return;
     const queue = Object.values(this.items).filter(item => item._queue_embed);
     this.queue_total = queue.length;
     if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
     console.log(`Processing ${this.collection_key} embed queue: ${this.queue_total} items`);
     this.is_processing_queue = true;
-    for(let i = this.embedded_total; i < this.queue_total; i += this.smart_embed.batch_size) {
+    for(let i = this.embedded_total; i < this.queue_total; i += this.embed_model.batch_size) {
       if(this.is_queue_halted) break;
-      const batch = queue.slice(i, i + this.smart_embed.batch_size);
+      const batch = queue.slice(i, i + this.embed_model.batch_size);
       await Promise.all(batch.map(item => item.get_embed_input())); // decided/future: may be handled in SmartEmbedModel
       const start_time = Date.now();
-      await this.smart_embed.embed_batch(batch);
+      await this.embed_model.embed_batch(batch);
       this.total_time += Date.now() - start_time;
       this.embedded_total += batch.length;
       this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
@@ -317,6 +313,15 @@ export class SmartEntities extends Collection {
       this.process_embed_queue();
     }, delay);
   }
+
+  async embed_model_changed() {
+    this.unload();
+    await this.init();
+    this.re_render_settings();
+    await this.process_load_queue();
+  }
+
+
 }
 
 export const settings_config = {
