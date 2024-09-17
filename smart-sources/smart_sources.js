@@ -75,6 +75,8 @@ export class SmartSources extends SmartEntities {
     return links_map;
   }
   async import(){
+    Object.values(this.items).forEach(item => item._queue_import = true);
+    await this.process_import_queue();
     Object.values(this.env.smart_blocks.items).forEach(item => item.init());
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
@@ -196,7 +198,7 @@ export const settings_config = {
     "name": "Import Sources",
     "description": "Import sources from file system.",
     "type": "button",
-    "callback": "process_import_queue",
+    "callback": "import",
   },
   "refresh_sources": {
     "name": "Refresh Sources",
