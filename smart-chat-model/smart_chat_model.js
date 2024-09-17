@@ -175,7 +175,8 @@ class SmartChatModel {
   handle_api_error(error, render) {
     console.error(error);
     if (render) {
-      this.done_handler("*API Error. See console logs for details.*");
+      if(typeof error?.message === 'string') this.done_handler("*API Error: " + error.message + "*");
+      else this.done_handler("*API Error. See console logs for details.*");
     }
     return "*API Error. See console logs for details.*";
   }

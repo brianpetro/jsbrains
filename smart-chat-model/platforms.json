@@ -29,7 +29,7 @@
     "streaming": true,
     "adapter": "OpenRouter",
     "fetch_models": true,
-    "default_model": "mistralai/mistral-7b-instruct:free",
+    "default_model": "meta-llama/llama-3.1-8b-instruct:free",
     "signup_url": "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys"
   },
   "cohere": {

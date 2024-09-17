@@ -20,7 +20,7 @@ async function fetch_open_router_models(api_key, request_adapter=null) {
         key: model.id,
         max_input_tokens: model.context_length,
         description: model.name,
-        actions: model.description.includes('tool use') || model.description.includes('function call'),
+        actions: model.description.includes('tool use') || (model.description.includes('function call') && !model.description.includes('function calling depends')),
         multimodal: model.architecture.modality === 'multimodal',
         raw: model
       }))
