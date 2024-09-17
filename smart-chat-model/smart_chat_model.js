@@ -207,7 +207,6 @@ class SmartChatModel {
 
   handle_invalid_tool_call(tool_name, tool_call_content) {
     console.warn(`Tool ${tool_name} not found or invalid, returning tool_call_content`);
-    console.log({tool_call_content});
     return tool_call_content;
   }
 
@@ -309,9 +308,7 @@ class SmartChatModel {
     req.throw = false;
     // handle fallback to fetch (allows for overwriting in child classes)
     const resp = this._request_adapter ? await this._request_adapter(req) : await fetch(this.endpoint, req);
-    console.log(resp);
     const resp_json = await this.get_resp_json(resp);
-    console.log(resp_json);
     return resp_json;
   }
   async get_resp_json(resp) { return (typeof resp.json === 'function') ? await resp.json() : await resp.json; }
@@ -319,7 +316,6 @@ class SmartChatModel {
 
   async stream(req) {
     console.log("Streaming Request: ");
-    console.log(req);
     const full_text = await new Promise((resolve, reject) => {
       try {
         // console.log("stream", opts);
@@ -406,7 +402,6 @@ class SmartChatModel {
     return input.length / 4;
   }
   async test_api_key() {
-    console.log(this.api_key);
     try{
       const request = {
         messages: [
@@ -421,7 +416,6 @@ class SmartChatModel {
         request.model = this.config.default_model;
       }
       const resp = await this.complete(request, false);
-      console.log(resp);
       if(!resp) return false;
       return true;
     }catch(err){

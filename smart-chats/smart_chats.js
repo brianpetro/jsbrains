@@ -49,7 +49,6 @@ class SmartChats {
       this.current = null;
     }
     this.current = this.create_chat();
-    console.log({current: this.current});
     await this.env.chat_ui.init();
   }
   create_chat(opts={}) {
@@ -93,7 +92,6 @@ class SmartChats {
   async get_conversation_ids_and_file_types(){
     console.log("get_conversation_ids_and_file_types");
     const folder = await this.list(this.folder);
-    console.log(folder);
     const files = folder.files.map((file) => {
       const file_type = file.split(".").pop();
       const conversation_id = file.replace(this.folder + "/", "").replace("." + file_type, "");

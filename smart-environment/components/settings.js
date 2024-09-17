@@ -1,5 +1,4 @@
 export async function template(env, opts = {}) {
-  console.log('this', this);
   const frag = this.create_doc_fragment(opts.html || '<div></div>');
   await this.render_setting_components(frag);
   for(const collection_key of Object.keys(env.collections)){

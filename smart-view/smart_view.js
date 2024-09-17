@@ -11,7 +11,6 @@ export class SmartView {
     // }));
     // one at a time
     for (const component of components) {
-      console.log({component});
       await this.render_setting_component(component);
     }
   }
@@ -42,8 +41,7 @@ function get_by_path(obj, path) {
   const instance = keys.reduce((acc, key) => acc && acc[key], obj);
   // Check if the last key is a method and bind to the correct instance
   if (instance && typeof instance[finalKey] === 'function') {
-    console.log({finalKey, instance});
-      return instance[finalKey].bind(instance);
+    return instance[finalKey].bind(instance);
   }
   return instance ? instance[finalKey] : undefined;
 }

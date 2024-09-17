@@ -10,9 +10,7 @@ export async function template(collection, opts = {}) {
     return `<div class="setting-component"\ndata-setting="${setting_name}"\n${attributes}\n></div>`;
   }).join('\n');
   const frag = this.create_doc_fragment(html);
-  console.log({frag});
   await this.render_setting_components(frag);
-  console.log({rendered_frag: frag});
   return frag;
 }
 

@@ -7,7 +7,6 @@ async function fetch_open_router_models(api_key, request_adapter=null) {
         throw new Error('Network response was not ok');
       }
       data = await response.json();
-      console.log('Model data retrieved:', data);
     }else{
       const resp = await request_adapter({
         url: 'https://openrouter.ai/api/v1/models',

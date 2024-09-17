@@ -8,7 +8,7 @@ const { message_content_array_to_markdown } = require("./message_content_array_t
  */
 function chat_ml_to_markdown(chat_ml) {
   console.log('chat_ml');
-  console.log(chat_ml);
+  // console.log(chat_ml);
   let markdown = '';
   let has_md = false;
   chat_ml.messages.forEach(msg => {

@@ -41,7 +41,6 @@ export class SmartEmbedModel extends SmartModel {
       ...embed_models[opts.model_key],
       ...opts,
     };
-    console.log(this.opts);
     if(!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
     if(!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
@@ -120,7 +119,7 @@ export const settings_config = {
     name: 'Minimum Embedding Length',
     type: "number",
     description: "Minimum length of note to embed.",
-    placeholder: "Enter a number (ex. 300)",
+    placeholder: "Enter number ex. 300",
     // callback: 'refresh_embeddings',
     // required: true,
   },
@@ -128,7 +127,7 @@ export const settings_config = {
     name: 'OpenAI API Key for embeddings',
     type: "password",
     description: "Required for OpenAI embedding models",
-    placeholder: "Enter your OpenAI API Key",
+    placeholder: "Enter OpenAI API Key",
     // callback: 'test_api_key_openai_embeddings',
     callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
     conditional: (settings) => !settings.smart_sources.embed_model?.model_key?.includes('/') || !settings.smart_blocks.embed_model?.model_key?.includes('/')
@@ -137,7 +136,7 @@ export const settings_config = {
     name: 'GPU Batch Size',
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter a number (ex. 10)",
+    placeholder: "Enter number ex. 10",
     callback: 'restart',
   },
 };

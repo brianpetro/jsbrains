@@ -40,9 +40,7 @@ class SmartChatsUI {
    */
   async init() {
     console.log("init SmartChatRenderer");
-    console.log(this.container);
     this.container.innerHTML = "";
-    console.log(this.env.chats.current);
     const data = await this.get_view_data();
     this.container.innerHTML = await this.render(this.templates.smart_chat, data, { context: this.view_context, rmWhitespace: true });
     this.post_process();

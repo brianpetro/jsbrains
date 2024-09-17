@@ -35,7 +35,7 @@ export class SmartSources extends SmartEntities {
     const remove_sources = Object.values(this.items)
       .filter(item => item.is_gone || item.excluded)
     ;
-    console.log("remove_sources", remove_sources);
+    console.log("remove_sources", remove_sources.length);
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
       await this.fs.remove(source.data_path);
@@ -52,7 +52,7 @@ export class SmartSources extends SmartEntities {
       await this.data_fs.remove(remove_data_files[i].path);
     }
     const remove_smart_blocks = Object.values(this.env.smart_blocks.items).filter(item => item.is_gone);
-    console.log("remove_smart_blocks", remove_smart_blocks);
+    console.log("remove_smart_blocks", remove_smart_blocks.length);
     for(let i = 0; i < remove_smart_blocks.length; i++){
       delete this.env.smart_blocks.items[remove_smart_blocks[i].key];
     }
@@ -140,7 +140,6 @@ export class SmartSources extends SmartEntities {
   }
 
   async import_file(file){
-    console.log("importing file", file);
     // add file to fs
     this.fs.files[file.path] = file;
     this.fs.file_paths.push(file.path);

@@ -11,7 +11,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
         value = elm.dataset.default;
         this.main.set_setting_by_path(path, value);
       }
-      console.log({path, value});
       let setting;
       switch (elm.dataset.type) {
         case "text":
@@ -69,7 +68,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
     let options;
     if (elm.dataset.optionsCallback) {
       const opts_callback = this.main.get_by_env_path(elm.dataset.optionsCallback);
-      console.log({ opts_callback });
       options = opts_callback();
     }
   
@@ -77,7 +75,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
       options = this.get_dropdown_options(elm);
     }
   
-    console.log(JSON.stringify({ options }, null, 2));
     smart_setting.addDropdown(dropdown => {
       if (elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
       options.forEach(option => {
@@ -263,7 +260,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
 
   handle_on_change(path, value, elm) {
     this.main.set_setting_by_path(path, value);
-    console.log("setting changed", {path, value});
     if(elm.dataset.callback){
       const callback = this.main.get_by_env_path(elm.dataset.callback);
       if(callback) callback(path, value, elm);

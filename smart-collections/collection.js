@@ -331,7 +331,6 @@ export class Collection {
     container.innerHTML = '';
     container.innerHTML = '<div class="sc-loading">Loading ' + this.collection_key + ' settings...</div>';
     const frag = await settings_template.call(this.env.smart_view, this);
-    console.log({collection_rendered_frag: frag});
     container.innerHTML = '';
     container.appendChild(frag);
   }

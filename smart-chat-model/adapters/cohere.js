@@ -32,7 +32,6 @@ class CohereAdapter {
     const data = event.source.xhr.responseText;
     // split by newline and get last
     const lines = data.split('\n').slice(this.last_line_index);
-    console.log(lines);
     this.last_line_index += lines.length;
     const text_chunk = lines
         .filter((line) => line.trim() !== '')

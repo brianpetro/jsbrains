@@ -12,7 +12,6 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
     }
 
     async load() {
-        console.log('loading iframe adapter', this.smart_embed.opts);
         // Create and append iframe
         this.iframe = document.createElement('iframe');
         this.iframe.style.display = 'none';

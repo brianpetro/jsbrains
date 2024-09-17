@@ -102,7 +102,6 @@ async function fetch_openai_models(api_key, request_adapter=null) {
         throw new Error('Network response was not ok');
       }
       data = await response.json();
-      console.log('Model data retrieved:', data);
     }else{
       console.log('Using request adapter');
       const resp = await request_adapter({

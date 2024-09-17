@@ -35,8 +35,8 @@ export class SmartEntities extends Collection {
   }
   async load_smart_embed() {
     if(this.embed_model_key === 'None') return;
-    if(this.embed_model.loading) return console.warn(`SmartEmbedModel already loading for ${this.embed_model_key}`);
-    if(this.embed_model.loaded) return console.warn(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
+    if(this.embed_model.loading) return console.log(`SmartEmbedModel already loading for ${this.embed_model_key}`);
+    if(this.embed_model.loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
     await this.embed_model.load();
   }
   unload() {
@@ -181,7 +181,6 @@ export class SmartEntities extends Collection {
       ...(this.env.chats?.current?.scope || {}),
       ...(params.filter || {}),
     };
-    console.log({filter});
     const results = hyp_vecs
       .reduce((acc, embedding, i) => {
         const nearests = this.nearest(embedding.vec, filter);
@@ -197,7 +196,6 @@ export class SmartEntities extends Collection {
       }, {})
     ;
     const k = params.k || this.env.settings.lookup_k || 10;
-    console.log({results});
     const top_k = Object.values(results)
       .sort(sort_by_score)
       .slice(0, k)

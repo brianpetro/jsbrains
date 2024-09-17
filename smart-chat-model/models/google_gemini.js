@@ -11,12 +11,10 @@ async function fetch_google_gemini_models(api_key, request_adapter=null) {
         throw new Error('Network response was not ok');
       }
       data = await response.json();
-      console.log('Model data retrieved:', data);
     }else{
       const resp = await request_adapter({
         url: 'https://generativelanguage.googleapis.com/v1beta/models?key=' + api_key,
       });
-      console.log(JSON.stringify(resp));
       data = await resp.json;
     }
     return data.models

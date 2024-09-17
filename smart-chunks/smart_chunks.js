@@ -25,7 +25,6 @@ class SmartChunks {
     if(entity.file_type === 'canvas') opts.adapter = 'canvas';
     const adapter = this.get_adapter(opts);
     const {blocks} = await adapter.parse(entity);
-    console.log(blocks);
     const block = blocks.find(block => block.path === path);
     if (!block) {
       throw new Error(`Block not found at path ${path}`);

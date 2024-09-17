@@ -53,7 +53,7 @@ export class SmartEnvSettings {
       JSON.stringify(smart_env_settings, null, 2)
     );
     this._saved = true;
-    console.log("saved smart_env settings", smart_env_settings);
+    // console.log("saved smart_env settings", JSON.stringify(smart_env_settings, null, 2));
   }
 
   /**
@@ -148,11 +148,12 @@ export class SmartEnvSettings {
       delete os.embed_input_min_chars;
     }
     if(os.muted_notices) {
+      if(!this._settings.smart_notices) this._settings.smart_notices = {};
       this._settings.smart_notices.muted = {...os.muted_notices};
       delete os.muted_notices;
     }
     if(os.smart_connections_folder){
-      os.env_data_dir = os.smart_connections_folder;
+      if(!os.env_data_dir) os.env_data_dir = os.smart_connections_folder;
       delete os.smart_connections_folder;
     }
     if(os.smart_connections_folder_last){

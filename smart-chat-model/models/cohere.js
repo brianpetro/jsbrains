@@ -20,7 +20,6 @@ async function fetch_cohere_models(api_key, request_adapter=null) {
         throw new Error('Network response was not ok');
       }
       data = await response.json();
-      console.log('Model data retrieved:', data);
     }else{
       const resp = await request_adapter({
         url: 'https://api.cohere.ai/v1/models',

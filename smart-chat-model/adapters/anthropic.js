@@ -128,7 +128,6 @@ function chatml_to_anthropic(opts) {
     const system_prompt = '<context>\n' + opts.messages[last_system_idx].content + '\n</context>\n';
     messages[messages.length - 1].content = system_prompt + messages[messages.length - 1].content;
   }
-  console.log(messages);
   const out = {
     messages,
     model,

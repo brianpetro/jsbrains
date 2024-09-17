@@ -70,7 +70,7 @@ export class SmartEnv {
     if (!main || typeof main !== 'object'){ // || typeof main.constructor !== 'function') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
-    console.log('opts', opts);
+    // console.log('opts', opts);
 
     let existing_env = opts.global_ref instanceof SmartEnv ? opts.global_ref : null;
 
@@ -166,7 +166,6 @@ export class SmartEnv {
   async init(main) {
     this.smart_env_settings = new SmartEnvSettings(this, this.opts);
     await this.smart_env_settings.load();
-    console.log('smart_env_settings', this.smart_env_settings);
     await this.init_collections(); // init so settings can be accessed
     await this.ready_to_load_collections(main);
     if(!this.opts.prevent_load_on_init){ // remove when collection-specific opt is used in sc app
@@ -283,7 +282,6 @@ export class SmartEnv {
   }
   async render_settings(opts = {}) {
     const frag = await settings_template.call(this.smart_view, this, opts);
-    console.log('frag', frag);
     if(opts.container){
       opts.container.innerHTML = '';
       opts.container.appendChild(frag);
