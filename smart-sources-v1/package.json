@@ -1,16 +1,18 @@
 {
-  "name": "smart-chats",
+  "name": "smart-sources",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "version": "2.0.0",
   "type": "module",
-  "description": "Easy to manage chats with AI.",
-  "main": "index.js",
+  "description": "Easy to manage collections mapped to local or remote sources.",
+  "main": "main.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
-    "chats"
+    "embeddings",
+    "collections",
+    "sources"
   ],
   "repository": {
     "type": "git",
@@ -24,7 +26,7 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-sources": "file:../smart-sources-v1"
+    "smart-entities": "file:../smart-entities"
   },
   "ava": {
     "files": [
