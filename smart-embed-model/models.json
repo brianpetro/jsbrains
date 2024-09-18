@@ -1,6 +1,6 @@
 {
   "TaylorAI/bge-micro-v2": {
-    "model_key": "TaylorAI/bge-micro-v2",
+    "id": "TaylorAI/bge-micro-v2",
     "batch_size": 1,
     "dims": 384,
     "max_tokens": 512,
@@ -9,7 +9,7 @@
     "adapter": "transformers"
   },
   "andersonbcdefg/bge-small-4096": {
-    "model_key": "andersonbcdefg/bge-small-4096",
+    "id": "andersonbcdefg/bge-small-4096",
     "batch_size": 1,
     "dims": 384,
     "max_tokens": 4096,
@@ -18,7 +18,7 @@
     "adapter": "transformers"
   },
   "Xenova/jina-embeddings-v2-base-zh": {
-    "model_key": "Xenova/jina-embeddings-v2-base-zh",
+    "id": "Xenova/jina-embeddings-v2-base-zh",
     "batch_size": 1,
     "dims": 512,
     "max_tokens": 8192,
@@ -27,7 +27,7 @@
     "adapter": "transformers"
   },
   "text-embedding-3-small": {
-    "model_key": "text-embedding-3-small",
+    "id": "text-embedding-3-small",
     "batch_size": 50,
     "dims": 1536,
     "max_tokens": 8191,
@@ -37,7 +37,7 @@
     "adapter": "openai"
   },
   "text-embedding-3-large": {
-    "model_key": "text-embedding-3-large",
+    "id": "text-embedding-3-large",
     "batch_size": 50,
     "dims": 3072,
     "max_tokens": 8191,
@@ -47,7 +47,7 @@
     "adapter": "openai"
   },
   "text-embedding-3-small-512": {
-    "model_key": "text-embedding-3-small",
+    "id": "text-embedding-3-small",
     "batch_size": 50,
     "dims": 512,
     "max_tokens": 8191,
@@ -57,7 +57,7 @@
     "adapter": "openai"
   },
   "text-embedding-3-large-256": {
-    "model_key": "text-embedding-3-large",
+    "id": "text-embedding-3-large",
     "batch_size": 50,
     "dims": 256,
     "max_tokens": 8191,
@@ -67,7 +67,7 @@
     "adapter": "openai"
   },
   "text-embedding-ada-002": {
-    "model_key": "text-embedding-ada-002",
+    "id": "text-embedding-ada-002",
     "batch_size": 50,
     "dims": 1536,
     "max_tokens": 8191,
@@ -77,7 +77,7 @@
     "adapter": "openai"
   },
   "Xenova/jina-embeddings-v2-small-en": {
-    "model_key": "Xenova/jina-embeddings-v2-small-en",
+    "id": "Xenova/jina-embeddings-v2-small-en",
     "batch_size": 1,
     "dims": 512,
     "max_tokens": 8192,
@@ -86,7 +86,7 @@
     "adapter": "transformers"
   },
   "nomic-ai/nomic-embed-text-v1.5": {
-    "model_key": "nomic-ai/nomic-embed-text-v1.5",
+    "id": "nomic-ai/nomic-embed-text-v1.5",
     "batch_size": 1,
     "dims": 256,
     "max_tokens": 8192,
@@ -95,7 +95,7 @@
     "adapter": "transformers"
   },
   "Xenova/bge-small-en-v1.5": {
-    "model_key": "Xenova/bge-small-en-v1.5",
+    "id": "Xenova/bge-small-en-v1.5",
     "batch_size": 1,
     "dims": 384,
     "max_tokens": 512,
@@ -104,7 +104,7 @@
     "adapter": "transformers"
   },
   "nomic-ai/nomic-embed-text-v1": {
-    "model_key": "nomic-ai/nomic-embed-text-v1",
+    "id": "nomic-ai/nomic-embed-text-v1",
     "batch_size": 1,
     "dims": 768,
     "max_tokens": 2048,

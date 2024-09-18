@@ -8,7 +8,6 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedAdapter {
     this.model_key = smart_embed.opts.model_key || "text-embedding-ada-002";
     this.endpoint = "https://api.openai.com/v1/embeddings";
     this.max_tokens = 8191;  // Default max tokens for OpenAI embeddings
-    this.dims = smart_embed.opts.dims || 1536;  // Default dimensions for OpenAI embeddings
     this.enc = null;
     this.request_adapter = smart_embed.env.opts.request_adapter;
   }
@@ -88,13 +87,16 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedAdapter {
   prepare_batch_input(items) {
     return items.map(item => this.prepare_embed_input(item.embed_input));
   }
+  get model_config() { return this.smart_embed.model_config; }
+  get model() { return this.model_config.id; }
+  get dims() { return this.model_config.dims || 1536; }
 
   prepare_request_body(embed_input) {
     const body = {
-      model: this.model_key,
+      model: this.model,
       input: embed_input,
     };
-    if (this.model_key.startsWith("text-embedding-3")) {
+    if (this.model.startsWith("text-embedding-3")) {
       body.dimensions = this.dims;
     }
     return body;

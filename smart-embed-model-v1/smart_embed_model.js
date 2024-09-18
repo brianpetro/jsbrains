@@ -38,7 +38,7 @@ export class SmartEmbedModel extends SmartModel {
         ? { ...this.env.opts.modules.smart_embed_model, class: null }
         : {}
       ),
-      ...embed_models[opts.model_key],
+      ...embed_models[opts.model_key], // ewww gross
       ...opts,
     };
     if(!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
@@ -83,6 +83,7 @@ export class SmartEmbedModel extends SmartModel {
     return await this.adapter.embed_batch(inputs);
   }
 
+  get model_config() { return embed_models[this.opts.model_key]; }
   get batch_size() { return this.opts.batch_size || 1; }
   get max_tokens() { return this.opts.max_tokens || 512; }
   get dims() { return this.opts.dims; }
