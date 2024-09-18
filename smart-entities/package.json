@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "smart-collections": "file:../smart-collections",
-    "smart-embed-model": "file:../smart-embed-model"
+    "smart-embed-model": "file:../smart-embed-model-v1"
   },
   "ava": {
     "files": [

@@ -1,95 +1,196 @@
-/**
- * CohereAdapter class is designed to adapt the SmartChatModel's interaction with the Cohere API.
- * It provides methods to prepare request bodies, handle streaming data, and extract message content from responses.
- */
-class CohereAdapter {
-  /**
-   * Converts a ChatML object to a format suitable for a request to the Cohere API.
-   * @param {Object} chatml - The ChatML object containing the chat history and other parameters.
-   * @returns {Object} The request body formatted for the Cohere API.
-   */
-  prepare_request_body(chatml) { return chatml_to_cohere(chatml); }
+import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
-  /**
-   * Extracts the message content from a JSON response from the Cohere API.
-   * @param {Object} json - The JSON response object from which to extract the text content.
-   * @returns {string} The extracted text content from the response.
-   */
-  get_message_content(json) { return json.text; }
+export class SmartChatModelCohereAdapter extends SmartChatModelApiAdapter {
+  get req_adapter() { return SmartChatModelCohereRequestAdapter; }
+  get res_adapter() { return SmartChatModelCohereResponseAdapter; }
 
-  /**
-   * Processes streaming data received from the Cohere API and extracts text chunks.
-   * This method handles the accumulation of text data over multiple events and manages the state of the stream.
-   * @param {Object} event - The event object containing streaming data.
-   * @returns {string} The accumulated text chunk extracted from the stream.
-   */
-  get_text_chunk_from_stream(event) {
-    if(!this.last_line_index) this.last_line_index = 0;
-    clearTimeout(this.last_line_timeout);
-    this.last_line_timeout = setTimeout(() => {
-        this.last_line_index = 0;
-    }, 10000);
-    const data = event.source.xhr.responseText;
-    // split by newline and get last
-    const lines = data.split('\n').slice(this.last_line_index);
-    this.last_line_index += lines.length;
-    const text_chunk = lines
-        .filter((line) => line.trim() !== '')
-        .map((line) => {
-            console.log(line);
-            const json = JSON.parse(line);
-            if(json.event_type === 'stream-end') {
-                console.log('stream-end');
-                this.end_of_stream = true;
-                setTimeout(() => {
-                    this.end_of_stream = false;
-                }, 3000);
-                return '';
-            }
-            return json.text;
-        })
-        .join('');
-    console.log(text_chunk);
-    return text_chunk;
+  async count_tokens(input) {
+    const req = {
+      url: `${this.platform.endpoint}/tokenize`,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${this.api_key}`
+      },
+      body: JSON.stringify({ text: typeof input === 'string' ? input : JSON.stringify(input) })
+    };
+    const resp = await this.http_adapter.request(req);
+    return resp.json.tokens.length;
   }
 
-  /**
-   * Determines if the end of the stream has been reached based on the event data.
-   * @param {Object} event - The event object that may indicate the end of the stream.
-   * @returns {boolean} True if the end of the stream is indicated, false otherwise.
-   */
-  is_end_of_stream(event) { return this.end_of_stream; }
-}
-exports.CohereAdapter = CohereAdapter;
+  get endpoint() {
+    return `${this.platform.endpoint}`;
+  }
 
-/**
- * Converts a ChatML object into a format suitable for the Cohere API.
- * This function prepares the data by structuring it according to the requirements of the Cohere API,
- * including the model to use, the chat history excluding the last user message, and the last message separately.
- * 
- * @param {Object} chatml - The ChatML object containing the model, messages, and other parameters like temperature.
- * @returns {Object} The formatted object for the Cohere API request, containing the model, chat history, last message, and temperature.
- */
-function chatml_to_cohere(chatml) {
-    const cohere = {
-        model: chatml.model,
-        // skip last user message
-        chat_history: chatml.messages
-            .slice(0, -1)
-            .map((message) => ({
-                role: message.role,
-                message: parse_message_content_to_string(message),
-            }))
-        ,
-        message: parse_message_content_to_string(chatml.messages[chatml.messages.length - 1]),
-        temperature: chatml.temperature,
-        // stream: chatml.stream // currently not supported
+  parse_model_data(model_data) {
+    return model_data.models
+      .filter(model => model.name.startsWith('command-'))
+      .map(model => ({
+        model_name: model.name,
+        key: model.name,
+        max_input_tokens: model.context_length,
+        tokenizer_url: model.tokenizer_url,
+        finetuned: model.finetuned,
+        description: `Max input tokens: ${model.context_length}, Finetuned: ${model.finetuned}`,
+        raw: model
+      }))
+      .sort((a, b) => a.model_name.localeCompare(b.model_name));
+  }
+}
+
+export class SmartChatModelCohereRequestAdapter extends SmartChatModelRequestAdapter {
+  to_platform() { return this.to_cohere(); }
+
+  to_cohere() {
+    const cohere_body = {
+      model: this.model,
+      message: this._get_latest_user_message(),
+      chat_history: this._transform_messages_to_cohere_chat_history(),
+      max_tokens: this.max_tokens,
+      temperature: this.temperature,
+      stream: this.stream,
+      ...(this.tools && { tools: this._transform_tools_to_cohere() }),
+      ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
+      ...(this._req.preamble && { preamble: this._req.preamble }),
+      ...(this._req.conversation_id && { conversation_id: this._req.conversation_id }),
+      ...(this._req.connectors && { connectors: this._req.connectors }),
+      ...(this._req.documents && { documents: this._req.documents }),
     };
-    return cohere;
-}
-exports.chatml_to_cohere = chatml_to_cohere;
 
-function parse_message_content_to_string(message) {
-    return Array.isArray(message.content) ? message.content.filter(c => c.type === 'text').map(c => c.text).join('\n') : message.content;
+    if (this._req.response_format) {
+      cohere_body.response_format = {
+        type: this._req.response_format.type,
+        ...(this._req.response_format.schema && { schema: this._req.response_format.schema })
+      };
+    }
+
+    return {
+      url: this.adapter.endpoint,
+      method: 'POST',
+      headers: this.get_headers(),
+      body: JSON.stringify(cohere_body)
+    };
+  }
+
+  _get_latest_user_message() {
+    // throw if image input
+    if (this.messages.some(msg => Array.isArray(msg.content) && msg.content.some(part => part.type === 'image_url'))) {
+      throw new Error("Cohere API does not support image input");
+    }
+    const user_messages = this.messages.filter(msg => msg.role === 'user');
+    return user_messages[user_messages.length - 1]?.content || '';
+  }
+
+  _transform_messages_to_cohere_chat_history() {
+    return this.messages.slice(0, -1).map(message => ({
+      role: this._get_cohere_role(message.role),
+      message: this._get_cohere_content(message.content)
+    }));
+  }
+
+  _get_cohere_role(role) {
+    const role_map = {
+      system: 'SYSTEM',
+      user: 'USER',
+      assistant: 'CHATBOT',
+      function: 'CHATBOT'
+    };
+    return role_map[role] || role.toUpperCase();
+  }
+
+  _get_cohere_content(content) {
+    if (Array.isArray(content)) {
+      for (const part of content) {
+        if (part.type === 'image_url') {
+          throw new Error("Cohere API does not support image input");
+        }
+      }
+      return content.map(part => {
+        if (part.type === 'text') return part.text;
+        return JSON.stringify(part);
+      }).join('\n');
+    }
+    return content;
+  }
+
+  _transform_tools_to_cohere() {
+    return this.tools.map(tool => ({
+      name: tool.function.name,
+      description: tool.function.description,
+      parameters: tool.function.parameters
+    }));
+  }
 }
 
+export class SmartChatModelCohereResponseAdapter extends SmartChatModelResponseAdapter {
+  to_openai() {
+    if (this._res.message) {
+      throw new Error(this._res.message);
+    }
+
+    return {
+      id: this._res.generation_id || 'cohere_' + Date.now(),
+      object: 'chat.completion',
+      created: Date.now(),
+      model: this.adapter.model_key,
+      choices: [
+        {
+          index: 0,
+          message: this._transform_message_to_openai(),
+          finish_reason: this._get_openai_finish_reason(this._res.finish_reason)
+        }
+      ],
+      usage: this._transform_usage_to_openai()
+    };
+  }
+
+  _transform_message_to_openai() {
+    const message = {
+      role: 'assistant',
+      content: this._res.text || ''
+    };
+
+    if (this._res.citations) {
+      message.citations = this._res.citations;
+    }
+
+    if (this._res.documents) {
+      message.documents = this._res.documents;
+    }
+
+    if (this._res.search_queries) {
+      message.search_queries = this._res.search_queries;
+    }
+
+    if (this._res.search_results) {
+      message.search_results = this._res.search_results;
+    }
+
+    return message;
+  }
+
+  _get_openai_finish_reason(finish_reason) {
+    const reason_map = {
+      'COMPLETE': 'stop',
+      'MAX_TOKENS': 'length',
+      'ERROR': 'error',
+      'STOP_SEQUENCE': 'stop'
+    };
+    return reason_map[finish_reason] || 'stop';
+  }
+
+  _transform_usage_to_openai() {
+    if (!this._res.meta || !this._res.meta.billed_units) {
+      return {
+        prompt_tokens: null,
+        completion_tokens: null,
+        total_tokens: null
+      };
+    }
+    return {
+      prompt_tokens: this._res.meta.billed_units.input_tokens || null,
+      completion_tokens: this._res.meta.billed_units.output_tokens || null,
+      total_tokens: (this._res.meta.billed_units.input_tokens || 0) + (this._res.meta.billed_units.output_tokens || 0)
+    };
+  }
+}

@@ -1,39 +1,41 @@
-class OpenRouterAdapter {
-  constructor(model) { this.model = model; }
-  get_tool_call(json) {
-    // handles Gemini format
-    if(json.choices[0].message.tool_calls){
-      return json.choices[0].message.tool_calls[0].function;
-    }
-    // handles mistral format
-    if(json.choices[0].message.content.includes("function")){
-      const content = JSON.parse(json.choices[0].message.content);
-      if(!content.function) return null;
-      return content;
-    }
-    return null;
+import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
+
+export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
+  get req_adapter() { return SmartChatModelOpenRouterRequestAdapter; }
+  get res_adapter() { return SmartChatModelOpenRouterResponseAdapter; }
+
+  async count_tokens(input) {
+    // OpenRouter doesn't provide a token counting endpoint, so we'll use a rough estimate
+    const text = typeof input === 'string' ? input : JSON.stringify(input);
+    return Math.ceil(text.length / 4); // Rough estimate: 1 token ≈ 4 characters
   }
-  get_tool_name(tool_call) {
-    if(tool_call.function) return tool_call.function; // mistral format
-    if(tool_call.name) return tool_call.name; // gemini format
-    return null;
+
+  get endpoint() {
+    return 'https://openrouter.ai/api/v1/chat/completions';
   }
-  get_tool_call_content(tool_call) {
-    if(tool_call.parameters) return tool_call.parameters; // mistral format
-    // handle gemini format
-    if(tool_call.arguments){
-      const args = JSON.parse(tool_call.arguments);
-      // prevent escape character issues
-      Object.entries(args).forEach(([key, value]) => {
-        args[key] = value.replace(/\\n/g, "\n")
-          .replace(/\\t/g, "\t")
-          .replace(/\\r/g, "\r")
-          .replace(/\\'/g, "'")
-          .replace(/\\"/g, '"')
-      });
-      return args;
+
+  parse_model_data(model_data) {
+    if(model_data.data) {
+      model_data = model_data.data;
     }
-    return null;
+    return model_data.map(model => ({
+      model_name: model.id,
+      key: model.id,
+      max_input_tokens: model.context_length,
+      description: model.name,
+      actions: model.description.includes('tool use') || model.description.includes('function call'),
+      multimodal: model.architecture.modality === 'multimodal',
+      raw: model
+    }));
   }
 }
-exports.OpenRouterAdapter = OpenRouterAdapter;
+
+export class SmartChatModelOpenRouterRequestAdapter extends SmartChatModelRequestAdapter {
+  to_platform() { return this.to_openai(); }
+
+}
+
+export class SmartChatModelOpenRouterResponseAdapter extends SmartChatModelResponseAdapter {
+  to_platform() { return this.to_openai(); }
+  get object() { return 'chat.completion'; }
+}

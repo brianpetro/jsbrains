@@ -5,7 +5,7 @@
     "endpoint": "https://api.openai.com/v1/chat/completions",
     "streaming": true,
     "actions": true,
-    "fetch_models": true,
+    "models_endpoint": "https://api.openai.com/v1/models",
     "default_model": "gpt-3.5-turbo",
     "signup_url": "https://platform.openai.com/api-keys"
   },
@@ -18,7 +18,7 @@
     "streaming": true,
     "actions": true,
     "adapter": "Gemini",
-    "fetch_models": true,
+    "models_endpoint": "https://generativelanguage.googleapis.com/v1beta/models",
     "default_model": "gemini-1.5-pro",
     "signup_url": "https://ai.google.dev/"
   },
@@ -28,8 +28,8 @@
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "streaming": true,
     "adapter": "OpenRouter",
-    "fetch_models": true,
-    "default_model": "meta-llama/llama-3.1-8b-instruct:free",
+    "models_endpoint": "https://openrouter.ai/api/v1/models",
+    "default_model": "mistralai/mistral-7b-instruct:free",
     "signup_url": "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys"
   },
   "cohere": {
@@ -38,7 +38,7 @@
     "endpoint": "https://api.cohere.ai/v1/chat",
     "streaming": false,
     "adapter": "Cohere",
-    "fetch_models": true,
+    "models_endpoint": "https://api.cohere.ai/v1/models",
     "default_model": "command-r",
     "signup_url": "https://dashboard.cohere.com/welcome/register?redirect_uri=%2Fapi-keys"
   },
@@ -54,7 +54,41 @@
     },
     "adapter": "Anthropic",
     "actions": true,
-    "fetch_models": true,
+    "models_endpoint": false,
+    "models": [
+      {
+        "key": "claude-3-opus-20240229",
+        "model_name": "claude-3-opus-20240229",
+        "description": "Anthropic's Claude Opus",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      },
+      {
+        "key": "claude-3-5-sonnet-20240620",
+        "model_name": "claude-3.5-sonnet-20240620",
+        "description": "Anthropic's Claude Sonnet",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      },
+      {
+        "key": "claude-3-haiku-20240307",
+        "model_name": "claude-3-haiku-20240307",
+        "description": "Anthropic's Claude Haiku",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      },
+      {
+        "key": "claude-3-sonnet-20240229",
+        "model_name": "claude-3-sonnet-20240229",
+        "description": "Anthropic's Claude Sonnet",
+        "max_input_tokens": 200000,
+        "max_output_tokens": 4000,
+        "multimodal": true
+      }
+    ],
     "default_model": "claude-3-sonnet-20240229",
     "signup_url": "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
   },

@@ -1,10 +1,11 @@
 {
   "name": "smart-chat-model",
   "author": "Brian Joseph Petro (🌴 Brian)",
+  "type": "module",
   "license": "MIT",
   "version": "1.0.5",
   "description": "no-nonsense adapter for Anthropic Claude, Google Gemini, Cohere & more with OpenAI style API interface.",
-  "main": "smart_chat_model.js",
+  "main": "index.js",
   "scripts": {
     "test": "npx ava"
   },
@@ -23,8 +24,13 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "homepage": "https://jsbrains.org",
+  "dependencies": {
+    "smart-http-request": "../smart-http-request",
+    "smart-model": "../smart-model"
+  },
   "devDependencies": {
     "ava": "^6.1.2",
+    "dotenv": "^16.4.5",
     "esbuild": "^0.20.2"
   }
 }

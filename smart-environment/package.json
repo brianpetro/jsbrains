@@ -19,7 +19,7 @@
   "homepage": "https://jsbrains.org",
   "dependencies": {
     "smart-change": "../smart-change",
-    "smart-embed-model": "../smart-embed-model",
+    "smart-embed-model": "../smart-embed-model-v1",
     "smart-file-system": "../smart-fs",
     "smart-sources": "../smart-sources",
     "smart-view": "../smart-view"

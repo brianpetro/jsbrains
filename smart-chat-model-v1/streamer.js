@@ -1,4 +1,4 @@
-export class SmartStreamer {
+class SmartStreamer {
   constructor(url, options = {}) {
     const {
       method = 'GET',
@@ -177,3 +177,5 @@ export class SmartStreamer {
   }
 
 }
+
+exports.SmartStreamer = SmartStreamer;

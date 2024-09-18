@@ -1,336 +1,195 @@
-const test = require('ava');
-const { chatml_to_anthropic } = require('./anthropic');
+import test from 'ava';
+import dotenv from 'dotenv';
+import { SmartChatModel } from '../smart_chat_model.js';
+import { SmartChatModelAnthropicAdapter, SmartChatModelAnthropicRequestAdapter, SmartChatModelAnthropicResponseAdapter } from './anthropic.js';
+import platforms from '../platforms.json' assert { type: 'json' };
 
-test('filters out system messages and formats correctly', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', content: 'Hi!' },
-      { role: 'user', content: 'How are you?' }
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-  const expected = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', content: 'Hi!' },
-      { role: 'user', content: 'How are you?' }
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-  const result = chatml_to_anthropic(input);
-  t.deepEqual(result, expected);
-});
-
-test('adds system message context correctly', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'system', content: '---BEGIN NOTE---\nImportant info\n---END NOTE---' },
-      { role: 'user', content: 'How are you?' }
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-  const expectedContent = '<context>\n---BEGIN NOTE---\nImportant info\n---END NOTE---\n</context>\nHow are you?';
-  const result = chatml_to_anthropic(input);
-
-  t.is(result.messages[result.messages.length - 1].content, expectedContent);
-});
-
-const anthropic_lookup = {
-  "name": "lookup",
-  "description": "Semantic search",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "hypotheticals": {
-        "type": "array",
-        "items": { "type": "string" }
-      }
-    },
-    "required": ["hypotheticals"]
-  }
-};
-const anthropic_create_note = {
-  "name": "create_note",
-  "description": "Create a note",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "note": {
-        "type": "string"
-      }
-    },
-    "required": ["note"]
-  }
-};
-const openai_lookup = {
-  "type": "function",
-  "function": {
-    "name": "lookup",
-    "description": "Semantic search",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "hypotheticals": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
-      },
-      "required": ["hypotheticals"]
+// Create an instance of SmartChatModel for Anthropic
+const smart_chat_model_anthropic = new SmartChatModel({
+  settings: {
+    platform_key: 'anthropic',
+    anthropic: {
+      api_key: 'test_api_key',
+      model_key: 'claude-2.1',
     }
+  },
+  adapters: {
+    anthropic: SmartChatModelAnthropicAdapter
   }
-};
-const openai_create_note = {
-  "type": "function",
-  "function": {
-    "name": "create_note",
-    "description": "Create a note",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "note": {
-          "type": "string"
+});
+
+test('SmartChatModelAnthropicRequestAdapter converts OpenAI request to Anthropic schema', t => {
+  const openai_request = {
+    model: 'claude-2.1',
+    messages: [
+      { role: 'system', content: 'You are a helpful weather assistant.' },
+      { role: 'user', content: 'Hello, how are you?' },
+      { role: 'assistant', content: 'I\'m doing well, thank you for asking! How can I assist you today?' },
+      { role: 'user', content: 'What\'s the weather like?' }
+    ],
+    max_tokens: 1000,
+    temperature: 0.7,
+    stream: false,
+    tools: [
+      {
+        type: 'function',
+        function: {
+          name: 'weather_api',
+          description: 'Get weather information for a location',
+          parameters: {
+            type: 'object',
+            properties: {
+              location: { type: 'string' },
+              date: { type: 'string' }
+            },
+            required: ['location']
+          }
+        }
+      }
+    ],
+    tool_choice: 'auto'
+  };
+
+  const request_adapter = new SmartChatModelAnthropicRequestAdapter(smart_chat_model_anthropic.adapter, openai_request);
+  const anthropic_request = request_adapter.to_anthropic();
+
+  t.is(anthropic_request.url, 'https://api.anthropic.com/v1/messages');
+  t.is(anthropic_request.method, 'POST');
+  t.deepEqual(anthropic_request.headers, {
+    ...platforms.anthropic.headers,
+    'Content-Type': 'application/json',
+    'x-api-key': 'test_api_key'
+  });
+
+  const body = JSON.parse(anthropic_request.body);
+  t.is(body.model, 'claude-2.1');
+  t.is(body.max_tokens, 1000);
+  t.is(body.temperature, 0.7);
+  t.is(body.stream, false);
+  t.is(body.system, 'You are a helpful weather assistant.');
+  t.deepEqual(body.messages, [
+    { role: 'user', content: 'Hello, how are you?' },
+    { role: 'assistant', content: 'I\'m doing well, thank you for asking! How can I assist you today?' },
+    { role: 'user', content: 'What\'s the weather like?' }
+  ]);
+  t.deepEqual(body.tools, [
+    {
+      name: 'weather_api',
+      description: 'Get weather information for a location',
+      parameters: openai_request.tools[0].function.parameters
+    }
+  ]);
+  t.deepEqual(body.tool_choice, { type: 'auto' });
+});
+
+test('SmartChatModelAnthropicResponseAdapter converts Anthropic response to OpenAI schema', t => {
+  const anthropic_response = {
+    id: 'msg_1234567890',
+    type: 'message',
+    role: 'assistant',
+    content: [
+      {
+        type: 'text',
+        text: 'To get the weather information, I\'ll need to use the weather API. Let me do that for you.'
+      },
+      {
+        type: 'tool_use',
+        tool_use: {
+          id: 'call_1234567890',
+          name: 'weather_api',
+          input: {
+            location: 'New York',
+            date: '2023-03-01'
+          }
         }
       },
-      "required": ["note"]
-    }
-  }
-};
-test('should handle tool_choice forcing lookup', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: 'Hello' },
+      {
+        type: 'text',
+        text: 'Here is the weather information for New York: It\'s currently sunny with a temperature of 72°F (22°C). The forecast predicts clear skies throughout the day with a high of 78°F (26°C) and a low of 65°F (18°C). It\'s a perfect day to spend some time outdoors!'
+      }
     ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5,
-    tool_choice: {
-      type: "function",
-      function: {
-        name: "lookup",
+    model: 'claude-2.1',
+    stop_reason: 'end_turn',
+    stop_sequence: null,
+    usage: {
+      input_tokens: 20,
+      output_tokens: 25
+    }
+  };
+
+  const response_adapter = new SmartChatModelAnthropicResponseAdapter(smart_chat_model_anthropic.adapter, anthropic_response);
+  const openai_response = response_adapter.to_openai();
+
+  t.is(openai_response.id, 'msg_1234567890');
+  t.is(openai_response.object, 'chat.completion');
+  t.truthy(openai_response.created);
+  t.deepEqual(openai_response.choices[0].message, {
+    role: 'assistant',
+    content: 'To get the weather information, I\'ll need to use the weather API. Let me do that for you.\n\nHere is the weather information for New York: It\'s currently sunny with a temperature of 72°F (22°C). The forecast predicts clear skies throughout the day with a high of 78°F (26°C) and a low of 65°F (18°C). It\'s a perfect day to spend some time outdoors!',
+    tool_calls: [
+      {
+        id: 'call_1234567890',
+        type: 'function',
+        function: {
+          name: 'weather_api',
+          arguments: JSON.stringify({
+            location: 'New York',
+            date: '2023-03-01'
+          })
+        }
+      }
+    ]
+  });
+  t.is(openai_response.choices[0].finish_reason, 'stop');
+  t.deepEqual(openai_response.usage, {
+    prompt_tokens: 20,
+    completion_tokens: 25,
+    total_tokens: 45
+  });
+});
+
+dotenv.config({ path: '../.env' });
+
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+test.serial('Live Anthropic Integration Test', async t => {
+  if (!ANTHROPIC_API_KEY) {
+    t.pass('Skipping live test: No Anthropic API key found in .env');
+    return;
+  }
+
+  const smart_chat_model = new SmartChatModel({
+    settings: {
+      platform_key: 'anthropic',
+      anthropic: {
+        api_key: ANTHROPIC_API_KEY,
+        model_key: 'claude-2.1',
       }
     },
-    tools: [openai_lookup]
-  };
-  const expected = {
+    adapters: {
+      anthropic: SmartChatModelAnthropicAdapter
+    }
+  });
+  // fetch all models
+  const models = await smart_chat_model.get_models();
+  console.log(JSON.stringify(models, null, 2));
+
+  const request = {
     messages: [
-      { role: 'user', content: 'Hello\nUse the "lookup" tool!' },
+      { role: 'user', content: 'What is the capital of Germany?' }
     ],
-    model: 'test-model',
-    system: 'Required: use the "lookup" tool!',
     max_tokens: 100,
-    temperature: 0.5,
-    tools: [anthropic_lookup]
+    temperature: 0.7
   };
-  t.deepEqual(chatml_to_anthropic(input), expected);
+
+  try {
+    const response = await smart_chat_model.complete(request);
+    console.log(JSON.stringify(response, null, 2));
+    t.truthy(response.choices[0].message.content);
+    t.is(response.choices[0].message.role, 'assistant');
+    t.truthy(response.usage.total_tokens > 0);
+  } catch (error) {
+    console.log(error);
+    t.fail(`Live test failed: ${error.message}`);
+  }
 });
-test('should handle tool_choice auto', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5,
-    tool_choice: "auto",
-    tools: [openai_lookup, openai_create_note]
-  };
-  const expected = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-    ],
-    model: 'test-model',
-    // system: 'Required: use the "lookup" tool!',
-    max_tokens: 100,
-    temperature: 0.5,
-    tools: [anthropic_lookup, anthropic_create_note]
-  };
-  t.deepEqual(chatml_to_anthropic(input), expected);
-});
-test('should properly format tool role as tool result in user message', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', "tool_calls": [
-        {
-          "id": "check_status",
-          "type": "function",
-          "function": {
-            "name": "check_status",
-            "arguments": "{\"status\":\"check\"}"
-          }
-        }
-      ]},
-      { role: 'tool', content: '{"result": "ok"}' },
-      { 
-        role: 'assistant',
-        content: [
-          { type: 'text', text: 'The result of the lookup tool was: OK; checking again' },
-        ],
-        tool_calls: [
-          {
-            id: 'check_status',
-            type: 'function',
-            function: {
-              name: 'check_status',
-              arguments: '{"status":"check2"}'
-            }
-          }
-        ]
-      },
-      { role: 'tool', content: '{"result": "ok2"}' },
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5,
-  };
-  const expected = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', content: [
-        { type: 'tool_use', id: 'tool-1', name: 'check_status', input: {"status": "check"} }
-      ]},
-      { role: 'user', content: [
-        {
-          type: 'tool_result',
-          tool_use_id: 'tool-1',
-          content: '{"result": "ok"}'
-        }
-      ]},
-      { role: 'assistant', content: [
-        { type: 'tool_use', id: 'tool-2', name: 'check_status', input: {"status": "check2"} },
-        { type: 'text', text: 'The result of the lookup tool was: OK; checking again' },
-      ]},
-      { role: 'user', content: [
-        {
-          type: 'tool_result',
-          tool_use_id: 'tool-2',
-          content: '{"result": "ok2"}'
-        }
-      ]}
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5,
-  };
-  t.deepEqual(chatml_to_anthropic(input), expected);
-});
-
-test('adds non-context system message correctly', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-      { role: 'system', content: 'Respond as if you are a helpful assistant' },
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-  const expected = {
-    messages: [
-      { role: 'user', content: 'Hello' },
-    ],
-    system: 'Respond as if you are a helpful assistant',
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-  const result = chatml_to_anthropic(input);
-  t.deepEqual(result, expected);
-});
-
-test('handles message content as an array', t => {
-  const input = {
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: "Hello"
-          }
-        ]
-      },
-      {
-        role: 'assistant',
-        content: [
-          {
-            type: 'text',
-            text: 'Hi!'
-          }
-        ]
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: 'How are you?'
-          }
-        ]
-      }
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-
-  const expected = {
-    messages: [
-      { role: 'user', content: [{type: 'text', text: 'Hello'}] },
-      { role: 'assistant', content: [{type: 'text', text: 'Hi!'}] },
-      { role: 'user', content: [{type: 'text', text: 'How are you?'}] }
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-
-
-  const result = chatml_to_anthropic(input);
-  t.deepEqual(result, expected);
-});
-
-test('should handle image_url', t => {
-  const input = {
-    messages: [
-      { role: 'user', content: [
-        {type: 'text', text: 'Transcribe this image' },
-        {type: 'image_url', image_url: {url: 'data:image/jpg;base64,Base64 image'}}
-      ]}
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-  const expected = {
-    messages: [
-      { role: 'user', content: [
-        {type: 'text', text: 'Transcribe this image'},
-        {type: 'image', source: {
-          type: 'base64',
-          media_type: 'image/jpeg',
-          data: 'Base64 image'
-        }}
-      ]}
-    ],
-    model: 'test-model',
-    max_tokens: 100,
-    temperature: 0.5
-  };
-  t.deepEqual(chatml_to_anthropic(input), expected);
-})
-
