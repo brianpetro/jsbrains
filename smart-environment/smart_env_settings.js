@@ -160,6 +160,14 @@ export class SmartEnvSettings {
       os.env_data_dir_last = os.smart_connections_folder_last;
       delete os.smart_connections_folder_last;
     }
+    if(os.file_exclusions){
+      if(!this._settings.file_exclusions || this._settings.file_exclusions === 'Untitled') this._settings.file_exclusions = os.file_exclusions;
+      delete os.file_exclusions;
+    }
+    if(os.folder_exclusions){
+      if(!this._settings.folder_exclusions || this._settings.folder_exclusions === 'smart-chats') this._settings.folder_exclusions = os.folder_exclusions;
+      delete os.folder_exclusions;
+    }
   }
 
   /**
