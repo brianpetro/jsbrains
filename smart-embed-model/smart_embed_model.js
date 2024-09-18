@@ -20,34 +20,26 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartModel } from "smart-model";
-import embed_models from './models.json' with { type: 'json' };
-// import embed_models from './models.json' assert { type: 'json' };
+import embed_models from './models.json' assert { type: 'json' };
+import { SmartHttpRequest } from "smart-http-request";
 export class SmartEmbedModel extends SmartModel {
   /**
-   * Create a SmartEmbed instance.
-   * @param {string} env - The environment to use.
-   * @param {object} opts - Full model configuration object or at least a model_key and adapter
+   * Create a SmartEmbedModel instance.
+   * @param {object} opts - Options for the model, including settings.
    */
-  constructor(env, opts={}) {
+  constructor(opts = {}) {
     super(opts);
-    if(this.opts.model_key === "None") return console.log(`Smart Embed Model: No active embedding model for ${this.collection_key}, skipping embedding`);
-    this.env = env;
+    this._adapters = {};
+    this._http_adapter = null;
     this.opts = {
-      ...(
-        this.env.opts.modules.smart_embed_model?.class // if is module object (not class, has class key)
-        ? { ...this.env.opts.modules.smart_embed_model, class: null }
-        : {}
-      ),
-      ...embed_models[opts.model_key],
+      ...embed_models[opts.settings?.model_key],
       ...opts,
     };
-    if(!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
-    if(!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    if (!this.opts.adapter) return console.warn('SmartEmbedModel adapter not set');
+    if (!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     // prepare opts for GPU (likely better handled in future)
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
-    if(this.opts.adapter === 'transformers' && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
-    // init adapter
-    this.adapter = new this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter](this);
+    if (this.opts.adapter === 'transformers' && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
   }
   async load() {
     this.loading = true;
@@ -86,17 +78,72 @@ export class SmartEmbedModel extends SmartModel {
   get batch_size() { return this.opts.batch_size || 1; }
   get max_tokens() { return this.opts.max_tokens || 512; }
   get dims() { return this.opts.dims; }
+  get model_config() { return embed_models[this.settings.model_key]; }
 
-  // TODO: replace static opts with dynamic reference to canonical settings via opts.settings (like smart-chat-model-v2)
-  get settings() { return this.opts.settings; } // ref to canonical settings
+  get settings() { return this.opts.settings; }
+  get adapter_key() { return this.model_config.adapter; }
+  get model_key() { return this.settings.model_key; }
 
-  get settings_config() { return this.process_settings_config(settings_config, 'embed_model'); }
-  process_setting_key(key) {
-    return key.replace(/\[EMBED_MODEL\]/g, this.opts.model_key);
+  get adapters() { return this.opts.adapters; }
+  get adapter() {
+    if (!this._adapters[this.adapter_key]) {
+      this._adapters[this.adapter_key] = new this.adapters[this.adapter_key](this);
+    }
+    return this._adapters[this.adapter_key];
   }
+
+  get http_adapter() {
+    if (!this._http_adapter) {
+      if (this.opts.http_adapter) this._http_adapter = this.opts.http_adapter;
+      else this._http_adapter = new SmartHttpRequest();
+    }
+    return this._http_adapter;
+  }
+
+  get settings_config() {
+    const _settings_config = {
+      model_key: {
+        name: 'Embedding Model',
+        type: "dropdown",
+        description: "Select an embedding model.",
+        options_callback: 'get_embedding_model_options',
+        callback: 'embed_model_changed',
+        default: 'TaylorAI/bge-micro-v2',
+      },
+      "[EMBED_MODEL].min_chars": {
+        name: 'Minimum Embedding Length',
+        type: "number",
+        description: "Minimum length of note to embed.",
+        placeholder: "Enter number ex. 300",
+      },
+      "[EMBED_MODEL].api_key": {
+        name: 'OpenAI API Key for embeddings',
+        type: "password",
+        description: "Required for OpenAI embedding models",
+        placeholder: "Enter OpenAI API Key",
+        callback: 'restart',
+        conditional: (settings) => !settings.model_key?.includes('/')
+      },
+      "[EMBED_MODEL].gpu_batch_size": {
+        name: 'GPU Batch Size',
+        type: "number",
+        description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
+        placeholder: "Enter number ex. 10",
+        callback: 'restart',
+      },
+      ...(this.adapter.settings_config || {}),
+    };
+    return this.process_settings_config(_settings_config);
+  }
+
+  process_setting_key(key) {
+    return key.replace(/\[EMBED_MODEL\]/g, this.settings.model_key);
+  }
+
   get_embedding_model_options() {
     return Object.entries(embed_models).map(([key, model]) => ({ value: key, name: key }));
   }
+
   get_block_embedding_model_options() {
     const options = this.get_embedding_model_options();
     options.unshift({ value: 'None', name: 'None' });
@@ -104,39 +151,3 @@ export class SmartEmbedModel extends SmartModel {
   }
 
 }
-
-export const settings_config = {
-  model_key: {
-    name: 'Embedding Model',
-    type: "dropdown",
-    description: "Select an embedding model.",
-    options_callback: 'embed_model.get_embedding_model_options',
-    callback: 'embed_model_changed',
-    default: 'TaylorAI/bge-micro-v2',
-    // required: true
-  },
-  "[EMBED_MODEL].min_chars": {
-    name: 'Minimum Embedding Length',
-    type: "number",
-    description: "Minimum length of note to embed.",
-    placeholder: "Enter number ex. 300",
-    // callback: 'refresh_embeddings',
-    // required: true,
-  },
-  "[EMBED_MODEL].api_key": {
-    name: 'OpenAI API Key for embeddings',
-    type: "password",
-    description: "Required for OpenAI embedding models",
-    placeholder: "Enter OpenAI API Key",
-    // callback: 'test_api_key_openai_embeddings',
-    callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
-    conditional: (settings) => !settings.smart_sources.embed_model?.model_key?.includes('/') || !settings.smart_blocks.embed_model?.model_key?.includes('/')
-  },
-  "[EMBED_MODEL].gpu_batch_size": {
-    name: 'GPU Batch Size',
-    type: "number",
-    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter number ex. 10",
-    callback: 'restart',
-  },
-};

@@ -5,7 +5,7 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
   constructor(smart_embed) {
     super(smart_embed);
     this.connector = transformers_connector;
-    if(this.smart_embed.env.settings.legacy_transformers){
+    if(this.smart_embed.settings.legacy_transformers){
       this.connector = this.connector
         .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2')
       ;

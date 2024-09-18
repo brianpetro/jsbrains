@@ -5,7 +5,7 @@
   "type": "module",
   "version": "1.0.7",
   "description": "Convenient interface for utilizing various embedding models via API and locally.",
-  "main": "smart_embed_model.js",
+  "main": "index.js",
   "scripts": {
     "build": "node build/esbuild.js",
     "test": "npx ava --verbose"
@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "js-tiktoken": "^1.0.11",
-    "smart-model": "../smart-model"
+    "smart-model": "../smart-model",
+    "smart-http-request": "../smart-http-request"
   }
 }

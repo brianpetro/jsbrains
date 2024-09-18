@@ -3,23 +3,32 @@ import { SmartEmbedAdapter } from "./_adapter.js";
 export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   constructor(smart_embed) {
     super(smart_embed);
+    this.model_key = this.smart_embed.model_key;
+    this.model_config = this.smart_embed.model_config;
     this.model = null;
     this.tokenizer = null;
   }
+
   get batch_size() {
-    if(this.use_gpu && this.smart_embed.opts.gpu_batch_size) return this.smart_embed.opts.gpu_batch_size;
-    return this.smart_embed.opts.batch_size || 1;
+    return this.smart_embed.batch_size;
   }
-  get max_tokens() { return this.smart_embed.opts.max_tokens || 512; }
-  get use_gpu() { return this.smart_embed.opts.use_gpu || false; }
+
+  get max_tokens() {
+    return this.smart_embed.max_tokens;
+  }
+
+  get use_gpu() {
+    return this.smart_embed.opts.use_gpu || false;
+  }
 
   async load() {
     const { pipeline, env, AutoTokenizer } = await import('@xenova/transformers');
-    // const { pipeline, env, AutoTokenizer } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.9');
+
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true,
     };
+
     if (this.use_gpu) {
       console.log("[Transformers] Using GPU");
       pipeline_opts.device = 'webgpu';
@@ -28,8 +37,9 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
       console.log("[Transformers] Using CPU");
       env.backends.onnx.wasm.numThreads = 8;
     }
-    this.model = await pipeline('feature-extraction', this.smart_embed.opts.model_key, pipeline_opts);
-    this.tokenizer = await AutoTokenizer.from_pretrained(this.smart_embed.opts.model_key);
+
+    this.model = await pipeline('feature-extraction', this.model_key, pipeline_opts);
+    this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
   }
 
   async count_tokens(input) {

@@ -10,19 +10,17 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
     this.worker_id = `smart_embed_worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     this.message_prefix = `msg_${Math.random().toString(36).substr(2, 9)}_`;
   }
-  get main() { return this.smart_embed.env.main; }
+  get main() { return this.smart_embed; }
 
   async load() {
-    console.log('loading worker adapter', this.smart_embed.opts);
-
-    const global_key = `smart_embed_worker_${this.smart_embed.opts.embed_model_key}`;
+    const global_key = `smart_embed_worker_${this.smart_embed.model_key}`;
     
-    if (!this.main[global_key]) {
-      this.main[global_key] = new Worker(this.worker_url, { type: 'module' });
-      console.log('new worker created', this.main[global_key]);
+    if (!this.smart_embed[global_key]) {
+      this.smart_embed[global_key] = new Worker(this.worker_url, { type: 'module' });
+      console.log('new worker created', this.smart_embed[global_key]);
     }
     
-    this.worker = this.main[global_key];
+    this.worker = this.smart_embed[global_key];
     console.log('worker', this.worker);
     console.log('worker_url', this.worker_url);
 
