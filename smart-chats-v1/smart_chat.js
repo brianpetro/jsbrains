@@ -20,7 +20,7 @@ class SmartChat {
     this.key = key;
     this.data = data;
     this.scope = {};
-    if(file_type) this.adapter = new SmartChatAdapters[file_type](this);
+    if(file_type && SmartChatAdapters[file_type]) this.adapter = new SmartChatAdapters[file_type](this);
     // exported for convenience (unnecessary??? may load the chats directly)
     if(this.chats) this.chats.items[this.key] = this;
   }
