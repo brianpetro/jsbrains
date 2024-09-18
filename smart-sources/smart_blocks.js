@@ -40,6 +40,13 @@ export class SmartBlocks extends SmartEntities {
   get settings_config() {
     return {
       ...super.settings_config,
+      // Merge block adapters' settings_config
+      ...Object.values(this.block_adapters).reduce((acc, adapter) => {
+        if(adapter.settings_config){
+          acc = { ...acc, ...adapter.settings_config };
+        }
+        return acc;
+      }, {}),
       "smart_blocks.embed_model.model_key": {
         name: 'Embedding Model',
         type: "dropdown",

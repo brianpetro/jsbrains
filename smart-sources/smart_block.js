@@ -135,7 +135,12 @@ export class SmartBlock extends SmartEntity {
   }
 
   async move_to(to_key) {
-    await this.block_adapter.move_to(to_key);
+    try {
+      await this.block_adapter.move_to(to_key);
+    } catch (error) {
+      console.error('error_during_block_move:', error);
+      throw error;
+    }
   }
 
   get sub_blocks() {

@@ -188,6 +188,13 @@ export class SmartSources extends SmartEntities {
     return {
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
+      ...Object.values(this.source_adapters).reduce((acc, adapter) => {
+        if(adapter.settings_config){
+          acc = { ...acc, ...adapter.settings_config };
+        }
+        return acc;
+      }, {}),
+      // ... existing settings ...
     };
   }
 

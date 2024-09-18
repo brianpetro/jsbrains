@@ -348,11 +348,11 @@ export class SmartSource extends SmartEntity {
    */
   async move_to(entity_ref) {
     try {
-      // console.log('Moving source:', this.data.path, 'to', entity_ref);
+      // Log moving source
       await this.source_adapter.move_to(entity_ref);
-      // console.log('Move completed');
+      // Log move completion
     } catch (error) {
-      console.error('Error during move:', error);
+      console.error('error_during_move:', error);
       throw error;
     }
   }
