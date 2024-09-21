@@ -33,7 +33,11 @@ export class SmartChatModel extends SmartModel {
     return this._http_adapter;
   }
   get platform() { return platforms[this.platform_key]; }
-  get platform_key() { return this.settings.platform_key; }
+  get platform_key() {
+    return this.opts.platform_key // opts added at init take precedence
+      || this.settings.platform_key // then settings
+    ;
+  }
   get settings() { return this.opts.settings; }
   get settings_config() {
     const _settings_config = {

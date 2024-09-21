@@ -209,7 +209,11 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the API key.
    * @returns {string} The API key.
    */
-  get api_key() { return this.main.opts.api_key || this.platform_settings?.api_key; }
+  get api_key() {
+    return this.main.opts.api_key // opts added at init take precedence
+      || this.platform_settings?.api_key // then platform settings
+    ;
+  }
 
   /**
 
@@ -249,7 +253,11 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the model key.
    * @returns {string} The model key.
    */
-  get model_key() { return this.platform_settings.model_key; }
+  get model_key() {
+    return this.main.opts.model_key // opts added at init take precedence
+      || this.platform_settings.model_key // then platform settings
+    ;
+  }
 
   /**
    * Get the maximum output tokens.

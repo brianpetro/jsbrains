@@ -78,11 +78,15 @@ export class SmartEmbedModel extends SmartModel {
   get batch_size() { return this.opts.batch_size || 1; }
   get max_tokens() { return this.opts.max_tokens || 512; }
   get dims() { return this.opts.dims; }
-  get model_config() { return embed_models[this.settings.model_key]; }
+  get model_config() { return embed_models[this.model_key]; }
 
   get settings() { return this.opts.settings; }
   get adapter_key() { return this.model_config.adapter; }
-  get model_key() { return this.settings.model_key; }
+  get model_key() {
+    return this.opts.model_key // directly passed opts take precedence
+      || this.settings.model_key // then settings
+    ;
+  }
 
   get adapters() { return this.opts.adapters; }
   get adapter() {
