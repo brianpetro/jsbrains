@@ -23,12 +23,14 @@
   },
   "homepage": "https://jsbrains.org",
   "devDependencies": {
-    "ava": "^6.0.1"
+    "ava": "^6.0.1",
+    "canvas": "^2.11.2",
+    "pdfjs-dist-legacy": "^1.0.1"
   },
   "dependencies": {
-    "smart-entities": "file:../smart-entities",
     "pdf-lib": "^1.17.1",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "smart-entities": "file:../smart-entities"
   },
   "ava": {
     "files": [

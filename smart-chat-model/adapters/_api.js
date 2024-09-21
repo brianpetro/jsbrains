@@ -209,9 +209,10 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the API key.
    * @returns {string} The API key.
    */
-  get api_key() { return this.platform_settings.api_key; }
+  get api_key() { return this.main.opts.api_key || this.platform_settings?.api_key; }
 
   /**
+
    * Get the number of choices.
    * @returns {number} The number of choices.
    */
@@ -262,11 +263,18 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   get platform() { return this.main.platform; }
 
+  get platform_key() { return this.main.platform_key; }
+
   /**
    * Get the platform settings.
    * @returns {Object} The platform settings.
    */
-  get platform_settings() { return this.main.platform_settings; }
+  get platform_settings() {
+    if(!this.settings[this.platform_key]) this.settings[this.platform_key] = {};
+    return this.settings[this.platform_key];
+  }
+
+  get settings() { return this.main.settings; }
 
   /**
    * Get the temperature.
