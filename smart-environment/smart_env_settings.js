@@ -73,7 +73,7 @@ export class SmartEnvSettings {
   get fs_path() {
     return this.env.opts.env_path
       + (this.env.opts.env_path ? (this.env.opts.env_path.includes('\\') ? '\\' : '/') : '') // detect and use correct separator based on env_path
-      + this.env.opts.env_data_dir
+      + this.env.env_data_dir
     ;
   }
 
@@ -82,16 +82,15 @@ export class SmartEnvSettings {
    * @returns {Promise<void>} A promise that resolves when the settings have been loaded.
    */
   async load() {
-    if (!this.opts.env_data_dir) await this.get_env_data_dir();
     if (!(await this.fs.exists('smart_env.json'))) await this.save({});
     if (this.env.opts.default_settings) this._settings = this.env.opts.default_settings || {}; // set defaults if provided
     deep_merge(this._settings, JSON.parse(await this.fs.read('smart_env.json'))); // load saved settings
     deep_merge(this._settings, this.env.opts?.smart_env_settings || {}); // overrides saved settings
-    await this.load_obsidian_settings();
     this._saved = true;
   }
   async load_main_settings(main_key) {
-    this._settings[main_key] = this.env[main_key]._settings;
+    this._settings[main_key] = this.env[main_key].settings;
+    await this.load_obsidian_settings();
   }
 
   /**
@@ -101,6 +100,7 @@ export class SmartEnvSettings {
   async load_obsidian_settings() {
     if (this._settings.is_obsidian_vault && this.env.smart_connections_plugin) {
       const obsidian_settings = this._settings.smart_connections_plugin;
+      console.log("obsidian_settings", obsidian_settings, this._settings);
       if(obsidian_settings){
         this.transform_backwards_compatible_settings(obsidian_settings);
         await this.save();
@@ -166,33 +166,16 @@ export class SmartEnvSettings {
       if(!this._settings.folder_exclusions || this._settings.folder_exclusions === 'smart-chats') this._settings.folder_exclusions = os.folder_exclusions;
       delete os.folder_exclusions;
     }
-  }
-
-  /**
-   * Determines and sets the environment data directory.
-   * @returns {Promise<void>} A promise that resolves when the environment data directory has been set.
-   */
-  async get_env_data_dir() {
-    console.log("get_env_data_dir", this.env.opts.env_path);
-    const fs_config = this.opts.modules.smart_fs;
-    const fs_class = fs_config?.class ?? fs_config;
-    const temp_fs = new fs_class(this.env, {
-      adapter: fs_config.adapter,
-      fs_path: this.env.opts.env_path || '',
-    });
-    const all = await temp_fs.list_recursive();
-    let detected_env_data_folder = '.smart-env';
-    all.forEach(file => {
-      if (file.name === 'smart_env.json') {
-        detected_env_data_folder = file.path.split(temp_fs.sep).slice(0, -1).join(temp_fs.sep);
-        console.log("detected_env_data_folder", detected_env_data_folder);
-      }
-    });
-    this.opts.env_data_dir = detected_env_data_folder;
-    this._fs = null; // reset fs to force reload
-    this.env[this.env.mains[0]].settings.env_data_dir = detected_env_data_folder;
-    await this.env[this.env.mains[0]].save_settings();
-    console.log("saved env_data_dir: ", this.opts.env_data_dir);
+    if(os.system_prompts_folder){
+      if(!this._settings.smart_chats) this._settings.smart_chats = {};
+      if(!this._settings.smart_chats?.prompts_path) this._settings.smart_chats.prompts_path = os.system_prompts_folder;
+      delete os.system_prompts_folder;
+    }
+    if(os.smart_chat_folder){
+      if(!this._settings.smart_chats) this._settings.smart_chats = {};
+      if(!this._settings.smart_chats?.fs_path) this._settings.smart_chats.fs_path = os.smart_chat_folder;
+      delete os.smart_chat_folder;
+    }
   }
 }
 

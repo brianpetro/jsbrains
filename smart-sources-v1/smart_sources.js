@@ -10,6 +10,7 @@ export class SmartSources extends SmartEntities {
   async init() {
     await super.init();
     this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
+    console.log("init smart_sources", this.env, this.env.main);
     // init smart_fs
     await this.fs.init();
     // init smart_sources
@@ -189,6 +190,41 @@ export class SmartSources extends SmartEntities {
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
     };
+  }
+
+  get fs() {
+    if(!this._fs){
+      this._fs = new this.opts.modules.smart_fs.class(this.env, {
+        adapter: this.opts.modules.smart_fs.adapter,
+        fs_path: this.opts.env_path || '',
+        exclude_patterns: this.excluded_patterns || [],
+      });
+    }
+    return this._fs;
+  }
+  // DO move these exclusion settings to SmartSources settings_config
+  get excluded_patterns() {
+    return [
+      ...(this.file_exclusions?.map(file => `${file}**`) || []),
+      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
+      this.env.env_data_dir + "/**",
+    ];
+  }
+  get file_exclusions() {
+    return (this.env.settings?.file_exclusions?.length) ? this.env.settings.file_exclusions.split(",").map((file) => file.trim()) : [];
+  }
+  get folder_exclusions() {
+    return (this.env.settings?.folder_exclusions?.length) ? this.env.settings.folder_exclusions.split(",").map((folder) => {
+      folder = folder.trim();
+      if (folder.slice(-1) !== "/") return folder + "/";
+      return folder;
+    }) : [];
+  }
+  get excluded_headings() {
+    if (!this._excluded_headings){
+      this._excluded_headings = (this.env.settings?.excluded_headings?.length) ? this.env.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
+    }
+    return this._excluded_headings;
   }
 
 }

@@ -199,7 +199,7 @@ export class MultiFileSmartCollectionsAdapter {
   //  * @returns {string} The data path for folder that contains .ajson files.
   //  */
   // // get data_path() { return this.collection.data_path + '/multi'; }
-  // // get data_path() { return this.env.settings.env_data_dir + this.fs.sep + 'multi'; }
+  // // get data_path() { return this.env.env_data_dir + this.fs.sep + 'multi'; }
   // get data_path() { return 'multi'; }
 
   // /**

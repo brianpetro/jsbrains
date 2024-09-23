@@ -54,24 +54,28 @@ export class SmartEnv {
     }
     main_env_opts = normalize_opts(main_env_opts);
     let existing_env = main_env_opts.global_ref instanceof SmartEnv ? main_env_opts.global_ref : null;
+    let main_key = null;
     if (!existing_env) {
       main.env = new this(main_env_opts);
-      await main.env.init(main, main_env_opts);
+      main_key = await main.env.init(main, main_env_opts);
     } else {
       main.env = existing_env;
-      const main_key = main.env.init_main(main, main_env_opts);
-      await main.env.load_main(main_key);
+      main_key = main.env.init_main(main, main_env_opts);
+      await main.env.smart_env_settings.load_main_settings(main_key);
     }
+    await main.env.load_main(main_key);
     return main.env;
   }
   async init(main, main_env_opts = {}) {
-    const main_key = this.init_main(main, main_env_opts);
     this.is_init = true;
+    const main_key = main.env.init_main(main, main_env_opts);
+    await this.fs.init(); // before SmartEnvSettings for detecting env_data_dir
     this.smart_env_settings = new SmartEnvSettings(this, this.opts);
     await this.smart_env_settings.load();
-    await this.load_main(main_key);
+    await this.smart_env_settings.load_main_settings(main_key);
     this.init_smart_change();
     this.is_init = false;
+    return main_key;
   }
   /**
    * Adds a new main object to the SmartEnv instance.
@@ -99,7 +103,6 @@ export class SmartEnv {
       return acc;
     }, {});
     await this.load_collections(main_collections);
-    this.smart_env_settings.load_main_settings(main_key);
   }
   async init_collections(opts){
     if(!opts) opts = this.opts;
@@ -211,30 +214,27 @@ export class SmartEnv {
       obsidian_markdown: new ObsidianMarkdownAdapter(),
     };
   }
-  // NEEDS REVIEW
-  get excluded_patterns() {
-    return [
-      ...(this.file_exclusions?.map(file => `${file}**`) || []),
-      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
-      this.opts.env_data_dir + "/**",
-    ];
-  }
-  get file_exclusions() {
-    return (this.settings.file_exclusions?.length) ? this.settings.file_exclusions.split(",").map((file) => file.trim()) : [];
-  }
-  get folder_exclusions() {
-    return (this.settings.folder_exclusions?.length) ? this.settings.folder_exclusions.split(",").map((folder) => {
-      folder = folder.trim();
-      if (folder.slice(-1) !== "/") return folder + "/";
-      return folder;
-    }) : [];
-  }
-  get excluded_headings() {
-    if (!this._excluded_headings){
-      this._excluded_headings = (this.settings.excluded_headings?.length) ? this.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
+  get env_data_dir() {
+    const env_settings_files = this.fs.file_paths?.filter(path => path.endsWith('smart_env.json')) || [];
+    let env_data_dir = '.smart-env';
+    if(env_settings_files.length > 0){
+      if(env_settings_files.length > 1){
+        // get one with most files in it (filter file_paths that include the directory name)
+        const env_data_dir_counts = env_settings_files.map(path => {
+          const dir = path.split('/').slice(-2, -1)[0];
+          return {
+            dir,
+            count: this.fs.file_paths.filter(path => path.includes(dir)).length
+          };
+        });
+        env_data_dir = env_data_dir_counts.reduce((max, dir) => (dir.count > max.count) ? dir : max, env_data_dir_counts[0]).dir;
+      }else{
+        env_data_dir = env_settings_files[0].split('/').slice(-2, -1)[0];
+      }
     }
-    return this._excluded_headings;
+    return env_data_dir;
   }
+  // NEEDS REVIEW
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.init_module('smart_view');
     return this._smart_view;
@@ -252,12 +252,9 @@ export class SmartEnv {
   get ejs() { return this.opts.ejs; }
   get fs() {
     if(!this.smart_fs){
-      const fs_config = this.opts.modules.smart_fs;
-      const fs_class = fs_config?.class ?? fs_config;
-      this.smart_fs = new fs_class(this, {
-        adapter: fs_config.adapter,
+      this.smart_fs = new this.opts.modules.smart_fs.class(this, {
+        adapter: this.opts.modules.smart_fs.adapter,
         fs_path: this.opts.env_path || '',
-        exclude_patterns: this.excluded_patterns || [],
       });
     }
     return this.smart_fs;
@@ -266,8 +263,6 @@ export class SmartEnv {
   get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
   set global_ref(env) { this.global_ref[this.global_prop] = env; }
   get item_types() { return this.opts.item_types; }
-  // get settings() { return this.smart_env_settings._settings; }
-  // set settings(settings) { this.smart_env_settings._settings = settings; }
   get settings() { return this.smart_env_settings.settings; }
   set settings(settings) { this.smart_env_settings.settings = settings; }
   get smart_view() {

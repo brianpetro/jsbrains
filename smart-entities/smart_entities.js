@@ -106,7 +106,7 @@ export class SmartEntities extends Collection {
       || "None"
     );
   }
-  get data_dir() { return this.env.settings.env_data_dir + this.fs.sep + this.embed_model_key.replace("/", "_"); }
+  get data_dir() { return this.env.env_data_dir + this.fs.sep + this.embed_model_key.replace("/", "_"); }
 
   /**
    * Calculates the relevance of an item based on the search filter.

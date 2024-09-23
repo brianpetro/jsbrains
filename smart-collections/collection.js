@@ -202,8 +202,8 @@ export class Collection {
   get item_type() { return this.env.item_types[this.item_class_name]; }
 
 
-  // may be moved to SmartSources (should not be needed in this or SmartEntities)
-  get fs() { return this.env.fs; }
+  // // may be moved to SmartSources (should not be needed in this or SmartEntities)
+  // get fs() { return this.env.fs; }
 
   // DATA ADAPTER
   get data_adapter() {
@@ -223,7 +223,7 @@ export class Collection {
   get adapter(){ return this.data_adapter; }
   /**
    * Gets the data path from the environment.
-   * @deprecated use env.settings.env_data_dir
+   * @deprecated use env.env_data_dir
    * @returns {string} The data path.
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
