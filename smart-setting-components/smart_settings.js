@@ -180,7 +180,7 @@ export class SmartSettings {
       }
       if(elm?.dataset.isScope) this.re_render();
       this.debouncer[setting] = null;
-    }, 500);
+    }, 300);
   }
   re_render() { this.opts['re_render']?.(); }
   get_setting(setting_path) {

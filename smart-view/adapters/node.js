@@ -2,73 +2,64 @@ import { SmartViewAdapter } from "./_adapter.js";
 
 export class SmartViewNodeAdapter extends SmartViewAdapter {
   get setting_class() { return Setting; }
+
+  get setting_renderers() {
+    return {
+      text: this.render_text_component,
+      string: this.render_text_component,
+      password: this.render_password_component,
+      number: this.render_number_component,
+      dropdown: this.render_dropdown_component,
+      toggle: this.render_toggle_component,
+      textarea: this.render_textarea_component,
+      button: this.render_button_component,
+      remove: this.render_remove_component,
+      folder: this.render_folder_select_component,
+      "text-file": this.render_file_select_component,
+      file: this.render_file_select_component,
+    };
+  }
+
   async render_setting_component(elm) {
     elm.innerHTML = "";
     const path = elm.dataset.setting;
-    try{
+    try {
       let value = elm.dataset.value ?? this.main.get_setting_by_path(path);
-      if(typeof value === 'undefined' && typeof elm.dataset.default !== 'undefined'){
+      if (typeof value === 'undefined' && typeof elm.dataset.default !== 'undefined') {
         value = elm.dataset.default;
         this.main.set_setting_by_path(path, value);
       }
-      let setting;
-      switch (elm.dataset.type) {
-        case "text":
-        case "string":
-          setting = this.render_text_component(elm, path, value);
-          break;
-        case "password":
-          setting = this.render_password_component(elm, path, value);
-          break;
-        case "number":
-          setting = this.render_number_component(elm, path, value);
-          break;
-        case "dropdown":
-          setting = this.render_dropdown_component(elm, path, value);
-          break;
-        case "toggle":
-          setting = this.render_toggle_component(elm, path, value);
-          break;
-        case "textarea":
-          setting = this.render_textarea_component(elm, path, value);
-          break;
-        case "button":
-          setting = this.render_button_component(elm, path);
-          break;
-        case "remove":
-          setting = this.render_remove_component(elm, path, value);
-          break;
-        case "folder":
-          setting = this.render_folder_select_component(elm, path, value);
-          break;
-        case "text-file":
-        case "file":
-          setting = this.render_file_select_component(elm, path, value);
-          break;
-        default:
-          console.warn(`Unsupported setting type: ${elm.dataset.type}`);
-          return elm;
+
+      const renderer = this.setting_renderers[elm.dataset.type];
+      if (!renderer) {
+        console.warn(`Unsupported setting type: ${elm.dataset.type}`);
+        return elm;
       }
+
+      const setting = renderer.call(this, elm, path, value);
+
       if (elm.dataset.name) setting.setName(elm.dataset.name);
-      if (elm.dataset.description){
+      if (elm.dataset.description) {
         const frag = this.main.create_doc_fragment(`<span>${elm.dataset.description}</span>`);
         setting.setDesc(frag);
       }
       if (elm.dataset.tooltip) setting.setTooltip(elm.dataset.tooltip);
+
       this.add_button_if_needed(setting, elm, path);
       this.handle_disabled_and_hidden(elm);
       return elm;
-    }catch(e){
+    } catch(e) {
       console.error({path, elm});
       console.error(e);
     }
   }
+
   render_dropdown_component(elm, path, value) {
     const smart_setting = new this.setting_class(elm);
     let options;
     if (elm.dataset.optionsCallback) {
       const opts_callback = this.main.get_by_env_path(elm.dataset.optionsCallback);
-      options = opts_callback();
+      if(typeof opts_callback === "function") options = opts_callback();
     }
   
     if (!options || !options.length) {
@@ -89,7 +80,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
   
     return smart_setting;
   }
-  
 
   render_text_component(elm, path, value) {
     const smart_setting = new this.setting_class(elm);
@@ -102,7 +92,7 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
           button.setButtonText(elm.dataset.button);
           button.onClick(async () => this.handle_on_change(path, text.getValue(), elm));
         });
-      }else{
+      } else {
         text.onChange(async (value) => {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => this.handle_on_change(path, value.trim(), elm), 2000);
@@ -135,7 +125,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
     });
     return smart_setting;
   }
-
 
   render_toggle_component(elm, path, value) {
     const smart_setting = new this.setting_class(elm);
@@ -198,18 +187,19 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
       folder_select.setPlaceholder(elm.dataset.placeholder || "");
       if (value) folder_select.setValue(value);
       folder_select.inputEl.closest('div').addEventListener("click", () => {
-        this.handle_on_change(path, value, elm);
+        this.handle_folder_select(path, value, elm);
       });
     });
     return smart_setting;
   }
+
   render_file_select_component(elm, path, value) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addFileSelect(file_select => {
       file_select.setPlaceholder(elm.dataset.placeholder || "");
       if (value) file_select.setValue(value);
       file_select.inputEl.closest('div').addEventListener("click", () => {
-        this.handle_on_change(path, value, elm);
+        this.handle_file_select(path, value, elm);
       });
     });
     return smart_setting;
@@ -259,20 +249,37 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
   }
 
   handle_on_change(path, value, elm) {
+    this.pre_change(path, value, elm);
+    if(elm.dataset.validate){
+      const valid = this[elm.dataset.validate](path, value, elm);
+      if(!valid){
+        console.log('validation failed', path, value, elm);
+        elm.querySelector('.setting-item').style.border = "2px solid red";
+        this.revert_setting(path, elm);
+        return;
+      }
+    }
     this.main.set_setting_by_path(path, value);
     if(elm.dataset.callback){
       const callback = this.main.get_by_env_path(elm.dataset.callback);
       if(callback) callback(path, value, elm);
     }
+    this.post_change(path, value, elm);
   }
 
-  open_url(url) {
-    // Implementation needed
-    console.log(`Opening URL: ${url}`);
+  pre_change(path, value, elm) { /* override in subclass */ }
+  post_change(path, value, elm) { /* override in subclass */ }
+  revert_setting(path, elm) { /* override in subclass */ }
+  open_url(url) { /* override in subclass */ }
+  handle_folder_select(path, value, elm) {
+    throw new Error("handle_folder_select not implemented");
+  }
+  handle_file_select(path, value, elm) {
+    throw new Error("handle_file_select not implemented");
   }
 }
 
-class Setting {
+export class Setting {
   constructor(element) {
     this.element = element;
     this.container = this.createSettingItemContainer();
@@ -308,6 +315,7 @@ class Setting {
           option.classList.add("selected");
         }
         if (value === "") option.disabled = true;
+        return option;
       },
       onChange: (callback) => select.addEventListener('change', () => callback(select.value)),
       setValue: (value) => select.value = value
@@ -436,19 +444,22 @@ class Setting {
     }
   }
   set_desc(description) {
-    let descElement = this.container.querySelector('.description');
-    if (!descElement) {
+    let desc_element = this.container.querySelector('.description');
+    if (!desc_element) {
       // Create the element if it doesn't exist
-      const newDescElement = document.createElement('div');
-      newDescElement.classList.add('description');
-      // this.element.appendChild(newDescElement);
+      desc_element = document.createElement('div');
+      desc_element.classList.add('description');
       const info_container = this.container.querySelector('.info');
-      info_container.appendChild(newDescElement);
+      info_container.appendChild(desc_element);
     }
-    if(description instanceof DocumentFragment) {
-      descElement.appendChild(description);
-    }else{
-      descElement.innerHTML = description;
+    
+    // Clear existing content
+    desc_element.innerHTML = '';
+    
+    if (description instanceof DocumentFragment) {
+      desc_element.appendChild(description);
+    } else {
+      desc_element.innerHTML = description;
     }
   }
   set_tooltip(tooltip) {
