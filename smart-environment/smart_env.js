@@ -27,115 +27,99 @@ import { ObsidianMarkdownAdapter } from 'smart-change/adapters/obsidian_markdown
 import { template as settings_template } from './components/settings.js';
 
 export class SmartEnv {
-  constructor(main, opts={}) {
+  constructor(opts={}) {
     this.opts = opts;
     this.global_ref = this;
-    const main_name = camel_case_to_snake_case(main.constructor.name);
-    this[main_name] = main; // ex. smart_connections_plugin
-    this[main_name+"_opts"] = opts;
-    this.mains = [main_name];
-    /**
-     * @deprecated Use this.main_class_name instead of this.plugin
-     */
-    this.main = main; // DEPRECATED in favor of main class name converted to snake case
-    /**
-     * @deprecated Use this.main_class_name instead of this.plugin
-     */
-    this.plugin = this.main; // DEPRECATED in favor of main
-    // Object.assign(this, opts); // DEPRECATED in favor using via this.opts
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
     this._excluded_headings = null;
     this.collections = {}; // collection names to initialized classes
-  }
-  get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
-  get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
-  set global_ref(env) { this.global_ref[this.global_prop] = env; }
-  get smart_view() {
-    if(!this._smart_view){
-      this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
-    }
-    return this._smart_view;
+    this.smart_env_settings = null;
+    this.is_init = true;
+    this.mains = [];
+    this.main_opts = {};
   }
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
-   * @param {Object} [opts={}] - Options for configuring the SmartEnv instance.
+   * @param {Object} [main_env_opts={}] - Options for configuring the SmartEnv instance.
    * @returns {SmartEnv} The SmartEnv instance.
    * @throws {TypeError} If an invalid main object is provided.
    * @throws {Error} If there's an error creating or updating the SmartEnv instance.
    */
-  static async create(main, opts = {}) {
+  static async create(main, main_env_opts = {}) {
     if (!main || typeof main !== 'object'){ // || typeof main.constructor !== 'function') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
-    // console.log('opts', opts);
-
-    let existing_env = opts.global_ref instanceof SmartEnv ? opts.global_ref : null;
-
+    main_env_opts = normalize_opts(main_env_opts);
+    let existing_env = main_env_opts.global_ref instanceof SmartEnv ? main_env_opts.global_ref : null;
     if (!existing_env) {
-      main.env = new main.smart_env_class(main, opts);
-      await main.env.init(main);
-      return main.env;
-    } else if (!(existing_env instanceof this)) { // SHOULD THIS BE REMOVED?
-      // Create a new instance of the current class
-      const new_env = new main.smart_env_class(main, opts);
-      
-      // Re-add existing mains to the new instance
-      for (const main_name of existing_env.mains) {
-        if (main_name !== camel_case_to_snake_case(main.constructor.name)) {
-          await new_env.add_main(existing_env[main_name], existing_env[main_name + "_opts"]);
-        }
-      }
-      
-      // Initialize the new environment
-      await new_env.init(main);
-      
-      // Replace the existing environment with the new one
-      this.global_ref = new_env;
-      main.env = new_env;
+      main.env = new this(main_env_opts);
+      await main.env.init(main, main_env_opts);
     } else {
-      await existing_env.add_main(main, opts);
       main.env = existing_env;
+      const main_key = main.env.init_main(main, main_env_opts);
+      await main.env.load_main(main_key);
     }
-
     return main.env;
   }
-  get ejs() { return this.opts.ejs; }
-  get fs() {
-    if(!this.smart_fs){
-      const fs_config = this.opts.modules.smart_fs;
-      const fs_class = fs_config?.class ?? fs_config;
-      this.smart_fs = new fs_class(this, {
-        adapter: fs_config.adapter,
-        fs_path: this.opts.env_path || '',
-        exclude_patterns: this.excluded_patterns || [],
-      });
-    }
-    return this.smart_fs;
+  async init(main, main_env_opts = {}) {
+    const main_key = this.init_main(main, main_env_opts);
+    this.is_init = true;
+    this.smart_env_settings = new SmartEnvSettings(this, this.opts);
+    await this.smart_env_settings.load();
+    await this.load_main(main_key);
+    this.init_smart_change();
+    this.is_init = false;
   }
-  get item_types() { return this.opts.item_types; }
-  // get settings() { return this.smart_env_settings._settings; }
-  // set settings(settings) { this.smart_env_settings._settings = settings; }
-  get settings() { return this.smart_env_settings.settings; }
-  set settings(settings) { this.smart_env_settings.settings = settings; }
-  get templates() { return this.opts.templates; }
-  get views() { return this.opts.views; }
-
   /**
    * Adds a new main object to the SmartEnv instance.
    * @param {Object} main - The main object to be added.
-   * @param {Object} [opts={}] - Options to be merged into the SmartEnv instance.
+   * @param {Object} [main_env_opts={}] - Options to be merged into the SmartEnv instance.
    */
-  async add_main(main, opts = {}) {
-    main.env = this;
-    const main_name = camel_case_to_snake_case(main.constructor.name);
-    this[main_name] = main;
-    this.mains.push(main_name);
-    this.merge_options(opts);
-    // TODO: should special init be called (only init collections/modules not already initialized)
-    await this.init(main);
+  init_main(main, main_env_opts = {}) {
+    const main_key = camel_case_to_snake_case(main.constructor.name);
+    this[main_key] = main;
+    // this[main_name+"_opts"] = main_env_config; // DEPRECATED/UNUSED?
+    this.mains.push(main_key);
+    this.main_opts[main_key] = main_env_opts;
+    this.merge_options(main_env_opts);
+    return main_key;
+  }
+  async load_main(main_key) {
+    const main_env_opts = this.main_opts[main_key];
+    const main = this[main_key];
+    await this.init_collections(main_env_opts); // init so settings can be accessed
+    await this.ready_to_load_collections(main);
+    console.log('ready to load collections');
+    const main_collections = Object.keys(main_env_opts.collections).reduce((acc, key) => {
+      if(!this.collections[key]) return acc; // skip if not initialized
+      acc[key] = this[key]; // add ref to collection instance to acc
+      return acc;
+    }, {});
+    await this.load_collections(main_collections);
+    this.smart_env_settings.load_main_settings(main_key);
+  }
+  async init_collections(opts){
+    if(!opts) opts = this.opts;
+    for(const key of Object.keys(opts.collections)){
+      const _class = opts.collections[key]?.class; // should always use `class` property since normalize_opts added ?? opts.collections[key];
+      if(typeof _class?.init !== 'function') continue; // skip if not a class or does not have init method
+      await _class.init(this, this.opts);
+    }
+  }
+  async load_collections(collections=this.collections){
+    this.loading_collections = true;
+    for(const key of Object.keys(collections)){
+      if(this.is_init && (this.opts.prevent_load_on_init || collections[key].opts.prevent_load_on_init)) continue;
+      if(typeof collections[key]?.process_load_queue === 'function'){
+        console.log('loading collection', key);
+        await collections[key].process_load_queue();
+      }
+    }
+    this.loading_collections = false;
+    this.collections_loaded = true;
   }
 
   /**
@@ -162,40 +146,10 @@ export class SmartEnv {
     }
   }
 
-
-  async init(main) {
-    this.smart_env_settings = new SmartEnvSettings(this, this.opts);
-    await this.smart_env_settings.load();
-    await this.init_collections(); // init so settings can be accessed
-    await this.ready_to_load_collections(main);
-    if(!this.opts.prevent_load_on_init){ // remove when collection-specific opt is used in sc app
-      await this.load_collections(true);
-    }
-    this.init_smart_change();
-  }
   async ready_to_load_collections(main) {
     if(typeof main?.ready_to_load_collections === 'function') await main.ready_to_load_collections();
     return true;
   } // override in subclasses with env-specific logic
-  async init_collections(){
-    for(const key of Object.keys(this.opts.collections)){
-      const _class = this.opts.collections[key]?.class ?? this.opts.collections[key];
-      if(typeof _class?.init !== 'function') continue; // skip if not a class or does not have init method
-      await _class.init(this, this.opts);
-    }
-  }
-  async load_collections(is_init=false){
-    this.loading_collections = true;
-    for(const key of Object.keys(this.collections)){
-      if(is_init && this[key].opts.prevent_load_on_init) continue;
-      if(typeof this[key]?.process_load_queue === 'function'){
-        console.log('loading collection', key);
-        await this[key].process_load_queue();
-      }
-    }
-    this.loading_collections = false;
-    this.collections_loaded = true;
-  }
   unload_main(main_key) {
     this.unload_collections(main_key);
     this.unload_opts(main_key);
@@ -223,13 +177,33 @@ export class SmartEnv {
       this[key].process_save_queue();
     }
   }
-
+  init_module(module_name, opts={}) {
+    if(!this.opts.modules[module_name]) return console.warn(`SmartEnv: module ${module_name} not found`);
+    if(this.opts.modules[module_name].class){
+      const _class = this.opts.modules[module_name].class;
+      opts = {
+        ...{...this.opts.modules[module_name], class: null},
+        ...opts,
+      }
+      return new _class(this, opts);
+    }else{
+      return new this.opts.modules[module_name](this, opts);
+    }
+  }
+  async render_settings(opts = {}) {
+    const frag = await settings_template.call(this.smart_view, this, opts);
+    if(opts.container){
+      opts.container.innerHTML = '';
+      opts.container.appendChild(frag);
+    }
+    return frag;
+  }
   // should probably be moved
-  // smart-change
   init_smart_change() {
     if(typeof this.settings?.smart_changes?.active !== 'undefined' && !this.settings.smart_changes.active) return console.warn('smart_changes disabled by settings');
     this.smart_change = new SmartChange(this, { adapters: this.smart_change_adapters });
   }
+
   get smart_change_adapters() {
     return {
       default: new DefaultAdapter(),
@@ -261,32 +235,9 @@ export class SmartEnv {
     }
     return this._excluded_headings;
   }
-
-
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.init_module('smart_view');
     return this._smart_view;
-  }
-  init_module(module_name, opts={}) {
-    if(!this.opts.modules[module_name]) return console.warn(`SmartEnv: module ${module_name} not found`);
-    if(this.opts.modules[module_name].class){
-      const _class = this.opts.modules[module_name].class;
-      opts = {
-        ...{...this.opts.modules[module_name], class: null},
-        ...opts,
-      }
-      return new _class(this, opts);
-    }else{
-      return new this.opts.modules[module_name](this, opts);
-    }
-  }
-  async render_settings(opts = {}) {
-    const frag = await settings_template.call(this.smart_view, this, opts);
-    if(opts.container){
-      opts.container.innerHTML = '';
-      opts.container.appendChild(frag);
-    }
-    return frag;
   }
   get settings_config(){
     return {
@@ -298,7 +249,63 @@ export class SmartEnv {
       }
     }
   }
+  get ejs() { return this.opts.ejs; }
+  get fs() {
+    if(!this.smart_fs){
+      const fs_config = this.opts.modules.smart_fs;
+      const fs_class = fs_config?.class ?? fs_config;
+      this.smart_fs = new fs_class(this, {
+        adapter: fs_config.adapter,
+        fs_path: this.opts.env_path || '',
+        exclude_patterns: this.excluded_patterns || [],
+      });
+    }
+    return this.smart_fs;
+  }
+  get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
+  get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
+  set global_ref(env) { this.global_ref[this.global_prop] = env; }
+  get item_types() { return this.opts.item_types; }
+  // get settings() { return this.smart_env_settings._settings; }
+  // set settings(settings) { this.smart_env_settings._settings = settings; }
+  get settings() { return this.smart_env_settings.settings; }
+  set settings(settings) { this.smart_env_settings.settings = settings; }
+  get smart_view() {
+    if(!this._smart_view){
+      this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
+    }
+    return this._smart_view;
+  }
+  get templates() { return this.opts.templates; }
+  get views() { return this.opts.views; }
+  /**
+   * @deprecated Use this.main_class_name instead of this.plugin
+   */
+  get main() { return this[this.mains[this.mains.length-1]]; }
+  /**
+   * @deprecated Use this.main_class_name instead of this.plugin
+   */
+  get plugin() { return this.main; }
 
+}
+
+/**
+ * Normalizes the options for the SmartEnv instance (mutates the object)
+ * - converts camelCase keys in `collections` to snake_case
+ * - ensures `collections` values are objects with a `class` property
+ * @param {Object} opts - The options to normalize.
+ * @returns {Object} the mutated options object
+ */
+function normalize_opts(opts) {
+  Object.entries(opts.collections).forEach(([key, value]) => {
+    if (typeof value === 'function') opts.collections[key] = { class: value };
+    // if key is CamelCase, convert to snake_case
+    if (key[0] === key[0].toUpperCase()) {
+      opts.collections[camel_case_to_snake_case(key)] = { ...opts.collections[key] };
+      delete opts.collections[key];
+    }
+  });
+  return opts;
 }
 
 function camel_case_to_snake_case(str) {

@@ -62,14 +62,19 @@ export class SmartEnvSettings {
    */
   get fs() {
     if (!this._fs){
-      const config = this.opts.modules.smart_fs;
-      const _class = config?.class ?? config;
-      this._fs = new _class(this.env, {
-        adapter: config.adapter,
-        fs_path: this.env[this.env.mains[0]].settings.env_data_dir
+      this._fs = new this.fs_module_config.class(this.env, {
+        adapter: this.fs_module_config.adapter,
+        fs_path: this.fs_path
       });
     }
     return this._fs;
+  }
+  get fs_module_config() { return this.opts.modules.smart_fs; }
+  get fs_path() {
+    return this.env.opts.env_path
+      + (this.env.opts.env_path ? (this.env.opts.env_path.includes('\\') ? '\\' : '/') : '') // detect and use correct separator based on env_path
+      + this.env.opts.env_data_dir
+    ;
   }
 
   /**
@@ -78,24 +83,15 @@ export class SmartEnvSettings {
    */
   async load() {
     if (!this.opts.env_data_dir) await this.get_env_data_dir();
-    if (!(await this.fs.exists('smart_env.json'))) {
-      // temp: check if .smart_env.json exists in old location
-      if (await this.fs.exists('.smart_env.json')) {
-        const old_settings = JSON.parse(await this.fs.read('.smart_env.json'));
-        await this.save(old_settings);
-        await this.fs.remove('.smart_env.json');
-      } else {
-        await this.save({});
-      }
-    }
+    if (!(await this.fs.exists('smart_env.json'))) await this.save({});
     if (this.env.opts.default_settings) this._settings = this.env.opts.default_settings || {}; // set defaults if provided
     deep_merge(this._settings, JSON.parse(await this.fs.read('smart_env.json'))); // load saved settings
     deep_merge(this._settings, this.env.opts?.smart_env_settings || {}); // overrides saved settings
-    for (const key of this.env.mains) {
-      this._settings[key] = await this.env[key].load_settings();
-    }
     await this.load_obsidian_settings();
     this._saved = true;
+  }
+  async load_main_settings(main_key) {
+    this._settings[main_key] = this.env[main_key]._settings;
   }
 
   /**
@@ -105,9 +101,11 @@ export class SmartEnvSettings {
   async load_obsidian_settings() {
     if (this._settings.is_obsidian_vault && this.env.smart_connections_plugin) {
       const obsidian_settings = this._settings.smart_connections_plugin;
-      this.transform_backwards_compatible_settings(obsidian_settings);
-      await this.save();
-      this.env.smart_connections_plugin.save_settings(obsidian_settings);
+      if(obsidian_settings){
+        this.transform_backwards_compatible_settings(obsidian_settings);
+        await this.save();
+        this.env.smart_connections_plugin.save_settings(obsidian_settings);
+      }
     }
   }
 
