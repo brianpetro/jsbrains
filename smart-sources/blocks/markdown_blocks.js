@@ -1,6 +1,6 @@
 import { SmartEntities } from "smart-entities";
-import { BlockAdapter } from "./adapters/_adapter.js";
-import { MarkdownBlockAdapter } from "./adapters/markdown.js";
+import { BlockAdapter } from "../adapters/_adapter.js";
+import { MarkdownBlockAdapter } from "../adapters/markdown.js";
 
 export class SmartBlocks extends SmartEntities {
   constructor(env, opts = {}) {
@@ -38,24 +38,34 @@ export class SmartBlocks extends SmartEntities {
     await this.env.smart_sources.process_save_queue();
   }
   get settings_config() {
-    return {
-      ...super.settings_config,
-      // Merge block adapters' settings_config
-      ...Object.values(this.block_adapters).reduce((acc, adapter) => {
-        if(adapter.settings_config){
-          acc = { ...acc, ...adapter.settings_config };
-        }
-        return acc;
-      }, {}),
-      "smart_blocks.embed_model.model_key": {
-        name: 'Embedding Model',
-        type: "dropdown",
-        description: "Select an embedding model.",
-        options_callback: 'smart_blocks.embed_model.get_block_embedding_model_options',
-        callback: 'smart_blocks.embed_model_changed',
-        // required: true
-        default: 'TaylorAI/bge-micro-v2',
+    return this.process_settings_config({
+      "embed_blocks": {
+        name: 'Embed Blocks',
+        type: "toggle",
+        description: "Embed blocks using the embedding model.",
+        default: true,
       },
-    };
+    });
   }
+  // get settings_config() {
+  //   return {
+  //     ...super.settings_config,
+  //     // Merge block adapters' settings_config
+  //     ...Object.values(this.block_adapters).reduce((acc, adapter) => {
+  //       if(adapter.settings_config){
+  //         acc = { ...acc, ...adapter.settings_config };
+  //       }
+  //       return acc;
+  //     }, {}),
+  //     "smart_blocks.embed_model.model_key": {
+  //       name: 'Embedding Model',
+  //       type: "dropdown",
+  //       description: "Select an embedding model.",
+  //       options_callback: 'smart_blocks.embed_model.get_block_embedding_model_options',
+  //       callback: 'smart_blocks.embed_model_changed',
+  //       // required: true
+  //       default: 'TaylorAI/bge-micro-v2',
+  //     },
+  //   };
+  // }
 }

@@ -40,12 +40,12 @@ export class SmartBlocks extends SmartEntities {
   get settings_config() {
     return {
       ...super.settings_config,
-      "smart_blocks.embed_model.model_key": {
+      "embed_model.model_key": {
         name: 'Embedding Model',
         type: "dropdown",
         description: "Select an embedding model.",
-        options_callback: 'smart_blocks.embed_model.get_block_embedding_model_options',
-        callback: 'smart_blocks.embed_model_changed',
+        options_callback: 'embed_model.get_block_embedding_model_options',
+        callback: 'embed_model_changed',
         // required: true
         default: 'TaylorAI/bge-micro-v2',
       },

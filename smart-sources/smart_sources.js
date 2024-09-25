@@ -4,9 +4,8 @@ export class SmartSources extends SmartEntities {
   constructor(env, opts = {}) {
     super(env, opts);
     this.search_results_ct = 0;
+    this.block_collections = {};
   }
-  get source_adapters() { return this.env.opts.collections?.[this.collection_key]?.source_adapters || {}; }
-  get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
   async init() {
     await super.init();
     this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
@@ -19,16 +18,15 @@ export class SmartSources extends SmartEntities {
         this.items[file.path] = new this.item_type(this.env, { path: file.path });
       })
     ;
-    if(this.env.smart_directories) {
-      this.fs.folder_paths.forEach(async (_path) => {
-        await this.env.smart_directories.create_or_update({ path: _path });
+    if(this.opts.block_collections) {
+      this.opts.block_collections.forEach(block_collection => {
+        new block_collection.class(this);
       });
     }
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
 
-  get data_fs() { return this.env.smart_env_settings.fs; }
   // removes old data files
   async prune() {
     await this.fs.refresh(); // refresh source files in case they have changed
@@ -63,7 +61,6 @@ export class SmartSources extends SmartEntities {
       else if (item.is_unembedded) item.queue_embed();
     }
   }
-  get current_note() { return this.get(this.env.smart_connections_plugin.app.workspace.getActiveFile().path); }
   build_links_map() {
     const links_map = {};
     for (const source of Object.values(this.items)) {
@@ -183,6 +180,20 @@ export class SmartSources extends SmartEntities {
     await this.process_embed_queue();
     await this.process_save_queue();
   }
+  get source_adapters() { return this.env.opts.collections?.[this.collection_key]?.source_adapters || {}; }
+  get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
+  get current_note() { return this.get(this.env.smart_connections_plugin.app.workspace.getActiveFile().path); }
+  get fs() {
+    if(!this._fs){
+      this._fs = new this.opts.modules.smart_fs.class(this.env, {
+        adapter: this.opts.modules.smart_fs.adapter,
+        fs_path: this.opts.env_path || '',
+        exclude_patterns: this.excluded_patterns || [],
+      });
+    }
+    return this._fs;
+  }
+  get data_fs() { return this.env.data_fs; }
 
   get settings_config(){
     return {

@@ -1,7 +1,7 @@
 import { SmartViewNodeAdapter } from "./node.js";
-
+import { Setting } from "obsidian";
 export class SmartViewObsidianAdapter extends SmartViewNodeAdapter {
-  get setting_class() { return this.main.env.plugin.obsidian.Setting; }
+  get setting_class() { return Setting; }
   render_file_select_component(elm, path, value) {
     return super.render_text_component(elm, path, value);
   }

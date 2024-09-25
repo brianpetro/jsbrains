@@ -20,16 +20,11 @@ export class SmartSources extends SmartEntities {
         this.items[file.path] = new this.item_type(this.env, { path: file.path });
       })
     ;
-    if(this.env.smart_directories) {
-      this.fs.folder_paths.forEach(async (_path) => {
-        await this.env.smart_directories.create_or_update({ path: _path });
-      });
-    }
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
 
-  get data_fs() { return this.env.smart_env_settings.fs; }
+  get data_fs() { return this.env.data_fs; }
   // removes old data files
   async prune() {
     await this.fs.refresh(); // refresh source files in case they have changed
@@ -188,7 +183,8 @@ export class SmartSources extends SmartEntities {
   get settings_config(){
     return {
       ...super.settings_config,
-      ...this.process_settings_config(settings_config),
+      // ...this.process_settings_config(settings_config),
+      ...settings_config,
     };
   }
 

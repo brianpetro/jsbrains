@@ -180,33 +180,6 @@ export class SmartEnvSettings {
 }
 
 /**
- * Deeply merges two objects without overwriting existing properties in the target object.
- * @param {Object} target - The target object to merge properties into.
- * @param {Object} source - The source object from which properties are sourced.
- * @returns {Object} The merged object.
- */
-export function deep_merge_and_delete_no_overwrite(target, source) {
-  for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      if (is_obj(source[key])) {
-        if (!target.hasOwnProperty(key) || !is_obj(target[key])) {
-          target[key] = {};
-        }
-        deep_merge_and_delete_no_overwrite(target[key], source[key]);
-      } else if (!target.hasOwnProperty(key)) {
-        target[key] = source[key];
-        delete source[key];
-      }
-    }
-  }
-  return target;
-
-  function is_obj(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
-  }
-}
-
-/**
  * Deeply merges two objects, giving precedence to the properties of the source object.
  * @param {Object} target - The target object to merge properties into.
  * @param {Object} source - The source object from which properties are sourced.

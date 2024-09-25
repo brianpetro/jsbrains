@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-// import { SmartEnvSettings } from './smart_env_settings.js';
+import { SmartEnvSettings } from './smart_env_settings.js';
 import { SmartChange } from 'smart-change/smart_change.js';
 import { DefaultAdapter } from 'smart-change/adapters/default.js';
 import { MarkdownAdapter } from 'smart-change/adapters/markdown.js';
@@ -61,17 +61,19 @@ export class SmartEnv {
     } else {
       main.env = existing_env;
       main_key = main.env.init_main(main, main_env_opts);
-      await main.env.load_main(main_key);
+      await main.env.smart_env_settings.load_main_settings(main_key);
     }
+    await main.env.load_main(main_key);
     return main.env;
   }
   async init(main, main_env_opts = {}) {
     this.is_init = true;
-    const main_key = this.init_main(main, main_env_opts);
-    await this.fs.init(); // before smart_settings for detecting env_data_dir
-    await this.opts.modules.smart_settings.class.create(this);
-    await this.load_main(main_key);
-    this.init_smart_change(); // should be moved
+    const main_key = main.env.init_main(main, main_env_opts);
+    await this.fs.init(); // before SmartEnvSettings for detecting env_data_dir
+    this.smart_env_settings = new SmartEnvSettings(this, this.opts);
+    await this.smart_env_settings.load();
+    await this.smart_env_settings.load_main_settings(main_key);
+    this.init_smart_change();
     this.is_init = false;
     return main_key;
   }
@@ -83,6 +85,7 @@ export class SmartEnv {
   init_main(main, main_env_opts = {}) {
     const main_key = camel_case_to_snake_case(main.constructor.name);
     this[main_key] = main;
+    // this[main_name+"_opts"] = main_env_config; // DEPRECATED/UNUSED?
     this.mains.push(main_key);
     this.main_opts[main_key] = main_env_opts;
     this.merge_options(main_env_opts);
@@ -211,49 +214,6 @@ export class SmartEnv {
       obsidian_markdown: new ObsidianMarkdownAdapter(),
     };
   }
-  // NEEDS REVIEW
-  get smart_view() {
-    if(!this._smart_view) this._smart_view = this.init_module('smart_view');
-    return this._smart_view;
-  }
-  get settings_config(){
-    return {
-      "env_data_dir": {
-        type: 'folder',
-        name: 'Environment Data Directory',
-        description: 'The directory where the environment data is stored.',
-        default: '.smart-env'
-      }
-    }
-  }
-  get ejs() { return this.opts.ejs; }
-  get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
-  get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
-  set global_ref(env) { this.global_ref[this.global_prop] = env; }
-  get item_types() { return this.opts.item_types; }
-  // get settings() { return this.smart_env_settings.settings; }
-  // set settings(settings) { this.smart_env_settings.settings = settings; }
-  get smart_view() {
-    if(!this._smart_view){
-      // this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
-      this._smart_view = new this.opts.modules.smart_view.class({adapter: this.opts.modules.smart_view.adapter});
-    }
-    return this._smart_view;
-  }
-  get templates() { return this.opts.templates; }
-  get views() { return this.opts.views; }
-
-
-  get fs_module_config() { return this.opts.modules.smart_fs; }
-  get fs() {
-    if(!this.smart_fs){
-      this.smart_fs = new this.fs_module_config.class(this, {
-        adapter: this.fs_module_config.adapter,
-        fs_path: this.opts.env_path || '',
-      });
-    }
-    return this.smart_fs;
-  }
   get env_data_dir() {
     const env_settings_files = this.fs.file_paths?.filter(path => path.endsWith('smart_env.json')) || [];
     let env_data_dir = '.smart-env';
@@ -274,51 +234,45 @@ export class SmartEnv {
     }
     return env_data_dir;
   }
-  get data_fs() {
-    if (!this._fs){
-      this._fs = new this.fs_module_config.class(this, {
-        adapter: this.fs_module_config.adapter,
-        fs_path: this.data_fs_path
+  // NEEDS REVIEW
+  get smart_view() {
+    if(!this._smart_view) this._smart_view = this.init_module('smart_view');
+    return this._smart_view;
+  }
+  get settings_config(){
+    return {
+      "env_data_dir": {
+        type: 'folder',
+        name: 'Environment Data Directory',
+        description: 'The directory where the environment data is stored.',
+        default: '.smart-env'
+      }
+    }
+  }
+  get ejs() { return this.opts.ejs; }
+  get fs() {
+    if(!this.smart_fs){
+      this.smart_fs = new this.opts.modules.smart_fs.class(this, {
+        adapter: this.opts.modules.smart_fs.adapter,
+        fs_path: this.opts.env_path || '',
       });
     }
-    return this._fs;
+    return this.smart_fs;
   }
-  get data_fs_path() {
-    return this.opts.env_path
-      + (this.opts.env_path ? (this.opts.env_path.includes('\\') ? '\\' : '/') : '') // detect and use correct separator based on env_path
-      + this.env_data_dir
-    ;
+  get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
+  get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
+  set global_ref(env) { this.global_ref[this.global_prop] = env; }
+  get item_types() { return this.opts.item_types; }
+  get settings() { return this.smart_env_settings.settings; }
+  set settings(settings) { this.smart_env_settings.settings = settings; }
+  get smart_view() {
+    if(!this._smart_view){
+      this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
+    }
+    return this._smart_view;
   }
-  /**
-   * Saves the current settings to the file system.
-   * @param {Object|null} [settings=null] - Optional settings to override the current settings before saving.
-   * @returns {Promise<void>} A promise that resolves when the settings have been saved.
-   */
-  async save_settings(settings) {
-    this._saved = false;
-    if (!await this.data_fs.exists('')) await this.data_fs.mkdir('');
-    await this.data_fs.write(
-      'smart_env.json',
-      JSON.stringify(settings, null, 2)
-    );
-    this._saved = true;
-  }
-  /**
-   * Loads the settings from the file system.
-   * @returns {Promise<void>} A promise that resolves when the settings have been loaded.
-   */
-  async load_settings() {
-    if (!(await this.data_fs.exists('smart_env.json'))) await this.save_settings({});
-    let settings = this.opts.default_settings || {}; // set defaults if provided
-    deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
-    deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings
-    this._saved = true;
-    return settings;
-  }
-
-
-
-  // DEPRECATED
+  get templates() { return this.opts.templates; }
+  get views() { return this.opts.views; }
   /**
    * @deprecated Use this.main_class_name instead of this.plugin
    */
@@ -382,21 +336,4 @@ export function deep_merge_no_overwrite(target, source) {
   function is_obj(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
   }
-}
-/**
- * Deeply merges two objects, giving precedence to the properties of the source object.
- * @param {Object} target - The target object to merge properties into.
- * @param {Object} source - The source object from which properties are sourced.
- * @returns {Object} The merged object.
- */
-export function deep_merge(target, source) {
-  for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      // both exist and are objects
-      if (is_obj(source[key]) && is_obj(target[key])) deep_merge(target[key], source[key]);
-      else target[key] = source[key]; // precedence to source
-    }
-  }
-  return target;
-  function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
 }

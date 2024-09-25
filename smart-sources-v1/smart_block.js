@@ -114,7 +114,7 @@ export class SmartBlock extends SmartEntity {
   }
   get excluded() {
     const block_headings = this.path.split("#").slice(1); // remove first element (file path)
-    return this.env.excluded_headings.some(heading => block_headings.includes(heading));
+    return this.env.smart_sources.excluded_headings.some(heading => block_headings.includes(heading));
   }
 
   // CRUD

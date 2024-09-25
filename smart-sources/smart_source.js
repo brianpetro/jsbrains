@@ -12,23 +12,6 @@ export class SmartSource extends SmartEntity {
       _queue_load: true,
     };
   }
-  get source_adapters() { return this.collection.source_adapters; }
-  get source_adapter() {
-    if(this._source_adapter) return this._source_adapter;
-    if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
-    else this._source_adapter = new this.source_adapters["default"](this);
-    return this._source_adapter;
-  }
-  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get data_path() { return this.collection.data_dir + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
-  on_load_error(err){
-    super.on_load_error(err);
-    // if ENOENT
-    if(err.code === "ENOENT"){
-      this._queue_load = false; // don't queue load again (re-queued by CollectionItem)
-      this.queue_import();
-    }
-  }
   // moved logic from SmartSources import() method
   queue_import() { this._queue_import = true; }
   async import(){
@@ -38,6 +21,18 @@ export class SmartSource extends SmartEntity {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
         return;
       }
+      // if this.loaded_at more than 5 minutes ago
+      if(this.loaded_at && Date.now() - this.loaded_at > 3 * 60 * 1000){
+        const ajson_file_stat = await this.env.data_fs.stat(this.data_path);
+        if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
+          console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
+          return await this.load();
+        }
+      }
+      const content = await this.read();
+      if(this.block_collection) {
+        await this.block_collection.create(content);
+      }
       await this.parse_content();
       this.queue_embed();
     }catch(err){
@@ -46,16 +41,6 @@ export class SmartSource extends SmartEntity {
     }
   }
   async parse_content() {
-    // if this.loaded_at more than 5 minutes ago
-    if(this.loaded_at && Date.now() - this.loaded_at > 3 * 60 * 1000){
-      const data_fs = this.env.smart_env_settings.fs;
-      const ajson_file_stat = await data_fs.stat(this.data_path);
-      if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
-        console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
-        // TODO RE-LOAD SOURCE AND THEN CONTINUE
-      }
-    }
-    const content = await this.read();
     const hash = await create_hash(content); // update hash
     const file_stat = await this.fs.stat(this.data.path);
     if (hash !== this.last_history?.hash) {
@@ -110,12 +95,9 @@ export class SmartSource extends SmartEntity {
     }
     return connections;
   }
-  get excluded_lines() {
-    return this.blocks.filter(block => block.excluded).map(block => block.lines);
-  }
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
-    let content = await this.get_content(); // get content from file
+    let content = await this.read(); // get content from file
     if(this.excluded_lines.length){
       const content_lines = content.split("\n");
       this.excluded_lines.forEach(lines => {
@@ -133,94 +115,6 @@ export class SmartSource extends SmartEntity {
   }
   open() { this.env.smart_connections_plugin.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
-  get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
-  // get blocks() { return Object.keys(this.last_history.blocks).map(block_key => this.env.smart_blocks.get(block_key)).filter(block => block); } // filter out blocks that don't exist
-  get blocks() { return this.env.smart_blocks?.filter({key_starts_with: this.key}) || []; } // filter out blocks that don't exist
-  get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
-  get meta_changed() {
-    try {
-      if (!this.last_history) return true;
-      if (!this.file) return true;
-      if ((this.last_history?.mtime || 0) < this.file.stat.mtime) {
-        const size_diff = Math.abs(this.last_history.size - this.file.stat.size);
-        const size_diff_ratio = size_diff / (this.last_history.size || 1);
-        if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of last_history.size, assume file changed
-        // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.data.path}`);
-      }
-      return false;
-    } catch (e) {
-      console.warn("error getting meta changed for ", this.data.path, ": ", e);
-      return true;
-    }
-  }
-  get name() {
-    if(this.should_show_full_path) return this.data.path.split("/").join(" > ").replace(".md", "");
-    return this.data.path.split("/").pop().replace(".md", "");
-  }
-  get is_canvas() { return this.data.path.endsWith("canvas"); }
-  get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
-  get is_gone() { return !this.file; }
-  get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
-  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
-  get median_block_vec() {
-    if (this._median_block_vec) return this._median_block_vec;
-    if (!this.block_vecs.length) return null;
-
-    const vec_length = this.block_vecs[0].length;
-    this._median_block_vec = new Array(vec_length);
-    const mid = Math.floor(this.block_vecs.length / 2);
-
-    for (let i = 0; i < vec_length; i++) {
-      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
-        ? values[mid]
-        : (values[mid - 1] + values[mid]) / 2;
-    }
-
-    return this._median_block_vec;
-  }
-  get file() { return this.fs.files[this.data.path]; }
-  /**
-   * @deprecated Use this.file instead
-   */
-  get t_file() {
-    // return this.env.smart_connections_plugin.get_tfile(this.data.path); // should be better handled using non-Obsidian API
-    return this.fs.files[this.data.path];
-  } 
-  async save() {
-    if(this.deleted) return await super.save();
-    const blocks_to_save = this.blocks.filter(block => block._queue_save);
-    const ajson = [
-      super.ajson,
-      ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
-    ].join("\n");
-    // console.log({ajson});
-    await super.save(ajson);
-    blocks_to_save.forEach(block => block._queue_save = false);
-  }
-  get file_path() { return this.data.path; }
-  // get file_type() { return this.t_file.extension; }
-  get file_type() { return this.file_path.split(".").pop(); }
-  get outlink_paths() {
-    return (this.data.outlinks || [])
-      .filter(link => !link.target.startsWith("http"))
-      .map(link => {
-        const link_path = this.fs.get_link_target_path(link.target, this.file_path);
-        return link_path;
-      })
-      .filter(link_path => link_path);
-  }
-  get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }
-  get size() { return this.last_history?.size || 0; }
-  get mtime() { return this.last_history?.mtime || 0; }
-  get is_unembedded() {
-    if(this.meta_changed) return true;
-    return super.is_unembedded;
-  }
-  get excluded() { return this.env.fs.is_excluded(this.data.path); }
-
-  // FS
-  get fs() { return this.collection.fs; }
   /**
    * Checks if the source file exists in the file system.
    * @returns {Promise<boolean>} A promise that resolves to true if the file exists, false otherwise.
@@ -228,11 +122,6 @@ export class SmartSource extends SmartEntity {
   async has_source_file() { return await this.fs.exists(this.data.path); }
 
   // CRUD
-  get smart_change_opts() {
-    return {
-      adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
-    };
-  }
 
   /**
    * FILTER/SEARCH METHODS
@@ -377,14 +266,123 @@ export class SmartSource extends SmartEntity {
       throw error;
     }
   }
+  // SUBCLASS OVERRIDES
+  async save() {
+    if(this.deleted) return await super.save();
+    const blocks_to_save = this.blocks.filter(block => block._queue_save);
+    const ajson = [
+      super.ajson,
+      ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
+    ].join("\n");
+    // console.log({ajson});
+    await super.save(ajson);
+    blocks_to_save.forEach(block => block._queue_save = false);
+  }
+  on_load_error(err){
+    super.on_load_error(err);
+    // if ENOENT
+    if(err.code === "ENOENT"){
+      this._queue_load = false; // don't queue load again (re-queued by CollectionItem)
+      this.queue_import();
+    }
+  }
 
+  // GETTERS
+  get block_collection() { return this.collection.block_collections[this.file_type]; }
+  get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
+  get blocks() { return this.env.smart_blocks?.filter({key_starts_with: this.key}) || []; } // filter out blocks that don't exist
+  get data_path() { return this.collection.data_dir + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
+  get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
+  get excluded() { return this.fs.is_excluded(this.data.path); }
+  get excluded_lines() {
+    return this.blocks.filter(block => block.excluded).map(block => block.lines);
+  }
+  get file() { return this.fs.files[this.data.path]; }
+  get file_path() { return this.data.path; }
+  get file_type() { return this.file_path.split(".").pop(); }
+  get fs() { return this.collection.fs; }
+  get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }
+  get is_canvas() { return this.data.path.endsWith("canvas"); }
+  get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
+  get is_gone() { return !this.file; }
+  get is_unembedded() {
+    if(this.meta_changed) return true;
+    return super.is_unembedded;
+  }
+  get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
+  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
+  get median_block_vec() {
+    if (this._median_block_vec) return this._median_block_vec;
+    if (!this.block_vecs.length) return null;
 
+    const vec_length = this.block_vecs[0].length;
+    this._median_block_vec = new Array(vec_length);
+    const mid = Math.floor(this.block_vecs.length / 2);
 
+    for (let i = 0; i < vec_length; i++) {
+      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
+      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
+        ? values[mid]
+        : (values[mid - 1] + values[mid]) / 2;
+    }
+
+    return this._median_block_vec;
+  }
+  get meta_changed() {
+    try {
+      if (!this.last_history) return true;
+      if (!this.file) return true;
+      if ((this.last_history?.mtime || 0) < this.file.stat.mtime) {
+        const size_diff = Math.abs(this.last_history.size - this.file.stat.size);
+        const size_diff_ratio = size_diff / (this.last_history.size || 1);
+        if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of last_history.size, assume file changed
+        // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.data.path}`);
+      }
+      return false;
+    } catch (e) {
+      console.warn("error getting meta changed for ", this.data.path, ": ", e);
+      return true;
+    }
+  }
+  get mtime() { return this.last_history?.mtime || 0; }
+  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
+  get name() {
+    if(this.should_show_full_path) return this.data.path.split("/").join(" > ").replace(".md", "");
+    return this.data.path.split("/").pop().replace(".md", "");
+  }
+  get outlink_paths() {
+    return (this.data.outlinks || [])
+      .filter(link => !link.target.startsWith("http"))
+      .map(link => {
+        const link_path = this.fs.get_link_target_path(link.target, this.file_path);
+        return link_path;
+      })
+      .filter(link_path => link_path);
+  }
+  get size() { return this.last_history?.size || 0; }
+  get smart_change_opts() {
+    return {
+      adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
+    };
+  }
+  get source_adapters() { return this.collection.source_adapters; }
+  get source_adapter() {
+    if(this._source_adapter) return this._source_adapter;
+    if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
+    else this._source_adapter = new this.source_adapters["default"](this);
+    return this._source_adapter;
+  }
   // DEPRECATED methods
   /**
    * @deprecated Use this.read() instead
    */
   async get_content() { return await this.read(); }
+  /**
+   * @deprecated Use this.file instead
+   */
+  get t_file() {
+    return this.fs.files[this.data.path];
+  } 
 
 
 }

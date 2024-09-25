@@ -1,0 +1,24 @@
+{
+  "name": "smart-settings",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Smart Settings.",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "homepage": "https://jsbrains.org",
+  "dependencies": {},
+  "devDependencies": {
+    "ava": "^6.0.1"
+  }
+}

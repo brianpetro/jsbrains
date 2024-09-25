@@ -38,6 +38,16 @@ export class SmartSource extends SmartEntity {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
         return;
       }
+      // if this.loaded_at more than 5 minutes ago
+      // if(this.loaded_at && Date.now() - this.loaded_at > 3 * 60 * 1000){
+      if(this.loaded_at){
+        const ajson_file_stat = await this.env.data_fs.stat(this.data_path);
+        // if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
+        if(ajson_file_stat.mtime > this.loaded_at){
+          console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
+          return await this.load();
+        }
+      }
       await this.parse_content();
       this.queue_embed();
     }catch(err){
@@ -46,15 +56,6 @@ export class SmartSource extends SmartEntity {
     }
   }
   async parse_content() {
-    // if this.loaded_at more than 5 minutes ago
-    if(this.loaded_at && Date.now() - this.loaded_at > 3 * 60 * 1000){
-      const data_fs = this.env.smart_env_settings.fs;
-      const ajson_file_stat = await data_fs.stat(this.data_path);
-      if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
-        console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
-        // TODO RE-LOAD SOURCE AND THEN CONTINUE
-      }
-    }
     const content = await this.read();
     const hash = await create_hash(content); // update hash
     const file_stat = await this.fs.stat(this.data.path);

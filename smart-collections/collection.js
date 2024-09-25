@@ -227,6 +227,7 @@ export class Collection {
    * @returns {string} The data path.
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
+  get data_dir() { return 'multi'; }
   // ADAPTER METHODS
   /**
    * Saves the current state of the collection.
@@ -325,16 +326,21 @@ export class Collection {
     this.settings_container.innerHTML = '';
     await this.render_settings(this.settings_container);
   }
-  async render_settings(container=null) {
+  /**
+   * Renders the settings for the collection.
+   * @param {HTMLElement} container - The container element to render the settings into.
+   * @param {Object} opts - Additional options for rendering.
+   * @param {Object} opts.settings_keys - An array of keys to render.
+   */
+  async render_settings(container=null, opts = {}) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
     if(!container) throw new Error("Container is required");
     container.innerHTML = '';
     container.innerHTML = '<div class="sc-loading">Loading ' + this.collection_key + ' settings...</div>';
-    const frag = await settings_template.call(this.env.smart_view, this);
+    const frag = await settings_template.call(this.env.smart_view, this, opts);
     container.innerHTML = '';
     container.appendChild(frag);
   }
-  
 
   unload() {
     this.clear();

@@ -11,11 +11,11 @@ const class_to_collection_key = {
 };
 
 export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdapter {
-  get fs() { return this.collection.data_fs || this.env.smart_env_settings.fs; }
+  get fs() { return this.collection.data_fs || this.env.data_fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
    */
-  get data_folder() { return this.collection.data_folder || 'multi'; }
+  get data_folder() { return this.collection.data_dir || 'multi'; }
 
   /**
    * Asynchronously loads collection item data from .ajson file specified by data_path.

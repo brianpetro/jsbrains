@@ -106,7 +106,7 @@ export class SmartEntities extends Collection {
       || "None"
     );
   }
-  get data_dir() { return this.env.env_data_dir + this.fs.sep + this.embed_model_key.replace("/", "_"); }
+  // get data_dir() { return this.env.env_data_dir + this.fs.sep + this.embed_model_key.replace("/", "_"); }
 
   /**
    * Calculates the relevance of an item based on the search filter.
@@ -210,11 +210,16 @@ export class SmartEntities extends Collection {
     return top_k;
   }
   get settings_config() {
-    return this.process_settings_config({
+    // return this.process_settings_config({
+    //   ...super.settings_config,
+    //   ...(this.embed_model?.settings_config || {}),
+    //   ...settings_config,
+    // });
+    return {
       ...super.settings_config,
       ...(this.embed_model?.settings_config || {}),
       ...settings_config,
-    });
+    };
   }
 
   get filter_config() { return filter_config; }
