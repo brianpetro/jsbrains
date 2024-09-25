@@ -3,12 +3,10 @@ import { BlockAdapter } from "./adapters/_adapter.js";
 import { MarkdownBlockAdapter } from "./adapters/markdown.js";
 
 export class SmartBlocks extends SmartEntities {
-  constructor(env, opts = {}) {
-    super(env, opts);
-    this.block_adapters = {
-      "default": BlockAdapter,
-      "canvas": MarkdownBlockAdapter, // temporary until canvas is implemented
-      "md": MarkdownBlockAdapter,
+  get block_adapters() {
+    return {
+      ...(this.env.opts.collections?.[this.collection_key]?.block_adapters || {}),
+      ...(this.opts.block_adapters || {}),
     };
   }
   async create(key, content) {

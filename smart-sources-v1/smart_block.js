@@ -18,7 +18,7 @@ export class SmartBlock extends SmartEntity {
     else this._block_adapter = new this.block_adapters["default"](this);
     return this._block_adapter;
   }
-  get file_type() { return this.source.file_type; }
+  get file_type() { return this.source.file_type?.toLowerCase(); }
 
   /**
    * Queues the block for saving via the source.
@@ -49,21 +49,6 @@ export class SmartBlock extends SmartEntity {
   }
 
   async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }
-  // async get_content() {
-  //   if (!this.source) return null;
-  //   try {
-  //     if (this.has_lines) { // prevents full parsing of note if not needed
-  //       const all_lines = await this.source.get_content();
-  //       const block_content = all_lines.split("\n").slice(this.line_start, this.line_end + 1).join("\n");
-  //       return block_content;
-  //     }
-  //     const block_content = await this.smart_chunks.get_block_from_path(this.data.path, this.source);
-  //     return block_content;
-  //   } catch (e) {
-  //     console.log("error getting block content for ", this.data.path, ": ", e);
-  //     return "BLOCK NOT FOUND";
-  //   }
-  // }
 
   async get_embed_input() {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // return cached (temporary) input
@@ -148,5 +133,3 @@ export class SmartBlock extends SmartEntity {
   // backwards compatibility (DEPRECATED)
   get link() { return this.data.path; }
 }
-
-
