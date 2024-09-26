@@ -76,7 +76,8 @@ export class SmartEntities extends Collection {
     if(!this.env.smart_embed_active_models?.[this.embed_model_key]){
       this.env.smart_embed_active_models[this.embed_model_key] = new this.env.opts.modules.smart_embed_model.class(this.env, {
         model_key: this.embed_model_key,
-        ...(this.settings.embed_model?.[this.embed_model_key] || {})
+        ...(this.settings.embed_model?.[this.embed_model_key] || {}),
+        settings: this.settings.embed_model,
       });
     }
     return this.env.smart_embed_active_models?.[this.embed_model_key];
@@ -320,7 +321,7 @@ export class SmartEntities extends Collection {
   async embed_model_changed() {
     this.unload();
     await this.init();
-    this.re_render_settings();
+    this.render_settings();
     await this.process_load_queue();
   }
 

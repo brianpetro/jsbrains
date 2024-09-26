@@ -66,6 +66,29 @@ export class SmartView {
     ;
     return `<div class="setting-component${setting_config.scope_class ? ` ${setting_config.scope_class}` : ''}"\ndata-setting="${setting_config.setting}"\n${attributes}\n></div>`;
   }
+  /**
+   * Validates the setting config and returns true if the setting should be rendered.
+   * @param {object} scope - The scope object.
+   * @param {object} opts - The options object.
+   * @param {string} setting_key - The key of the setting.
+   * @param {object} setting_config - The config of the setting.
+   * @returns {boolean} - True if the setting should be rendered, false otherwise.
+   */
+  validate_setting(scope, opts, setting_key, setting_config) {
+    /**
+     * if settings_keys is provided, skip setting if not in settings_keys
+     */
+    if (opts.settings_keys && !opts.settings_keys.includes(setting_key)) return false;
+    /**
+     * Conditional rendering
+     * @name settings_config.conditional
+     * @type {function}
+     * @param {object} scope - The scope object.
+     * @returns {boolean} - True if the setting should be rendered, false otherwise.
+     */
+    if (typeof setting_config.conditional === 'function' && !setting_config.conditional(scope)) return false;
+    return true;
+  }
 }
 
 

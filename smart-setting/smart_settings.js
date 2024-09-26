@@ -58,7 +58,7 @@ class SmartSettings {
     } else {
       settings[setting] = (typeof value === "string") ? value.trim() : value;
     }
-    await this.env.smart_env_settings.save(settings);
+    await this.env.smart_settings.save(settings);
   }
   async render_components() {
     if(!this.main.obsidian.Setting) console.warn("missing Obsidian Setting component");

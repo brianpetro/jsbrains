@@ -19,12 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-// import { SmartEnvSettings } from './smart_env_settings.js';
-import { SmartChange } from 'smart-change/smart_change.js';
-import { DefaultAdapter } from 'smart-change/adapters/default.js';
-import { MarkdownAdapter } from 'smart-change/adapters/markdown.js';
-import { ObsidianMarkdownAdapter } from 'smart-change/adapters/obsidian_markdown.js';
-import { template as settings_template } from './components/settings.js';
+import { render as settings_template } from './components/settings.js';
 
 export class SmartEnv {
   constructor(opts={}) {
@@ -35,9 +30,11 @@ export class SmartEnv {
     this.smart_embed_active_models = {};
     this._excluded_headings = null;
     this.collections = {}; // collection names to initialized classes
-    this.smart_env_settings = null;
     this.is_init = true;
     this.mains = [];
+    /**
+     * @deprecated use main_env_config instead
+     */
     this.main_opts = {};
   }
   /**
@@ -71,9 +68,14 @@ export class SmartEnv {
     await this.fs.init(); // before smart_settings for detecting env_data_dir
     await this.opts.modules.smart_settings.class.create(this);
     await this.load_main(main_key);
-    this.init_smart_change(); // should be moved
     this.is_init = false;
     return main_key;
+  }
+  get main_env_config(){
+    return this.mains.reduce((acc, key) => {
+      acc[key] = this[key].smart_env_config;
+      return acc;
+    }, {});
   }
   /**
    * Adds a new main object to the SmartEnv instance.
@@ -84,7 +86,7 @@ export class SmartEnv {
     const main_key = camel_case_to_snake_case(main.constructor.name);
     this[main_key] = main;
     this.mains.push(main_key);
-    this.main_opts[main_key] = main_env_opts;
+    this.main_opts[main_key] = main_env_opts; // may be deprecated in favor of main_env_config
     this.merge_options(main_env_opts);
     return main_key;
   }
@@ -101,12 +103,11 @@ export class SmartEnv {
     }, {});
     await this.load_collections(main_collections);
   }
-  async init_collections(opts){
-    if(!opts) opts = this.opts;
-    for(const key of Object.keys(opts.collections)){
-      const _class = opts.collections[key]?.class; // should always use `class` property since normalize_opts added ?? opts.collections[key];
+  async init_collections(config=this.opts){
+    for(const key of Object.keys(config.collections)){
+      const _class = config.collections[key]?.class; // should always use `class` property since normalize_opts added ?? opts.collections[key];
       if(typeof _class?.init !== 'function') continue; // skip if not a class or does not have init method
-      await _class.init(this, this.opts);
+      await _class.init(this, {...config.collections[key]});
     }
   }
   async load_collections(collections=this.collections){
@@ -190,27 +191,13 @@ export class SmartEnv {
       return new this.opts.modules[module_name](this, opts);
     }
   }
-  async render_settings(opts = {}) {
-    const frag = await settings_template.call(this.smart_view, this, opts);
-    if(opts.container){
-      opts.container.innerHTML = '';
-      opts.container.appendChild(frag);
-    }
+  async render_settings(container) {
+    const frag = await settings_template.call(this.smart_view, this);
+    container.innerHTML = '';
+    container.appendChild(frag);
     return frag;
   }
   // should probably be moved
-  init_smart_change() {
-    if(typeof this.settings?.smart_changes?.active !== 'undefined' && !this.settings.smart_changes.active) return console.warn('smart_changes disabled by settings');
-    this.smart_change = new SmartChange(this, { adapters: this.smart_change_adapters });
-  }
-
-  get smart_change_adapters() {
-    return {
-      default: new DefaultAdapter(),
-      markdown: new MarkdownAdapter(),
-      obsidian_markdown: new ObsidianMarkdownAdapter(),
-    };
-  }
   // NEEDS REVIEW
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.init_module('smart_view');
@@ -218,12 +205,12 @@ export class SmartEnv {
   }
   get settings_config(){
     return {
-      "env_data_dir": {
-        type: 'folder',
-        name: 'Environment Data Directory',
-        description: 'The directory where the environment data is stored.',
-        default: '.smart-env'
-      }
+      "is_obsidian_vault": {
+        name: "Obsidian Vault",
+        description: "Toggle on if this is an Obsidian vault.",
+        type: "toggle",
+        default: false,
+      },
     }
   }
   get ejs() { return this.opts.ejs; }
@@ -231,8 +218,6 @@ export class SmartEnv {
   get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
   set global_ref(env) { this.global_ref[this.global_prop] = env; }
   get item_types() { return this.opts.item_types; }
-  // get settings() { return this.smart_env_settings.settings; }
-  // set settings(settings) { this.smart_env_settings.settings = settings; }
   get smart_view() {
     if(!this._smart_view){
       // this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});

@@ -4,6 +4,7 @@ export class SmartSources extends SmartEntities {
   constructor(env, opts = {}) {
     super(env, opts);
     this.search_results_ct = 0;
+    this._excluded_headings = null;
   }
   get source_adapters() { return this.env.opts.collections?.[this.collection_key]?.source_adapters || {}; }
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
@@ -16,12 +17,21 @@ export class SmartSources extends SmartEntities {
     // init smart_sources
     Object.values(this.fs.files)
       .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
-      .forEach((file) => {
-        this.items[file.path] = new this.item_type(this.env, { path: file.path });
-      })
+      .forEach(file => this.init_file_path(file.path))
     ;
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+  }
+  init_file_path(file_path){
+    this.items[file_path] = new this.item_type(this.env, { path: file_path });
+  }
+  get smart_change() {
+    if(!this.opts.smart_change) return; // disabled at config level
+    if(typeof this.settings?.smart_change?.active !== 'undefined' && !this.settings.smart_change.active) return console.warn('smart_change disabled by settings');
+    if(!this._smart_change){
+      this._smart_change = new this.opts.smart_change.class(this.opts.smart_change);
+    }
+    return this._smart_change;
   }
 
   get data_fs() { return this.env.data_fs; }
@@ -69,20 +79,6 @@ export class SmartSources extends SmartEntities {
       }
     }
     return links_map;
-  }
-  async import(){
-    Object.values(this.items).forEach(item => item._queue_import = true);
-    await this.process_import_queue();
-    Object.values(this.env.smart_blocks.items).forEach(item => item.init());
-    await this.env.smart_blocks.process_embed_queue();
-    await this.process_embed_queue();
-    await this.process_save_queue();
-  }
-  async refresh(){
-    await this.prune();
-    await this.process_import_queue();
-    await this.env.smart_blocks.process_embed_queue();
-    await this.process_embed_queue();
   }
   // CRUD
   async create(key, content) {
@@ -157,7 +153,10 @@ export class SmartSources extends SmartEntities {
     if(this.collection_key === 'smart_sources'){ // excludes sub-classes
       Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
     }
-    await this.process_import_queue();
+    this.blocks.loaded = true;
+    if(!this.opts.prevent_import_on_load){
+      await this.process_import_queue();
+    }
   }
 
   async process_import_queue(){
@@ -179,6 +178,28 @@ export class SmartSources extends SmartEntities {
     await this.process_embed_queue();
     await this.process_save_queue();
   }
+  async run_load(){
+    await super.run_load();
+    this.blocks.render_settings();
+  }
+  async run_import(){
+    await this.process_import_queue();
+    Object.values(this.env.smart_blocks.items).forEach(item => item.init());
+    await this.env.smart_blocks.process_embed_queue();
+    await this.process_embed_queue();
+    await this.process_save_queue();
+    this.render_settings();
+    this.blocks.render_settings();
+  }
+  async run_refresh(){
+    await this.prune();
+    await this.process_import_queue();
+    await this.env.smart_blocks.process_embed_queue();
+    await this.process_embed_queue();
+    this.render_settings();
+    this.blocks.render_settings();
+  }
+  get blocks(){ return this.env.smart_blocks; }
 
   get settings_config(){
     return {
@@ -190,9 +211,9 @@ export class SmartSources extends SmartEntities {
 
   get fs() {
     if(!this._fs){
-      this._fs = new this.opts.modules.smart_fs.class(this.env, {
-        adapter: this.opts.modules.smart_fs.adapter,
-        fs_path: this.opts.env_path || '',
+      this._fs = new this.env.opts.modules.smart_fs.class(this.env, {
+        adapter: this.env.opts.modules.smart_fs.adapter,
+        fs_path: this.env.opts.env_path || '',
         exclude_patterns: this.excluded_patterns || [],
       });
     }
@@ -226,16 +247,23 @@ export class SmartSources extends SmartEntities {
 }
 
 export const settings_config = {
-  "import_sources": {
-    "name": "Import Sources",
-    "description": "Import sources from file system.",
-    "type": "button",
-    "callback": "import",
+  // TODO: implement in getters (use this.settings not this.env.settings)
+  "file_exclusions": {
+    "name": "File Exclusions",
+    "description": "Comma-separated list of files to exclude.",
+    "type": "text",
+    "default": "",
   },
-  "refresh_sources": {
-    "name": "Refresh Sources",
-    "description": "Prunes old data and re-imports all sources and blocks.",
-    "type": "button",
-    "callback": "refresh",
-  }
+  "folder_exclusions": {
+    "name": "Folder Exclusions",
+    "description": "Comma-separated list of folders to exclude.",
+    "type": "folder-csv",
+    "default": "",
+  },
+  "excluded_headings": {
+    "name": "Excluded Headings",
+    "description": "Comma-separated list of headings to exclude.",
+    "type": "text",
+    "default": "",
+  },
 };

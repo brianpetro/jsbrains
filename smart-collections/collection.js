@@ -1,6 +1,6 @@
 import { CollectionItem } from './collection_item.js';
 import { deep_merge } from './helpers.js';
-import {template as settings_template} from "./components/settings.js";
+import {render as render_settings_component} from "./components/settings.js";
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
 
@@ -21,6 +21,9 @@ export class Collection {
     this.items = {};
     this.merge_defaults();
     this.filter_results_ct = 0;
+    this.loaded = false;
+    this._loading = false;
+    this.settings_container = null;
   }
   static async init(env, opts = {}) {
     env[this.collection_key] = new this(env, opts);
@@ -283,7 +286,7 @@ export class Collection {
     this.notices?.remove('loading');
   }
   get settings_config() { return this.process_settings_config({}); }
-  process_settings_config(_settings_config, prefix = this.collection_key) {
+  process_settings_config(_settings_config, prefix = '') {
     const add_prefix = (key) =>
       prefix && !key.includes(`${prefix}.`) ? `${prefix}.${key}` : key;
 
@@ -292,7 +295,7 @@ export class Collection {
       let new_val = { ...val };
 
       if (new_val.conditional) {
-        if (!new_val.conditional(this.settings)) return acc;
+        if (!new_val.conditional(this)) return acc;
         delete new_val.conditional; // Remove conditional to prevent re-checking downstream
       }
 
@@ -321,10 +324,18 @@ export class Collection {
     }
     return this.env.settings[this.collection_key];
   }
-  async re_render_settings() {
-    if(!this.settings_container) return;
-    this.settings_container.innerHTML = '';
-    await this.render_settings(this.settings_container);
+  get render_settings_component() {
+    return (typeof this.opts.components?.settings === 'function'
+      ? this.opts.components.settings
+      : render_settings_component
+    ).bind(this.smart_view);
+  }
+  get smart_view() {
+    if(!this._smart_view){
+      // this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
+      this._smart_view = new this.env.opts.modules.smart_view.class({adapter: this.env.opts.modules.smart_view.adapter});
+    }
+    return this._smart_view;
   }
   /**
    * Renders the settings for the collection.
@@ -332,18 +343,26 @@ export class Collection {
    * @param {Object} opts - Additional options for rendering.
    * @param {Object} opts.settings_keys - An array of keys to render.
    */
-  async render_settings(container=null, opts = {}) {
+  async render_settings(container=this.settings_container, opts = {}) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
     if(!container) throw new Error("Container is required");
     container.innerHTML = '';
     container.innerHTML = '<div class="sc-loading">Loading ' + this.collection_key + ' settings...</div>';
-    const frag = await settings_template.call(this.env.smart_view, this, opts);
+    const frag = await this.render_settings_component(this, opts);
     container.innerHTML = '';
     container.appendChild(frag);
+    return container;
   }
 
   unload() {
     this.clear();
+  }
+  async run_load() {
+    this.notices?.show(`loading ${this.collection_key}`, `Loading ${this.collection_key}...`, { timeout: 0 });
+    await this.process_load_queue();
+    this.notices?.remove(`loading ${this.collection_key}`);
+    this.notices?.show('done loading', `${this.collection_key} loaded`, { timeout: 3000 });
+    this.render_settings(); // re-render settings
   }
 
 }

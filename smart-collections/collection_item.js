@@ -238,6 +238,6 @@ export class CollectionItem {
   get settings() { return this.env.settings[this.collection_key]; }
   set settings(settings) {
     this.env.settings[this.collection_key] = settings;
-    this.env.smart_env_settings.save();
+    this.env.smart_settings.save();
   }
 }

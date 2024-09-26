@@ -38,12 +38,9 @@ export class SmartSource extends SmartEntity {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
         return;
       }
-      // if this.loaded_at more than 5 minutes ago
-      // if(this.loaded_at && Date.now() - this.loaded_at > 3 * 60 * 1000){
       if(this.loaded_at){
         const ajson_file_stat = await this.env.data_fs.stat(this.data_path);
-        // if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
-        if(ajson_file_stat.mtime > this.loaded_at){
+        if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
           console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
           return await this.load();
         }
@@ -229,11 +226,7 @@ export class SmartSource extends SmartEntity {
   async has_source_file() { return await this.fs.exists(this.data.path); }
 
   // CRUD
-  get smart_change_opts() {
-    return {
-      adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
-    };
-  }
+  get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
 
   /**
    * FILTER/SEARCH METHODS

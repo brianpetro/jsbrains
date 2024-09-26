@@ -12,7 +12,7 @@ const class_to_collection_key = {
   'SmartDirectory': 'smart_directories',
 };
 export class SingleFileSmartCollectionDataAdapter extends SmartCollectionItemDataAdapter {
-  get fs() { return this.env.smart_env_settings.fs; }
+  get fs() { return this.collection.data_fs || this.env.data_fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
    */

@@ -20,60 +20,68 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 export class SmartChange {
-    constructor(env, opts = {}) {
-        this.env = env;
-        this.adapters = opts.adapters || {};
+  constructor(opts = {}) {
+    this.opts = opts;
+  }
+  get adapters() {
+    if (!this._adapters) {
+      this._adapters = {};
+      Object.entries(this.opts.adapters).forEach(([key, adapter]) => {
+        this._adapters[key] = new adapter(this);
+      });
     }
+    return this._adapters;
+  }
 
-    get_adapter(change_opts) {
-        return this.adapters[change_opts.adapter] || this.adapters[change_opts.file_type] || this.adapters.default;
-    }
+  get_adapter(change_opts) {
+    return this.adapters[change_opts.adapter] || this.adapters[change_opts.file_type] || this.adapters.default;
+  }
 
-    wrap(change_type, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.wrap(change_type, change_opts);
-    }
-    unwrap(content, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.unwrap(content);
-    }
+  wrap(change_type, change_opts) {
+    const adapter = this.get_adapter(change_opts);
+    return adapter.wrap(change_type, change_opts);
+  }
+  unwrap(content, change_opts) {
+    const adapter = this.get_adapter(change_opts);
+    return adapter.unwrap(content);
+  }
 
-    get settings_config() {
-        return {
-            change_ui: {
-                name: 'Change UI',
-                type: "toggle",
-                description: "Display changes with accept/reject in Obsidian (requires Smart Connections plugin).",
-                callback: 'restart' // is this necessary?
-            }
-        }
+  get settings_config() {
+    return {
+      change_ui: {
+        name: 'Change UI',
+        type: "toggle",
+        description: "Display changes with accept/reject in Obsidian (requires Smart Connections plugin).",
+        callback: 'restart' // is this necessary?
+      }
     }
+  }
 
-    // DEPRECATED
-    before(change_type, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.before(change_type, change_opts);
-    }
-    after(change_type, change_opts) {
-        const adapter = this.get_adapter(change_opts);
-        return adapter.after(change_type, change_opts);
-    }
-    async destroy(entity, opts = {}) {
-        const current_content = await entity.read();
-        const wrapped_content = this.wrap('content', { before: current_content, ...opts });
-        await entity._update(wrapped_content);
-    }
-    async update(entity, new_content) {
-        const current_content = await entity.read();
-        const wrapped_content = this.wrap('content', { before: current_content, after: new_content });
-        await entity._update(wrapped_content);
-    }
-    async move_to(from_entity, to_entity) {
-        const content = await from_entity.read();
-        const from_content = this.wrap('location', { to_key: to_entity.key, before: content });
-        await from_entity._update(from_content);
-        const to_content = this.wrap('location', { from_key: from_entity.key, after: content });
-        await to_entity._append(to_content);
-    }
+  // DEPRECATED
+  before(change_type, change_opts) {
+    const adapter = this.get_adapter(change_opts);
+    return adapter.before(change_type, change_opts);
+  }
+  after(change_type, change_opts) {
+    const adapter = this.get_adapter(change_opts);
+    return adapter.after(change_type, change_opts);
+  }
+  async destroy(entity, opts = {}) {
+    const current_content = await entity.read();
+    const wrapped_content = this.wrap('content', { before: current_content, ...opts });
+    await entity._update(wrapped_content);
+  }
+  async update(entity, new_content) {
+    const current_content = await entity.read();
+    const wrapped_content = this.wrap('content', { before: current_content, after: new_content });
+    await entity._update(wrapped_content);
+  }
+  async move_to(from_entity, to_entity) {
+    const content = await from_entity.read();
+    const from_content = this.wrap('location', { to_key: to_entity.key, before: content });
+    await from_entity._update(from_content);
+    const to_content = this.wrap('location', { from_key: from_entity.key, after: content });
+    await to_entity._append(to_content);
+  }
 
 }

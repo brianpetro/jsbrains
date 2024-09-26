@@ -101,7 +101,7 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
 
 
 export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItemDataAdapter {
-  get fs() { return this.env.smart_env_settings.fs; }
+  get fs() { return this.collection.data_fs || this.env.data_fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
    */
@@ -194,7 +194,7 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
  */
 export class MultiFileSmartCollectionsAdapter {
 
-  // get fs() { return this.collection.env.smart_env_settings.fs; }
+  // get fs() { return this.collection.env.data_fs; }
   // /**
   //  * @returns {string} The data path for folder that contains .ajson files.
   //  */

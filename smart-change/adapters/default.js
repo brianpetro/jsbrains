@@ -1,4 +1,4 @@
-export class DefaultAdapter {
+export class SmartChangeDefaultAdapter {
   before(change_type, change_opts) {
     const { explanation = '', ...other_opts } = change_opts;
 

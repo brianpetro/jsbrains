@@ -46,6 +46,7 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
         await this._send_message('load', {
             ...this.smart_embed.opts,
             adapters: null, // cannot clone classes
+            settings: null, // cannot clone Proxy objects
         });
         return new Promise(resolve => {
             const check_model_loaded = () => {

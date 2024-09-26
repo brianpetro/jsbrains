@@ -360,11 +360,7 @@ export class SmartSource extends SmartEntity {
       .filter(link_path => link_path);
   }
   get size() { return this.last_history?.size || 0; }
-  get smart_change_opts() {
-    return {
-      adapter: this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown",
-    };
-  }
+  get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
   get source_adapters() { return this.collection.source_adapters; }
   get source_adapter() {
     if(this._source_adapter) return this._source_adapter;

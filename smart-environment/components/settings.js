@@ -1,29 +1,29 @@
-export async function template(env, opts = {}) {
-  const frag = this.create_doc_fragment(opts.html || '<div></div>');
-  await this.render_setting_components(frag);
-  for(const collection_key of Object.keys(env.collections)){
-    const collection = env[collection_key];
-    let container = frag.querySelector("#" + collection_key + "_settings");
-    const render_opts = {};
-    if(container){
-      // if container has settings_keys data attribute, use it
-      const settings_keys = container.dataset.settingsKeys;
-      if(settings_keys){
-        render_opts.settings_keys = settings_keys.split(',');
-      }
-    }
-    if(!container){
-      container = this.create_doc_fragment('<div></div>');
-      container.id = collection_key + "_settings";
-      frag.appendChild(container);
-    }
-    await collection.render_settings(container, render_opts);
+export async function render(scope, opts = {}) {
+  const env_settings_html = Object.entries(scope.settings_config).map(([setting_key, setting_config]) => {
+    if (!setting_config.setting) setting_config.setting = setting_key;
+    if(this.validate_setting(scope, opts, setting_key, setting_config)) return this.render_setting_html(setting_config);
+    return '';
+  }).join('\n');
+  const env_collections_containers_html = Object.entries(scope.collections).map(([collection_key, collection]) => {
+    return `<div data-smart-settings="${collection_key}"></div>`;
+  }).join('\n');
+  const html = `
+    <div class="">
+      ${env_settings_html}
+      ${env_collections_containers_html}
+    </div>
+  `;
+  const frag = this.create_doc_fragment(html);
+  return post_process.call(this, scope, frag, opts);
+}
+
+export async function post_process(scope, frag, opts = {}) {
+  await this.render_setting_components(frag, {scope});
+  const env_collections_containers = frag.querySelectorAll('[data-smart-settings]');
+  for(const env_collections_container of env_collections_containers){
+    const collection_key = env_collections_container.dataset.smartSettings;
+    const collection = scope[collection_key];
+    await collection.render_settings(env_collections_container);
   }
-  await this.render_setting_components(frag, {scope: env});
   return frag;
 }
-
-export async function post_process(collection, frag, opts = {}) {
-}
-
-

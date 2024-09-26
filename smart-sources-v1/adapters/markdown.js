@@ -4,11 +4,11 @@ import { SourceAdapter, BlockAdapter } from "./_adapter.js";
 export class MarkdownSourceAdapter extends SourceAdapter {
 
   async append(content) {
-    if (this.smart_source.env.smart_change) {
-      content = this.smart_source.env.smart_change.wrap("content", {
+    if (this.smart_change) {
+      content = this.smart_change.wrap("content", {
         before: "",
         after: content,
-        ...this.smart_source.smart_change_opts
+        adapter: this.item.smart_change_adapter
       });
     }
     const current_content = await this.read();
@@ -34,14 +34,14 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _update(content) {
-    await this.smart_source.fs.write(this.smart_source.data.path, content);
+    await this.item.fs.write(this.item.data.path, content);
   }
 
   async read(opts = {}) {
     let content = await this._read();
     
     if (opts.no_changes) {
-      const unwrapped = this.smart_source.env.smart_change.unwrap(content, {file_type: this.smart_source.file_type});
+      const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
       content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
     }
     if (opts.add_depth) {
@@ -52,12 +52,12 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _read() {
-    return await this.smart_source.fs.read(this.smart_source.data.path);
+    return await this.item.fs.read(this.item.data.path);
   }
 
   async remove() {
-    await this.smart_source.fs.remove(this.smart_source.data.path);
-    this.smart_source.delete();
+    await this.item.fs.remove(this.item.data.path);
+    this.item.delete();
   }
 
   async move_to(entity_ref) {
@@ -68,7 +68,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
 
     const current_content = await this.read();
     const target_source_key = new_path.split("#")[0];
-    const target_source = this.smart_source.env.smart_sources.get(target_source_key);
+    const target_source = this.item.env.smart_sources.get(target_source_key);
 
     if (new_path.includes("#")) {
       const headings = new_path.split("#").slice(1);
@@ -80,19 +80,19 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     if (target_source) {
       await target_source.merge(current_content, { mode: 'append_blocks' });
     } else {
-      await this.smart_source.fs.rename(this.smart_source.data.path, target_source_key);
-      const new_source = await this.smart_source.collection.create_or_update({ path: target_source_key, content: current_content });
+      await this.item.fs.rename(this.item.data.path, target_source_key);
+      const new_source = await this.item.collection.create_or_update({ path: target_source_key, content: current_content });
       await new_source.import();
     }
 
-    if (this.smart_source.key !== target_source_key) await this.remove();
+    if (this.item.key !== target_source_key) await this.remove();
   }
 
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const { blocks } = await this.smart_source.smart_chunks.parse({
+    const { blocks } = await this.item.smart_chunks.parse({
       content,
-      file_path: this.smart_source.data.path,
+      file_path: this.item.data.path,
     });
 
     if (!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
@@ -103,7 +103,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
         .slice(block.lines[0], block.lines[1] + 1)
         .join("\n");
 
-      const match = this.smart_source.blocks.find(b => b.key === block.path);
+      const match = this.item.blocks.find(b => b.key === block.path);
       if (match) {
         block.matched = true;
         match.matched = true;
@@ -111,7 +111,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     });
 
     if (mode === "replace_all") {
-      if (this.smart_source.env.smart_change) {
+      if (this.smart_change) {
         let all = "";
         const new_blocks = blocks.sort((a, b) => a.lines[0] - b.lines[0]);
         if (new_blocks[0].lines[0] > 0) {
@@ -121,27 +121,27 @@ export class MarkdownSourceAdapter extends SourceAdapter {
           const block = new_blocks[i];
           if (all.length) all += "\n";
           if (block.matched) {
-            const og = this.smart_source.env.smart_blocks.get(block.path);
-            all += this.smart_source.env.smart_change.wrap("content", {
+            const og = this.item.env.smart_blocks.get(block.path);
+            all += this.smart_change.wrap("content", {
               before: await og.read({ no_changes: "before", headings: "last" }),
               after: block.content,
-              ...this.smart_source.smart_change_opts
+              adapter: this.item.smart_change_adapter
             });
           } else {
-            all += this.smart_source.env.smart_change.wrap("content", {
+            all += this.smart_change.wrap("content", {
               before: "",
               after: block.content,
-              ...this.smart_source.smart_change_opts
+              adapter: this.item.smart_change_adapter
             });
           }
         }
-        const unmatched_old = this.smart_source.blocks.filter(b => !b.matched);
+        const unmatched_old = this.item.blocks.filter(b => !b.matched);
         for (let i = 0; i < unmatched_old.length; i++) {
           const block = unmatched_old[i];
-          all += (all.length ? "\n" : "") + this.smart_source.env.smart_change.wrap("content", {
+          all += (all.length ? "\n" : "") + this.smart_change.wrap("content", {
             before: await block.read({ no_changes: "before", headings: "last" }),
             after: "",
-            ...this.smart_source.smart_change_opts
+            adapter: this.item.smart_change_adapter
           });
         }
         await this._update(all);
@@ -152,7 +152,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
       for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
         if (block.matched) {
-          const to_block = this.smart_source.env.smart_blocks.get(block.path);
+          const to_block = this.item.env.smart_blocks.get(block.path);
           if (mode === "append_blocks") {
             await to_block.append(block.content);
           } else {
@@ -174,16 +174,16 @@ export class MarkdownSourceAdapter extends SourceAdapter {
 export class MarkdownBlockAdapter extends BlockAdapter {
 
   async read(opts = {}) {
-    let content = await this.smart_block.source.read();
+    let content = await this.item.source.read();
     content = content.split("\n");
     const skip_starts_with_heading = content[0].startsWith("#");
     content = content.slice(
-      skip_starts_with_heading ? this.smart_block.line_start + 1 : this.smart_block.line_start,
-      this.smart_block.line_end + 1
+      skip_starts_with_heading ? this.item.line_start + 1 : this.item.line_start,
+      this.item.line_end + 1
     ).join("\n");
     
-    if (opts.no_changes && this.smart_block.env.smart_change) {
-      const unwrapped = this.smart_block.env.smart_change.unwrap(content, {file_type: this.smart_block.file_type});
+    if (opts.no_changes && this.smart_change) {
+      const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
       content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
     }
     if (opts.headings) {
@@ -197,7 +197,7 @@ export class MarkdownBlockAdapter extends BlockAdapter {
   }
 
   prepend_headings(content, mode) {
-    const headings = this.smart_block.data.path.split('#').slice(1);
+    const headings = this.item.data.path.split('#').slice(1);
     let prepend_content = '';
     
     if (mode === 'all') {
@@ -210,69 +210,69 @@ export class MarkdownBlockAdapter extends BlockAdapter {
   }
 
   async append(append_content) {
-    let all_lines = (await this.smart_block.source.read()).split("\n");
-    if(all_lines[this.smart_block.line_start] === append_content.split("\n")[0]){
+    let all_lines = (await this.item.source.read()).split("\n");
+    if(all_lines[this.item.line_start] === append_content.split("\n")[0]){
       append_content = append_content.split("\n").slice(1).join("\n");
     }
-    if(this.smart_block.env.smart_change) append_content = this.smart_block.env.smart_change.wrap("content", { before: "", after: append_content, ...this.smart_block.smart_change_opts });
+    if(this.smart_change) append_content = this.smart_change.wrap("content", { before: "", after: append_content, adapter: this.item.smart_change_adapter });
     await this._append(append_content);
   }
 
   async _append(append_content) {
-    let all_lines = (await this.smart_block.source.read()).split("\n");
-    const content_before = all_lines.slice(0, this.smart_block.line_end + 1);
-    const content_after = all_lines.slice(this.smart_block.line_end + 1);
+    let all_lines = (await this.item.source.read()).split("\n");
+    const content_before = all_lines.slice(0, this.item.line_end + 1);
+    const content_after = all_lines.slice(this.item.line_end + 1);
     const new_content = [
       ...content_before,
       "", // add a blank line before appending
       append_content,
       ...content_after,
     ].join("\n").trim();
-    await this.smart_block.source._update(new_content);
-    await this.smart_block.source.parse_content();
+    await this.item.source._update(new_content);
+    await this.item.source.parse_content();
   }
 
   async update(new_block_content, opts = {}) {
-    if(this.smart_block.env.smart_change) new_block_content = this.smart_block.env.smart_change.wrap("content", {
+    if(this.smart_change) new_block_content = this.smart_change.wrap("content", {
       before: await this.read({ no_changes: "before", headings: "last" }),
       after: new_block_content,
-      ...this.smart_block.smart_change_opts
+      adapter: this.item.smart_change_adapter
     });
     await this._update(new_block_content);
   }
 
   async _update(new_block_content) {
-    const full_content = await this.smart_block.source.read();
+    const full_content = await this.item.source.read();
     const all_lines = full_content.split("\n");
     const new_content = [
-      ...all_lines.slice(0, this.smart_block.line_start),
+      ...all_lines.slice(0, this.item.line_start),
       new_block_content,
-      ...all_lines.slice(this.smart_block.line_end + 1),
+      ...all_lines.slice(this.item.line_end + 1),
     ].join("\n");
-    await this.smart_block.source._update(new_content);
-    await this.smart_block.source.parse_content();
+    await this.item.source._update(new_content);
+    await this.item.source.parse_content();
   }
 
   async remove() {
-    if(this.smart_block.sub_blocks.length){
+    if(this.item.sub_blocks.length){
       // leave heading if has sub-blocks
       await this._update((await this.read({ no_changes: "before", headings: "last" })).split("\n")[0]);
     }else{
       await this._update("");
     }
-    this.smart_block.delete();
+    this.item.delete();
   }
 
   async move_to(to_key) {
     const to_collection_key = to_key.includes("#") ? "smart_blocks" : "smart_sources";
-    const to_entity = this.smart_block.env[to_collection_key].get(to_key);
+    const to_entity = this.item.env[to_collection_key].get(to_key);
     let content = await this.read({ no_changes: "before", headings: "last" });
     try {
-      if(this.smart_block.env.smart_change){
-        const smart_change = this.smart_block.env.smart_change.wrap('location', {
+      if(this.smart_change){
+        const smart_change = this.smart_change.wrap('location', {
           to_key: to_key,
           before: await this.read({headings: 'last', no_change: 'before'}),
-          ...this.smart_block.smart_change_opts
+          adapter: this.item.smart_change_adapter
         });
         this._update(smart_change);
       }else{
@@ -283,15 +283,15 @@ export class MarkdownBlockAdapter extends BlockAdapter {
     }
     try {
       if(to_entity) {
-        if(this.smart_block.env.smart_change){
-          content = this.smart_block.env.smart_change.wrap("location", { from_key: this.smart_block.source.key, after: content, ...this.smart_block.smart_change_opts });
+        if(this.smart_change){
+          content = this.smart_change.wrap("location", { from_key: this.item.source.key, after: content, adapter: this.item.smart_change_adapter });
           await to_entity._append(content);
         }else{
           await to_entity.append(content);
         }
       } else {
         const target_source_key = to_key.split("#")[0];
-        const target_source = this.smart_block.env.smart_sources.get(target_source_key);
+        const target_source = this.item.env.smart_sources.get(target_source_key);
         if (to_key.includes("#")) {
           const headings = to_key.split("#").slice(1);
           const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
@@ -299,21 +299,21 @@ export class MarkdownBlockAdapter extends BlockAdapter {
               new_headings_content,
               ...content.split("\n").slice(1)
           ].join("\n").trim();
-          if(this.smart_block.env.smart_change) new_content = this.smart_block.env.smart_change.wrap("location", { from_key: this.smart_block.source.key, after: new_content, ...this.smart_block.smart_change_opts });
+          if(this.smart_change) new_content = this.smart_change.wrap("location", { from_key: this.item.source.key, after: new_content, adapter: this.item.smart_change_adapter });
           if(target_source) await target_source._append(new_content);
-          else await this.smart_block.env.smart_sources.create(target_source_key, new_content);
+          else await this.item.env.smart_sources.create(target_source_key, new_content);
         } else {
-          if(this.smart_block.env.smart_change) content = this.smart_block.env.smart_change.wrap("location", { from_key: this.smart_block.source.key, after: content, ...this.smart_block.smart_change_opts });
+          if(this.smart_change) content = this.smart_change.wrap("location", { from_key: this.item.source.key, after: content, adapter: this.item.smart_change_adapter });
           if(target_source) await target_source._append(content);
-          else await this.smart_block.env.smart_sources.create(target_source_key, content);
+          else await this.item.env.smart_sources.create(target_source_key, content);
         }
       }
     } catch (e) {
       console.warn("error moving block: ", e);
       // return to original location
-      this.smart_block.deleted = false;
+      this.item.deleted = false;
       await this.update(content);
     }
-    await this.smart_block.source.parse_content();
+    await this.item.source.parse_content();
   }
 }

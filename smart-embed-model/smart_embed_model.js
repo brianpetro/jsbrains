@@ -126,7 +126,7 @@ export class SmartEmbedModel extends SmartModel {
         description: "Required for OpenAI embedding models",
         placeholder: "Enter OpenAI API Key",
         callback: 'restart',
-        conditional: (settings) => !settings.model_key?.includes('/')
+        conditional: (_this) => !_this.settings.model_key?.includes('/')
       },
       "[EMBED_MODEL].gpu_batch_size": {
         name: 'GPU Batch Size',

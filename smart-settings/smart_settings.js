@@ -18,7 +18,7 @@ export class SmartSettings {
 
   static async create(main, opts = {}) {
     const smart_settings = new this(main, opts);
-    await smart_settings.load_settings();
+    await smart_settings.load();
     // add smart_settings to main
     main.smart_settings = smart_settings;
     // add settings getter to main
@@ -30,7 +30,7 @@ export class SmartSettings {
   }
   static create_sync(main, opts = {}) {
     const smart_settings = new this(main, opts);
-    smart_settings.load_settings_sync();
+    smart_settings.load_sync();
     // add smart_settings to main
     main.smart_settings = smart_settings;
     // add settings getter to main
@@ -49,7 +49,7 @@ export class SmartSettings {
     return observe_object(this._settings, (property, value, target) => {
       if(this.save_timeout) clearTimeout(this.save_timeout);
       this.save_timeout = setTimeout(() => {
-        this.save_settings(this._settings);
+        this.save(this._settings);
         this.save_timeout = null;
       }, 1000);
     });
@@ -61,15 +61,15 @@ export class SmartSettings {
    */
   set settings(settings) { this._settings = settings; }
 
-  async save_settings(settings=this._settings) {
+  async save(settings=this._settings) {
     if(typeof this.opts.save === 'function') await this.opts.save(settings);
     else await this.main.save_settings(settings);
   }
-  async load_settings() {
+  async load() {
     if(typeof this.opts.load === 'function') this._settings = await this.opts.load();
     else this._settings = await this.main.load_settings();
   }
-  load_settings_sync() {
+  load_sync() {
     if(typeof this.opts.load === 'function') this._settings = this.opts.load();
     else this._settings = this.main.load_settings();
   }

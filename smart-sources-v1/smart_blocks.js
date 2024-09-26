@@ -31,6 +31,7 @@ export class SmartBlocks extends SmartEntities {
     return block;
   }
 
+  get smart_change() { return this.env.smart_sources.smart_change; }
   // handled by sources
   async process_save_queue() {
     await this.env.smart_sources.process_save_queue();

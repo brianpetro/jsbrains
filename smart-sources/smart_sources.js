@@ -14,9 +14,7 @@ export class SmartSources extends SmartEntities {
     // init smart_sources
     Object.values(this.fs.files)
       .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
-      .forEach((file) => {
-        this.items[file.path] = new this.item_type(this.env, { path: file.path });
-      })
+      .forEach(file => this.init_file_path(file.path))
     ;
     if(this.opts.block_collections) {
       this.opts.block_collections.forEach(block_collection => {
@@ -25,6 +23,9 @@ export class SmartSources extends SmartEntities {
     }
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+  }
+  init_file_path(file_path){
+    this.items[file_path] = new this.item_type(this.env, { path: file_path });
   }
 
   // removes old data files
@@ -158,7 +159,7 @@ export class SmartSources extends SmartEntities {
     if(this.collection_key === 'smart_sources'){ // excludes sub-classes
       Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
     }
-    await this.process_import_queue();
+    // await this.process_import_queue();
   }
 
   async process_import_queue(){
@@ -185,9 +186,9 @@ export class SmartSources extends SmartEntities {
   get current_note() { return this.get(this.env.smart_connections_plugin.app.workspace.getActiveFile().path); }
   get fs() {
     if(!this._fs){
-      this._fs = new this.opts.modules.smart_fs.class(this.env, {
-        adapter: this.opts.modules.smart_fs.adapter,
-        fs_path: this.opts.env_path || '',
+      this._fs = new this.env.opts.modules.smart_fs.class(this.env, {
+        adapter: this.env.opts.modules.smart_fs.adapter,
+        fs_path: this.env.opts.env_path || '',
         exclude_patterns: this.excluded_patterns || [],
       });
     }

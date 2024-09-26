@@ -1,6 +1,6 @@
-import { DefaultAdapter } from './default.js';
+import { SmartChangeDefaultAdapter } from './default.js';
 
-export class ObsidianMarkdownAdapter extends DefaultAdapter {
+export class SmartChangeObsidianMarkdownAdapter extends SmartChangeDefaultAdapter {
   wrap(change_type, change_opts) {
     let content = super.wrap(change_type, change_opts);
     content = content.replace('<<<<<<< HEAD', '<<<<<<< ORIGINAL');

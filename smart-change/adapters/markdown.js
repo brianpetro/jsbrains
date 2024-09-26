@@ -1,6 +1,6 @@
-import { DefaultAdapter } from './default.js';
+import { SmartChangeDefaultAdapter } from './default.js';
 
-export class MarkdownAdapter extends DefaultAdapter {
+export class SmartChangeMarkdownAdapter extends SmartChangeDefaultAdapter {
   before(change_type, change_opts) {
     if (change_type === 'content') {
       const { before, after, explanation } = change_opts;

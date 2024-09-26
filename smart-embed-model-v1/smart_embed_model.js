@@ -131,7 +131,7 @@ export const settings_config = {
     placeholder: "Enter OpenAI API Key",
     // callback: 'test_api_key_openai_embeddings',
     callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
-    conditional: (settings) => !settings.smart_sources.embed_model?.model_key?.includes('/') || !settings.smart_blocks.embed_model?.model_key?.includes('/')
+    conditional: (_this) => !_this.settings.model_key?.includes('/')
   },
   "[EMBED_MODEL].gpu_batch_size": {
     name: 'GPU Batch Size',

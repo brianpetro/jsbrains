@@ -30,7 +30,7 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
     this.worker.addEventListener('message', this._handle_message.bind(this));
 
     // Initialize the model in the worker
-    await this._send_message('load', { ...{...this.smart_embed.opts, adapters: null}, worker_id: this.worker_id });
+    await this._send_message('load', { ...{...this.smart_embed.opts, adapters: null, settings: null}, worker_id: this.worker_id });
     await new Promise(resolve => {
       const check_model_loaded = () => {
         console.log('check_model_loaded', this.smart_embed.model_loaded);
