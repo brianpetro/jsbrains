@@ -20,7 +20,7 @@ export class SingleFileSmartCollectionDataAdapter extends SmartCollectionItemDat
   /**
    * @returns {string} The data path for .ajson file.
    */
-  get data_path() { return this.data_folder + this.fs.sep + this.collection_key + '.ajson'; }
+  get data_path() { return this.data_folder + "/" + this.collection_key + '.ajson'; }
 
   /**
    * Asynchronously loads collection item data from .ajson file specified by data_path.

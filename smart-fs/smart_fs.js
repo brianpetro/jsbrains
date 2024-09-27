@@ -128,9 +128,10 @@ class SmartFs {
    */
   async load_gitignore() {
     const gitignore_path = '.gitignore';
-    const gitignore_exists = await this.exists(gitignore_path);
+    // use adapter method directly to skip exclusion checks
+    const gitignore_exists = await this.adapter.exists(gitignore_path);
     if (gitignore_exists) {
-      const gitignore_content = await this.read(gitignore_path);
+      const gitignore_content = await this.adapter.read(gitignore_path);
       gitignore_content
         .split('\n')
         .filter(line => !line.startsWith('#')) // ignore comments
@@ -213,6 +214,14 @@ class SmartFs {
     return returned_value;
   }
   // v2
+  /**
+   * Use the adapter for a method
+   * runs pre_process and post_process (checks exclusions)
+   * @param {string} method - The method to use
+   * @param {string[]} paths - The paths to use
+   * @param {...any} args - Additional arguments for the method
+   * @returns {Promise<any>} The result of the method
+   */
   async use_adapter(method, paths, ...args) {
     if(!this.adapter[method]) throw new Error(`Method ${method} not found in adapter`);
     paths = this.pre_process(paths);

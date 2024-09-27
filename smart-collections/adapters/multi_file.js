@@ -21,12 +21,11 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
    * Asynchronously loads collection item data from .ajson file specified by data_path.
    */
   async load(item) {
-    const data_path = this.data_folder + this.fs.sep + item.multi_ajson_file_name + '.ajson';
     if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
     try{
-      const data_ajson = (await this.fs.read(data_path)).trim();
+      const data_ajson = (await this.fs.read(item.data_path)).trim();
       if(!data_ajson){
-        console.log("Data file not found: ", data_path, data_ajson);
+        console.log("Data file not found: ", item.data_path, data_ajson);
         return item.queue_import(); // queue import and return early if data file missing or empty
       }
       const ajson_lines = data_ajson.split('\n');
@@ -61,7 +60,7 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
         })
       ;
       item._queue_load = false;
-      if (ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(data_path, rebuilt_ajson.join('\n'));
+      if (ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(item.data_path, rebuilt_ajson.join('\n'));
       item.loaded_at = Date.now();
     }catch(err){
       // if file not found, queue import
@@ -76,13 +75,12 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
   async save(item, ajson=null) {
     if(!ajson) ajson = item.ajson;
     if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
-    const data_path = this.data_folder + this.fs.sep + item.multi_ajson_file_name + '.ajson';
     try {
       if(item.deleted){
         this.collection.delete_item(item.key);
-        if((await this.fs.exists(data_path))) await this.fs.remove(data_path);
+        if((await this.fs.exists(item.data_path))) await this.fs.remove(item.data_path);
       } else {
-        await this.fs.append(data_path, '\n' + ajson); // prevent overwriting the file
+        await this.fs.append(item.data_path, '\n' + ajson); // prevent overwriting the file
       }
       item._queue_save = false;
       return true;
@@ -109,7 +107,7 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
   /**
    * @returns {string} The data path for .ajson file.
    */
-  get data_path() { return this.data_folder + this.fs.sep + this.item.multi_ajson_file_name + '.ajson'; }
+  get data_path() { return this.data_folder + "/" + this.item.multi_ajson_file_name + '.ajson'; }
 
   /**
    * Asynchronously loads collection item data from .ajson file specified by data_path.
@@ -199,7 +197,7 @@ export class MultiFileSmartCollectionsAdapter {
   //  * @returns {string} The data path for folder that contains .ajson files.
   //  */
   // // get data_path() { return this.collection.data_path + '/multi'; }
-  // // get data_path() { return this.env.env_data_dir + this.fs.sep + 'multi'; }
+  // // get data_path() { return this.env.env_data_dir + "/" + 'multi'; }
   // get data_path() { return 'multi'; }
 
   // /**

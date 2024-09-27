@@ -20,7 +20,7 @@ export class SmartSource extends SmartEntity {
     return this._source_adapter;
   }
   get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get data_path() { return this.collection.data_dir + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
+  get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
   on_load_error(err){
     super.on_load_error(err);
     // if ENOENT
@@ -38,7 +38,7 @@ export class SmartSource extends SmartEntity {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
         return;
       }
-      if(this.loaded_at){
+      if(this.loaded_at && (await this.env.data_fs.exists(this.data_path))){
         const ajson_file_stat = await this.env.data_fs.stat(this.data_path);
         if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
           console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);

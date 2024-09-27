@@ -291,7 +291,7 @@ export class SmartSource extends SmartEntity {
   get block_collection() { return this.collection.block_collections[this.file_type]; }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
   get blocks() { return this.env.smart_blocks?.filter({key_starts_with: this.key}) || []; } // filter out blocks that don't exist
-  get data_path() { return this.collection.data_dir + this.fs.sep + this.multi_ajson_file_name + '.ajson'; }
+  get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get excluded() { return this.fs.is_excluded(this.data.path); }
   get excluded_lines() {
