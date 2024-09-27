@@ -46,8 +46,11 @@ export class SmartEmbedModel extends SmartModel {
     // prepare opts for GPU (likely better handled in future)
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
     if(this.opts.adapter === 'transformers' && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
-    // init adapter
-    this.adapter = new this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter](this);
+  }
+  get adapters() { return this.opts.adapters || this.env.opts.modules.smart_embed_model.adapters; }
+  get adapter() {
+    if(!this._adapter) this._adapter = new this.adapters[this.opts.adapter](this);
+    return this._adapter;
   }
   async load() {
     this.loading = true;

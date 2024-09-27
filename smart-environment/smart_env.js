@@ -211,6 +211,24 @@ export class SmartEnv {
         type: "toggle",
         default: false,
       },
+      "file_exclusions": {
+        name: "File Exclusions",
+        description: "Comma-separated list of files to exclude.",
+        type: "text",
+        default: "",
+      },
+      "folder_exclusions": {
+        name: "Folder Exclusions",
+        description: "Comma-separated list of folders to exclude.",
+        type: "text",
+        default: "",
+      },
+      "excluded_headings": {
+        name: "Excluded Headings",
+        description: "Comma-separated list of headings to exclude.",
+        type: "text",
+        default: "",
+      },
     }
   }
   get ejs() { return this.opts.ejs; }

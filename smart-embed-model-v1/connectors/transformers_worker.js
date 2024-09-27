@@ -1,7 +1,34 @@
+// ../smart-model/smart_model.js
+var SmartModel = class {
+  constructor(opts = {}) {
+    this.opts = opts;
+  }
+  get settings_config() {
+    return this.process_settings_config({
+      // SETTINGS GO HERE
+    });
+  }
+  process_settings_config(_settings_config, prefix = null) {
+    return Object.entries(_settings_config).reduce((acc, [key, val]) => {
+      if (val.conditional) {
+        if (!val.conditional(this)) return acc;
+        delete val.conditional;
+      }
+      const new_key = (prefix ? prefix + "." : "") + this.process_setting_key(key);
+      acc[new_key] = val;
+      return acc;
+    }, {});
+  }
+  process_setting_key(key) {
+    return key;
+  }
+  // override in sub-class if needed for prefixes and variable replacements
+};
+
 // models.json
 var models_default = {
   "TaylorAI/bge-micro-v2": {
-    model_key: "TaylorAI/bge-micro-v2",
+    id: "TaylorAI/bge-micro-v2",
     batch_size: 1,
     dims: 384,
     max_tokens: 512,
@@ -10,7 +37,7 @@ var models_default = {
     adapter: "transformers"
   },
   "andersonbcdefg/bge-small-4096": {
-    model_key: "andersonbcdefg/bge-small-4096",
+    id: "andersonbcdefg/bge-small-4096",
     batch_size: 1,
     dims: 384,
     max_tokens: 4096,
@@ -19,7 +46,7 @@ var models_default = {
     adapter: "transformers"
   },
   "Xenova/jina-embeddings-v2-base-zh": {
-    model_key: "Xenova/jina-embeddings-v2-base-zh",
+    id: "Xenova/jina-embeddings-v2-base-zh",
     batch_size: 1,
     dims: 512,
     max_tokens: 8192,
@@ -28,7 +55,7 @@ var models_default = {
     adapter: "transformers"
   },
   "text-embedding-3-small": {
-    model_key: "text-embedding-3-small",
+    id: "text-embedding-3-small",
     batch_size: 50,
     dims: 1536,
     max_tokens: 8191,
@@ -38,7 +65,7 @@ var models_default = {
     adapter: "openai"
   },
   "text-embedding-3-large": {
-    model_key: "text-embedding-3-large",
+    id: "text-embedding-3-large",
     batch_size: 50,
     dims: 3072,
     max_tokens: 8191,
@@ -48,7 +75,7 @@ var models_default = {
     adapter: "openai"
   },
   "text-embedding-3-small-512": {
-    model_key: "text-embedding-3-small",
+    id: "text-embedding-3-small",
     batch_size: 50,
     dims: 512,
     max_tokens: 8191,
@@ -58,7 +85,7 @@ var models_default = {
     adapter: "openai"
   },
   "text-embedding-3-large-256": {
-    model_key: "text-embedding-3-large",
+    id: "text-embedding-3-large",
     batch_size: 50,
     dims: 256,
     max_tokens: 8191,
@@ -68,7 +95,7 @@ var models_default = {
     adapter: "openai"
   },
   "text-embedding-ada-002": {
-    model_key: "text-embedding-ada-002",
+    id: "text-embedding-ada-002",
     batch_size: 50,
     dims: 1536,
     max_tokens: 8191,
@@ -78,7 +105,7 @@ var models_default = {
     adapter: "openai"
   },
   "Xenova/jina-embeddings-v2-small-en": {
-    model_key: "Xenova/jina-embeddings-v2-small-en",
+    id: "Xenova/jina-embeddings-v2-small-en",
     batch_size: 1,
     dims: 512,
     max_tokens: 8192,
@@ -87,7 +114,7 @@ var models_default = {
     adapter: "transformers"
   },
   "nomic-ai/nomic-embed-text-v1.5": {
-    model_key: "nomic-ai/nomic-embed-text-v1.5",
+    id: "nomic-ai/nomic-embed-text-v1.5",
     batch_size: 1,
     dims: 256,
     max_tokens: 8192,
@@ -96,7 +123,7 @@ var models_default = {
     adapter: "transformers"
   },
   "Xenova/bge-small-en-v1.5": {
-    model_key: "Xenova/bge-small-en-v1.5",
+    id: "Xenova/bge-small-en-v1.5",
     batch_size: 1,
     dims: 384,
     max_tokens: 512,
@@ -105,7 +132,7 @@ var models_default = {
     adapter: "transformers"
   },
   "nomic-ai/nomic-embed-text-v1": {
-    model_key: "nomic-ai/nomic-embed-text-v1",
+    id: "nomic-ai/nomic-embed-text-v1",
     batch_size: 1,
     dims: 768,
     max_tokens: 2048,
@@ -116,43 +143,39 @@ var models_default = {
 };
 
 // smart_embed_model.js
-var SmartEmbedModel = class _SmartEmbedModel {
+var SmartEmbedModel = class extends SmartModel {
   /**
    * Create a SmartEmbed instance.
    * @param {string} env - The environment to use.
    * @param {object} opts - Full model configuration object or at least a model_key and adapter
    */
   constructor(env, opts = {}) {
+    super(opts);
+    if (this.opts.model_key === "None") return console.log(`Smart Embed Model: No active embedding model for ${this.collection_key}, skipping embedding`);
     this.env = env;
     this.opts = {
-      ...models_default[opts.embed_model_key],
+      ...this.env.opts.modules.smart_embed_model?.class ? { ...this.env.opts.modules.smart_embed_model, class: null } : {},
+      ...models_default[opts.model_key],
+      // ewww gross
       ...opts
     };
-    console.log(this.opts);
-    if (!this.opts.adapter)
-      return console.warn("SmartEmbedModel adapter not set");
-    if (!this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter])
-      return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
+    if (!this.opts.adapter) return console.warn("SmartEmbedModel adapter not set");
+    if (!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
     this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
-    if (this.opts.adapter === "transformers" && this.opts.use_gpu)
-      this.opts.batch_size = this.opts.gpu_batch_size || 10;
-    this.adapter = new this.env.opts.modules.smart_embed_model.adapters[this.opts.adapter](this);
+    if (this.opts.adapter === "transformers" && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
   }
-  /**
-   * Used to load a model with a given configuration.
-   * @param {*} env 
-   * @param {*} opts 
-   */
-  static async load(env, opts = {}) {
-    try {
-      const model2 = new _SmartEmbedModel(env, opts);
-      await model2.adapter.load();
-      env.smart_embed_active_models[opts.embed_model_key] = model2;
-      return model2;
-    } catch (error) {
-      console.error(`Error loading model ${opts.model_key}:`, error);
-      return null;
-    }
+  get adapters() {
+    return this.opts.adapters || this.env.opts.modules.smart_embed_model.adapters;
+  }
+  get adapter() {
+    if (!this._adapter) this._adapter = new this.adapters[this.opts.adapter](this);
+    return this._adapter;
+  }
+  async load() {
+    this.loading = true;
+    await this.adapter.load();
+    this.loading = false;
+    this.loaded = true;
   }
   /**
    * Count the number of tokens in the input string.
@@ -168,8 +191,7 @@ var SmartEmbedModel = class _SmartEmbedModel {
    * @returns {Promise<Object>} A promise that resolves with an object containing the embedding vector at `vec` and the number of tokens at `tokens`.
    */
   async embed(input) {
-    if (typeof input === "string")
-      input = { embed_input: input };
+    if (typeof input === "string") input = { embed_input: input };
     return (await this.embed_batch([input]))[0];
   }
   /**
@@ -180,11 +202,72 @@ var SmartEmbedModel = class _SmartEmbedModel {
   async embed_batch(inputs) {
     return await this.adapter.embed_batch(inputs);
   }
+  get model_config() {
+    return models_default[this.opts.model_key];
+  }
   get batch_size() {
     return this.opts.batch_size || 1;
   }
   get max_tokens() {
     return this.opts.max_tokens || 512;
+  }
+  get dims() {
+    return this.opts.dims;
+  }
+  // TODO: replace static opts with dynamic reference to canonical settings via opts.settings (like smart-chat-model-v2)
+  get settings() {
+    return this.opts.settings;
+  }
+  // ref to canonical settings
+  get settings_config() {
+    return this.process_settings_config(settings_config, "embed_model");
+  }
+  process_setting_key(key) {
+    return key.replace(/\[EMBED_MODEL\]/g, this.opts.model_key);
+  }
+  get_embedding_model_options() {
+    return Object.entries(models_default).map(([key, model2]) => ({ value: key, name: key }));
+  }
+  get_block_embedding_model_options() {
+    const options = this.get_embedding_model_options();
+    options.unshift({ value: "None", name: "None" });
+    return options;
+  }
+};
+var settings_config = {
+  model_key: {
+    name: "Embedding Model",
+    type: "dropdown",
+    description: "Select an embedding model.",
+    options_callback: "embed_model.get_embedding_model_options",
+    callback: "embed_model_changed",
+    default: "TaylorAI/bge-micro-v2"
+    // required: true
+  },
+  "[EMBED_MODEL].min_chars": {
+    name: "Minimum Embedding Length",
+    type: "number",
+    description: "Minimum length of note to embed.",
+    placeholder: "Enter number ex. 300"
+    // callback: 'refresh_embeddings',
+    // required: true,
+  },
+  "[EMBED_MODEL].api_key": {
+    name: "OpenAI API Key for embeddings",
+    type: "password",
+    description: "Required for OpenAI embedding models",
+    placeholder: "Enter OpenAI API Key",
+    // callback: 'test_api_key_openai_embeddings',
+    callback: "restart",
+    // TODO: should be replaced with better unload/reload of smart_embed
+    conditional: (_this) => !_this.settings.model_key?.includes("/")
+  },
+  "[EMBED_MODEL].gpu_batch_size": {
+    name: "GPU Batch Size",
+    type: "number",
+    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
+    placeholder: "Enter number ex. 10",
+    callback: "restart"
   }
 };
 
@@ -215,8 +298,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     this.tokenizer = null;
   }
   get batch_size() {
-    if (this.use_gpu && this.smart_embed.opts.gpu_batch_size)
-      return this.smart_embed.opts.gpu_batch_size;
+    if (this.use_gpu && this.smart_embed.opts.gpu_batch_size) return this.smart_embed.opts.gpu_batch_size;
     return this.smart_embed.opts.batch_size || 1;
   }
   get max_tokens() {
@@ -226,7 +308,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     return this.smart_embed.opts.use_gpu || false;
   }
   async load() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.13");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.16");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
@@ -243,24 +325,20 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     this.tokenizer = await AutoTokenizer.from_pretrained(this.smart_embed.opts.model_key);
   }
   async count_tokens(input) {
-    if (!this.tokenizer)
-      await this.load();
+    if (!this.tokenizer) await this.load();
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
   async embed_batch(inputs) {
-    if (!this.model)
-      await this.load();
+    if (!this.model) await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
-    if (!filtered_inputs.length)
-      return [];
+    if (!filtered_inputs.length) return [];
     if (filtered_inputs.length > this.batch_size) {
       throw new Error(`Input size (${filtered_inputs.length}) exceeds maximum batch size (${this.batch_size})`);
     }
     const tokens = await Promise.all(filtered_inputs.map((item) => this.count_tokens(item.embed_input)));
     const embed_inputs = await Promise.all(filtered_inputs.map(async (item, i) => {
-      if (tokens[i].tokens < this.max_tokens)
-        return item.embed_input;
+      if (tokens[i].tokens < this.max_tokens) return item.embed_input;
       let token_ct = tokens[i].tokens;
       let truncated_input = item.embed_input;
       while (token_ct > this.max_tokens) {
@@ -309,26 +387,21 @@ async function process_message(data) {
       case "load":
         console.log("load", params);
         if (!model) {
-          model = await SmartEmbedModel.load(smart_env, { adapter: "transformers", model_key: params.model_key, ...params });
+          model = new SmartEmbedModel(smart_env, { ...params, adapters: { transformers: SmartEmbedTransformersAdapter }, adapter: "transformers" });
+          await model.load();
         }
         result = { model_loaded: true };
         break;
       case "embed_batch":
-        if (!model)
-          throw new Error("Model not loaded");
-        if (processing_message)
-          while (processing_message)
-            await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!model) throw new Error("Model not loaded");
+        if (processing_message) while (processing_message) await new Promise((resolve) => setTimeout(resolve, 100));
         processing_message = true;
         result = await model.embed_batch(params.inputs);
         processing_message = false;
         break;
       case "count_tokens":
-        if (!model)
-          throw new Error("Model not loaded");
-        if (processing_message)
-          while (processing_message)
-            await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!model) throw new Error("Model not loaded");
+        if (processing_message) while (processing_message) await new Promise((resolve) => setTimeout(resolve, 100));
         processing_message = true;
         result = await model.count_tokens(params);
         processing_message = false;
