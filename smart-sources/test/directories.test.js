@@ -30,8 +30,8 @@ test('Move directory', async t => {
   await dir.move_to(new_path);
   
   t.is(dir.data.path, new_path);
-  t.falsy(await env.fs.exists(old_path));
-  t.truthy(await env.fs.exists(new_path));
+  t.falsy(await t.context.fs.exists(old_path));
+  t.truthy(await t.context.fs.exists(new_path));
 });
 
 test('Remove directory', async t => {
@@ -41,7 +41,7 @@ test('Remove directory', async t => {
   const dir = await env.smart_directories.create_or_update({ path: dir_path });
   await dir.remove();
   
-  t.falsy(await env.fs.exists(dir_path));
+  t.falsy(await t.context.fs.exists(dir_path));
   t.falsy(env.smart_directories.get(dir.key));
 });
 
@@ -53,11 +53,11 @@ test('Handle nested directory operations', async t => {
   await env.smart_directories.create_or_update({ path: parent_path });
   const child = await env.smart_directories.create_or_update({ path: child_path });
   
-  t.truthy(await env.fs.exists(child_path));
+  t.truthy(await t.context.fs.exists(child_path));
   
   await child.move_to('new_parent/child');
-  t.truthy(await env.fs.exists('new_parent/child'));
-  t.falsy(await env.fs.exists(child_path));
+  t.truthy(await t.context.fs.exists('new_parent/child'));
+  t.falsy(await t.context.fs.exists(child_path));
 });
 
 test('Move directory to non-existent path', async t => {
@@ -69,7 +69,7 @@ test('Move directory to non-existent path', async t => {
   await dir.move_to(new_path);
   
   t.is(dir.data.path, new_path);
-  t.truthy(await env.fs.exists(new_path));
+  t.truthy(await t.context.fs.exists(new_path));
 });
 
 test('Move directory to existing path', async t => {
@@ -96,15 +96,15 @@ test('Remove non-empty directory', async t => {
   const parent = env.smart_directories.get(`SmartDirectory:${parent_path}`);
   await parent.remove();
   
-  t.falsy(await env.fs.exists(parent_path));
-  t.falsy(await env.fs.exists(child_path));
+  t.falsy(await t.context.fs.exists(parent_path));
+  t.falsy(await t.context.fs.exists(child_path));
 });
 
 test('Create directory with same name as existing file', async t => {
   const { env } = t.context;
   const file_path = 'existing_file.txt';
   
-  await env.fs.write(file_path, 'Some content');
+  await t.context.fs.write(file_path, 'Some content');
   
   await t.throwsAsync(async () => {
     await env.smart_directories.create_or_update({ path: file_path });

@@ -15,6 +15,29 @@ export class NodeFsSmartFsAdapter {
   constructor(smart_fs) {
     this.smart_fs = smart_fs;
   }
+  get_file(file_path){
+    const file = {};
+    file.path = file_path
+      .replace(/\\/g, '/') // normalize slashes
+      .replace(this.smart_fs.fs_path, '') // remove fs_path
+      .replace(/^\//, '') // remove leading slash
+    ;
+    file.type = 'file';
+    file.extension = file.path.split('.').pop();
+    file.name = file.path.split('/').pop();
+    file.basename = file.name.split('.').shift();
+    Object.defineProperty(file, 'stat', {
+      get: () => {
+        const stat = this.statSync(file_path);
+        return {
+          ctime: stat.ctime.getTime(),
+          mtime: stat.mtime.getTime(),
+          size: stat.size,
+        };
+      }
+    });
+    return file;
+  }
 
   /**
    * Resolve a relative path to an absolute path

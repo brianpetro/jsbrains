@@ -215,7 +215,7 @@ export class SmartSource extends SmartEntity {
     if(this.meta_changed) return true;
     return super.is_unembedded;
   }
-  get excluded() { return this.env.fs.is_excluded(this.data.path); }
+  get excluded() { return this.env.smart_sources.fs.is_excluded(this.data.path); }
 
   // FS
   get fs() { return this.collection.fs; }

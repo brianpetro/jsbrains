@@ -36,7 +36,7 @@ test.serial('SmartSource update (mode=append_blocks) operation', async t => {
   const env = t.context.env;
   env.smart_change = null;
   
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   try {
     await merge_to_source.update(merge_content_input, { mode: 'merge_append' });
@@ -78,7 +78,7 @@ test.serial('SmartSource update (mode=append_blocks) with smart_change', async t
   //     default: new DefaultAdapter()
   //   }}
   // );
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.update(merge_content_input, { mode: 'merge_append' });
   t.is((await merge_to_source.read()).trim(), expected_merge_append_blocks_output_with_change_syntax.trim(), 'Content should be merged');
@@ -103,7 +103,7 @@ Some unmatched content`;
 test.serial('SmartSource update (mode=replace_blocks) operation', async t => {
   const env = t.context.env;
   env.smart_change = null;
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.update(merge_replace_blocks_content_input, { mode: 'merge_replace' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_blocks_output.trim(), 'Content should be merged');
@@ -134,7 +134,7 @@ const expected_merge_replace_blocks_output_with_change_syntax = `# h1
 test.serial('SmartSource update (mode=replace_blocks) with smart_change', async t => {
   const env = t.context.env;
   
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.update(merge_replace_blocks_content_input, { mode: 'merge_replace' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_blocks_output_with_change_syntax.trim(), 'Content should be merged');
@@ -146,7 +146,7 @@ const expected_merge_replace_all_output = `replaced content`;
 test.serial('SmartSource update (mode=replace_all) operation', async t => {
   const env = t.context.env;
   env.smart_change = null;
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.update('replaced content', { mode: 'replace_all' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output, 'Content should be merged');
@@ -176,7 +176,7 @@ test.serial('SmartSource update (mode=replace_all) with smart_change', async t =
   //     default: new DefaultAdapter()
   //   }}
   // );
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.update('replaced content', { mode: 'replace_all' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output_with_change_syntax, 'Content should be merged');
@@ -209,7 +209,7 @@ test.serial('SmartSource update (mode=replace_all) with smart_change #2', async 
   //     default: new DefaultAdapter()
   //   }}
   // );
-  await env.fs.write('merge_to.md', initial_merge_content);
+  await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   await merge_to_source.update(expected_merge_replace_all_input_2, { mode: 'replace_all' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_all_output_with_change_syntax_2, 'Content should be merged');
@@ -219,9 +219,9 @@ test.serial('SmartSource update (mode=replace_all) with smart_change #2', async 
 test.serial('SmartSource update with two files with only one line each', async t => {
   const env = t.context.env;
   env.smart_change = null;
-  await env.fs.write('from.md', 'from content');
+  await t.context.fs.write('from.md', 'from content');
   const from_source = await env.smart_sources.create_or_update({ path: 'from.md' });
-  await env.fs.write('to.md', 'to content');
+  await t.context.fs.write('to.md', 'to content');
   const to_source = await env.smart_sources.create_or_update({ path: 'to.md' });
   await to_source.update('from content', { mode: 'merge_append' });
   t.is((await to_source.read()), 'to content\n\nfrom content', 'Content should be merged');

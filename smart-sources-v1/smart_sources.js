@@ -34,7 +34,6 @@ export class SmartSources extends SmartEntities {
     return this._smart_change;
   }
 
-  get data_fs() { return this.env.data_fs; }
   // removes old data files
   async prune() {
     await this.fs.refresh(); // refresh source files in case they have changed
@@ -82,8 +81,8 @@ export class SmartSources extends SmartEntities {
   }
   // CRUD
   async create(key, content) {
-    await this.env.fs.write(key, content);
-    await this.env.fs.refresh();
+    await this.env.smart_sources.fs.write(key, content);
+    await this.env.smart_sources.fs.refresh();
     const source = await this.create_or_update({ path: key });
     await source.import();
     return source;

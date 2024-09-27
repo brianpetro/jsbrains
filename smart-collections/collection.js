@@ -178,11 +178,21 @@ export class Collection {
    */
   get collection_key() { return (this._collection_key) ? this._collection_key : this.constructor.collection_key; }
   set collection_key(name) { this._collection_key = name; }
-  /**
-   * Gets the keys of the items in the collection.
-   * @return {String[]} The keys of the items.
-   */
-  get keys() { return Object.keys(this.items); }
+
+  // DATA ADAPTER
+  get data_adapter() {
+    if(!this._data_adapter){
+      const config = this.env.opts.collections?.[this.collection_key];
+      const data_adapter_class = config?.data_adapter
+        ?? this.env.opts.collections?.smart_collections?.data_adapter
+      ;
+      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_key + " or smart_collections");
+      this._data_adapter = new data_adapter_class(this);
+    }
+    return this._data_adapter;
+  }
+  get data_dir() { return 'multi'; }
+  get data_fs() { return this.env.data_fs; }
   /**
    * Gets the class name of the item type the collection manages.
    * @return {String} The item class name.
@@ -203,23 +213,12 @@ export class Collection {
    * @return {Function} The item type constructor.
    */
   get item_type() { return this.env.item_types[this.item_class_name]; }
+  /**
+   * Gets the keys of the items in the collection.
+   * @return {String[]} The keys of the items.
+   */
+  get keys() { return Object.keys(this.items); }
 
-
-  // // may be moved to SmartSources (should not be needed in this or SmartEntities)
-  // get fs() { return this.env.fs; }
-
-  // DATA ADAPTER
-  get data_adapter() {
-    if(!this._data_adapter){
-      const config = this.env.opts.collections?.[this.collection_key];
-      const data_adapter_class = config?.data_adapter
-        ?? this.env.opts.collections?.smart_collections?.data_adapter
-      ;
-      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_key + " or smart_collections");
-      this._data_adapter = new data_adapter_class(this);
-    }
-    return this._data_adapter;
-  }
   /**
    * @deprecated use data_adapter instead (2024-09-14)
    */
@@ -230,7 +229,6 @@ export class Collection {
    * @returns {string} The data path.
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
-  get data_dir() { return 'multi'; }
   // ADAPTER METHODS
   /**
    * Saves the current state of the collection.

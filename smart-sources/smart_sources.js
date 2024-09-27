@@ -88,8 +88,8 @@ export class SmartSources extends SmartEntities {
   }
   // CRUD
   async create(key, content) {
-    await this.env.fs.write(key, content);
-    await this.env.fs.refresh();
+    await this.fs.write(key, content);
+    await this.fs.refresh();
     const source = await this.create_or_update({ path: key });
     await source.import();
     return source;
@@ -194,7 +194,6 @@ export class SmartSources extends SmartEntities {
     }
     return this._fs;
   }
-  get data_fs() { return this.env.data_fs; }
 
   get settings_config(){
     return {

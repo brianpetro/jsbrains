@@ -232,7 +232,8 @@ export class CollectionItem {
   get ajson_key() { return this.constructor.name + ":" + this.key; }
   get data_adapter() { return this.collection.data_adapter; }
   get multi_ajson_file_name() { return this.key.replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get data_path() { return this.collection.data_dir + (this.env.fs?.sep || "/") + this.multi_ajson_file_name + '.ajson'; }
+  get data_fs() { return this.collection.data_fs; }
+  get data_path() { return this.collection.data_dir + (this.data_fs?.sep || "/") + this.multi_ajson_file_name + '.ajson'; }
 
   // settings convenience methods
   get settings() { return this.env.settings[this.collection_key]; }

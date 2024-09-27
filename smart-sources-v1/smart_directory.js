@@ -15,7 +15,7 @@ export class SmartDirectory extends SmartEntity {
     this.queue_save();
   }
 
-  get fs() { return this.env.fs; }
+  get fs() { return this.env.smart_sources.fs; }
 
   get file_type() { return 'directory'; }
   

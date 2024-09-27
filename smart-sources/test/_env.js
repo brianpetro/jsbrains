@@ -55,4 +55,5 @@ export async function load_test_env(t) {
   const env = new SmartEnv(main, main.smart_env_config);
   await env.init();
   t.context.env = env;
+  t.context.fs = env.smart_sources.fs;
 }

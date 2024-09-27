@@ -92,23 +92,33 @@ class SmartFs {
   }
   async init() {
     await this.load_gitignore();
+    await this.load_files();
+  }
+  async load_files() {
     const all = await this.list_recursive();
     this.file_paths = [];
     this.folder_paths = [];
     all.forEach(file => {
       // ignore hidden files and folders (allows specifying by not adding to exclusions)
-      if(file.name.startsWith('.')) return;
-      if(file.path.startsWith('.')) return;
-      if(file.path.endsWith('.ajson')) return; // ignore .ajson files
-      if(file.type === 'file'){
+      if (file.name.startsWith('.')) return;
+      if (file.path.startsWith('.')) return;
+      if (file.path.endsWith('.ajson')) return; // ignore .ajson files
+      if (file.type === 'file') {
         this.files[file.path] = file;
         this.file_paths.push(file.path);
       }
-      if(file.type === 'folder'){
+      if (file.type === 'folder') {
         this.folders[file.path] = file;
         this.folder_paths.push(file.path);
       }
     });
+  }
+
+  include_file(file_path){
+    const file = this.adapter.get_file(file_path);
+    this.files[file.path] = file;
+    this.file_paths.push(file.path);
+    return file;
   }
 
   /**
@@ -129,9 +139,9 @@ class SmartFs {
       ;
     }
     // // exclude all hidden files and folders
-    // this.add_ignore_pattern('.**');
-    // this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
-    // this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
+    this.add_ignore_pattern('.**');
+    this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
+    this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
     // temporary
     this.add_ignore_pattern('**/*.excalidraw.md');
   }

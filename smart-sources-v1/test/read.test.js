@@ -16,7 +16,7 @@ More content`;
 
 test('SmartSource read - default behavior', async t => {
   const env = t.context.env;
-  await env.fs.write('test.md', 'Test content');
+  await t.context.fs.write('test.md', 'Test content');
   const source = await env.smart_sources.create_or_update({ path: 'test.md' });
   try {
     const content = await source.read();
@@ -42,7 +42,7 @@ test.serial('SmartSource read - with no_changes option', async t => {
 >>>>>>>
 Some content`;
 
-  await env.fs.write('test_changes.md', content_with_changes);
+  await t.context.fs.write('test_changes.md', content_with_changes);
   const source = await env.smart_sources.create_or_update({ path: 'test_changes.md' });
 
   const content_before = await source.read({ no_changes: 'before' });
@@ -57,7 +57,7 @@ Some content`;
 
 test.serial('SmartSource read - with add_depth option', async t => {
   const env = t.context.env;
-  await env.fs.write('test_depth.md', initial_content);
+  await t.context.fs.write('test_depth.md', initial_content);
   const source = await env.smart_sources.create_or_update({ path: 'test_depth.md' });
   const block = source.blocks[0];
 

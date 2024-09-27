@@ -4,7 +4,7 @@ import {template as settings_template} from "./components/settings.js";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json.js";
 
 export class SmartThreads extends SmartSources {
-  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.env.fs.sep : '') + 'multi' + this.env.fs.sep + 'chats'; }
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.fs.sep : '') + 'multi' + this.fs.sep + 'chats'; }
   get data_fs() {
     if(!this._data_fs) {
       const config = this.env.opts.collections?.smart_threads;
@@ -142,7 +142,7 @@ import { SmartBlocks, SmartBlock } from "smart-sources";
 export class SmartTurns extends SmartBlocks {
   process_load_queue() {}
   process_import_queue() {}
-  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.env.fs.sep : '') + 'multi' + this.env.fs.sep + 'chats'; }
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.fs.sep : '') + 'multi' + this.fs.sep + 'chats'; }
 }
 import {template as turn_template} from "./components/turn.js";
 export class SmartTurn extends SmartBlock {
@@ -176,7 +176,7 @@ export class SmartTurn extends SmartBlock {
 export class SmartMessages extends SmartBlocks {
   process_load_queue() {}
   process_import_queue() {}
-  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.env.fs.sep : '') + 'multi' + this.env.fs.sep + 'chats'; }
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? this.fs.sep : '') + 'multi' + this.fs.sep + 'chats'; }
 }
 
 import {template as message_template} from "./components/message.js";
