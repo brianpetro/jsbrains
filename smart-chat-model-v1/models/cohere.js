@@ -29,7 +29,6 @@ async function fetch_cohere_models(api_key, request_adapter=null) {
       });
       data = await resp.json;
     }
-    console.log('Model data retrieved:', data);
     return data.models
       .filter(model => model.name.startsWith('command-'))
       .map(model => {

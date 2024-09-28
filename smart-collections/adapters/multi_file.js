@@ -25,7 +25,7 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
     try{
       const data_ajson = (await this.fs.read(item.data_path)).trim();
       if(!data_ajson){
-        console.log("Data file not found: ", item.data_path, data_ajson);
+        console.log(`Data file not found: ${item.data_path}`);
         return item.queue_import(); // queue import and return early if data file missing or empty
       }
       const ajson_lines = data_ajson.split('\n');

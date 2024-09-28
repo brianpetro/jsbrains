@@ -90,7 +90,6 @@ export class SmartSources extends SmartEntities {
       console.warn("search_filter.keywords not set");
       return [];
     }
-    console.log("search_filter", search_filter);
     this.search_results_ct = 0;
     const initial_results = this.filter(filter_opts);
     const search_results = [];
@@ -138,13 +137,17 @@ export class SmartSources extends SmartEntities {
     if(this.collection_key === 'smart_sources'){ // excludes sub-classes
       Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
     }
-    this.blocks.loaded = true;
+    this.block_collection.loaded = Object.keys(this.block_collection.items).length;
     if(!this.opts.prevent_import_on_load){
       await this.process_import_queue();
     }
   }
 
   get block_collection() { return this.env.smart_blocks; }
+  /**
+   * @deprecated use block_collection instead
+   */
+  get blocks(){ return this.env.smart_blocks; }
   get embed_queue() {
     const embed_blocks = this.block_collection.settings.embed_blocks;
     return Object.values(this.items).reduce((acc, item) => {
@@ -200,7 +203,6 @@ export class SmartSources extends SmartEntities {
     this.render_settings();
     this.blocks.render_settings();
   }
-  get blocks(){ return this.env.smart_blocks; }
 
   get settings_config(){
     return {

@@ -118,7 +118,6 @@ export class SmartSettings {
       setting_elm.addTextArea(textarea => {
         textarea.setPlaceholder(elm.dataset.placeholder || "");
         const current_setting_value = this.get_setting(setting);
-        console.log("textarea current_setting_value", setting, current_setting_value);
         textarea.setValue(elm.dataset.value || current_setting_value || "");
         textarea.onChange(async (value) => {
           console.log("textarea value changed");
@@ -198,7 +197,6 @@ export class SmartSettings {
     return value;
   }
   async update(setting_path, value, elm) {
-    console.log(this.settings);
     const setting_keys = setting_path.split("."); // should handle progress_labels.success.msg_vars.1
     let setting_obj = this.settings;
     let og;
@@ -213,7 +211,6 @@ export class SmartSettings {
     console.log("saving setting: " + setting_path);
     this.save_settings();
     console.log("saved settings");
-    console.log(this.settings);
     const changed = og !== value;
     this.after_update(setting_path, value, elm, changed);
     return changed; // return true if value changed

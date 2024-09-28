@@ -176,7 +176,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
       button.setButtonText(elm.dataset.btnText || elm.dataset.name || "Remove");
       button.onClick(async () => {
         this.main.delete_by_path(scope.settings, path);
-        console.log("setting removed", path);
         if (elm.dataset.callback) {
           const callback = this.main.get_by_path(scope, elm.dataset.callback);
           if (callback) callback(path, value, elm, scope);
@@ -264,7 +263,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
     if(elm.dataset.validate){
       const valid = this[elm.dataset.validate](path, value, elm, scope);
       if(!valid){
-        console.log('validation failed', path, value, elm);
         elm.querySelector('.setting-item').style.border = "2px solid red";
         this.revert_setting(path, elm, scope);
         return;

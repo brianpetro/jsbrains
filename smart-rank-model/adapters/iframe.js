@@ -12,7 +12,6 @@ export class SmartRankIframeAdapter extends SmartRankAdapter {
   }
 
   async load() {
-    console.log('loading iframe adapter', this.smart_rank.opts);
     // Create and append iframe
     this.iframe = document.createElement('iframe');
     this.iframe.style.display = 'none';

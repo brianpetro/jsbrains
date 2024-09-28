@@ -31,7 +31,6 @@ export class SmartViews {
     return {
       include: (template_name, data, options={}) => {
         const template = this.templates[template_name];
-        console.log({data});
         return this.ejs.render(template, data, options);
       }
     };
