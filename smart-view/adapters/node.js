@@ -163,7 +163,7 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
         if (elm.dataset.href) this.open_url(elm.dataset.href);
         if (elm.dataset.callback) {
           const callback = this.main.get_by_path(scope, elm.dataset.callback);
-          if (callback) callback(path, value, smart_setting, scope);
+          if (callback) callback(path, value, elm, scope);
         }
       });
     });
@@ -177,6 +177,10 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
       button.onClick(async () => {
         this.main.delete_by_path(scope.settings, path);
         console.log("setting removed", path);
+        if (elm.dataset.callback) {
+          const callback = this.main.get_by_path(scope, elm.dataset.callback);
+          if (callback) callback(path, value, elm, scope);
+        }
       });
     });
     return smart_setting;

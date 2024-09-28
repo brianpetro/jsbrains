@@ -102,4 +102,12 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
             return item;
         });
     }
+    async unload() {
+        await this._send_message('unload');
+        // remove iframe from DOM
+        document.body.removeChild(this.iframe);
+        this.iframe = null;
+        // remove message listener
+        window.removeEventListener('message', this._handle_message.bind(this));
+    }
 }

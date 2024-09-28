@@ -11,7 +11,6 @@ export class SmartSources extends SmartEntities {
   async init() {
     await super.init();
     this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
-    console.log("init smart_sources", this.env, this.env.main);
     // init smart_fs
     await this.fs.init();
     // init smart_sources
@@ -42,18 +41,8 @@ export class SmartSources extends SmartEntities {
     ;
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
-      await this.fs.remove(source.data_path);
+      await this.data_fs.remove(source.data_path);
       delete this.items[source.key];
-    }
-    const data_files = await this.data_fs.list_files_recursive(this.data_adapter.data_folder);
-    const ajson_file_path_map = Object.values(this.items).reduce((acc, item) => {
-      acc[item.data_path] = item.key;
-      return acc;
-    }, {});
-    // get data_files where ajson_file_paths don't exist
-    const remove_data_files = data_files.filter(file => !ajson_file_path_map[file.path]);
-    for(let i = 0; i < remove_data_files.length; i++){
-      await this.data_fs.remove(remove_data_files[i].path);
     }
     const remove_smart_blocks = Object.values(this.env.smart_blocks.items).filter(item => item.is_gone);
     for(let i = 0; i < remove_smart_blocks.length; i++){
@@ -139,7 +128,6 @@ export class SmartSources extends SmartEntities {
     // import
     await source.import();
     // process embed queue
-    await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
     // process save queue
     await this.process_save_queue();
@@ -156,10 +144,21 @@ export class SmartSources extends SmartEntities {
     }
   }
 
+  get block_collection() { return this.env.smart_blocks; }
+  get embed_queue() {
+    const embed_blocks = this.block_collection.settings.embed_blocks;
+    return Object.values(this.items).reduce((acc, item) => {
+      if(item._queue_embed) acc.push(item);
+      if(embed_blocks) item.blocks.forEach(block => {
+        if(block._queue_embed) acc.push(block);
+      });
+      return acc;
+    }, []);
+  }
+
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     if(import_queue.length){
-      console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);
       const time_start = Date.now();
       // import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
@@ -167,11 +166,13 @@ export class SmartSources extends SmartEntities {
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
       this.notices?.remove('import progress');
-      this.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
-      console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
-    }else console.log("Smart Connections: No items in import queue");
+      this.notices?.show('done import', [`Processed import queue in ${Date.now() - time_start}ms`], { timeout: 3000 });
+    }else this.notices?.show('no import queue', ["No items in import queue"]);
+    const start_time = Date.now();
     this.env.links = this.build_links_map();
-    await this.env.smart_blocks?.process_embed_queue(); // may need to be first
+    const end_time = Date.now();
+    console.log(`Time spent building links: ${end_time - start_time}ms`);
+    // await this.env.smart_blocks?.process_embed_queue(); // may need to be first
     await this.process_embed_queue();
     await this.process_save_queue();
   }
@@ -180,16 +181,19 @@ export class SmartSources extends SmartEntities {
     this.blocks.render_settings();
   }
   async run_import(){
+    const start_time = Date.now();
     await this.process_import_queue();
-    Object.values(this.env.smart_blocks.items).forEach(item => item.init());
-    await this.env.smart_blocks.process_embed_queue();
-    await this.process_embed_queue();
-    await this.process_save_queue();
+    const end_time = Date.now();
+    console.log(`Time spent importing: ${end_time - start_time}ms`);
     this.render_settings();
     this.blocks.render_settings();
   }
   async run_refresh(){
     await this.prune();
+    await this.unload();
+    await this.init();
+    await this.process_load_queue();
+    await this.render_settings();
     await this.process_import_queue();
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
@@ -239,6 +243,24 @@ export class SmartSources extends SmartEntities {
       this._excluded_headings = (this.env.settings?.excluded_headings?.length) ? this.env.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
     }
     return this._excluded_headings;
+  }
+  // get included files count
+  get included_files() {
+    return this.env.smart_connections_plugin.app.vault.getFiles()
+      .filter((file) => {
+        if(!(file instanceof this.env.smart_connections_plugin.obsidian.TFile) || !(file.extension === "md" || file.extension === "canvas")) return false;
+        if(this.fs.is_excluded(file.path)) return false;
+        return true;
+      })
+      .length
+    ;
+  }
+  // get all files count, no exclusions
+  get total_files() {
+    return this.env.smart_connections_plugin.app.vault.getFiles()
+      .filter((file) => (file instanceof this.env.smart_connections_plugin.obsidian.TFile) && (file.extension === "md" || file.extension === "canvas"))
+      .length
+    ;
   }
 
 }

@@ -15,8 +15,8 @@ export class SmartEntity extends CollectionItem {
       },
     };
   }
-  async load(){
-    await super.load();
+  init(){
+    super.init();
     if(!this.vec) this.queue_embed();
     // only keep active model embeddings
     Object.entries(this.data.embeddings || {}).forEach(([model, embedding]) => {
@@ -25,6 +25,10 @@ export class SmartEntity extends CollectionItem {
         delete this.data.embeddings[model];
       }
     });
+  }
+  async load(){
+    await super.load();
+    this.init();
   }
   queue_embed(){ this._queue_embed = true; }
   nearest(filter = {}) { return this.collection.nearest_to(this, filter) }

@@ -1,14 +1,16 @@
-import { SmartEntities } from "smart-entities";
-import { BlockAdapter } from "./adapters/_adapter.js";
-import { MarkdownBlockAdapter } from "./adapters/markdown.js";
+import { SmartSources } from "./smart_sources.js";
 
-export class SmartBlocks extends SmartEntities {
+export class SmartBlocks extends SmartSources {
   get block_adapters() {
     return {
       ...(this.env.opts.collections?.[this.collection_key]?.block_adapters || {}),
       ...(this.opts.block_adapters || {}),
     };
   }
+  init() {}
+  get source_collection() { return this.env.smart_sources; }
+  get embed_model() { return this.source_collection?.embed_model; }
+  get embed_model_key() { return this.source_collection?.embed_model_key; }
   async create(key, content) {
     if(!content) content = "-"; // default to a single dash (prevent block being ignored by parser)
     const source_key = key.split("#")[0];
@@ -32,22 +34,34 @@ export class SmartBlocks extends SmartEntities {
   }
 
   get smart_change() { return this.env.smart_sources.smart_change; }
-  // handled by sources
-  async process_save_queue() {
-    await this.env.smart_sources.process_save_queue();
-  }
   get settings_config() {
     return {
-      ...super.settings_config,
-      "embed_model.model_key": {
-        name: 'Embedding Model',
-        type: "dropdown",
-        description: "Select an embedding model.",
-        options_callback: 'embed_model.get_block_embedding_model_options',
-        callback: 'embed_model_changed',
-        // required: true
-        default: 'TaylorAI/bge-micro-v2',
+      embed_blocks: {
+        name: 'Block Embeddings',
+        type: "toggle",
+        description: "Splits notes into blocks (excerpts) for more granular embeddings.",
+        default: true,
       },
+      // ...super.settings_config,
+      // "embed_model.model_key": {
+      //   name: 'Embedding Model',
+      //   type: "dropdown",
+      //   description: "Select an embedding model.",
+      //   options_callback: 'embed_model.get_block_embedding_model_options',
+      //   callback: 'embed_model_changed',
+      //   // required: true
+      //   default: 'TaylorAI/bge-micro-v2',
+      // },
     };
+  }
+  // handled by sources
+  async process_save_queue() {
+    await this.source_collection.process_save_queue();
+  }
+  async process_embed_queue() {
+    await this.source_collection.process_embed_queue();
+  }
+  async process_load_queue() {
+    // await this.source_collection.process_load_queue();
   }
 }

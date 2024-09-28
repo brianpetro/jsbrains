@@ -37,6 +37,10 @@ async function processMessage(data) {
         if (!model) throw new Error('Model not loaded');
         result = await model.count_tokens(params);
         break;
+      case 'unload':
+        await model.unload();
+        result = { unloaded: true };
+        break;
       default:
         throw new Error(`Unknown method: ${method}`);
     }

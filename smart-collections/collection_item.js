@@ -31,6 +31,12 @@ export class CollectionItem {
     if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
+  static load(env, data){
+    const item = new this(env, data);
+    item.init();
+    return item;
+  }
+
   /**
    * Merges default properties from all classes in the inheritance chain.
    */

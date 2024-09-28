@@ -39,18 +39,14 @@ export class SmartEntities extends Collection {
     if(this.embed_model.loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
     await this.embed_model.load();
   }
-  unload() {
+  async unload() {
     if (typeof this.embed_model?.unload === 'function') {
-      this.embed_model.unload();
-      this.embed_model = null; // uses setter to update env.smart_embed_active_models
+      await this.embed_model.unload();
+      this._embed_model = null; // triggers new instance on next access
     }
     super.unload();
   }
   get embed_model_key() {
-    // return this.env.settings?.[this.collection_key]?.embed_model?.model_key
-    //   || this.env.settings?.[this.collection_key + "_embed_model"] // DEPRECATED: backwards compatibility
-    //   || "TaylorAI/bge-micro-v2"
-    // ;
     return this.settings?.embed_model?.model_key || "TaylorAI/bge-micro-v2";
   }
   get embed_model_settings() {
@@ -72,15 +68,12 @@ export class SmartEntities extends Collection {
    */
   get smart_embed() { return this.embed_model; }
   get embed_model() {
-    // if(this.embed_model_key === "None") return;
-    if(!this.env.smart_embed_active_models?.[this.embed_model_key]){
-      this.env.smart_embed_active_models[this.embed_model_key] = new this.env.opts.modules.smart_embed_model.class(this.env, {
-        model_key: this.embed_model_key,
-        ...(this.settings.embed_model?.[this.embed_model_key] || {}),
-        settings: this.settings.embed_model,
-      });
-    }
-    return this.env.smart_embed_active_models?.[this.embed_model_key];
+    if(!this._embed_model) this._embed_model = new this.env.opts.modules.smart_embed_model.class(this.env, {
+      model_key: this.embed_model_key,
+      ...(this.settings.embed_model?.[this.embed_model_key] || {}),
+      settings: this.settings.embed_model,
+    });
+    return this._embed_model;
   }
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
   // DEPRECATED in favor of entity-based nearest_to(entity, filter)
@@ -166,7 +159,7 @@ export class SmartEntities extends Collection {
         opts.exclude_key_starts_with_any.push(...Object.keys(this.env.links[entity.data.path] || {}));
       }
       // exclude outlinks
-      if (exclude_outlinks && this.env.links[entity.data.path]) {
+      if (exclude_outlinks) {
         if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
         opts.exclude_key_starts_with_any.push(...entity.outlink_paths);
       }
@@ -223,14 +216,16 @@ export class SmartEntities extends Collection {
     };
   }
 
-  get filter_config() { return filter_config; }
-  
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
+
+  get embed_queue() {
+    return Object.values(this.items).filter(item => item._queue_embed);
+  }
   async process_embed_queue() {
     if(this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
     if(!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
     if (this.is_queue_halted || this.is_processing_queue) return;
-    const queue = Object.values(this.items).filter(item => item._queue_embed);
+    const queue = this.embed_queue;
     this.queue_total = queue.length;
     if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
     console.log(`Processing ${this.collection_key} embed queue: ${this.queue_total} items`);
@@ -249,6 +244,7 @@ export class SmartEntities extends Collection {
     this.is_processing_queue = false;
     if(!this.is_queue_halted) this._embed_queue_complete();
   }
+
   _show_embed_progress_notice() {
     if(this.is_queue_halted) return;
     if(this.embedded_total - this.last_notice_embedded_total < 100) return;
@@ -319,7 +315,7 @@ export class SmartEntities extends Collection {
   }
 
   async embed_model_changed() {
-    this.unload();
+    await this.unload();
     await this.init();
     this.render_settings();
     await this.process_load_queue();

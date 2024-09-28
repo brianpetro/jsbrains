@@ -47,6 +47,9 @@ export class SmartEmbedModel extends SmartModel {
     this.loading = false;
     this.loaded = true;
   }
+  async unload() {
+    await this.adapter.unload();
+  }
   /**
    * Count the number of tokens in the input string.
    * @param {string} input - The input string to process.

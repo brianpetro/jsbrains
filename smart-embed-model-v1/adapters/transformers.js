@@ -75,4 +75,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
       return Promise.all(filtered_inputs.map(item => this.embed(item.embed_input)));
     }
   }
+  async unload() {
+    await this.model.dispose();
+  }
 }

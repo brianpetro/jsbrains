@@ -21,8 +21,9 @@ export class Collection {
     this.items = {};
     this.merge_defaults();
     this.filter_results_ct = 0;
-    this.loaded = false;
+    this.loaded = null;
     this._loading = false;
+    this.load_time_ms = null;
     this.settings_container = null;
   }
   static async init(env, opts = {}) {
@@ -116,7 +117,7 @@ export class Collection {
    * @return {CollectionItem[]} The retrieved items.
    */
   get_many(keys = []) {
-    if (Array.isArray(keys)) return keys.map((key) => this.get(key));
+    if (Array.isArray(keys)) return keys.map((key) => this.get(key)).filter(Boolean);
     console.error("get_many called with non-array keys: ", keys);
   }
   /**
@@ -278,9 +279,10 @@ export class Collection {
       await Promise.all(batch.map(item => item.load()));
     }
     this.env.collections[this.collection_key] = 'loaded';
-    console.log("Loaded " + this.collection_key + " in " + (Date.now() - time_start) + "ms");
+    this.load_time_ms = Date.now() - time_start;
+    console.log("Loaded " + this.collection_key + " in " + this.load_time_ms + "ms");
     this._loading = false;
-    this.loaded = true;
+    this.loaded = load_queue.length;
     this.notices?.remove('loading');
   }
   get settings_config() { return this.process_settings_config({}); }
@@ -329,10 +331,7 @@ export class Collection {
     ).bind(this.smart_view);
   }
   get smart_view() {
-    if(!this._smart_view){
-      // this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
-      this._smart_view = new this.env.opts.modules.smart_view.class({adapter: this.env.opts.modules.smart_view.adapter});
-    }
+    if(!this._smart_view) this._smart_view = this.env.init_module('smart_view');
     return this._smart_view;
   }
   /**

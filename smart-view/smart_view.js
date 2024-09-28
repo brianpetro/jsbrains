@@ -1,8 +1,5 @@
 export class SmartView {
   constructor(opts={}) {
-  // constructor(main, opts={}) {
-    // this.main = main;
-    // this.env = this.main; // DEPRECATED: MAY NOT BE ENV
     this.opts = opts;
     this._adapter = null;
   }

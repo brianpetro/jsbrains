@@ -178,27 +178,24 @@ export class SmartEnv {
       this[key].process_save_queue();
     }
   }
-  init_module(module_name, opts={}) {
-    if(!this.opts.modules[module_name]) return console.warn(`SmartEnv: module ${module_name} not found`);
-    if(this.opts.modules[module_name].class){
-      const _class = this.opts.modules[module_name].class;
-      opts = {
-        ...{...this.opts.modules[module_name], class: null},
-        ...opts,
-      }
-      return new _class(this, opts);
-    }else{
-      return new this.opts.modules[module_name](this, opts);
+  init_module(module_key, opts={}) {
+    const module_config = this.opts.modules[module_key];
+    if(!module_config) return console.warn(`SmartEnv: module ${module_key} not found`);
+    opts = {
+      ...{...module_config, class: null},
+      ...opts,
     }
+    return new module_config.class(opts);
   }
-  async render_settings(container) {
-    const frag = await settings_template.call(this.smart_view, this);
+  get settings_template() { return this.opts.components?.settings || settings_template; }
+  async render_settings(container=this.settings_container) {
+    if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
+    if(!container) throw new Error("Container is required");
+    const frag = await this.settings_template.call(this.smart_view, this);
     container.innerHTML = '';
     container.appendChild(frag);
     return frag;
   }
-  // should probably be moved
-  // NEEDS REVIEW
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.init_module('smart_view');
     return this._smart_view;
@@ -216,12 +213,14 @@ export class SmartEnv {
         description: "Comma-separated list of files to exclude.",
         type: "text",
         default: "",
+        callback: 'update_exclusions',
       },
       "folder_exclusions": {
         name: "Folder Exclusions",
         description: "Comma-separated list of folders to exclude.",
         type: "text",
         default: "",
+        callback: 'update_exclusions',
       },
       "excluded_headings": {
         name: "Excluded Headings",
@@ -231,19 +230,21 @@ export class SmartEnv {
       },
     }
   }
-  get ejs() { return this.opts.ejs; }
   get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
   get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
   set global_ref(env) { this.global_ref[this.global_prop] = env; }
   get item_types() { return this.opts.item_types; }
-  get smart_view() {
-    if(!this._smart_view){
-      // this._smart_view = new this.opts.modules.smart_view.class(this, {adapter: this.opts.modules.smart_view.adapter});
-      this._smart_view = new this.opts.modules.smart_view.class({adapter: this.opts.modules.smart_view.adapter});
-    }
-    return this._smart_view;
-  }
+  /**
+   * @deprecated use component pattern instead
+   */
+  get ejs() { return this.opts.ejs; }
+  /**
+   * @deprecated use component pattern instead
+   */
   get templates() { return this.opts.templates; }
+  /**
+   * @deprecated use component pattern instead
+   */
   get views() { return this.opts.views; }
 
 
@@ -320,6 +321,11 @@ export class SmartEnv {
   }
 
 
+  async update_exclusions(){
+    this.smart_sources._fs = null;
+    await this.smart_sources.fs.init();
+    this.smart_sources.render_settings();
+  }
 
   // DEPRECATED
   /**

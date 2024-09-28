@@ -136,7 +136,11 @@ export class SmartFsObsidianAdapter {
    */
   async read(rel_path, encoding) {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
-    if(encoding === 'utf-8') return await this.obsidian_adapter.read(rel_path);
+    if(encoding === 'utf-8') {
+      const tfile = this.obsidian_app.vault.getFileByPath(rel_path);
+      if(tfile) return await this.obsidian_app.vault.cachedRead(tfile); // preferred
+      return await this.obsidian_adapter.read(rel_path); // fallback
+    }
     if(encoding === 'base64'){
       const array_buffer = await this.obsidian_adapter.readBinary(rel_path, 'base64');
       const base64 = this.obsidian.arrayBufferToBase64(array_buffer);
@@ -165,7 +169,11 @@ export class SmartFsObsidianAdapter {
    */
   async remove(rel_path) {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
-    return await this.obsidian_adapter.remove(rel_path);
+    try{
+      return await this.obsidian_adapter.remove(rel_path);
+    }catch(error){
+      console.warn(`Error removing file: ${rel_path}`, error);
+    }
   }
 
   /**
@@ -201,4 +209,9 @@ export class SmartFsObsidianAdapter {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     return await this.obsidian_adapter.write(rel_path, data);
   }
+
+  get_link_target_path(link_path, file_path) {
+    return this.obsidian_app.metadataCache.getFirstLinkpathDest(link_path, file_path)?.path;
+  }
+
 }

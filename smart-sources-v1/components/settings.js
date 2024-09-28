@@ -9,11 +9,11 @@ export async function render(scope, opts = {}) {
     ${settings_html}
   </div>`
   const frag = this.create_doc_fragment(html);
-  await this.render_setting_components(frag, {scope});
-  return post_process(scope, frag, opts);
+  return post_process.call(this, scope, frag, opts);
 }
 
 export async function post_process(scope, frag, opts = {}) {
+  await this.render_setting_components(frag, {scope});
   frag.querySelector('.sources-load-btn')?.addEventListener('click', () => {
     scope.run_load();
   });
@@ -38,11 +38,29 @@ function settings_header_html(scope, opts = {}) {
 }
 
 function get_span_html(scope) {
-  const files_ct = Object.values(scope.items).length;
-  const item_name = scope.collection_key === 'smart_sources' ? 'files' : 'blocks';
-  if(!scope.loaded) return `<span>${files_ct} ${item_name} (embeddings not currently loaded)</span>`;
-  const embedded_ct = Object.values(scope.items).filter(item => item.vec).length;
-  return `<span>Embedded: ${embedded_ct} / ${files_ct}</span>`;
+  const item_count = Object.keys(scope.items).length;
+  const item_name = scope.collection_key === 'smart_sources' ? 'sources' : 'blocks';
+  
+  if (!scope.loaded) {
+    return `<span>${item_count} ${item_name} (embeddings not currently loaded)</span>`;
+  }
+
+  
+  const total_count = scope.total_files;
+  const included_count = scope.included_files;
+  if(scope.loaded !== included_count) return `<span>${scope.loaded}/${included_count} ${item_name} (partially loaded, should refresh/reload)</span>`;
+  const embedded_items = Object.values(scope.items).filter(item => item.vec);
+  const embedded_percentage = Math.round((embedded_items.length / item_count) * 100);
+  const load_time_html = scope.load_time_ms ? `<span>Load time: ${scope.load_time_ms}ms</span>` : '';
+  const counts_html = scope.collection_key === 'smart_sources'
+    ? `<span>${included_count} sources included (${total_count} total)</span>`
+    : `<span>${item_count} blocks</span>`;
+
+  return `
+    <span>${embedded_percentage}% embedded</span>
+    ${counts_html}
+    ${load_time_html}
+  `;
 }
 
 function get_button_html(scope) {

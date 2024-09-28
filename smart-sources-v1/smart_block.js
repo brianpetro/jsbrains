@@ -44,8 +44,8 @@ export class SmartBlock extends SmartEntity {
   }
 
   init() {
-    super.init();
-    if(!this.vec) this.queue_embed();
+    if(this.settings.embed_blocks) super.init(); // queues embed; prunes embeddings for other models
+    // else do nothing (may prune embeddings to save memory in future)
   }
 
   async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }

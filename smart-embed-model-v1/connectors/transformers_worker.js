@@ -177,6 +177,9 @@ var SmartEmbedModel = class extends SmartModel {
     this.loading = false;
     this.loaded = true;
   }
+  async unload() {
+    await this.adapter.unload();
+  }
   /**
    * Count the number of tokens in the input string.
    * @param {string} input - The input string to process.
@@ -258,16 +261,21 @@ var settings_config = {
     description: "Required for OpenAI embedding models",
     placeholder: "Enter OpenAI API Key",
     // callback: 'test_api_key_openai_embeddings',
-    callback: "restart",
-    // TODO: should be replaced with better unload/reload of smart_embed
+    // callback: 'restart', // TODO: should be replaced with better unload/reload of smart_embed
     conditional: (_this) => !_this.settings.model_key?.includes("/")
   },
   "[EMBED_MODEL].gpu_batch_size": {
     name: "GPU Batch Size",
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter number ex. 10",
-    callback: "restart"
+    placeholder: "Enter number ex. 10"
+    // callback: 'restart',
+  },
+  "legacy_transformers": {
+    name: "Legacy Transformers (no GPU)",
+    type: "toggle",
+    description: "Use legacy transformers (v2) instead of v3.",
+    callback: "embed_model_changed"
   }
 };
 
@@ -361,6 +369,9 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       console.error("error_embedding_batch", err);
       return Promise.all(filtered_inputs.map((item) => this.embed(item.embed_input)));
     }
+  }
+  async unload() {
+    await this.model.dispose();
   }
 };
 

@@ -1,4 +1,4 @@
-export async function render(scope, opts = {}) {
+export async function build_html(scope, opts = {}) {
   const env_settings_html = Object.entries(scope.settings_config).map(([setting_key, setting_config]) => {
     if (!setting_config.setting) setting_config.setting = setting_key;
     if(this.validate_setting(scope, opts, setting_key, setting_config)) return this.render_setting_html(setting_config);
@@ -13,6 +13,11 @@ export async function render(scope, opts = {}) {
       ${env_collections_containers_html}
     </div>
   `;
+  return html;
+}
+
+export async function render(scope, opts = {}) {
+  const html = await build_html.call(this, scope, opts);
   const frag = this.create_doc_fragment(html);
   return post_process.call(this, scope, frag, opts);
 }
