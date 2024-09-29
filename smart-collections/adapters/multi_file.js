@@ -23,7 +23,8 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
   async load(item) {
     if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
     try{
-      const data_ajson = (await this.fs.read(item.data_path)).trim();
+      // no_cache is necessary to prevent caching issues in Obsidian (may need to clarify mechanism since seemed to stop after initial force load without cache)
+      const data_ajson = (await this.fs.adapter.read(item.data_path, 'utf-8', {no_cache: true})).trim();
       if(!data_ajson){
         console.log(`Data file not found: ${item.data_path}`);
         return item.queue_import(); // queue import and return early if data file missing or empty
