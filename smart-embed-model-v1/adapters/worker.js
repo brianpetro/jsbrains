@@ -88,4 +88,11 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
       return item;
     });
   }
+
+  async unload() {
+    await this._send_message('unload');
+    this.worker.terminate();
+    this.worker = null;
+  }
+
 }

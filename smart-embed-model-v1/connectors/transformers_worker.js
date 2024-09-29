@@ -417,6 +417,10 @@ async function process_message(data) {
         result = await model.count_tokens(params);
         processing_message = false;
         break;
+      case "unload":
+        await model.unload();
+        result = { unloaded: true };
+        break;
       default:
         throw new Error(`Unknown method: ${method}`);
     }
