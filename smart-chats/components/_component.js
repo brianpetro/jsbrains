@@ -1,4 +1,4 @@
-export async function template(collection, thread) {
+export async function render(collection, thread) {
   const top_bar_buttons = [
     { title: 'Open Conversation Note', icon: 'external-link' },
     { title: 'Chat History', icon: 'history' },

@@ -1,6 +1,6 @@
 import { create_document_fragment } from "./_component.js";
 
-export async function template(message, opts={}) {
+export async function render(message, opts={}) {
   const frag = message.turn.role === 'system' ? create_system_message_frag(message) : create_participant_message_frag(message);
   return post_process(message, frag);
 }

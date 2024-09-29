@@ -1,4 +1,4 @@
-export async function template(collection, opts = {}) {
+export async function render(collection, opts = {}) {
   const html = Object.entries(collection.settings_config).map(([setting_name, setting_config]) => {
     const attributes = Object.entries(setting_config)
       .map(([attr, value]) => `data-${attr.replace(/_/g, '-')}="${value}"`)

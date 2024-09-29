@@ -1,6 +1,6 @@
 import { create_document_fragment } from "./_component.js";
 
-export async function template(thread, data) {
+export async function render(thread, data) {
   const turn_frags = thread
     ? await thread.render_turns()
     : create_welcome_message();

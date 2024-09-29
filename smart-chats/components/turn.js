@@ -1,5 +1,5 @@
 import { create_document_fragment } from "./_component.js";
-export async function template(turn, data) {
+export async function render(turn, data) {
   const turn_container = msg.role === 'system' ? create_system_turn_frag(turn) : create_participant_turn_frag(turn);
   for(const msg of turn.messages) {
     await msg.render(turn_container);
