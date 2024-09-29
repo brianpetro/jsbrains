@@ -90,8 +90,7 @@ export class SmartSource extends SmartEntity {
     let connections = super.find_connections(opts);
     const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
     if(!opts.exclude_blocks_from_source_connections) {
-      const use_source_vec = this.env.smart_blocks.embed_model_key === this.embed_model_key;
-      const vec_to_use = use_source_vec ? this.vec : this.median_block_vec;
+      const vec_to_use = this.vec;
       
       if (vec_to_use) {
         const cache_key = this.key + JSON.stringify(opts) + "_blocks";
@@ -131,8 +130,17 @@ export class SmartSource extends SmartEntity {
   }
   open() { this.env.smart_connections_plugin.open_note(this.data.path); }
   get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
+  get block_collection() { return this.env.smart_blocks; }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
-  get blocks() { return this.env.smart_blocks.get_many(Object.keys(this.last_history.blocks)); } // fastest (no iterating over all blocks)
+  /**
+   * Get the blocks for this source
+   * Uses faster method if last_history is present, otherwise iterates over all blocks (for when collections aren't loaded yet)
+   * @returns {SmartBlock[]} An array of SmartBlock objects
+   */
+  get blocks() {
+    if(this.last_history) return this.env.smart_blocks.get_many(Object.keys(this.last_history.blocks)); // fastest (no iterating over all blocks)
+    else return this.block_collection.filter({key_starts_with: this.key});
+  }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get meta_changed() {
     try {
@@ -158,24 +166,6 @@ export class SmartSource extends SmartEntity {
   get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
   get is_gone() { return !this.file; }
   get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
-  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
-  get median_block_vec() {
-    if (this._median_block_vec) return this._median_block_vec;
-    if (!this.block_vecs.length) return null;
-
-    const vec_length = this.block_vecs[0].length;
-    this._median_block_vec = new Array(vec_length);
-    const mid = Math.floor(this.block_vecs.length / 2);
-
-    for (let i = 0; i < vec_length; i++) {
-      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
-        ? values[mid]
-        : (values[mid - 1] + values[mid]) / 2;
-    }
-
-    return this._median_block_vec;
-  }
   get file() { return this.fs.files[this.data.path]; }
   /**
    * @deprecated Use this.file instead
@@ -369,6 +359,26 @@ export class SmartSource extends SmartEntity {
       console.error('Error during merge:', error);
       throw error;
     }
+  }
+
+  // currently unused, but useful for later
+  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
+  get median_block_vec() {
+    if (this._median_block_vec) return this._median_block_vec;
+    if (!this.block_vecs.length) return null;
+
+    const vec_length = this.block_vecs[0].length;
+    this._median_block_vec = new Array(vec_length);
+    const mid = Math.floor(this.block_vecs.length / 2);
+
+    for (let i = 0; i < vec_length; i++) {
+      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
+      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
+        ? values[mid]
+        : (values[mid - 1] + values[mid]) / 2;
+    }
+
+    return this._median_block_vec;
   }
 
 

@@ -77,8 +77,7 @@ export class SmartSource extends SmartEntity {
     let connections = super.find_connections(opts);
     const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
     if(!opts.exclude_blocks_from_source_connections) {
-      const use_source_vec = this.env.smart_blocks.embed_model_key === this.embed_model_key;
-      const vec_to_use = use_source_vec ? this.vec : this.median_block_vec;
+      const vec_to_use = this.vec;
       
       if (vec_to_use) {
         const cache_key = this.key + JSON.stringify(opts) + "_blocks";
@@ -310,24 +309,6 @@ export class SmartSource extends SmartEntity {
     return super.is_unembedded;
   }
   get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
-  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
-  get median_block_vec() {
-    if (this._median_block_vec) return this._median_block_vec;
-    if (!this.block_vecs.length) return null;
-
-    const vec_length = this.block_vecs[0].length;
-    this._median_block_vec = new Array(vec_length);
-    const mid = Math.floor(this.block_vecs.length / 2);
-
-    for (let i = 0; i < vec_length; i++) {
-      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
-        ? values[mid]
-        : (values[mid - 1] + values[mid]) / 2;
-    }
-
-    return this._median_block_vec;
-  }
   get meta_changed() {
     try {
       if (!this.last_history) return true;
@@ -368,6 +349,31 @@ export class SmartSource extends SmartEntity {
     else this._source_adapter = new this.source_adapters["default"](this);
     return this._source_adapter;
   }
+
+
+
+  // currently unused, but useful for later
+  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
+  get median_block_vec() {
+    if (this._median_block_vec) return this._median_block_vec;
+    if (!this.block_vecs.length) return null;
+
+    const vec_length = this.block_vecs[0].length;
+    this._median_block_vec = new Array(vec_length);
+    const mid = Math.floor(this.block_vecs.length / 2);
+
+    for (let i = 0; i < vec_length; i++) {
+      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
+      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
+        ? values[mid]
+        : (values[mid - 1] + values[mid]) / 2;
+    }
+
+    return this._median_block_vec;
+  }
+
+
+
   // DEPRECATED methods
   /**
    * @deprecated Use this.read() instead

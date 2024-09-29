@@ -11,6 +11,7 @@ export class SmartBlocks extends SmartSources {
   get source_collection() { return this.env.smart_sources; }
   get embed_model() { return this.source_collection?.embed_model; }
   get embed_model_key() { return this.source_collection?.embed_model_key; }
+  get expected_blocks_ct() { return Object.values(this.source_collection.items).reduce((acc, item) => acc += Object.keys(item.last_history.blocks).length, 0); }
   async create(key, content) {
     if(!content) content = "-"; // default to a single dash (prevent block being ignored by parser)
     const source_key = key.split("#")[0];
