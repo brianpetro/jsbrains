@@ -3,32 +3,90 @@ export class SmartView {
     this.opts = opts;
     this._adapter = null;
   }
+
+  /**
+   * Renders all setting components within a container.
+   * @param {HTMLElement} container - The container element.
+   * @param {Object} opts - Additional options for rendering.
+   * @returns {Promise<void>}
+   */
   async render_setting_components(container, opts={}) {
     const components = container.querySelectorAll(".setting-component");
-    // await Promise.all(Array.from(components).map(async (elm) => {
-    //   await this.render_setting_component(elm);
-    // }));
-    // one at a time
     for (const component of components) {
       await this.render_setting_component(component, opts);
     }
   }
+
+  /**
+   * Creates a document fragment from HTML string.
+   * @param {string} html - The HTML string.
+   * @returns {DocumentFragment}
+   */
   create_doc_fragment(html) {
     return document.createRange().createContextualFragment(html);
   }
-  // adapter methods
+
+  /**
+   * Gets the adapter instance.
+   * @returns {Object} The adapter instance.
+   */
   get adapter() {
     if(!this._adapter) {
       this._adapter = new this.opts.adapter(this);
     }
     return this._adapter;
   }
+
+  /**
+   * Adds an icon (implemented in adapter).
+   * @param {string} icon_name - The name of the icon.
+   * @returns {*}
+   */
   add_icon(icon_name) { return this.adapter.add_icon(icon_name); }
+
+  /**
+   * Renders a single setting component (implemented in adapter).
+   * @param {HTMLElement} setting_elm - The setting element.
+   * @param {Object} opts - Additional options for rendering.
+   * @returns {Promise<*>}
+   */
   async render_setting_component(setting_elm, opts={}) { return await this.adapter.render_setting_component(setting_elm, opts); }
+
+  /**
+   * Renders markdown content (implemented in adapter).
+   * @param {string} markdown - The markdown content.
+   * @returns {Promise<*>}
+   */
   async render_markdown(markdown) { return await this.adapter.render_markdown(markdown); }
+
+  /**
+   * Gets a value from an object by path.
+   * @param {Object} obj - The object to search in.
+   * @param {string} path - The path to the value.
+   * @returns {*}
+   */
   get_by_path(obj, path) { return get_by_path(obj, path); }
+
+  /**
+   * Sets a value in an object by path.
+   * @param {Object} obj - The object to modify.
+   * @param {string} path - The path to set the value.
+   * @param {*} value - The value to set.
+   */
   set_by_path(obj, path, value) { set_by_path(obj, path, value); }
+
+  /**
+   * Deletes a value from an object by path.
+   * @param {Object} obj - The object to modify.
+   * @param {string} path - The path to delete.
+   */
   delete_by_path(obj, path) { delete_by_path(obj, path); }
+
+  /**
+   * Escapes HTML special characters in a string.
+   * @param {string} str - The string to escape.
+   * @returns {string} The escaped string.
+   */
   escape_html(str) {
     if(typeof str !== 'string') return str;
     return str
@@ -39,6 +97,12 @@ export class SmartView {
       .replace(/'/g, '&#039;')
     ;
   }
+
+  /**
+   * Adds toggle listeners to elements with data-toggle attribute.
+   * @param {DocumentFragment} frag - The document fragment containing toggle elements.
+   * @param {Function|null} callback - Optional callback for custom toggle behavior.
+   */
   add_toggle_listeners(frag, callback=null) {
     frag.querySelectorAll('[data-toggle]').forEach((toggle_elm) => {
       toggle_elm.addEventListener('click', (e) => {
@@ -51,6 +115,12 @@ export class SmartView {
       });
     });
   }
+
+  /**
+   * Renders HTML for a setting component based on its configuration.
+   * @param {Object} setting_config - The configuration object for the setting.
+   * @returns {string} The rendered HTML string.
+   */
   render_setting_html(setting_config) {
     if(setting_config.type === 'html') return setting_config.value;
     const attributes = Object.entries(setting_config)
@@ -63,13 +133,14 @@ export class SmartView {
     ;
     return `<div class="setting-component${setting_config.scope_class ? ` ${setting_config.scope_class}` : ''}"\ndata-setting="${setting_config.setting}"\n${attributes}\n></div>`;
   }
+
   /**
-   * Validates the setting config and returns true if the setting should be rendered.
-   * @param {object} scope - The scope object.
-   * @param {object} opts - The options object.
+   * Validates the setting config and determines if the setting should be rendered.
+   * @param {Object} scope - The scope object.
+   * @param {Object} opts - The options object.
    * @param {string} setting_key - The key of the setting.
-   * @param {object} setting_config - The config of the setting.
-   * @returns {boolean} - True if the setting should be rendered, false otherwise.
+   * @param {Object} setting_config - The config of the setting.
+   * @returns {boolean} True if the setting should be rendered, false otherwise.
    */
   validate_setting(scope, opts, setting_key, setting_config) {
     /**
