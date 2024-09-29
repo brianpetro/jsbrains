@@ -134,11 +134,13 @@ export class SmartFsObsidianAdapter {
    * @param {string} rel_path - The relative path of the file to read
    * @returns {Promise<string>} The contents of the file
    */
-  async read(rel_path, encoding) {
+  async read(rel_path, encoding, opts={}) {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     if(encoding === 'utf-8') {
-      const tfile = this.obsidian_app.vault.getFileByPath(rel_path);
-      if(tfile) return await this.obsidian_app.vault.cachedRead(tfile); // preferred
+      if(!opts.no_cache){
+        const tfile = this.obsidian_app.vault.getFileByPath(rel_path);
+        if(tfile) return await this.obsidian_app.vault.cachedRead(tfile); // preferred
+      }
       return await this.obsidian_adapter.read(rel_path); // fallback
     }
     if(encoding === 'base64'){
