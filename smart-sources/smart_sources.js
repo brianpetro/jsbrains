@@ -5,10 +5,24 @@ export class SmartSources extends SmartEntities {
     super(env, opts);
     this.search_results_ct = 0;
     this.block_collections = {};
+    this._excluded_headings = null;
   }
+
   async init() {
     await super.init();
     this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
+    await this.init_items();
+    this.notices?.remove('initial scan');
+    this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    // init block collections
+    if(this.opts.block_collections) {
+      this.opts.block_collections.forEach(block_collection => {
+        new block_collection.class(this);
+      });
+    }
+  }
+
+  async init_items() {
     // init smart_fs
     await this.fs.init();
     // init smart_sources
@@ -16,11 +30,6 @@ export class SmartSources extends SmartEntities {
       .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
       .forEach(file => this.init_file_path(file.path))
     ;
-    if(this.opts.block_collections) {
-      this.opts.block_collections.forEach(block_collection => {
-        new block_collection.class(this);
-      });
-    }
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
@@ -159,13 +168,15 @@ export class SmartSources extends SmartEntities {
     if(this.collection_key === 'smart_sources'){ // excludes sub-classes
       Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
     }
-    // await this.process_import_queue();
+    this.block_collection.loaded = Object.keys(this.block_collection.items).length;
+    if(!this.opts.prevent_import_on_load){
+      await this.process_import_queue();
+    }
   }
 
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     if(import_queue.length){
-      console.log(`Smart Connections: Processing import queue: ${import_queue.length} items`);
       const time_start = Date.now();
       // import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
@@ -173,11 +184,12 @@ export class SmartSources extends SmartEntities {
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
       this.notices?.remove('import progress');
-      this.notices?.show('done import', [`Importing...`, `Completed import.`], { timeout: 3000 });
-      console.log(`Smart Connections: Processed import queue in ${Date.now() - time_start}ms`);
-    }else console.log("Smart Connections: No items in import queue");
+      this.notices?.show('done import', [`Processed import queue in ${Date.now() - time_start}ms`], { timeout: 3000 });
+    }else this.notices?.show('no import queue', ["No items in import queue"]);
+    const start_time = Date.now();
     this.env.links = this.build_links_map();
-    await this.env.smart_blocks?.process_embed_queue(); // may need to be first
+    const end_time = Date.now();
+    console.log(`Time spent building links: ${end_time - start_time}ms`);
     await this.process_embed_queue();
     await this.process_save_queue();
   }
@@ -209,19 +221,106 @@ export class SmartSources extends SmartEntities {
     };
   }
 
+  get block_collection() { return this.env.smart_blocks; }
+  /**
+   * @deprecated use block_collection instead
+   */
+  get blocks(){ return this.env.smart_blocks; }
+  get embed_queue() {
+    const embed_blocks = this.block_collection.settings.embed_blocks;
+    return Object.values(this.items).reduce((acc, item) => {
+      if(item._queue_embed) acc.push(item);
+      if(embed_blocks) item.blocks.forEach(block => {
+        if(block._queue_embed) acc.push(block);
+      });
+      return acc;
+    }, []);
+  }
+
+  async run_load(){
+    await super.run_load();
+    this.blocks.render_settings();
+  }
+
+  async run_import(){
+    const start_time = Date.now();
+    await this.process_import_queue();
+    const end_time = Date.now();
+    console.log(`Time spent importing: ${end_time - start_time}ms`);
+    this.render_settings();
+    this.blocks.render_settings();
+  }
+
+  async run_refresh(){
+    await this.prune();
+    await this.unload();
+    await this.init();
+    await this.process_load_queue();
+    await this.render_settings();
+    await this.process_import_queue();
+    await this.env.smart_blocks.process_embed_queue();
+    await this.process_embed_queue();
+    this.render_settings();
+    this.blocks.render_settings();
+  }
+
+  async run_force_refresh(){
+    this.clear();
+    this.block_collection.clear();
+    this._fs = null;
+    this._excluded_headings = null;
+    await this.init_items();
+    Object.values(this.items).forEach(item => item.queue_import());
+    await this.process_import_queue();
+  }
+
+  get excluded_patterns() {
+    return [
+      ...(this.file_exclusions?.map(file => `${file}**`) || []),
+      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
+      this.env.env_data_dir + "/**",
+    ];
+  }
+
+  get file_exclusions() {
+    return (this.env.settings?.file_exclusions?.length) ? this.env.settings.file_exclusions.split(",").map((file) => file.trim()) : [];
+  }
+
+  get folder_exclusions() {
+    return (this.env.settings?.folder_exclusions?.length) ? this.env.settings.folder_exclusions.split(",").map((folder) => {
+      folder = folder.trim();
+      if (folder.slice(-1) !== "/") return folder + "/";
+      return folder;
+    }) : [];
+  }
+
+  get excluded_headings() {
+    if (!this._excluded_headings){
+      this._excluded_headings = (this.env.settings?.excluded_headings?.length) ? this.env.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
+    }
+    return this._excluded_headings;
+  }
+
+  get included_files() {
+    return this.fs.file_paths
+      .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
+      .filter(file => !this.fs.is_excluded(file))
+      .length;
+  }
+
+  get total_files() {
+    return this.env.fs.file_paths
+      .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
+      .length;
+  }
+
 }
 
 export const settings_config = {
-  "import_sources": {
-    "name": "Import Sources",
-    "description": "Import sources from file system.",
-    "type": "button",
-    "callback": "import",
+  "smart_change.active": {
+    "name": "Smart Change (change safety)",
+    "description": "Enable Smart Changes (prevents accidental deletions/overwrites).",
+    "type": "toggle",
+    "default": true,
   },
-  "refresh_sources": {
-    "name": "Refresh Sources",
-    "description": "Prunes old data and re-imports all sources and blocks.",
-    "type": "button",
-    "callback": "refresh",
-  }
 };

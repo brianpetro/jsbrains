@@ -21,17 +21,12 @@ export class SmartSource extends SmartEntity {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
         return;
       }
-      // if this.loaded_at more than 5 minutes ago
-      if(this.loaded_at && Date.now() - this.loaded_at > 3 * 60 * 1000){
+      if(this.loaded_at && (await this.env.data_fs.exists(this.data_path))){
         const ajson_file_stat = await this.env.data_fs.stat(this.data_path);
         if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
           console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
           return await this.load();
         }
-      }
-      const content = await this.read();
-      if(this.block_collection) {
-        await this.block_collection.create(content);
       }
       await this.parse_content();
       this.queue_embed();
@@ -41,7 +36,8 @@ export class SmartSource extends SmartEntity {
     }
   }
   async parse_content() {
-    const hash = await create_hash(content); // update hash
+    const content = await this.read();
+    const hash = await create_hash(content);
     const file_stat = await this.fs.stat(this.data.path);
     if (hash !== this.last_history?.hash) {
       if(!this.last_history) this.data.history = [];
@@ -273,7 +269,6 @@ export class SmartSource extends SmartEntity {
       super.ajson,
       ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
     ].join("\n");
-    // console.log({ajson});
     await super.save(ajson);
     blocks_to_save.forEach(block => block._queue_save = false);
   }
@@ -287,7 +282,7 @@ export class SmartSource extends SmartEntity {
   }
 
   // GETTERS
-  get block_collection() { return this.collection.block_collections[this.file_type]; }
+  get block_collection() { return this.env.smart_blocks; }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
   get blocks() { return this.env.smart_blocks?.filter({key_starts_with: this.key}) || []; } // filter out blocks that don't exist
   get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
