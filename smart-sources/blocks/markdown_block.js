@@ -109,7 +109,9 @@ export class SmartBlock extends SmartEntity {
     if(this.excluded) return false;
     return super.is_unembedded;
   }
-  get lines() { return { start: this.data.lines[0], end: this.data.lines[1] }; };
+  get sub_key() { return "#" + this.key.split("#").slice(1).join("#"); }
+  // get lines() { return { start: this.data.lines[0], end: this.data.lines[1] }; };
+  get lines() { return this.source.data.blocks[this.sub_key]; }
   get line_start() { return this.data.lines[0]; }
   get line_end() { return this.data.lines[1]; }
   // use text length to detect changes

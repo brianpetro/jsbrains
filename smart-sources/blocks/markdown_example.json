@@ -1,0 +1,14 @@
+{
+  "#Top-Level Heading": [1, 6],
+  "#Top-Level Heading###Level 3 Heading (Skipping Level 2)": [3, 6],
+  "#Another Top-Level Heading": [7, 18],
+  "#Another Top-Level Heading#####Level 5 Heading (Skipping Levels 2-4)": [9, 12],
+  "#Another Top-Level Heading##Second-Level Heading": [13, 18],
+  "#Another Top-Level Heading##Second-Level Heading#####Level 5 Child Heading": [15, 17],
+  "#Heading Without Content": [19, 24],
+  "#Heading Without Content###Subheading With Content": [21, 24],
+  "#Heading With Content": [25, 34],
+  "#Heading With Content###Subheading Without Content": [29, 34],
+  "#Heading With Content###Subheading Without Content####Sub-subheading With Content": [31, 34],
+  "#Final Heading": [35, 36]
+}
