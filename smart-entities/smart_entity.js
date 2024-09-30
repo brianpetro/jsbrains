@@ -30,7 +30,7 @@ export class SmartEntity extends CollectionItem {
     await super.load();
     this.init();
   }
-  queue_embed(){ this._queue_embed = true; }
+  queue_embed(){ if(this.should_embed) this._queue_embed = true; }
   nearest(filter = {}) { return this.collection.nearest_to(this, filter) }
   async get_as_context(params = {}) {
     return `---BEGIN NOTE${params.i ? " " + params.i : ""} [[${this.path}]]---\n${await this.get_content()}\n---END NOTE${params.i ? " " + params.i : ""}---`;
@@ -81,9 +81,10 @@ export class SmartEntity extends CollectionItem {
   get tokens() { return this.data.embeddings[this.embed_model_key]?.tokens; }
   get is_unembedded() {
     if(this.vec) return false;
-    if(this.size < (this.collection.embed_model_settings?.min_chars || 300)) return false;
+    if(this.size < (this.collection.embed_model_settings?.min_chars || 300)) return false; // ignore small files
     return true;
   }
+  get should_embed() { return true; } // may override in child class
   // setters
   set error(error) { this.data.embeddings[this.embed_model_key].error = error; }
   set tokens(tokens) {
@@ -101,6 +102,6 @@ export class SmartEntity extends CollectionItem {
   }
 
   // SmartSources (how might this be better done?)
-  get_key() { return this.data.path.replace(/\\/g, "/"); }
+  get_key() { return this.data.path; }
   get path() { return this.data.path; }
 }

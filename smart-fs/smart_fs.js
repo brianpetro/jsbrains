@@ -99,10 +99,6 @@ class SmartFs {
     this.file_paths = [];
     this.folder_paths = [];
     all.forEach(file => {
-      // ignore hidden files and folders (allows specifying by not adding to exclusions)
-      if (file.name.startsWith('.')) return;
-      if (file.path.startsWith('.')) return;
-      if (file.path.endsWith('.ajson')) return; // ignore .ajson files
       if (file.type === 'file') {
         this.files[file.path] = file;
         this.file_paths.push(file.path);
@@ -143,6 +139,7 @@ class SmartFs {
     this.add_ignore_pattern('.**');
     this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
     this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
+    this.add_ignore_pattern('**/*.ajson'); // ignore .ajson files
     // temporary
     this.add_ignore_pattern('**/*.excalidraw.md');
   }

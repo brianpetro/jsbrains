@@ -21,53 +21,21 @@ export class SmartSource extends SmartEntity {
         console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
         return;
       }
-      if(this.loaded_at && (await this.env.data_fs.exists(this.data_path))){
-        const ajson_file_stat = await this.env.data_fs.stat(this.data_path);
-        if(ajson_file_stat.mtime > (this.loaded_at + 3 * 60 * 1000)){
-          console.warn(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
-          return await this.load();
-        }
+      // must check exists using async because not always reflects by file.stat (ex. Obsidian)
+      if(this.loaded_at && (await this.data_fs.exists(this.data_path)) && (this.env.fs.files[this.data_path].mtime > (this.loaded_at + 3 * 60 * 1000))){
+        console.log(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
+        return await this.load();
       }
-      await this.parse_content();
-      this.queue_embed();
+      if(this.meta_changed){
+        this.data.mtime = this.file.stat.mtime;
+        this.data.size = this.file.stat.size;
+        await this.source_adapter.import();
+        this.queue_embed();
+      }else console.log(`Smart Connections: No changes to ${this.data.path}`);
     }catch(err){
       this.queue_import();
       console.error(err, err.stack);
     }
-  }
-  async parse_content() {
-    const content = await this.read();
-    const hash = await create_hash(content);
-    const file_stat = await this.fs.stat(this.data.path);
-    if (hash !== this.last_history?.hash) {
-      if(!this.last_history) this.data.history = [];
-      this.data.history.push({
-        blocks: {},
-        mtime: file_stat.mtime,
-        size: file_stat.size,
-        hash
-      }); // add history entry
-      this.data.embeddings = {}; // clear embeddings
-      this._queue_embed = true;
-    } else {
-      this.last_history.mtime = file_stat.mtime; // update mtime
-      this.last_history.size = file_stat.size; // update size
-      if(!this.last_history.blocks) this.last_history.blocks = {};
-    }
-    const { blocks, outlinks } = await this.smart_chunks.parse(this);
-    this.data.outlinks = outlinks;
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-      const item = await this.env.smart_blocks.create_or_update(block);
-      this.last_history.blocks[item.key] = true;
-    }
-    // remove blocks not in last_history.blocks
-    const block_keys = Object.keys(this.last_history.blocks);
-    Object.values(this.env.smart_blocks.items).forEach(block => {
-      if(block.key.startsWith(this.key) && !block_keys.includes(block.key)) {
-        delete this.env.smart_blocks.items[block.key];
-      }
-    });
   }
   find_connections(opts={}) {
     let connections = super.find_connections(opts);
@@ -161,7 +129,7 @@ export class SmartSource extends SmartEntity {
    */
   async append(content) {
     await this.source_adapter.append(content);
-    await this.parse_content();
+    await this.import();
   }
 
   /**
@@ -173,7 +141,6 @@ export class SmartSource extends SmartEntity {
     try {
       // console.log('Updating source:', this.data.path);
       await this.source_adapter.update(full_content, opts);
-      // await this.parse_content();
       await this.import(); // also queues embed
       // console.log('Update completed');
     } catch (error) {
@@ -254,7 +221,7 @@ export class SmartSource extends SmartEntity {
     try {
       // console.log('Merging content into source:', this.data.path);
       await this.source_adapter.merge(content, opts);
-      await this.parse_content();
+      await this.import();
       // console.log('Merge completed');
     } catch (error) {
       console.error('Error during merge:', error);
@@ -284,34 +251,38 @@ export class SmartSource extends SmartEntity {
   // GETTERS
   get block_collection() { return this.env.smart_blocks; }
   get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // filter out blocks without vec
-  get blocks() { return this.env.smart_blocks?.filter({key_starts_with: this.key}) || []; } // filter out blocks that don't exist
+  get blocks() {
+    if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key)); // fastest (no iterating over all blocks)
+    else if(this.last_history) return this.block_collection.get_many(Object.keys(this.last_history.blocks)); // TEMP: for backwards compatibility (2024-09-30)
+    else return this.block_collection.filter({key_starts_with: this.key});
+  }
+  /**
+   * @deprecated only for backwards compatibility in this.blocks (2024-09-30)
+   */
+  get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
   get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
+  get data_file() { return this.data_fs.files[this.data_path]; }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get excluded() { return this.fs.is_excluded(this.data.path); }
   get excluded_lines() {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
-  get file() { return this.fs.files[this.data.path]; }
+  get file() { return this.fs.files[this.path]; }
   get file_path() { return this.data.path; }
-  get file_type() { return this.file_path.split(".").pop(); }
+  get file_type() { return this.file_path.split(".").pop().toLowerCase(); }
   get fs() { return this.collection.fs; }
   get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }
-  get is_canvas() { return this.data.path.endsWith("canvas"); }
-  get is_excalidraw() { return this.data.path.endsWith("excalidraw.md"); }
+  get is_canvas() { return this.path.endsWith("canvas"); }
+  get is_excalidraw() { return this.path.endsWith("excalidraw.md"); }
   get is_gone() { return !this.file; }
-  get is_unembedded() {
-    if(this.meta_changed) return true;
-    return super.is_unembedded;
-  }
-  get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
   get meta_changed() {
     try {
-      if (!this.last_history) return true;
-      if (!this.file) return true;
-      if ((this.last_history?.mtime || 0) < this.file.stat.mtime) {
-        const size_diff = Math.abs(this.last_history.size - this.file.stat.size);
-        const size_diff_ratio = size_diff / (this.last_history.size || 1);
-        if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of last_history.size, assume file changed
+      if(!this.file) return true;
+      if (!this.mtime || this.mtime < this.file.stat.mtime) {
+        if(!this.size) return true;
+        const size_diff = Math.abs(this.size - this.file.stat.size);
+        const size_diff_ratio = size_diff / (this.size || 1);
+        if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of this.data.size, assume file changed
         // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.data.path}`);
       }
       return false;
@@ -320,7 +291,7 @@ export class SmartSource extends SmartEntity {
       return true;
     }
   }
-  get mtime() { return this.last_history?.mtime || 0; }
+  get mtime() { return this.data.mtime || 0; }
   get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
   get name() {
     if(this.should_show_full_path) return this.data.path.split("/").join(" > ").replace(".md", "");
@@ -335,7 +306,8 @@ export class SmartSource extends SmartEntity {
       })
       .filter(link_path => link_path);
   }
-  get size() { return this.last_history?.size || 0; }
+  get path() { return this.data.path; }
+  get size() { return this.data.size || 0; }
   get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
   get source_adapters() { return this.collection.source_adapters; }
   get source_adapter() {
@@ -344,8 +316,6 @@ export class SmartSource extends SmartEntity {
     else this._source_adapter = new this.source_adapters["default"](this);
     return this._source_adapter;
   }
-
-
 
   // currently unused, but useful for later
   get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
@@ -366,8 +336,6 @@ export class SmartSource extends SmartEntity {
 
     return this._median_block_vec;
   }
-
-
 
   // DEPRECATED methods
   /**

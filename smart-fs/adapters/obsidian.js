@@ -57,7 +57,7 @@ export class SmartFsObsidianAdapter {
   }
 
   /**
-   * List files in a directory
+   * List files in a directory (NOT up-to-date with list_recursive)
    * 
    * @param {string} rel_path - The relative path to list
    * @returns {Promise<string[]>} Array of file paths
@@ -74,7 +74,7 @@ export class SmartFsObsidianAdapter {
         const file_name = file_path.split('/').pop();
         const file = {
           basename: file_name.split('.')[0],
-          extension: file_name.split('.').pop(),
+          extension: file_name.split('.').pop().toLowerCase(),
           name: file_name,
           path: file_path,
         };

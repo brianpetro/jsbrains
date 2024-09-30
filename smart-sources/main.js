@@ -21,8 +21,8 @@
 
 import { SmartSource } from "./smart_source.js";
 import { SmartSources } from "./smart_sources.js";
-import { SmartBlock } from "./smart_block.js";
-import { SmartBlocks } from "./smart_blocks.js";
+import { SmartBlock } from "./blocks/markdown_block.js";
+import { SmartBlocks } from "./blocks/markdown_blocks.js";
 
 export {
   SmartBlock,

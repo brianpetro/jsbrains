@@ -1,10 +1,8 @@
-import { create_hash } from "./utils/create_hash.js";
 import { SmartEntities } from "smart-entities";
 export class SmartSources extends SmartEntities {
   constructor(env, opts = {}) {
     super(env, opts);
     this.search_results_ct = 0;
-    this.block_collections = {};
     this._excluded_headings = null;
   }
 
@@ -14,12 +12,6 @@ export class SmartSources extends SmartEntities {
     await this.init_items();
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
-    // init block collections
-    if(this.opts.block_collections) {
-      this.opts.block_collections.forEach(block_collection => {
-        new block_collection.class(this);
-      });
-    }
   }
 
   async init_items() {
@@ -43,26 +35,14 @@ export class SmartSources extends SmartEntities {
     const remove_sources = Object.values(this.items)
       .filter(item => item.is_gone || item.excluded)
     ;
-    console.log("remove_sources", remove_sources.length);
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
-      await this.fs.remove(source.data_path);
+      await this.data_fs.remove(source.data_path);
       delete this.items[source.key];
     }
-    const data_files = await this.data_fs.list_files_recursive(this.data_adapter.data_folder);
-    const ajson_file_path_map = Object.values(this.items).reduce((acc, item) => {
-      acc[item.data_path] = item.key;
-      return acc;
-    }, {});
-    // get data_files where ajson_file_paths don't exist
-    const remove_data_files = data_files.filter(file => !ajson_file_path_map[file.path]);
-    for(let i = 0; i < remove_data_files.length; i++){
-      await this.data_fs.remove(remove_data_files[i].path);
-    }
-    const remove_smart_blocks = Object.values(this.env.smart_blocks.items).filter(item => item.is_gone);
-    console.log("remove_smart_blocks", remove_smart_blocks.length);
+    const remove_smart_blocks = Object.values(this.block_collection.items).filter(item => item.is_gone);
     for(let i = 0; i < remove_smart_blocks.length; i++){
-      delete this.env.smart_blocks.items[remove_smart_blocks[i].key];
+      delete this.block_collection.items[remove_smart_blocks[i].key];
     }
     // queue_embed for meta_changed
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
@@ -80,14 +60,6 @@ export class SmartSources extends SmartEntities {
       }
     }
     return links_map;
-  }
-  async import(){
-    Object.values(this.items).forEach(item => item._queue_import = true);
-    await this.process_import_queue();
-    Object.values(this.env.smart_blocks.items).forEach(item => item.init());
-    await this.env.smart_blocks.process_embed_queue();
-    await this.process_embed_queue();
-    await this.process_save_queue();
   }
   async refresh(){
     await this.prune();
@@ -176,6 +148,7 @@ export class SmartSources extends SmartEntities {
 
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
+    console.log("import_queue " + import_queue.length);
     if(import_queue.length){
       const time_start = Date.now();
       // import 100 at a time
@@ -265,12 +238,22 @@ export class SmartSources extends SmartEntities {
   }
 
   async run_force_refresh(){
+    console.log("run_force_refresh");
     this.clear();
     this.block_collection.clear();
+    console.log("cleared");
+    console.log("items " + Object.keys(this.items).length);
+    console.log("blocks " + Object.keys(this.block_collection.items).length);
+    // re-init fs
     this._fs = null;
-    this._excluded_headings = null;
+    await this.fs.init();
     await this.init_items();
-    Object.values(this.items).forEach(item => item.queue_import());
+    this._excluded_headings = null;
+    console.log("init_items " + Object.keys(this.items).length);
+    Object.values(this.items).forEach(item => {
+      item.queue_import();
+      item.queue_embed();
+    });
     await this.process_import_queue();
   }
 

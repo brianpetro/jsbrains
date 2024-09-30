@@ -222,27 +222,38 @@ export class SmartEntities extends Collection {
     return Object.values(this.items).filter(item => item._queue_embed);
   }
   async process_embed_queue() {
-    if(this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-    if(!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-    if (this.is_queue_halted || this.is_processing_queue) return;
-    const queue = this.embed_queue;
-    this.queue_total = queue.length;
-    if(!this.queue_total) return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
-    console.log(`Processing ${this.collection_key} embed queue: ${this.queue_total} items`);
-    this.is_processing_queue = true;
-    for(let i = this.embedded_total; i < this.queue_total; i += this.embed_model.batch_size) {
-      if(this.is_queue_halted) break;
-      const batch = queue.slice(i, i + this.embed_model.batch_size);
-      await Promise.all(batch.map(item => item.get_embed_input())); // decided/future: may be handled in SmartEmbedModel
-      const start_time = Date.now();
-      await this.embed_model.embed_batch(batch);
-      this.total_time += Date.now() - start_time;
-      this.embedded_total += batch.length;
-      this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
-      this._show_embed_progress_notice();
+    try{
+      if(this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
+      if(!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
+      if (this.is_queue_halted || this.is_processing_queue) return console.log(`Smart Connections: Embed queue processing already in progress for ${this.collection_key}`);
+      this.is_processing_queue = true;
+      const datetime_start = new Date();
+      const queue = this.embed_queue;
+      const datetime_end = new Date();
+      console.log(`Time spent getting embed queue: ${datetime_end.getTime() - datetime_start.getTime()}ms`);
+      this.queue_total = queue.length;
+      if(!this.queue_total){
+        this.is_processing_queue = false;
+        return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
+      }
+      console.log(`Processing ${this.collection_key} embed queue: ${this.queue_total} items`);
+      for(let i = this.embedded_total; i < this.queue_total; i += this.embed_model.batch_size) {
+        if(this.is_queue_halted) break;
+        const batch = queue.slice(i, i + this.embed_model.batch_size);
+        await Promise.all(batch.map(item => item.get_embed_input())); // decided/future: may be handled in SmartEmbedModel
+        const start_time = Date.now();
+        await this.embed_model.embed_batch(batch);
+        this.total_time += Date.now() - start_time;
+        this.embedded_total += batch.length;
+        this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
+        this._show_embed_progress_notice();
+      }
+      this.is_processing_queue = false;
+      if(!this.is_queue_halted) this._embed_queue_complete();
+    }catch(e){
+      this.is_processing_queue = false;
+      console.error(`Error processing ${this.collection_key} embed queue:`, e);
     }
-    this.is_processing_queue = false;
-    if(!this.is_queue_halted) this._embed_queue_complete();
   }
 
   _show_embed_progress_notice() {

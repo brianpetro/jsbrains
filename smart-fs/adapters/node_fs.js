@@ -23,7 +23,7 @@ export class NodeFsSmartFsAdapter {
       .replace(/^\//, '') // remove leading slash
     ;
     file.type = 'file';
-    file.extension = file.path.split('.').pop();
+    file.extension = file.path.split('.').pop().toLowerCase();
     file.name = file.path.split('/').pop();
     file.basename = file.name.split('.').shift();
     Object.defineProperty(file, 'stat', {
@@ -162,7 +162,7 @@ export class NodeFsSmartFsAdapter {
       const folder = item.parentPath.replace(this.smart_fs.fs_path, '').replace(/\\/g, '/').slice(1);
       const file = {
         basename: item.name.split('.')[0],
-        extension: item.name.split('.').pop(),
+        extension: item.name.split('.').pop().toLowerCase(),
         name: item.name,
         path: folder ? folder + '/' + item.name : item.name,
       };

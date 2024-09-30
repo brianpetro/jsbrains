@@ -1,7 +1,34 @@
 import { increase_heading_depth } from "../utils/increase_heading_depth.js";
-import { SourceAdapter, BlockAdapter } from "./_adapter.js";
+import { SourceAdapter } from "./_adapter.js";
+import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
+import { create_hash } from "../utils/create_hash.js";
 
 export class MarkdownSourceAdapter extends SourceAdapter {
+  get fs() { return this.collection.fs; }
+  get data() { return this.item.data; }
+  get path() { return this.item.path; }
+
+  async import() {
+    const content = await this.read();
+    const hash = await create_hash(content);
+    if(this.data.hash === hash) return console.log("File stats changed, but content is the same. Skipping import.");
+    const blocks = markdown_to_blocks(content);
+    this.data.blocks = blocks;
+    const outlinks = get_markdown_links(content);
+    this.data.outlinks = outlinks;
+    for (const [sub_key, value] of Object.entries(blocks)) {
+      const block_key = this.item.key + sub_key;
+      const block_content = content.slice(value[0] - 1, value[1]);
+      const block_hash = await create_hash(block_content);
+      const block_outlinks = get_markdown_links(block_content);
+      await this.item.block_collection.create_or_update({
+        key: block_key,
+        hash: block_hash,
+        outlinks: block_outlinks,
+        size: block_content.length,
+      });
+    }
+  }
 
   async append(content) {
     if (this.smart_change) {
@@ -34,7 +61,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _update(content) {
-    await this.item.fs.write(this.item.data.path, content);
+    await this.fs.write(this.path, content);
   }
 
   async read(opts = {}) {
@@ -52,11 +79,11 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _read() {
-    return await this.item.fs.read(this.item.data.path);
+    return await this.fs.read(this.path);
   }
 
   async remove() {
-    await this.item.fs.remove(this.item.data.path);
+    await this.fs.remove(this.path);
     this.item.delete();
   }
 
@@ -68,7 +95,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
 
     const current_content = await this.read();
     const target_source_key = new_path.split("#")[0];
-    const target_source = this.item.env.smart_sources.get(target_source_key);
+    const target_source = this.env.smart_sources.get(target_source_key);
 
     if (new_path.includes("#")) {
       const headings = new_path.split("#").slice(1);
@@ -80,7 +107,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     if (target_source) {
       await target_source.merge(current_content, { mode: 'append_blocks' });
     } else {
-      await this.item.fs.rename(this.item.data.path, target_source_key);
+      await this.fs.rename(this.path, target_source_key);
       const new_source = await this.item.collection.create_or_update({ path: target_source_key, content: current_content });
       await new_source.import();
     }
@@ -92,7 +119,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     const { mode = 'append_blocks' } = opts;
     const { blocks } = await this.item.smart_chunks.parse({
       content,
-      file_path: this.item.data.path,
+      file_path: this.path,
     });
 
     if (!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
@@ -121,7 +148,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
           const block = new_blocks[i];
           if (all.length) all += "\n";
           if (block.matched) {
-            const og = this.item.env.smart_blocks.get(block.path);
+            const og = this.env.smart_blocks.get(block.path);
             all += this.smart_change.wrap("content", {
               before: await og.read({ no_changes: "before", headings: "last" }),
               after: block.content,
@@ -152,7 +179,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
       for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
         if (block.matched) {
-          const to_block = this.item.env.smart_blocks.get(block.path);
+          const to_block = this.env.smart_blocks.get(block.path);
           if (mode === "append_blocks") {
             await to_block.append(block.content);
           } else {
@@ -171,30 +198,26 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async block_read(opts = {}) {
-    let content = await this.item.source.read();
+    let content = await this.read();
     content = content.split("\n");
-    const skip_starts_with_heading = content[0].startsWith("#");
-    content = content.slice(
-      skip_starts_with_heading ? this.item.line_start + 1 : this.item.line_start,
-      this.item.line_end + 1
-    ).join("\n");
     
-    if (opts.no_changes && this.smart_change) {
-      const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
-      content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
-    }
-    if (opts.headings) {
-      content = this.prepend_headings(content, opts.headings);
-    }
-    if (opts.add_depth) {
-      content = increase_heading_depth(content, opts.add_depth);
-    }
+    // if (opts.no_changes && this.smart_change) {
+    //   const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
+    //   content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
+    // }
+    // if (opts.headings) {
+    //   content = this.prepend_headings(content, opts.headings);
+    // }
+    // if (opts.add_depth) {
+    //   content = increase_heading_depth(content, opts.add_depth);
+    // }
+    content = content.slice(this.item.line_start - 1, this.item.line_end).join("\n");
     
     return content;
   }
 
   prepend_headings(content, mode) {
-    const headings = this.item.data.path.split('#').slice(1);
+    const headings = this.path.split('#').slice(1);
     let prepend_content = '';
     
     if (mode === 'all') {
@@ -207,7 +230,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async block_append(append_content) {
-    let all_lines = (await this.item.source.read()).split("\n");
+    let all_lines = (await this.read()).split("\n");
     if(all_lines[this.item.line_start] === append_content.split("\n")[0]){
       append_content = append_content.split("\n").slice(1).join("\n");
     }
@@ -216,7 +239,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _block_append(append_content) {
-    let all_lines = (await this.item.source.read()).split("\n");
+    let all_lines = (await this.read()).split("\n");
     const content_before = all_lines.slice(0, this.item.line_end + 1);
     const content_after = all_lines.slice(this.item.line_end + 1);
     const new_content = [
@@ -239,7 +262,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _block_update(new_block_content) {
-    const full_content = await this.item.source.read();
+    const full_content = await this.read();
     const all_lines = full_content.split("\n");
     const new_content = [
       ...all_lines.slice(0, this.item.line_start),
@@ -262,7 +285,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
 
   async block_move_to(to_key) {
     const to_collection_key = to_key.includes("#") ? "smart_blocks" : "smart_sources";
-    const to_entity = this.item.env[to_collection_key].get(to_key);
+    const to_entity = this.env[to_collection_key].get(to_key);
     let content = await this.block_read({ no_changes: "before", headings: "last" });
     try {
       if(this.smart_change){
@@ -288,7 +311,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
         }
       } else {
         const target_source_key = to_key.split("#")[0];
-        const target_source = this.item.env.smart_sources.get(target_source_key);
+        const target_source = this.env.smart_sources.get(target_source_key);
         if (to_key.includes("#")) {
           const headings = to_key.split("#").slice(1);
           const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
@@ -298,11 +321,11 @@ export class MarkdownSourceAdapter extends SourceAdapter {
           ].join("\n").trim();
           if(this.smart_change) new_content = this.smart_change.wrap("location", { from_key: this.item.source.key, after: new_content, adapter: this.item.smart_change_adapter });
           if(target_source) await target_source._append(new_content);
-          else await this.item.env.smart_sources.create(target_source_key, new_content);
+          else await this.env.smart_sources.create(target_source_key, new_content);
         } else {
           if(this.smart_change) content = this.smart_change.wrap("location", { from_key: this.item.source.key, after: content, adapter: this.item.smart_change_adapter });
           if(target_source) await target_source._append(content);
-          else await this.item.env.smart_sources.create(target_source_key, content);
+          else await this.env.smart_sources.create(target_source_key, content);
         }
       }
     } catch (e) {
@@ -313,4 +336,32 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     }
     await this.item.source.parse_content();
   }
+}
+
+/**
+ * Extracts links from markdown content.
+ * @param {string} content 
+ * @returns {Array<{title: string, target: string, line: number}>}
+ */
+function get_markdown_links(content) {
+    const markdown_link_pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const wikilink_pattern = /\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/g;
+    const result = [];
+
+    const extract_links_from_pattern = (pattern, type) => {
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+            const title = type === 'markdown' ? match[1] : (match[2] || match[1]);
+            const target = type === 'markdown' ? match[2] : match[1];
+            const line = content.substring(0, match.index).split('\n').length;
+            result.push({ title, target, line });
+        }
+    };
+
+    extract_links_from_pattern(markdown_link_pattern, 'markdown');
+    extract_links_from_pattern(wikilink_pattern, 'wikilink');
+
+    result.sort((a, b) => a.line - b.line || a.target.localeCompare(b.target));
+
+    return result;
 }
