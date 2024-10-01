@@ -277,8 +277,10 @@ class SmartFs {
       // console.log('Read completed');
       return content;
     } catch (error) {
-      // console.error('Error during read:', error);
-      throw error;
+      console.warn('Error during read: ' + error.message);
+      if(error.code === 'ENOENT') return null;
+      // throw error;
+      return { error: error.message };
     }
   }
 
