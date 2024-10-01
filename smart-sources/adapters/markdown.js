@@ -199,8 +199,8 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async block_read(opts = {}) {
-    let content = await this.read();
-    content = content.split("\n");
+    if(!this.item.line_start) return "BLOCK NOT FOUND";
+    const source_content = await this.read();
     
     // if (opts.no_changes && this.smart_change) {
     //   const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
@@ -212,10 +212,17 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     // if (opts.add_depth) {
     //   content = increase_heading_depth(content, opts.add_depth);
     // }
-    content = content.slice(this.item.line_start - 1, this.item.line_end).join("\n");
-    
-    return content;
+    const block_content = get_line_range(source_content, this.item.line_start, this.item.line_end);
+    const hash = await create_hash(block_content);
+    if(hash !== this.item.hash){
+      const blocks = markdown_to_blocks(source_content);
+      const block_range = Object.entries(blocks).find(([k,v]) => k === this.item.sub_key)[1];
+      this.item.queue_import();
+      return get_line_range(source_content, block_range[0], block_range[1]);
+    }
+    return block_content;
   }
+
 
   prepend_headings(content, mode) {
     const headings = this.file_path.split('#').slice(1);
@@ -365,4 +372,9 @@ function get_markdown_links(content) {
     result.sort((a, b) => a.line - b.line || a.target.localeCompare(b.target));
 
     return result;
+}
+
+function get_line_range(content, start_line, end_line) {
+  const lines = content.split("\n");
+  return lines.slice(start_line - 1, end_line).join("\n");
 }

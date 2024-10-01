@@ -23,6 +23,9 @@ export class SmartBlock extends SmartSource {
     this._queue_save = true;
     this.source?.queue_save();
   }
+  queue_import(){
+    this.source?.queue_import();
+  }
 
   update_data(data) {
     if (this.should_clear_embeddings(data)) this.data.embeddings = {};
