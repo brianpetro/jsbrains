@@ -77,14 +77,12 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
       return [];
     }
     try {
-      console.log({models_endpoint: this.models_endpoint});
       const response = await this.http_adapter.request({
         url: this.models_endpoint,
         method: this.models_endpoint_method,
         // REMOVED HEADERS
       });
       const model_data = this.parse_model_data(await response.json());
-      console.log({model_data});
       this.platform_settings.models = model_data;
       return model_data;
     } catch (error) {
@@ -93,7 +91,6 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     }
   }
   parse_model_data(model_data) {
-    console.log(model_data);
     return model_data.models
       .filter(model => model.name.startsWith('models/gemini'))
       .map(model => {

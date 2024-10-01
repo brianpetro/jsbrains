@@ -42,7 +42,6 @@ class SmartChatModel {
       ...(platforms[platform_key] || {}),
       ...model_config, // override default platform config
     }
-    console.log(JSON.stringify(this.config));
     this.platform_key = platform_key;
     this.active_stream = null;
     this._request_adapter = null;
@@ -319,7 +318,6 @@ class SmartChatModel {
     console.log("Streaming Request: ");
     const full_text = await new Promise((resolve, reject) => {
       try {
-        // console.log("stream", opts);
         this.active_stream = new SmartStreamer(this.endpoint_streaming, req);
         let curr_text = "";
         this.active_stream.addEventListener("message", (e) => {

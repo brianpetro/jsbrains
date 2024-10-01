@@ -188,7 +188,7 @@ export class SmartSettings {
     let value = this.settings;
     for (const key of setting_keys) {
       if (typeof value[key] === 'undefined'){
-        console.log(`missing key: ${key} in`, setting_path, this.settings);
+        console.log(`missing key: ${key} in` + setting_path);
         return null; // Handle missing nested properties
       }
       value = value[key];

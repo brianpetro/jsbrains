@@ -66,7 +66,7 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
     }catch(err){
       // if file not found, queue import
       if(err.message.includes("ENOENT")) return item.queue_import();
-      console.log("Error loading collection item: ", item.key);
+      console.log("Error loading collection item: " + item.key);
       console.warn(err.stack);
       item.queue_load();
       return;
@@ -117,7 +117,6 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
     try{
       const data_ajson = (await this.fs.read(this.data_path)).trim();
       if(!data_ajson){
-        console.log("Data file not found: ", this.data_path, data_ajson);
         return this.item.queue_import(); // queue import and return early if data file missing or empty
       }
       const ajson_lines = data_ajson.split('\n');
@@ -157,7 +156,7 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
     }catch(err){
       // if file not found, queue import
       if(err.message.includes("ENOENT")) return this.item.queue_import();
-      console.log("Error loading collection item: ", this.key);
+      console.log("Error loading collection item: " + this.key);
       console.warn(err.stack);
       this.item.queue_load();
       return;
@@ -173,7 +172,6 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
       } else {
         // await this.fs.write(this.data_path, this.item.ajson);
         await this.fs.append(this.data_path, '\n' + this.item.ajson); // prevent overwriting the file
-        // console.log("Saved item: ", this.item.key, this.data_path);
       }
       this.item._queue_save = false;
       return true;

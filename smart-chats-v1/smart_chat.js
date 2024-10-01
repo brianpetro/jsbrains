@@ -60,7 +60,6 @@ class SmartChat {
    * @returns {Promise<void>}
    */
   async rename(new_id) {
-    // console.log('renaming', this.key, new_id);
     if (this.key === new_id) return;
     if(await this.exists()) await this.delete();
     delete this.chats.items[this.key];

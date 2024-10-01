@@ -2,7 +2,6 @@ import { SmartChatModelApiAdapter } from "./_api.js";
 
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   parse_model_data(model_data) {
-    console.log('model_data', model_data);
     return model_data.data
       .filter(model => model.id.startsWith('gpt-') && !model.id.includes('-instruct'))
       .map(model => {

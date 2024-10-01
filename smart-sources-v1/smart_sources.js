@@ -117,7 +117,6 @@ export class SmartSources extends SmartEntities {
       );
       search_results.push(...batch_results.filter(Boolean));
     }
-    console.log("search_results_ct", this.search_results_ct);
     return search_results
       .sort((a, b) => b.score - a.score) // sort by relevance 
       .map(result => result.item)

@@ -115,7 +115,6 @@ export class SmartEnv {
     for(const key of Object.keys(collections)){
       if(this.is_init && (this.opts.prevent_load_on_init || collections[key].opts.prevent_load_on_init)) continue;
       if(typeof collections[key]?.process_load_queue === 'function'){
-        console.log('loading collection', key);
         await collections[key].process_load_queue();
       }
     }

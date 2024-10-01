@@ -54,7 +54,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       return [];
     }
     try {
-      console.log({models_endpoint: this.models_endpoint});
       const response = await this.http_adapter.request({
         url: this.models_endpoint,
         method: this.models_endpoint_method,
@@ -63,7 +62,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
         },
       });
       const model_data = this.parse_model_data(await response.json());
-      console.log({model_data});
       this.platform_settings.models = model_data;
       return model_data;
     } catch (error) {
@@ -97,9 +95,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       ...req,
     });
     const request_params = _req.to_platform();
-    console.log({request_params});
     const http_resp = await this.http_adapter.request(request_params);
-    console.log({http_resp: JSON.stringify(await http_resp.json(), null, 2)});
     const _res = new this.res_adapter(this, await http_resp.json());
     return _res.to_openai();
   }

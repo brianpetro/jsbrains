@@ -64,11 +64,9 @@ export class SmartThreads extends SmartSources {
       // if(typeof val.callback === 'string') val.callback = 'chat_model.' + val.callback;
       // if(typeof val.options_callback === 'string') val.options_callback = 'chat_model.' + val.options_callback;
       if(typeof val.callback === 'string'){
-        console.log('val.callback', val.callback);
         this[val.callback] = this.chat_model[val.callback].bind(this.chat_model);
       }
       if(typeof val.options_callback === 'string'){
-        console.log('val.options_callback', val.options_callback);
         this[val.options_callback] = this.chat_model[val.options_callback].bind(this.chat_model);
       }
       acc[new_key] = val;
