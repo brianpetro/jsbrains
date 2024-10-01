@@ -112,8 +112,8 @@ export class SmartEntities extends Collection {
    *                   0 otherwise (default relevance for keyword in content).
    */
   calculate_relevance(item, search_filter) {
-    // if keyword in search_filter is in item.data.path, return 1
-    if(search_filter.keywords.some(keyword => item.data.path?.includes(keyword))) return 1;
+    // if keyword in search_filter is in item.path, return 1
+    if(search_filter.keywords.some(keyword => item.path?.includes(keyword))) return 1;
     return 0; // default relevance (keyword in content)
   }
   /**
@@ -154,9 +154,9 @@ export class SmartEntities extends Collection {
         else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
       }
       // exclude inlinks
-      if (exclude_inlinks && this.env.links[entity.data.path]) {
+      if (exclude_inlinks && this.env.links[entity.path]) {
         if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
-        opts.exclude_key_starts_with_any.push(...Object.keys(this.env.links[entity.data.path] || {}));
+        opts.exclude_key_starts_with_any.push(...Object.keys(this.env.links[entity.path] || {}));
       }
       // exclude outlinks
       if (exclude_outlinks) {
@@ -179,16 +179,17 @@ export class SmartEntities extends Collection {
       .reduce((acc, embedding, i) => {
         const nearests = this.nearest(embedding.vec, filter);
         nearests.forEach(entity => {
-          if(!acc[entity.data.path] || entity.score > acc[entity.data.path].score){
-            acc[entity.data.path] = {key: entity.key, score: entity.score, entity, hypothetical_i: i};
+          if(!acc[entity.path] || entity.score > acc[entity.path].score){
+            acc[entity.path] = {key: entity.key, score: entity.score, entity, hypothetical_i: i};
           }else{
             // DEPRECATED: handling when last score added to entity is not top score (needs to be fixed in Entities.nearest handling)
-            entity.score = acc[entity.data.path].score;
+            entity.score = acc[entity.path].score;
           }
         });
         return acc;
       }, {})
     ;
+    console.log("lookup results", results);
     const k = params.k || this.env.settings.lookup_k || 10;
     const top_k = Object.values(results)
       .sort(sort_by_score)

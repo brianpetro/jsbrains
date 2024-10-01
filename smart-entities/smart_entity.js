@@ -64,7 +64,7 @@ export class SmartEntity extends CollectionItem {
   }
 
   // getters
-  get embed_link() { return `![[${this.data.path}]]`; }
+  get embed_link() { return `![[${this.path}]]`; }
   get embed_model_key() { return this.collection.embed_model_key; }
   get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get should_show_full_path() { return this.env.settings.show_full_path; }
@@ -103,6 +103,6 @@ export class SmartEntity extends CollectionItem {
   }
 
   // SmartSources (how might this be better done?)
-  get_key() { return this.data.path; }
+  get_key() { return this.path; }
   get path() { return this.data.path; }
 }

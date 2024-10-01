@@ -1,12 +1,12 @@
 import { MarkdownSourceAdapter } from "./markdown.js";
 export class PdfSourceAdapter extends MarkdownSourceAdapter {
   async _read() {
-    return await this.smart_source.fs.read(this.smart_source.data.path, null);
+    return await this.item.fs.read(this.item.path, null);
   }
   async read() {
     if(!this.data.content) {
       const pdf_data = await this._read();
-      const response = await extract_text(this.smart_source.env.opts, pdf_data);
+      const response = await extract_text(this.item.env.opts, pdf_data);
       this.data.response = response;
       // TODO parse
     }

@@ -18,12 +18,12 @@ export class SmartSource extends SmartEntity {
     this._queue_import = false;
     try{
       if(this.file.stat.size > 1000000) {
-        console.log(`Smart Connections: Skipping large file: ${this.data.path}`);
+        console.log(`Smart Connections: Skipping large file: ${this.path}`);
         return;
       }
       // must check exists using async because not always reflects by file.stat (ex. Obsidian)
       if(this.loaded_at && (await this.data_fs.exists(this.data_path)) && (this.env.fs.files[this.data_path].mtime > (this.loaded_at + 3 * 60 * 1000))){
-        console.log(`Smart Connections: Re-loading data source for ${this.data.path} because it has been updated on disk`);
+        console.log(`Smart Connections: Re-loading data source for ${this.path} because it has been updated on disk`);
         return await this.load();
       }
       if(this.meta_changed){
@@ -31,7 +31,7 @@ export class SmartSource extends SmartEntity {
         this.data.size = this.file.stat.size;
         await this.source_adapter.import();
         this.queue_embed();
-      }else console.log(`Smart Connections: No changes to ${this.data.path}`);
+      }else console.log(`Smart Connections: No changes to ${this.path}`);
     }catch(err){
       this.queue_import();
       console.error(err, err.stack);
@@ -67,12 +67,12 @@ export class SmartSource extends SmartEntity {
       });
       content = content_lines.filter(line => line.length).join("\n");
     }
-    const breadcrumbs = this.data.path.split("/").join(" > ").replace(".md", "");
+    const breadcrumbs = this.path.split("/").join(" > ").replace(".md", "");
     const max_tokens = this.collection.smart_embed.max_tokens; // prevent loading too much content
     this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 4);
     return this._embed_input;
   }
-  open() { this.env.smart_connections_plugin.open_note(this.data.path); }
+  open() { this.env.smart_connections_plugin.open_note(this.path); }
   get_block_by_line(line) {
     return Object.entries(this.data.blocks)
       .reduce((acc, [sub_key, range]) => {
@@ -89,7 +89,7 @@ export class SmartSource extends SmartEntity {
    * Checks if the source file exists in the file system.
    * @returns {Promise<boolean>} A promise that resolves to true if the file exists, false otherwise.
    */
-  async has_source_file() { return await this.fs.exists(this.data.path); }
+  async has_source_file() { return await this.fs.exists(this.path); }
 
   // CRUD
 
@@ -113,7 +113,7 @@ export class SmartSource extends SmartEntity {
     const lowercased_keywords = keywords.map(keyword => keyword.toLowerCase());
     const content = await this.read();
     const lowercased_content = content.toLowerCase();
-    const lowercased_path = this.data.path.toLowerCase();
+    const lowercased_path = this.path.toLowerCase();
 
     const matching_keywords = lowercased_keywords.filter(keyword => 
       lowercased_path.includes(keyword) || lowercased_content.includes(keyword)
@@ -146,7 +146,7 @@ export class SmartSource extends SmartEntity {
    */
   async update(full_content, opts = {}) {
     try {
-      // console.log('Updating source:', this.data.path);
+      // console.log('Updating source:', this.path);
       await this.source_adapter.update(full_content, opts);
       await this.import(); // also queues embed
       // console.log('Update completed');
@@ -166,7 +166,7 @@ export class SmartSource extends SmartEntity {
    */
   async read(opts = {}) {
     try {
-      // console.log('Reading source:', this.data.path);
+      // console.log('Reading source:', this.path);
       const content = await this.source_adapter.read(opts);
       // console.log('Read completed');
       return content;
@@ -186,7 +186,7 @@ export class SmartSource extends SmartEntity {
    */
   async remove() {
     try {
-      // console.log('Removing source:', this.data.path);
+      // console.log('Removing source:', this.path);
       await this.source_adapter.remove();
       // console.log('Remove completed');
     } catch (error) {
@@ -226,7 +226,7 @@ export class SmartSource extends SmartEntity {
    */
   async merge(content, opts = {}) {
     try {
-      // console.log('Merging content into source:', this.data.path);
+      // console.log('Merging content into source:', this.path);
       await this.source_adapter.merge(content, opts);
       await this.import();
       // console.log('Merge completed');
@@ -270,7 +270,7 @@ export class SmartSource extends SmartEntity {
   get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
   get data_file() { return this.data_fs.files[this.data_path]; }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
-  get excluded() { return this.fs.is_excluded(this.data.path); }
+  get excluded() { return this.fs.is_excluded(this.path); }
   get excluded_lines() {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
@@ -278,7 +278,7 @@ export class SmartSource extends SmartEntity {
   get file_path() { return this.path; }
   get file_type() { return this.file_path.split(".").pop().toLowerCase(); }
   get fs() { return this.collection.fs; }
-  get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }
+  get inlinks() { return Object.keys(this.env.links?.[this.path] || {}); }
   get is_canvas() { return this.path.endsWith("canvas"); }
   get is_excalidraw() { return this.path.endsWith("excalidraw.md"); }
   get is_gone() { return !this.file; }
@@ -290,19 +290,19 @@ export class SmartSource extends SmartEntity {
         const size_diff = Math.abs(this.size - this.file.stat.size);
         const size_diff_ratio = size_diff / (this.size || 1);
         if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of this.data.size, assume file changed
-        // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.data.path}`);
+        // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.path}`);
       }
       return false;
     } catch (e) {
-      console.warn("error getting meta changed for ", this.data.path, ": ", e);
+      console.warn("error getting meta changed for ", this.path, ": ", e);
       return true;
     }
   }
   get mtime() { return this.data.mtime || 0; }
   get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
   get name() {
-    if(this.should_show_full_path) return this.data.path.split("/").join(" > ").replace(".md", "");
-    return this.data.path.split("/").pop().replace(".md", "");
+    if(this.should_show_full_path) return this.path.split("/").join(" > ").replace(".md", "");
+    return this.path.split("/").pop().replace(".md", "");
   }
   get outlink_paths() {
     return (this.data.outlinks || [])
@@ -353,7 +353,7 @@ export class SmartSource extends SmartEntity {
    * @deprecated Use this.file instead
    */
   get t_file() {
-    return this.fs.files[this.data.path];
+    return this.fs.files[this.path];
   } 
 
 
