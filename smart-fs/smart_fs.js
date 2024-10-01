@@ -127,7 +127,7 @@ class SmartFs {
     // use adapter method directly to skip exclusion checks
     const gitignore_exists = await this.adapter.exists(gitignore_path);
     if (gitignore_exists) {
-      const gitignore_content = await this.adapter.read(gitignore_path);
+      const gitignore_content = await this.adapter.read(gitignore_path, 'utf-8');
       gitignore_content
         .split('\n')
         .filter(line => !line.startsWith('#')) // ignore comments

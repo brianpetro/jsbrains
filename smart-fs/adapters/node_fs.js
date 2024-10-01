@@ -209,7 +209,7 @@ export class NodeFsSmartFsAdapter {
    * @param {string} rel_path - Relative path of the file to read
    * @returns {Promise<string>}
    */
-  async read(rel_path, encoding) { return await this.readFile(rel_path, encoding); }
+  async read(rel_path, encoding='utf-8') { return await this.readFile(rel_path, encoding); }
 
   /**
    * Remove a file
