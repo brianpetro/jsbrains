@@ -6,7 +6,7 @@ import { create_hash } from "../utils/create_hash.js";
 export class MarkdownSourceAdapter extends SourceAdapter {
   get fs() { return this.collection.fs; }
   get data() { return this.item.data; }
-  get path() { return this.item.path; }
+  get file_path() { return this.item.file_path; }
 
   async import() {
     const content = await this.read();
@@ -18,15 +18,16 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     this.data.outlinks = outlinks;
     for (const [sub_key, value] of Object.entries(blocks)) {
       const block_key = this.item.key + sub_key;
-      const block_content = content.slice(value[0] - 1, value[1]);
+      const block_content = content.split("\n").slice(value[0] - 1, value[1]).join("\n");
       const block_hash = await create_hash(block_content);
       const block_outlinks = get_markdown_links(block_content);
-      await this.item.block_collection.create_or_update({
+      const block = await this.item.block_collection.create_or_update({
         key: block_key,
         hash: block_hash,
         outlinks: block_outlinks,
         size: block_content.length,
       });
+      block._embed_input = block.breadcrumbs + "\n" + block_content; // improve performance by preve
     }
   }
 
@@ -61,7 +62,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _update(content) {
-    await this.fs.write(this.path, content);
+    await this.fs.write(this.file_path, content);
   }
 
   async read(opts = {}) {
@@ -79,11 +80,11 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   async _read() {
-    return await this.fs.read(this.path);
+    return await this.fs.read(this.file_path);
   }
 
   async remove() {
-    await this.fs.remove(this.path);
+    await this.fs.remove(this.file_path);
     this.item.delete();
   }
 
@@ -107,7 +108,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     if (target_source) {
       await target_source.merge(current_content, { mode: 'append_blocks' });
     } else {
-      await this.fs.rename(this.path, target_source_key);
+      await this.fs.rename(this.file_path, target_source_key);
       const new_source = await this.item.collection.create_or_update({ path: target_source_key, content: current_content });
       await new_source.import();
     }
@@ -119,7 +120,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
     const { mode = 'append_blocks' } = opts;
     const { blocks } = await this.item.smart_chunks.parse({
       content,
-      file_path: this.path,
+      file_path: this.file_path,
     });
 
     if (!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
@@ -217,7 +218,7 @@ export class MarkdownSourceAdapter extends SourceAdapter {
   }
 
   prepend_headings(content, mode) {
-    const headings = this.path.split('#').slice(1);
+    const headings = this.file_path.split('#').slice(1);
     let prepend_content = '';
     
     if (mode === 'all') {

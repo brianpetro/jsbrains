@@ -1,4 +1,29 @@
-import { SourceAdapter } from "./_adapter.js";
+import { MarkdownSourceAdapter } from "./markdown.js";
+export class PdfSourceAdapter extends MarkdownSourceAdapter {
+  async _read() {
+    return await this.smart_source.fs.read(this.smart_source.data.path, null);
+  }
+  async read() {
+    if(!this.data.content) {
+      const pdf_data = await this._read();
+      const response = await extract_text(this.smart_source.env.opts, pdf_data);
+      this.data.response = response;
+      // TODO parse
+    }
+
+    // Return content from data.content
+    return this.data.content;
+
+  }
+
+  update() {
+    throw new Error('not available for file type');
+  }
+
+  create() {
+    throw new Error('not available for file type');
+  }
+}
 
 async function render_page_to_image(page, page_number, create_canvas) {
   const viewport = page.getViewport({ scale: 1.5 });
@@ -63,12 +88,6 @@ export async function extract_text(env_opts, base64_pdf) {
     ]
   });
 
-
-
-
-
-
-
   openai_chat_messages.push({
 
     role: 'user',
@@ -96,30 +115,5 @@ export async function extract_text(env_opts, base64_pdf) {
   return response.choices[0].message.content;
 }
 
-export class SmartSourcesPdfAdapter extends SourceAdapter {
-  async _read() {
-    return await this.smart_source.fs.read(this.smart_source.data.path, null);
-  }
-  async read() {
-    if(!this.data.content) {
-      const pdf_data = await this._read();
-      const response = await extract_text(this.smart_source.env.opts, pdf_data);
-      this.data.response = response;
-      // TODO parse
-    }
-
-    // Return content from data.content
-    return this.data.content;
-
-  }
-
-  update() {
-    throw new Error('not available for file type');
-  }
-
-  create() {
-    throw new Error('not available for file type');
-  }
-}
 
 // Remove the convert_pdf_to_base64_images function as it's no longer needed

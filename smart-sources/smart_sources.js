@@ -40,6 +40,11 @@ export class SmartSources extends SmartEntities {
       await this.data_fs.remove(source.data_path);
       delete this.items[source.key];
     }
+    // TEMP: remove last_history from smart_sources
+    Object.values(this.items).forEach(item => {
+      if(item.data?.history) delete item.data.history;
+    });
+    // remove smart_blocks
     const remove_smart_blocks = Object.values(this.block_collection.items).filter(item => item.is_gone);
     for(let i = 0; i < remove_smart_blocks.length; i++){
       delete this.block_collection.items[remove_smart_blocks[i].key];
@@ -204,7 +209,7 @@ export class SmartSources extends SmartEntities {
     return Object.values(this.items).reduce((acc, item) => {
       if(item._queue_embed) acc.push(item);
       if(embed_blocks) item.blocks.forEach(block => {
-        if(block._queue_embed) acc.push(block);
+        if(block._queue_embed && block.should_embed) acc.push(block);
       });
       return acc;
     }, []);
@@ -231,7 +236,7 @@ export class SmartSources extends SmartEntities {
     await this.process_load_queue();
     await this.render_settings();
     await this.process_import_queue();
-    await this.env.smart_blocks.process_embed_queue();
+    Object.values(this.block_collection.items).forEach(item => !item.vec ? item.queue_embed() : null);
     await this.process_embed_queue();
     this.render_settings();
     this.blocks.render_settings();

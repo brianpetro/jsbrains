@@ -30,7 +30,7 @@ export class SmartEntity extends CollectionItem {
     await super.load();
     this.init();
   }
-  queue_embed(){ if(this.should_embed) this._queue_embed = true; }
+  queue_embed(){ this._queue_embed = true; }
   nearest(filter = {}) { return this.collection.nearest_to(this, filter) }
   async get_as_context(params = {}) {
     return `---BEGIN NOTE${params.i ? " " + params.i : ""} [[${this.path}]]---\n${await this.get_content()}\n---END NOTE${params.i ? " " + params.i : ""}---`;
@@ -98,6 +98,7 @@ export class SmartEntity extends CollectionItem {
   set vec(vec) {
     this.entity_adapter.vec = vec;
     this._queue_embed = false;
+    this._embed_input = null;
     this.queue_save();
   }
 

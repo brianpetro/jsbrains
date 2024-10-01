@@ -219,7 +219,7 @@ export class SmartEntities extends Collection {
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
 
   get embed_queue() {
-    return Object.values(this.items).filter(item => item._queue_embed);
+    return Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
   }
   async process_embed_queue() {
     try{
@@ -319,8 +319,10 @@ export class SmartEntities extends Collection {
     this.env.save();
   }
   resume_embed_queue_processing(delay = 0) {
+    console.log("resume_embed_queue_processing");
     this.is_queue_halted = false;
     setTimeout(() => {
+      this.embedded_total = 0;
       this.process_embed_queue();
     }, delay);
   }

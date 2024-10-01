@@ -41,20 +41,16 @@ export class SmartSource extends SmartEntity {
     let connections = super.find_connections(opts);
     const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
     if(!opts.exclude_blocks_from_source_connections) {
-      const vec_to_use = this.vec;
-      
-      if (vec_to_use) {
-        const cache_key = this.key + JSON.stringify(opts) + "_blocks";
-        if(!this.env.connections_cache[cache_key]){
-          const nearest = this.env.smart_blocks.nearest(vec_to_use, this.filter_opts)
-          nearest.sort(sort_by_score)
-          this.env.connections_cache[cache_key] = nearest.slice(0, limit);
-        }
-        connections = [
-          ...connections,
-          ...this.env.connections_cache[cache_key],
-        ].sort(sort_by_score).slice(0, limit);
+      const cache_key = this.key + JSON.stringify(opts) + "_blocks";
+      if(!this.env.connections_cache[cache_key]){
+        const nearest = this.env.smart_blocks.nearest(this.vec, this.filter_opts)
+        nearest.sort(sort_by_score)
+        this.env.connections_cache[cache_key] = nearest.slice(0, limit);
       }
+      connections = [
+        ...connections,
+        ...this.env.connections_cache[cache_key],
+      ].sort(sort_by_score).slice(0, limit);
     }
     return connections;
   }
@@ -77,7 +73,18 @@ export class SmartSource extends SmartEntity {
     return this._embed_input;
   }
   open() { this.env.smart_connections_plugin.open_note(this.data.path); }
-  get_block_by_line(line) { return this.blocks.find(block => block.data.lines[0] <= line && block.data.lines[1] >= line); }
+  get_block_by_line(line) {
+    return Object.entries(this.data.blocks)
+      .reduce((acc, [sub_key, range]) => {
+        if(acc) return acc; // skip check if block already found
+        if(range[0] <= line && range[1] >= line){
+          const block = this.block_collection.get(this.key + sub_key);
+          if(block.vec) return block; // return if block has vec
+        }
+        return acc;
+      }, null)
+    ;
+  }
   /**
    * Checks if the source file exists in the file system.
    * @returns {Promise<boolean>} A promise that resolves to true if the file exists, false otherwise.
@@ -268,7 +275,7 @@ export class SmartSource extends SmartEntity {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
   get file() { return this.fs.files[this.path]; }
-  get file_path() { return this.data.path; }
+  get file_path() { return this.path; }
   get file_type() { return this.file_path.split(".").pop().toLowerCase(); }
   get fs() { return this.collection.fs; }
   get inlinks() { return Object.keys(this.env.links?.[this.data.path] || {}); }

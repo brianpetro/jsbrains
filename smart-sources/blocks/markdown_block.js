@@ -40,7 +40,7 @@ export class SmartBlock extends SmartSource {
   }
 
   async get_embed_input() {
-    if(this._embed_input) return this._embed_input;
+    if(typeof this._embed_input === "string" && this._embed_input.length) return this._embed_input;
     this._embed_input = this.breadcrumbs + "\n" + (await this.read());
     return this._embed_input;
   }
@@ -85,6 +85,7 @@ export class SmartBlock extends SmartSource {
     const block_headings = this.path.split("#").slice(1); // remove first element (file path)
     return this.source_collection.excluded_headings.some(heading => block_headings.includes(heading));
   }
+  get file_path() { return this.source.file_path; }
   get file_type() { return this.source.file_type; }
   get folder() { return this.path.split("/").slice(0, -1).join("/"); }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
@@ -109,6 +110,7 @@ export class SmartBlock extends SmartSource {
     const source_name = this.source.name;
     const block_path_parts = this.key.split("#").slice(1);
     if(this.should_show_full_path) return [source_name, ...block_path_parts].join(" > ");
+    if(block_path_parts[block_path_parts.length-1][0] === "{") block_path_parts.pop(); // remove block index
     return [source_name, block_path_parts.pop()].join(" > ");
   }
   // uses data.lines to get next block
@@ -117,7 +119,7 @@ export class SmartBlock extends SmartSource {
     const next_line = this.data.lines[1] + 1;
     return this.source.blocks?.find(block => next_line === block.data?.lines?.[0]);
   }
-  get path() { return this.source.path; }
+  get path() { return this.key; }
   /**
    * Should embed if block is not completely covered by sub_blocks
    * (sub_blocks has line_start+1 and line_end)
@@ -129,16 +131,31 @@ export class SmartBlock extends SmartSource {
     const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})
       .reduce((acc, [key, range]) => {
         if(!key.startsWith(this.sub_key+"#")) return acc;
-        if(range[0] === match_line_start + 1) acc.has_line_start = true;
-        if(range[1] === match_line_end) acc.has_line_end = true;
+        if(range[0] === match_line_start + 1) acc.has_line_start = key;
+        if(range[1] === match_line_end) acc.has_line_end = key;
         return acc;
-      }, {has_line_start: false, has_line_end: false})
+      }, {has_line_start: null, has_line_end: null})
     ;
-    if (has_line_start && has_line_end) return false;
-    else return true;
+    if (!has_line_start || !has_line_end) return true;
+    // ensure start and end blocks are large enough to embed before skipping embedding (returning false) for this block
+    const start_block = this.block_collection.get(this.source_key + has_line_start);
+    if(!start_block){
+      console.warn("start_block not found");
+      return true;
+    }
+    if(start_block.size > this.source_collection.embed_model.min_chars) return true;
+    const end_block = this.block_collection.get(this.source_key + has_line_end);
+    if(end_block.size > this.source_collection.embed_model.min_chars) return true;
+    return false;
   }
   get source() { return this.source_collection.get(this.source_key); }
-  get source_adapter() { return this.source.source_adapter; }
+  get source_adapter() {
+    if(this._source_adapter) return this._source_adapter;
+    if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
+    else this._source_adapter = new this.source_adapters["default"](this);
+    return this._source_adapter;
+  }
+  get source_adapters() { return this.source.source_adapters; }
   get source_collection() { return this.env.smart_sources; }
   get source_key() { return this.key.split("#")[0]; }
   get sub_blocks() {
