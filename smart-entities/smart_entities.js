@@ -253,7 +253,7 @@ export class SmartEntities extends Collection {
       if(!this.is_queue_halted) this._embed_queue_complete();
     }catch(e){
       this.is_processing_queue = false;
-      console.error(`Error processing ${this.collection_key} embed queue:`, e);
+      console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
     }
   }
 
