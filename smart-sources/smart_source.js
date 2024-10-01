@@ -33,6 +33,7 @@ export class SmartSource extends SmartEntity {
         this.data.mtime = this.file.stat.mtime;
         this.data.size = this.file.stat.size;
         await this.source_adapter.import();
+        this.loaded_at = Date.now(); // reset loaded_at to now to prevent unneeded reloads
         this.queue_embed();
       }else console.log(`Smart Connections: No changes to ${this.path}`);
     }catch(err){
