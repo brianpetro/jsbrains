@@ -224,6 +224,14 @@ export class SmartSources extends SmartEntities {
       return acc;
     }, []);
   }
+  get smart_change() {
+    if(!this.opts.smart_change) return; // disabled at config level
+    if(typeof this.settings?.smart_change?.active !== 'undefined' && !this.settings.smart_change.active) return console.warn('smart_change disabled by settings');
+    if(!this._smart_change){
+      this._smart_change = new this.opts.smart_change.class(this.opts.smart_change);
+    }
+    return this._smart_change;
+  }
 
   async run_load(){
     await super.run_load();
