@@ -103,6 +103,6 @@ export class SmartEntity extends CollectionItem {
   }
 
   // SmartSources (how might this be better done?)
-  get_key() { return this.path; }
+  get_key() { return this.data.key || this.data.path; }
   get path() { return this.data.path; }
 }
