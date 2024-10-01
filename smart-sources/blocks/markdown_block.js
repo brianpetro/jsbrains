@@ -93,7 +93,7 @@ export class SmartBlock extends SmartSource {
   get is_block() { return this.key.includes("#"); }
   get is_gone() {
     if (!this.source?.file) return true; // gone if missing entity or file
-    if (!this.source.last_history?.blocks?.[this.key]) return true;
+    if (!this.source?.data?.blocks?.[this.sub_key]) return true;
     return false;
   }
   get is_unembedded() {
@@ -121,11 +121,12 @@ export class SmartBlock extends SmartSource {
   }
   get path() { return this.key; }
   /**
-   * Should embed if block is not completely covered by sub_blocks
+   * Should embed if block is not completely covered by sub_blocks (and those sub_blocks are large enough to embed)
    * (sub_blocks has line_start+1 and line_end)
    * @returns {boolean}
    */
   get should_embed() {
+    if(this.size < this.source_collection.embed_model.min_chars) return false;
     const match_line_start = this.line_start + 1;
     const match_line_end = this.line_end;
     const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})
@@ -136,17 +137,15 @@ export class SmartBlock extends SmartSource {
         return acc;
       }, {has_line_start: null, has_line_end: null})
     ;
-    if (!has_line_start || !has_line_end) return true;
-    // ensure start and end blocks are large enough to embed before skipping embedding (returning false) for this block
-    const start_block = this.block_collection.get(this.source_key + has_line_start);
-    if(!start_block){
-      console.warn("start_block not found");
-      return true;
+    if (has_line_start && has_line_end){
+      // ensure start and end blocks are large enough to embed before skipping embedding (returning false) for this block
+      const start_block = this.block_collection.get(this.source_key + has_line_start);
+      if(start_block.should_embed){
+        const end_block = this.block_collection.get(this.source_key + has_line_end);
+        if(end_block.should_embed) return false;
+      }
     }
-    if(start_block.size > this.source_collection.embed_model.min_chars) return true;
-    const end_block = this.block_collection.get(this.source_key + has_line_end);
-    if(end_block.size > this.source_collection.embed_model.min_chars) return true;
-    return false;
+    return true;
   }
   get source() { return this.source_collection.get(this.source_key); }
   get source_adapter() {

@@ -32,23 +32,33 @@ export class SmartSources extends SmartEntities {
   // removes old data files
   async prune() {
     await this.fs.refresh(); // refresh source files in case they have changed
+    this.notices?.show('pruning sources', "Pruning sources...", { timeout: 0 });
     const remove_sources = Object.values(this.items)
-      .filter(item => item.is_gone || item.excluded)
+      .filter(item => item.is_gone || item.excluded || !item.should_embed)
     ;
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
       await this.data_fs.remove(source.data_path);
       delete this.items[source.key];
     }
+    this.notices?.remove('pruning sources');
+    this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
     // TEMP: remove last_history from smart_sources
     Object.values(this.items).forEach(item => {
       if(item.data?.history) delete item.data.history;
     });
+    this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
     // remove smart_blocks
-    const remove_smart_blocks = Object.values(this.block_collection.items).filter(item => item.is_gone);
+    const remove_smart_blocks = Object.values(this.block_collection.items)
+      .filter(item => item.vec && (item.is_gone || !item.should_embed))
+    ;
     for(let i = 0; i < remove_smart_blocks.length; i++){
-      delete this.block_collection.items[remove_smart_blocks[i].key];
+      const item = remove_smart_blocks[i];
+      if(item.is_gone) item.delete();
+      else item.remove_embeddings();
     }
+    this.notices?.remove('pruning blocks');
+    this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
     // queue_embed for meta_changed
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
@@ -231,6 +241,7 @@ export class SmartSources extends SmartEntities {
 
   async run_refresh(){
     await this.prune();
+    await this.process_save_queue();
     await this.unload();
     await this.init();
     await this.process_load_queue();

@@ -97,6 +97,7 @@ export class CollectionItem {
   async save(ajson=null) {
     try{
       await this.data_adapter.save(this, ajson);
+      this.init();
     }catch(err){
       this._queue_save = true;
       console.error(err, err.stack);

@@ -93,7 +93,7 @@ export class SmartEmbedModel extends SmartModel {
   get batch_size() { return this.opts.batch_size || 1; }
   get max_tokens() { return this.opts.max_tokens || 512; }
   get dims() { return this.opts.dims; }
-  get min_chars() { return this.settings?.min_chars || 300; }
+  get min_chars() { return this.settings?.[this.opts.model_key]?.min_chars || 300; }
 
   // TODO: replace static opts with dynamic reference to canonical settings via opts.settings (like smart-chat-model-v2)
   get settings() { return this.opts.settings; } // ref to canonical settings

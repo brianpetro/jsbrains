@@ -18,17 +18,13 @@ export class SmartEntity extends CollectionItem {
   init(){
     super.init();
     if(!this.vec) this.queue_embed();
-    // only keep active model embeddings
+    // only keep active model embeddings (may be moved)
     Object.entries(this.data.embeddings || {}).forEach(([model, embedding]) => {
       if(model !== this.embed_model_key){
         this.data.embeddings[model] = null;
         delete this.data.embeddings[model];
       }
     });
-  }
-  async load(){
-    await super.load();
-    this.init();
   }
   queue_embed(){ this._queue_embed = true; }
   nearest(filter = {}) { return this.collection.nearest_to(this, filter) }
@@ -99,6 +95,10 @@ export class SmartEntity extends CollectionItem {
     this.entity_adapter.vec = vec;
     this._queue_embed = false;
     this._embed_input = null;
+    this.queue_save();
+  }
+  remove_embeddings(){
+    this.data.embeddings = null;
     this.queue_save();
   }
 
