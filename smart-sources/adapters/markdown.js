@@ -199,7 +199,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   }
 
   async block_read(opts = {}) {
-    if(!this.item.line_start) return "BLOCK NOT FOUND";
+    if(!this.item.line_start) return "BLOCK NOT FOUND (no line_start)";
     const source_content = await this.read();
     
     // if (opts.no_changes && this.smart_change) {
@@ -218,8 +218,9 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     const hash = await create_hash(embed_input);
     if(hash !== this.item.hash){
       const blocks = markdown_to_blocks(source_content);
-      const block_range = Object.entries(blocks).find(([k,v]) => k === this.item.sub_key)[1];
-      this.item.queue_import();
+      this.item.source?.queue_import();
+      const block_range = Object.entries(blocks).find(([k,v]) => k === this.item.sub_key)?.[1];
+      if(!block_range) return "BLOCK NOT FOUND (not in updated parsed blocks)";
       return get_line_range(source_content, block_range[0], block_range[1]);
     }
     return block_content;
