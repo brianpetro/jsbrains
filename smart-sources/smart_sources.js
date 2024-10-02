@@ -15,6 +15,7 @@ export class SmartSources extends SmartEntities {
   }
 
   async init_items() {
+    this._fs = null; // clear fs so reloads exclusions
     // init smart_fs
     await this.fs.init();
     // init smart_sources
@@ -255,8 +256,9 @@ export class SmartSources extends SmartEntities {
   async run_refresh(){
     await this.prune();
     await this.process_save_queue();
-    await this.unload();
-    await this.init();
+    this.items = {}; // clear items
+    this.block_collection.items = {}; // clear blocks
+    await this.init_items();
     await this.process_load_queue();
     await this.render_settings();
     await this.process_import_queue();

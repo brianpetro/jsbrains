@@ -348,7 +348,8 @@ class SmartFs {
     // future: this logic may be improved using source_path to find matches in
     // the same folder or subfolders first
     if(!this.file_paths) return console.warn('get_link_target_path: file_paths not found');
-    return fuzzy_search(this.file_paths, link_target)[0];
+    const matching_file_paths = this.file_paths.filter(path => path.includes(link_target));
+    return fuzzy_search(matching_file_paths, link_target)[0];
   }
 
   get sep() { return this.adapter.sep || '/'; }
