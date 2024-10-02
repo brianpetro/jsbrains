@@ -19,15 +19,14 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     for (const [sub_key, value] of Object.entries(blocks)) {
       const block_key = this.item.key + sub_key;
       const block_content = content.split("\n").slice(value[0] - 1, value[1]).join("\n");
-      const block_hash = await create_hash(block_content);
       const block_outlinks = get_markdown_links(block_content);
       const block = await this.item.block_collection.create_or_update({
         key: block_key,
-        hash: block_hash,
         outlinks: block_outlinks,
         size: block_content.length,
       });
-      block._embed_input = block.breadcrumbs + "\n" + block_content; // improve performance by preve
+      block._embed_input = block.breadcrumbs + "\n" + block_content; // improve performance by preventing extra read
+      block.data.hash = await create_hash(block._embed_input);
     }
   }
 
@@ -213,7 +212,9 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     //   content = increase_heading_depth(content, opts.add_depth);
     // }
     const block_content = get_line_range(source_content, this.item.line_start, this.item.line_end);
-    const hash = await create_hash(block_content);
+    const breadcrumbs = this.item.breadcrumbs;
+    const embed_input = breadcrumbs + "\n" + block_content;
+    const hash = await create_hash(embed_input);
     if(hash !== this.item.hash){
       const blocks = markdown_to_blocks(source_content);
       const block_range = Object.entries(blocks).find(([k,v]) => k === this.item.sub_key)[1];
