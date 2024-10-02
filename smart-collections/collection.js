@@ -355,6 +355,9 @@ export class Collection {
     this.clear();
   }
   async run_load() {
+    this.loaded = null;
+    this.load_time_ms = null;
+    Object.values(this.items).forEach((item) => item.queue_load());
     this.notices?.show(`loading ${this.collection_key}`, `Loading ${this.collection_key}...`, { timeout: 0 });
     await this.process_load_queue();
     this.notices?.remove(`loading ${this.collection_key}`);
