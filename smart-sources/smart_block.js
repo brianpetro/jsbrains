@@ -44,7 +44,15 @@ export class SmartBlock extends SmartEntity {
 
   async get_embed_input() {
     if(typeof this._embed_input === "string" && this._embed_input.length) return this._embed_input;
-    this._embed_input = this.breadcrumbs + "\n" + (await this.read());
+    const content = await this.read();
+    if(this.vec){
+      // PREVENT EMBEDDING BASED ON HASH
+      // likely better handled since reduces embed_batch size
+      // falsy values filtered out in SmartEmbedModel.embed_batch
+      const hash = await create_hash(content);
+      if(hash === this.hash) return false; // already embedded
+    }
+    this._embed_input = this.breadcrumbs + "\n" + (content);
     return this._embed_input;
   }
 

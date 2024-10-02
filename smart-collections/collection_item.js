@@ -164,7 +164,7 @@ export class CollectionItem {
       key_includes,
       limit,
     } = filter_opts;
-    if(limit && this.collection.filter_results_ct >= limit) return false;
+    if(limit && this.collection.filter_results_ct >= limit) return null;
 
     // Exclude keys that are in the exclude_keys array
     if (exclude_keys?.includes(this.key)) return false;

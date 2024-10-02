@@ -1,9 +1,9 @@
 import { increase_heading_depth } from "../utils/increase_heading_depth.js";
-import { SourceAdapter } from "./_adapter.js";
+import { TextSourceAdapter } from "./text.js";
 import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 import { create_hash } from "../utils/create_hash.js";
 
-export class MarkdownSourceAdapter extends SourceAdapter {
+export class MarkdownSourceAdapter extends TextSourceAdapter {
   get fs() { return this.source_collection.fs; }
   get data() { return this.item.data; }
   get file_path() { return this.item.file_path; }
@@ -373,8 +373,8 @@ function get_markdown_links(content) {
 
     return result;
 }
-
 function get_line_range(content, start_line, end_line) {
   const lines = content.split("\n");
   return lines.slice(start_line - 1, end_line).join("\n");
 }
+
