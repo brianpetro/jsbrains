@@ -5,6 +5,8 @@ export class SourceAdapter {
   get collection() { return this.item.collection; }
   get env() { return this.collection.env; }
   get smart_change() { return this.collection.smart_change; }
+  get block_collection() { return this.env.smart_blocks; }
+  get source_collection() { return this.env.smart_sources; }
   async import() { throw new Error("import method not implemented for " + this.item.file_type); }
   async append(content) { throw new Error("append method not implemented for " + this.item.file_type); }
   async update(full_content, opts = {}) { throw new Error("update method not implemented for " + this.item.file_type); }

@@ -1,5 +1,5 @@
 import test from 'ava';
-import { markdown_to_blocks } from "./markdown_to_blocks.js";
+import { markdown_to_blocks } from "./blocks/markdown_to_blocks.js";
 
 test('convert markdown with complex heading structures to flat JS object', t => {
   const markdown = `# Top-Level Heading

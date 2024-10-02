@@ -4,7 +4,7 @@ import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 import { create_hash } from "../utils/create_hash.js";
 
 export class MarkdownSourceAdapter extends SourceAdapter {
-  get fs() { return this.collection.fs; }
+  get fs() { return this.source_collection.fs; }
   get data() { return this.item.data; }
   get file_path() { return this.item.file_path; }
 

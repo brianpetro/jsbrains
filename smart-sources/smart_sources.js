@@ -215,15 +215,20 @@ export class SmartSources extends SmartEntities {
    */
   get blocks(){ return this.env.smart_blocks; }
   get embed_queue() {
-    const embed_blocks = this.block_collection.settings.embed_blocks;
-    return Object.values(this.items).reduce((acc, item) => {
-      if(item._queue_embed) acc.push(item);
-      if(embed_blocks) item.blocks.forEach(block => {
-        if(block._queue_embed && block.should_embed) acc.push(block);
-      });
-      return acc;
-    }, []);
+    try{
+      const embed_blocks = this.block_collection.settings.embed_blocks;
+      return Object.values(this.items).reduce((acc, item) => {
+        if(item._queue_embed) acc.push(item);
+        if(embed_blocks) item.blocks.forEach(block => {
+          if(block._queue_embed && block.should_embed) acc.push(block);
+        });
+        return acc;
+      }, []);
+    }catch(e){
+      console.error(`Error getting embed queue: ` + JSON.stringify((e || {}), null, 2));
+    }
   }
+
   get smart_change() {
     if(!this.opts.smart_change) return; // disabled at config level
     if(typeof this.settings?.smart_change?.active !== 'undefined' && !this.settings.smart_change.active) return console.warn('smart_change disabled by settings');
