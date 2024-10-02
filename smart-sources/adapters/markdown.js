@@ -10,6 +10,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async import() {
     const content = await this.read();
+    if(!content) return console.warn("No content to import for " + this.file_path);
     const hash = await create_hash(content);
     if(this.data.hash === hash) return console.log("File stats changed, but content is the same. Skipping import.");
     const blocks = markdown_to_blocks(content);

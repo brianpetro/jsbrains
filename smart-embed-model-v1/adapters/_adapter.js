@@ -6,4 +6,5 @@ export class SmartEmbedAdapter {
   async count_tokens(input) { throw new Error("Not implemented"); }
   async embed(input) { throw new Error("Not implemented"); }
   async embed_batch(input) { throw new Error("Not implemented"); }
+  unload() { /* add unload logic here */ }
 }

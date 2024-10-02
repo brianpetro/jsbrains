@@ -21,4 +21,8 @@ export class SmartEmbedAdapter {
   async embed_batch(inputs) {
     throw new Error('embed_batch method not implemented');
   }
+
+  unload() {
+    // Implement in subclasses if needed
+  }
 }
