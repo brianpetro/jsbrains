@@ -24,7 +24,7 @@ export class SmartSource extends SmartEntity {
       // must check exists using async because not always reflects by file.stat (ex. Obsidian)
       if((await this.data_fs.exists(this.data_path))){
         // check if file has been updated on disk
-        if(!this.loaded_at || !this.env.fs.files[this.data_path] || this.env.fs.files[this.data_path].mtime > (this.loaded_at + 3 * 60 * 1000)){
+        if(!this.loaded_at || (this.env.fs.files[this.data_path] && this.env.fs.files[this.data_path].mtime > (this.loaded_at + 1 * 60 * 1000))){
           console.log(`Smart Connections: Re-loading data source for ${this.path} because it has been updated on disk`);
           return await this.load();
         }

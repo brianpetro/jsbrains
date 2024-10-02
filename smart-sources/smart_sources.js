@@ -45,12 +45,12 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
     // TEMP: remove last_history from smart_sources
     Object.values(this.items).forEach(item => {
-      if(item.data?.history) delete item.data.history;
+      if(item.data?.history) item.data.history = null;
     });
     this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
     // remove smart_blocks
     const remove_smart_blocks = Object.values(this.block_collection.items)
-      .filter(item => item.vec && (item.is_gone || !item.should_embed))
+      .filter(item => item.vec && (item.is_gone || !item.should_embed || !item.data?.hash))
     ;
     for(let i = 0; i < remove_smart_blocks.length; i++){
       const item = remove_smart_blocks[i];
@@ -277,6 +277,7 @@ export class SmartSources extends SmartEntities {
     Object.values(this.items).forEach(item => {
       item.queue_import();
       item.queue_embed();
+      item.loaded_at = Date.now() + 9999999999; // prevent re-loading during import
     });
     await this.process_import_queue();
   }
