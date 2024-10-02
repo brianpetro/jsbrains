@@ -90,7 +90,7 @@ function get_block_heading_html(scope) {
 
 function get_button_html(scope) {
   if(scope.collection_key !== 'smart_sources') return '';
-  const load_btn_html = scope.loaded ? '' : `<button class="sources-load-btn">Load Sources</button>`;
+  const load_btn_html = scope.loaded ? `<button class="sources-load-btn">Re-load Sources</button>` : `<button class="sources-load-btn">Load Sources</button>`;
   const import_btn_html = scope.loaded ? `<button class="sources-import-btn">Run Import</button>` : '';
   const refresh_btn_html = scope.loaded ? `<button class="sources-refresh-btn">Refresh All (prune + import)</button>` : '';
   const force_refresh_btn_html = scope.loaded ? `<button class="sources-force-refresh-btn">Force Refresh All (clear all + import)</button>` : '';
