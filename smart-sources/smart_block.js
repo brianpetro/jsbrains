@@ -152,9 +152,9 @@ export class SmartBlock extends SmartEntity {
       if (has_line_start && has_line_end){
         // ensure start and end blocks are large enough to embed before skipping embedding (returning false) for this block
         const start_block = this.collection.get(this.source_key + has_line_start);
-        if(start_block.should_embed){
+        if(start_block?.should_embed){
           const end_block = this.collection.get(this.source_key + has_line_end);
-          if(end_block.should_embed) return false;
+          if(end_block?.should_embed) return false;
         }
       }
       return true;
