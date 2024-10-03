@@ -15,6 +15,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     const hash = await create_hash(content);
     if(this.data.hash === hash) return console.log("File stats changed, but content is the same. Skipping import.");
     this.data.hash = hash; // set import hash
+    this.data.last_read_hash = hash;
     const blocks = markdown_to_blocks(content);
     this.data.blocks = blocks;
     const outlinks = get_markdown_links(content);

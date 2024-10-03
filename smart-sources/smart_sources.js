@@ -53,7 +53,23 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
     // remove smart_blocks
     const remove_smart_blocks = Object.values(this.block_collection.items)
-      .filter(item => item.vec && (item.is_gone || !item.should_embed || !item.data?.hash))
+      // .filter(item => item.vec && (item.is_gone || !item.should_embed || !item.data?.hash))
+      .filter(item => {
+        if(!item.vec) return false;
+        if(item.is_gone) {
+          item.reason = "is_gone";
+          return true;
+        }
+        if(!item.should_embed) {
+          item.reason = "!should_embed";
+          return true;
+        }
+        if(!item.data?.hash) {
+          item.reason = "!data.hash";
+          return true;
+        }
+        return false;
+      })
     ;
     for(let i = 0; i < remove_smart_blocks.length; i++){
       const item = remove_smart_blocks[i];
@@ -62,6 +78,7 @@ export class SmartSources extends SmartEntities {
     }
     this.notices?.remove('pruning blocks');
     this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
+    console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
     await this.process_save_queue();
     // queue_embed for meta_changed
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
@@ -148,7 +165,6 @@ export class SmartSources extends SmartEntities {
     // import
     await source.import();
     // process embed queue
-    await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
     // process save queue
     await this.process_save_queue();

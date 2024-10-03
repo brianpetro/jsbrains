@@ -281,6 +281,7 @@ export class SmartSource extends SmartEntity {
     return this.blocks.filter(block => block.excluded).map(block => block.lines);
   }
   get file() { return this.fs.files[this.path]; }
+  get file_name() { return this.path.split("/").pop(); }
   get file_path() { return this.path; }
   get file_type() { return this.file_path.split(".").pop().toLowerCase(); }
   get fs() { return this.collection.fs; }
