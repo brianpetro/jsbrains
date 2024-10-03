@@ -107,6 +107,7 @@ export class CollectionItem {
   async load() {
     try{
       await this.data_adapter.load(this);
+      this.init();
     }catch(err){
       this._load_error = err;
       this.on_load_error(err);

@@ -175,9 +175,21 @@ export class SmartBlock extends SmartEntity {
   get source_collection() { return this.env.smart_sources; }
   get source_key() { return this.key.split("#")[0]; }
   get sub_blocks() {
-    return this.source?.blocks?.filter(block => block.key.startsWith(this.key)+"#") || [];
+    return this.source?.blocks?.filter(block => block.key.startsWith(this.key+"#")) || [];
   }
 
+  // source dependent
+  get data_path() { return this.source.data_path; }
+  get data_file() { return this.source.data_file; }
+  get excluded() { return this.source.excluded; }
+  get excluded_lines() { return this.source.excluded_lines; }
+  get file() { return this.source.file; }
+  get is_canvas() { return this.source.is_canvas; }
+  get is_excalidraw() { return this.source.is_excalidraw; }
+  get meta_changed() { return this.source.meta_changed; }
+  get mtime() { return this.source.mtime; }
+  get multi_ajson_file_name() { return this.source.multi_ajson_file_name; }
+  get smart_change_adapter() { return this.source.smart_change_adapter; }
 
   // CURRENTLY UNUSED
   async get_next_k_shot(i) {
@@ -195,38 +207,4 @@ export class SmartBlock extends SmartEntity {
   // backwards compatibility (DEPRECATED)
   get link() { return this.key; }
 
-  
-  // TEMP: methods in source not implemented in blocks
-  async import() { throw "Not implemented: import"; }
-  open() { throw "Not implemented: open"; }
-  get_block_by_line() { throw "Not implemented: get_block_by_line"; }
-  async has_source_file() { throw "Not implemented: has_source_file"; }
-  async search() { throw "Not implemented: search"; }
-  async append() { throw "Not implemented: append"; }
-  async _update() { throw "Not implemented: _update"; }
-  async _read() { throw "Not implemented: _read"; }
-  async remove() { throw "Not implemented: remove"; }
-  async destroy() { throw "Not implemented: destroy"; }
-  async move_to() { throw "Not implemented: move_to"; }
-  async merge() { throw "Not implemented: merge"; }
-  on_load_error() { throw "Not implemented: on_load_error"; }
-  
-  get data_path() { return this.source.data_path; }
-  get data_file() { return this.source.data_file; }
-  get excluded() { return this.source.excluded; }
-  get excluded_lines() { return this.source.excluded_lines; }
-  get file() { return this.source.file; }
-  get is_canvas() { return this.source.is_canvas; }
-  get is_excalidraw() { return this.source.is_excalidraw; }
-  get meta_changed() { return this.source.meta_changed; }
-  get mtime() { return this.source.mtime; }
-  get multi_ajson_file_name() { return this.source.multi_ajson_file_name; }
-  get block_vecs() { throw "Not implemented: block_vecs"; }
-  get inlinks() { throw "Not implemented: inlinks"; }
-  get outlink_paths() { throw "Not implemented: outlink_paths"; }
-  get smart_change_adapter() { throw "Not implemented: smart_change_adapter"; }
-  get mean_block_vec() { throw "Not implemented: mean_block_vec"; }
-  get median_block_vec() { throw "Not implemented: median_block_vec"; }
 }
-
-

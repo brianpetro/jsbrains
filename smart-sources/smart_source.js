@@ -12,6 +12,10 @@ export class SmartSource extends SmartEntity {
       _queue_load: true,
     };
   }
+  init() {
+    super.init();
+    if(!this.data.blocks) this.queue_import();
+  }
   // moved logic from SmartSources import() method
   queue_import() { this._queue_import = true; }
   async import(){

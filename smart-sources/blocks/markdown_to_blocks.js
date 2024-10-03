@@ -12,8 +12,7 @@ export function markdown_to_blocks(markdown) {
   let frontmatter_started = false;
   let root_heading_open = false;
   let root_heading_key = '#';
-  let root_heading_start_line = null;
-  let in_code_block = false; // Added
+  let in_code_block = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line_number = i + 1;
@@ -64,8 +63,10 @@ export function markdown_to_blocks(markdown) {
         }
 
         // Pop headings from stack until last level < current level
-        while (heading_stack.length > 0 &&
-          heading_stack[heading_stack.length - 1].level >= level) {
+        while (
+          heading_stack.length > 0 &&
+          heading_stack[heading_stack.length - 1].level >= level
+        ) {
           const finished_heading = heading_stack.pop();
           heading_lines[finished_heading.key][1] = line_number - 1;
         }
@@ -103,13 +104,8 @@ export function markdown_to_blocks(markdown) {
           heading_lines[current_list_item.key][1] = line_number - 1;
           current_list_item = null;
           in_list_item = false;
-
-          // Set 'just_closed_list_item' flag
           just_closed_list_item = true;
-        }
-
-        // Reset 'just_closed_list_item' unless it was just set above
-        if (!current_list_item) {
+        } else {
           just_closed_list_item = false;
         }
 
@@ -133,6 +129,9 @@ export function markdown_to_blocks(markdown) {
           // Close previous list item if any
           if (current_list_item) {
             heading_lines[current_list_item.key][1] = line_number - 1;
+            just_closed_list_item = true;
+          } else {
+            just_closed_list_item = false;
           }
 
           // Get current heading key
@@ -145,7 +144,6 @@ export function markdown_to_blocks(markdown) {
 
           // If parent_key is '#', and root heading is not open, open it
           if (parent_key === '#' && !root_heading_open) {
-            root_heading_start_line = line_number;
             heading_lines[root_heading_key] = [line_number, null];
             root_heading_open = true;
           }
@@ -169,13 +167,44 @@ export function markdown_to_blocks(markdown) {
           current_list_item = { key, start_line: line_number };
           in_list_item = true;
 
-          // Reset 'just_closed_list_item' flag
-          just_closed_list_item = false;
+          continue;
         }
-
-        // Indented list items are part of the current list item, no action needed
-        continue;
+        // Indented list items are part of the current list item
+        // Continue processing
+        if (in_list_item) {
+          continue;
+        }
       }
+    }
+
+    // Handle empty lines
+    if (trimmed_line === '') {
+      if (in_list_item) {
+        // Peek ahead to the next line to see if it's indented
+        const next_line = lines[i + 1] || '';
+        const next_trimmed_line = next_line.trim();
+        const next_indentation = next_line.match(/^(\s*)/)[1].length;
+
+        if (next_trimmed_line === '') {
+          // Next line is also empty, close the list item
+          heading_lines[current_list_item.key][1] = line_number;
+          current_list_item = null;
+          in_list_item = false;
+          just_closed_list_item = true;
+        } else if (next_indentation > 0) {
+          // Next line is indented, do not close the list item
+          continue;
+        } else {
+          // Next line is not indented, close the list item
+          heading_lines[current_list_item.key][1] = line_number;
+          current_list_item = null;
+          in_list_item = false;
+          just_closed_list_item = true;
+        }
+      } else {
+        just_closed_list_item = false;
+      }
+      continue;
     }
 
     // Handle non-empty lines
@@ -195,9 +224,8 @@ export function markdown_to_blocks(markdown) {
           parent_key = '#'; // Set to root heading key
         }
 
-        // If parent_key is '#', and root_heading is not open, open it
+        // If parent_key is '#', and root heading is not open, open it
         if (parent_key === '#' && !root_heading_open) {
-          root_heading_start_line = line_number;
           heading_lines[root_heading_key] = [line_number, null];
           root_heading_open = true;
         }
@@ -220,42 +248,22 @@ export function markdown_to_blocks(markdown) {
         // Update current list item
         current_list_item = { key, start_line: line_number };
         in_list_item = true;
-
-        // Reset 'just_closed_list_item' flag
         just_closed_list_item = false;
 
         continue;
       }
-
       // Content not under any heading or list item
       if (heading_stack.length === 0) {
         if (!root_heading_open) {
           // Start root heading
-          root_heading_start_line = line_number;
           heading_lines[root_heading_key] = [line_number, null];
           root_heading_open = true;
         }
         continue;
       } else {
         // Content under current heading
-        continue;
-      }
-    }
-
-    // Handle empty lines
-    if (trimmed_line === '') {
-      if (in_list_item) {
-        // Close current list item, include the blank line
-        heading_lines[current_list_item.key][1] = line_number;
-        current_list_item = null;
-        in_list_item = false;
-
-        // Set 'just_closed_list_item' flag
-        just_closed_list_item = true;
-      } else {
-        // Nothing to do
-        // Reset 'just_closed_list_item' flag
         just_closed_list_item = false;
+        continue;
       }
     }
   }
