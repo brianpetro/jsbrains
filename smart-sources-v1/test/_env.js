@@ -1,6 +1,6 @@
-import { TestSmartCollectionAdapter } from '../../smart-collections/adapters/_test.js';
-import { TestSmartFsAdapter } from '../../smart-fs/adapters/_test.js';
-import { TestSourceAdapter } from '../adapters/_test.js';
+import { SmartCollectionTestDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
+import { SourceTestAdapter } from '../adapters/_test.js';
 import { MarkdownSourceAdapter } from '../adapters/markdown.js';
 import { SmartSource } from '../smart_source.js';
 import { SmartSources } from '../smart_sources.js';
@@ -27,13 +27,13 @@ class TestMain {
         smart_embed_model: SmartEmbedModel,
         smart_fs: {
           class: SmartFs,
-          adapter: TestSmartFsAdapter,
+          adapter: SmartFsTestAdapter,
         }
       },
       collections: {
         smart_sources: {
           class: SmartSources,
-          data_adapter: TestSmartCollectionAdapter,
+          data_adapter: SmartCollectionTestDataAdapter,
         },
         smart_blocks: SmartBlocks,
         smart_directories: SmartDirectories,
@@ -44,7 +44,7 @@ class TestMain {
         SmartDirectory,
       },
       source_adapters: {
-        test: TestSourceAdapter,
+        test: SourceTestAdapter,
       },
     };
   }

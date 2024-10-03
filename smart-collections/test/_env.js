@@ -1,11 +1,11 @@
 import { CollectionItem } from '../main.js';
 import { Collection } from '../main.js';
-import { TestSmartCollectionAdapter } from '../adapters/_test.js';
+import { SmartCollectionTestDataAdapter } from '../adapters/_test.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
-import { TestSmartFsAdapter } from '../../smart-fs/adapters/_test.js';
+import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
@@ -22,13 +22,13 @@ class TestMain {
         smart_embed_model: SmartEmbedModel,
         smart_fs: {
           class: SmartFs,
-          adapter: TestSmartFsAdapter,
+          adapter: SmartFsTestAdapter,
         }
       },
       collections: {
         collection: {
           class: Collection,
-          data_adapter: TestSmartCollectionAdapter,
+          data_adapter: SmartCollectionTestDataAdapter,
         },
       },
       item_types: {

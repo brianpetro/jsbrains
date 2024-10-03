@@ -1,5 +1,5 @@
 /**
- * TestSmartFsAdapter class
+ * SmartFsTestAdapter class
  * 
  * This class provides a mock file system adapter for testing purposes.
  * It simulates file system operations in memory, making it ideal for unit tests.
@@ -7,11 +7,32 @@
  * @class
  * @classdesc Mock file system adapter for SmartFs testing
  */
-export class TestSmartFsAdapter {
+import path from 'path';
+export class SmartFsTestAdapter {
   constructor(smart_fs) {
     this.smart_fs = smart_fs;
     this.files = {};
     this.sep = '/';
+  }
+
+  get_file(file_path) {
+    const file = {};
+    file.path = file_path.replace(/^\//, ''); // remove leading slash
+    file.type = 'file';
+    file.extension = file.path.split('.').pop().toLowerCase();
+    file.name = file.path.split('/').pop();
+    file.basename = file.name.split('.').shift();
+    Object.defineProperty(file, 'stat', {
+      get: () => {
+        const stat = this.statSync(file_path);
+        return {
+          ctime: stat.ctime.getTime(),
+          mtime: stat.mtime.getTime(),
+          size: stat.size,
+        };
+      }
+    });
+    return file;
   }
 
   async append(rel_path, content) {
@@ -35,57 +56,83 @@ export class TestSmartFsAdapter {
     return rel_path in this.files;
   }
 
-  async list(rel_path, opts = {}) {
-    const items = Object.keys(this.files)
-      .filter(key => key.startsWith(rel_path) && key !== rel_path)
-      .map(key => {
-        const name = key.slice(rel_path.length + 1).split(this.sep)[0];
-        const full_path = rel_path + this.sep + name;
-        const is_file = this.files[full_path] !== '[DIRECTORY]';
-        return {
-          basename: name.split('.')[0],
-          extension: is_file ? name.slice(name.lastIndexOf('.') + 1) : '',
-          name: name,
-          path: full_path,
-          type: is_file ? 'file' : 'folder',
-        };
-      });
-
-    if (opts.type === 'file') {
-      return items.filter(item => item.type === 'file');
-    } else if (opts.type === 'folder') {
-      return items.filter(item => item.type === 'folder');
+  
+  async list(rel_path = '', opts = {}) {
+    if(rel_path === '/') rel_path = '';
+    const items = {};
+    for (const key of Object.keys(this.files)) {
+      if (key === rel_path) continue;
+      if (rel_path && !key.startsWith(rel_path)) continue;
+  
+      // Remove the rel_path from key and remove any leading slashes
+      let remaining_path = key.slice(rel_path.length);
+      if (remaining_path.startsWith(this.sep)) remaining_path = remaining_path.slice(1);
+  
+      const parts = remaining_path.split(this.sep);
+      const name = parts[0];
+      const full_path = rel_path ? path.join(rel_path, name) : name;
+  
+      // Skip if already added
+      if (items[full_path]) continue;
+  
+      const is_file = this.files[full_path] !== '[DIRECTORY]';
+      const file = this.get_file(full_path);
+      file.type = is_file ? 'file' : 'folder';
+  
+      if (!is_file) {
+        delete file.basename;
+        delete file.extension;
+        Object.defineProperty(file, 'children', {
+          get: () => {
+            return Object.keys(this.files)
+              .filter(k => k.startsWith(full_path) && k !== full_path)
+              .map(k => this.get_file(k));
+          }
+        });
+      }
+      items[full_path] = file;
     }
-    return items;
+  
+    let result = Object.values(items);
+  
+    if (opts.type === 'file') {
+      return result.filter(item => item.type === 'file');
+    } else if (opts.type === 'folder') {
+      return result.filter(item => item.type === 'folder');
+    }
+    return result;
+  }
+  
+  async list_recursive(rel_path = '', opts = {}) {
+    const all_items = [];
+    const process_items = async (current_path) => {
+      const items = await this.list(current_path);
+      for (const item of items) {
+        all_items.push(item);
+        if (item.type === 'folder') {
+          await process_items(item.path);
+        }
+      }
+    };
+    await process_items(rel_path);
+    return all_items;
   }
 
-  async list_recursive(rel_path, opts = {}) {
-    return this.list(rel_path, { ...opts, recursive: true });
-  }
 
   async list_files(rel_path, opts = {}) {
-    return this.list(rel_path, { ...opts, type: 'file' });
+    return await this.list(rel_path, { ...opts, type: 'file' });
   }
 
   async list_files_recursive(rel_path, opts = {}) {
-    return this.list_recursive(rel_path, { ...opts, type: 'file' });
+    return await this.list_recursive(rel_path, { ...opts, type: 'file' });
   }
 
   async list_folders(rel_path, opts = {}) {
-    return this.list(rel_path, { ...opts, type: 'folder' });
+    return await this.list(rel_path, { ...opts, type: 'folder' });
   }
 
   async list_folders_recursive(rel_path = '', opts = {}) {
-    const all_paths = Object.keys(this.files)
-      .filter(key => key.startsWith(rel_path) && this.files[key] === '[DIRECTORY]' && key !== rel_path)
-      .map(key => ({
-        basename: key.split(this.sep).pop(),
-        name: key.split(this.sep).pop(),
-        path: key,
-        type: 'folder'
-      }));
-
-    return all_paths;
+    return await this.list_recursive(rel_path, { ...opts, type: 'folder' });
   }
 
   async read(rel_path, encoding = 'utf-8') {
@@ -102,12 +149,19 @@ export class TestSmartFsAdapter {
     delete this.files[rel_path];
   }
 
-  async remove_dir(rel_path) {
-    Object.keys(this.files).forEach(key => {
-      if (key === rel_path || key.startsWith(rel_path + this.sep)) {
-        delete this.files[key];
+  async remove_dir(rel_path, recursive = false) {
+    if (recursive) {
+      Object.keys(this.files).forEach(key => {
+        if (key === rel_path || key.startsWith(rel_path + this.sep)) {
+          delete this.files[key];
+        }
+      });
+    } else {
+      if (Object.keys(this.files).some(key => key.startsWith(rel_path + this.sep))) {
+        throw new Error(`Directory not empty: ${rel_path}`);
       }
-    });
+      delete this.files[rel_path];
+    }
   }
 
   async rename(rel_path, new_rel_path) {
@@ -129,6 +183,14 @@ export class TestSmartFsAdapter {
       size: is_directory ? 0 : this.files[rel_path].length,
       mtime: new Date(),
       ctime: new Date(),
+    };
+  }
+
+  statSync(rel_path) {
+    return {
+      ctime: new Date(),
+      mtime: new Date(),
+      size: this.files[rel_path].length,
     };
   }
 

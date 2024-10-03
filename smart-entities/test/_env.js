@@ -1,5 +1,5 @@
-import { TestSmartCollectionAdapter } from '../../smart-collections/adapters/_test.js';
-import { TestSmartFsAdapter } from '../../smart-fs/adapters/_test.js';
+import { SmartCollectionTestDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SmartEntity } from '../smart_entity.js';
 import { SmartEntities } from '../smart_entities.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
@@ -42,13 +42,13 @@ class TestMain {
         smart_embed_model: SmartEmbedModel,
         smart_fs: {
           class: SmartFs,
-          adapter: TestSmartFsAdapter,
+          adapter: SmartFsTestAdapter,
         }
       },
       collections: {
         smart_entities: {
           class: SmartEntities,
-          data_adapter: TestSmartCollectionAdapter,
+          data_adapter: SmartCollectionTestDataAdapter,
         },
       },
       item_types: {

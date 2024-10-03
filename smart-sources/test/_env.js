@@ -1,17 +1,20 @@
-import { TestSmartCollectionAdapter } from '../../smart-collections/adapters/_test.js';
-import { TestSmartFsAdapter } from '../../smart-fs/adapters/_test.js';
-import { TestSourceAdapter } from '../adapters/_test.js';
+import { SmartCollectionTestDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
+import { SourceTestAdapter } from '../adapters/_test.js';
 import { MarkdownSourceAdapter } from '../adapters/markdown.js';
 import { SmartSource } from '../smart_source.js';
 import { SmartSources } from '../smart_sources.js';
 import { SmartBlock } from '../smart_block.js';
 import { SmartBlocks } from '../smart_blocks.js';
-import { SmartDirectory } from '../smart_directory.js';
-import { SmartDirectories } from '../smart_directories.js';
+// import { SmartDirectory } from '../smart_directory.js';
+// import { SmartDirectories } from '../smart_directories.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
-import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
+import { SmartEmbedModel } from '../../smart-embed-model-v1/smart_embed_model.js';
+import { SmartEmbedTransformersAdapter } from '../../smart-embed-model-v1/adapters/transformers.js';
+import { SmartEmbedOpenAIAdapter } from '../../smart-embed-model-v1/adapters/openai.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
+import { SmartSettings } from '../../smart-settings/smart_settings.js';
 const __dirname = new URL('.', import.meta.url).pathname;
 
 class TestMain {
@@ -24,27 +27,38 @@ class TestMain {
       env_data_dir: 'test',
       modules: {
         smart_chunks: SmartChunks,
-        smart_embed_model: SmartEmbedModel,
+        smart_embed_model: {
+          class: SmartEmbedModel,
+          adapters: {
+            transformers: SmartEmbedTransformersAdapter,
+            openai: SmartEmbedOpenAIAdapter,
+          },
+        },
         smart_fs: {
           class: SmartFs,
-          adapter: TestSmartFsAdapter,
-        }
+          adapter: SmartFsTestAdapter,
+        },
+        smart_settings: {
+          class: SmartSettings,
+        },
       },
       collections: {
         smart_sources: {
           class: SmartSources,
-          data_adapter: TestSmartCollectionAdapter,
+          data_adapter: SmartCollectionTestDataAdapter,
+          source_adapters: {
+            test: SourceTestAdapter,
+            md: MarkdownSourceAdapter,
+            default: MarkdownSourceAdapter
+          },
         },
         smart_blocks: SmartBlocks,
-        smart_directories: SmartDirectories,
+        // smart_directories: SmartDirectories,
       },
       item_types: {
         SmartSource,
         SmartBlock,
-        SmartDirectory,
-      },
-      source_adapters: {
-        test: TestSourceAdapter,
+        // SmartDirectory,
       },
     };
   }
@@ -52,8 +66,9 @@ class TestMain {
 
 export async function load_test_env(t) {
   const main = new TestMain();
-  const env = new SmartEnv(main, main.smart_env_config);
-  await env.init();
+  const env = await SmartEnv.create(main, main.smart_env_config);
+  env.smart_sources.settings.smart_change = {};
+  env.smart_sources.settings.smart_change.active = false;
   t.context.env = env;
   t.context.fs = env.smart_sources.fs;
 }

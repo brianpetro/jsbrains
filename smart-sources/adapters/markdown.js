@@ -2,6 +2,8 @@ import { increase_heading_depth } from "../utils/increase_heading_depth.js";
 import { TextSourceAdapter } from "./text.js";
 import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 import { create_hash } from "../utils/create_hash.js";
+import { get_markdown_links } from "../utils/get_markdown_links.js";
+import { get_line_range } from "../utils/get_line_range.js";
 
 export class MarkdownSourceAdapter extends TextSourceAdapter {
   get fs() { return this.source_collection.fs; }
@@ -267,7 +269,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
       ...content_after,
     ].join("\n").trim();
     await this.item.source._update(new_content);
-    await this.item.source.parse_content();
+    await this.item.source.import();
   }
 
   async block_update(new_block_content, opts = {}) {
@@ -288,7 +290,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
       ...all_lines.slice(this.item.line_end + 1),
     ].join("\n");
     await this.item.source._update(new_content);
-    await this.item.source.parse_content();
+    await this.item.source.import();
   }
 
   async block_remove() {
@@ -352,39 +354,8 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
       this.item.deleted = false;
       await this.block_update(content);
     }
-    await this.item.source.parse_content();
+    await this.item.source.import();
   }
 }
 
-/**
- * Extracts links from markdown content.
- * @param {string} content 
- * @returns {Array<{title: string, target: string, line: number}>}
- */
-function get_markdown_links(content) {
-    const markdown_link_pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const wikilink_pattern = /\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/g;
-    const result = [];
-
-    const extract_links_from_pattern = (pattern, type) => {
-        let match;
-        while ((match = pattern.exec(content)) !== null) {
-            const title = type === 'markdown' ? match[1] : (match[2] || match[1]);
-            const target = type === 'markdown' ? match[2] : match[1];
-            const line = content.substring(0, match.index).split('\n').length;
-            result.push({ title, target, line });
-        }
-    };
-
-    extract_links_from_pattern(markdown_link_pattern, 'markdown');
-    extract_links_from_pattern(wikilink_pattern, 'wikilink');
-
-    result.sort((a, b) => a.line - b.line || a.target.localeCompare(b.target));
-
-    return result;
-}
-function get_line_range(content, start_line, end_line) {
-  const lines = content.split("\n");
-  return lines.slice(start_line - 1, end_line).join("\n");
-}
 

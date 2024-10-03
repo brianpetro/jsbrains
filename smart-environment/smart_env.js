@@ -354,6 +354,14 @@ function normalize_opts(opts) {
       delete opts.collections[key];
     }
   });
+  Object.entries(opts.modules).forEach(([key, value]) => {
+    if (typeof value === 'function') opts.modules[key] = { class: value };
+    // if key is CamelCase, convert to snake_case
+    if (key[0] === key[0].toUpperCase()) {
+      opts.modules[camel_case_to_snake_case(key)] = { ...opts.modules[key] };
+      delete opts.modules[key];
+    }
+  });
   return opts;
 }
 

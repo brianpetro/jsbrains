@@ -1,6 +1,6 @@
 import { SourceAdapter } from "./_adapter.js";
 
-export class TestSourceAdapter extends SourceAdapter {
+export class SourceTestAdapter extends SourceAdapter {
   constructor(smart_source) {
     super(smart_source);
     this.content = this.smart_source.collection.adapter.test_data[this.smart_source.constructor.name+":"+this.smart_source.data.path].content;

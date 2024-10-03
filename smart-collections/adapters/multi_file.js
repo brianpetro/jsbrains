@@ -1,5 +1,5 @@
 import { ajson_merge } from '../utils/ajson_merge.js';
-import { SmartCollectionItemDataAdapter, SmartCollectionDataAdapter } from './_adapter.js';
+import { SmartCollectionDataAdapter } from './_adapter.js';
 
 
 // DO: replace this better way in future
@@ -99,91 +99,91 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
 
 
 
-export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItemDataAdapter {
-  get fs() { return this.collection.data_fs || this.env.data_fs; }
-  /**
-   * @returns {string} The data folder that contains .ajson files.
-   */
-  get data_folder() { return 'multi'; }
-  /**
-   * @returns {string} The data path for .ajson file.
-   */
-  get data_path() { return this.data_folder + "/" + this.item.multi_ajson_file_name + '.ajson'; }
+// export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItemDataAdapter {
+//   get fs() { return this.collection.data_fs || this.env.data_fs; }
+//   /**
+//    * @returns {string} The data folder that contains .ajson files.
+//    */
+//   get data_folder() { return 'multi'; }
+//   /**
+//    * @returns {string} The data path for .ajson file.
+//    */
+//   get data_path() { return this.data_folder + "/" + this.item.multi_ajson_file_name + '.ajson'; }
 
-  /**
-   * Asynchronously loads collection item data from .ajson file specified by data_path.
-   */
-  async load() {
-    try{
-      const data_ajson = (await this.fs.read(this.data_path)).trim();
-      if(!data_ajson){
-        return this.item.queue_import(); // queue import and return early if data file missing or empty
-      }
-      const ajson_lines = data_ajson.split('\n');
-      const parsed_data = ajson_lines
-        .reduce((acc, line) => {
-          try{
-            const parsed = JSON.parse(`{${line}}`);
-            if(Object.values(parsed)[0] === null){
-              if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
-              return acc;
-            }
-            return ajson_merge(acc, parsed);
-          }catch(err){
-            console.warn("Error parsing line: ", line);
-            console.warn(err.stack);
-            return acc;
-          }
-        }, {})
-      ;
-      // array with same length as parsed_data
-      const rebuilt_ajson = [];
-      Object.entries(parsed_data)
-        .forEach(([ajson_key, value], index) => {
-          if(!value) return; // handle null values (deleted)
-          rebuilt_ajson.push(`${JSON.stringify(ajson_key)}: ${JSON.stringify(value)}`);
-          const [class_name, ...key_parts] = ajson_key.split(":");
-          const entity_key = key_parts.join(":"); // key is file path
-          if(entity_key === this.key) this.item.data = value;
-          else {
-            if(!this.env[class_to_collection_key[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
-            this.env[class_to_collection_key[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
-          }
-        })
-      ;
-      this.item._queue_load = false;
-      if(ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(this.data_path, rebuilt_ajson.join('\n'));
-    }catch(err){
-      // if file not found, queue import
-      if(err.message.includes("ENOENT")) return this.item.queue_import();
-      console.log("Error loading collection item: " + this.key);
-      console.warn(err.stack);
-      this.item.queue_load();
-      return;
-    }
-  }
+//   /**
+//    * Asynchronously loads collection item data from .ajson file specified by data_path.
+//    */
+//   async load() {
+//     try{
+//       const data_ajson = (await this.fs.read(this.data_path)).trim();
+//       if(!data_ajson){
+//         return this.item.queue_import(); // queue import and return early if data file missing or empty
+//       }
+//       const ajson_lines = data_ajson.split('\n');
+//       const parsed_data = ajson_lines
+//         .reduce((acc, line) => {
+//           try{
+//             const parsed = JSON.parse(`{${line}}`);
+//             if(Object.values(parsed)[0] === null){
+//               if(acc[Object.keys(parsed)[0]]) delete acc[Object.keys(parsed)[0]];
+//               return acc;
+//             }
+//             return ajson_merge(acc, parsed);
+//           }catch(err){
+//             console.warn("Error parsing line: ", line);
+//             console.warn(err.stack);
+//             return acc;
+//           }
+//         }, {})
+//       ;
+//       // array with same length as parsed_data
+//       const rebuilt_ajson = [];
+//       Object.entries(parsed_data)
+//         .forEach(([ajson_key, value], index) => {
+//           if(!value) return; // handle null values (deleted)
+//           rebuilt_ajson.push(`${JSON.stringify(ajson_key)}: ${JSON.stringify(value)}`);
+//           const [class_name, ...key_parts] = ajson_key.split(":");
+//           const entity_key = key_parts.join(":"); // key is file path
+//           if(entity_key === this.key) this.item.data = value;
+//           else {
+//             if(!this.env[class_to_collection_key[class_name]]) return console.warn(`Collection class not found: ${class_name}`);
+//             this.env[class_to_collection_key[class_name]].items[entity_key] = new this.env.item_types[class_name](this.env, value);
+//           }
+//         })
+//       ;
+//       this.item._queue_load = false;
+//       if(ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(this.data_path, rebuilt_ajson.join('\n'));
+//     }catch(err){
+//       // if file not found, queue import
+//       if(err.message.includes("ENOENT")) return this.item.queue_import();
+//       console.log("Error loading collection item: " + this.key);
+//       console.warn(err.stack);
+//       this.item.queue_load();
+//       return;
+//     }
+//   }
 
-  async save() {
-    if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
-    try {
-      if(this.item.deleted){
-        this.collection.delete_item(this.key);
-        if((await this.fs.exists(this.data_path))) await this.fs.remove(this.data_path);
-      } else {
-        // await this.fs.write(this.data_path, this.item.ajson);
-        await this.fs.append(this.data_path, '\n' + this.item.ajson); // prevent overwriting the file
-      }
-      this.item._queue_save = false;
-      return true;
-    } catch (err) {
-      if(err.message.includes("ENOENT")) return; // already deleted
-      console.warn("Error saving collection item: ", this.key);
-      console.warn(err.stack);
-      this.item.queue_save();
-      return false;
-    }
-  }
-}
+//   async save() {
+//     if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
+//     try {
+//       if(this.item.deleted){
+//         this.collection.delete_item(this.key);
+//         if((await this.fs.exists(this.data_path))) await this.fs.remove(this.data_path);
+//       } else {
+//         // await this.fs.write(this.data_path, this.item.ajson);
+//         await this.fs.append(this.data_path, '\n' + this.item.ajson); // prevent overwriting the file
+//       }
+//       this.item._queue_save = false;
+//       return true;
+//     } catch (err) {
+//       if(err.message.includes("ENOENT")) return; // already deleted
+//       console.warn("Error saving collection item: ", this.key);
+//       console.warn(err.stack);
+//       this.item.queue_save();
+//       return false;
+//     }
+//   }
+// }
 
 
 /**

@@ -1,7 +1,7 @@
 import test from 'ava';
 import { load_test_env } from './_env.js';
 import { TestSmartCollectionAdapter } from '../../smart-collections/adapters/_test.js';
-import { TestSmartFsAdapter } from '../../smart-fs/adapters/_test.js';
+import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SmartEntity } from '../smart_entity.js';
 import { SmartEntities } from '../smart_entities.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
@@ -35,7 +35,7 @@ test('SmartEnv is initialized with correct options', t => {
   t.is(env_opts.modules.smart_chunks, SmartChunks);
   t.is(env_opts.modules.smart_embed_model, SmartEmbedModel);
   t.is(env_opts.modules.smart_fs.class, SmartFs);
-  t.is(env_opts.modules.smart_fs.adapter, TestSmartFsAdapter);
+  t.is(env_opts.modules.smart_fs.adapter, SmartFsTestAdapter);
   t.is(env_opts.collections.smart_entities.data_adapter, TestSmartCollectionAdapter);
   t.is(env_opts.collections.smart_entities, SmartEntities);
   t.is(env_opts.item_types.SmartEntity, SmartEntity);
