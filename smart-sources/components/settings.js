@@ -82,7 +82,7 @@ function get_block_heading_html(scope) {
   const load_time_html = scope.load_time_ms ? `<span>Load time: ${scope.load_time_ms}ms</span>` : '';
 
   return `
-    <span>${embedded_percentage}% embedded</span>
+    <span>${embedded_percentage}% embedded (${items_w_vec})</span>
     <span>Loaded: ${item_count} blocks (expected ${scope.expected_blocks_ct})</span>
     ${load_time_html}
   `;

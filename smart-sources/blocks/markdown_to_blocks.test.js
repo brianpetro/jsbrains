@@ -357,12 +357,31 @@ test('should handle nested list items with line break between items', t => {
 
 - parent list item two
   - child list item three
+
+##### New Environment
+
+- **Creating a New Environment**:
+
+	- Open the **Smart Connect** app.
+	- If no environments are found, click the **New Environment** button.
+	- Click on the **Folder** field to select your Obsidian vault folder.
+	- The new environment will appear in the Smart Environments list.
+
+- **Renaming the Environment**:
+
+	- It's recommended to rename the environment to match your vault name for compatibility with Obsidian-specific features.
+		- Right-click on the new environment and select **Rename**.
+		- Enter the exact name of your Obsidian vault.
+		- Press **Enter** to save the new name.
 `;
 
   const expected = {
-    "#Heading": [1, 9],
+    "#Heading": [1, 25],
     "#Heading#{1}": [2, 6],
-    "#Heading#{2}": [7, 9]
+    "#Heading#{2}": [7, 9],
+    "#Heading####New Environment": [10, 25],
+    "#Heading####New Environment#{1}": [12, 18],
+    "#Heading####New Environment#{2}": [19, 25]
   };
 
   const result = markdown_to_blocks(markdown);
