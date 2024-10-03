@@ -6,3 +6,4 @@ smart-env
 **/node_modules/**
 **/ref/**
 **/.smart-env/**
+**/package-lock.json
