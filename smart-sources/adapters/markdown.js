@@ -67,6 +67,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async read(opts = {}) {
     let content = await this._read();
+    this.data.last_read_hash = await create_hash(content);
     
     if (opts.no_changes) {
       const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});

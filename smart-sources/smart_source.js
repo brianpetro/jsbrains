@@ -282,13 +282,16 @@ export class SmartSource extends SmartEntity {
   get file_path() { return this.path; }
   get file_type() { return this.file_path.split(".").pop().toLowerCase(); }
   get fs() { return this.collection.fs; }
+  get hash() { return this.data?.hash; }
   get inlinks() { return Object.keys(this.env.links?.[this.path] || {}); }
   get is_canvas() { return this.path.endsWith("canvas"); }
   get is_excalidraw() { return this.path.endsWith("excalidraw.md"); }
   get is_gone() { return !this.file; }
+  get last_read_hash() { return this.data?.last_read_hash; }
   get meta_changed() {
     try {
       if(!this.file) return true;
+      if(this.last_read_hash !== this.hash) return true;
       if (!this.mtime || this.mtime < this.file.stat.mtime) {
         if(!this.size) return true;
         const size_diff = Math.abs(this.size - this.file.stat.size);
