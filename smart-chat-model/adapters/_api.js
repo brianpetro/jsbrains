@@ -13,13 +13,13 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
 
   /**
    * Get the request adapter class.
-   * @returns {typeof SmartChatModelRequestAdapter} The request adapter class.
+   * @returns {SmartChatModelRequestAdapter} The request adapter class.
    */
   get req_adapter() { return SmartChatModelRequestAdapter; }
 
   /**
    * Get the response adapter class.
-   * @returns {typeof SmartChatModelResponseAdapter} The response adapter class.
+   * @returns {SmartChatModelResponseAdapter} The response adapter class.
    */
   get res_adapter() { return SmartChatModelResponseAdapter; }
 
