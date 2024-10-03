@@ -7,12 +7,14 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   get fs() { return this.source_collection.fs; }
   get data() { return this.item.data; }
   get file_path() { return this.item.file_path; }
+  get source() { return this.item.source ? this.item.source : this.item; }
 
   async import() {
-    const content = await this.read();
+    const content = await this._read();
     if(!content) return console.warn("No content to import for " + this.file_path);
     const hash = await create_hash(content);
     if(this.data.hash === hash) return console.log("File stats changed, but content is the same. Skipping import.");
+    this.data.hash = hash; // set import hash
     const blocks = markdown_to_blocks(content);
     this.data.blocks = blocks;
     const outlinks = get_markdown_links(content);
@@ -67,8 +69,11 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async read(opts = {}) {
     let content = await this._read();
-    this.data.last_read_hash = await create_hash(content);
-    
+    this.source.data.last_read_hash = await create_hash(content);
+    if(this.source.last_read_hash !== this.source.hash){
+      this.source.loaded_at = null;
+      await this.source.import();
+    }
     if (opts.no_changes) {
       const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
       content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];

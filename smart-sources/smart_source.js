@@ -24,12 +24,14 @@ export class SmartSource extends SmartEntity {
       // must check exists using async because not always reflects by file.stat (ex. Obsidian)
       if((await this.data_fs.exists(this.data_path))){
         // check if file has been updated on disk
-        if(!this.loaded_at || (this.env.fs.files[this.data_path] && this.env.fs.files[this.data_path].mtime > (this.loaded_at + 1 * 60 * 1000))){
+        if(this.loaded_at && (this.env.fs.files[this.data_path] && this.env.fs.files[this.data_path].mtime > (this.loaded_at + 1 * 60 * 1000))){
           console.log(`Smart Connections: Re-loading data source for ${this.path} because it has been updated on disk`);
           return await this.load();
         }
       }
       if(this.meta_changed){
+        this.data.blocks = null;
+        await this.save(super.ajson);
         this.data.mtime = this.file.stat.mtime;
         this.data.size = this.file.stat.size;
         await this.source_adapter.import();
@@ -241,7 +243,7 @@ export class SmartSource extends SmartEntity {
   }
   // SUBCLASS OVERRIDES
   async save() {
-    if(this.deleted) return await super.save();
+    if(this.deleted) return await super.save(super.ajson);
     const blocks_to_save = this.blocks.filter(block => block._queue_save);
     const ajson = [
       super.ajson,

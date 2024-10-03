@@ -40,14 +40,16 @@ export class SmartSources extends SmartEntities {
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
       await this.data_fs.remove(source.data_path);
-      delete this.items[source.key];
+      source.delete();
     }
-    this.notices?.remove('pruning sources');
-    this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
+    await this.process_save_queue();
     // TEMP: remove last_history from smart_sources
     Object.values(this.items).forEach(item => {
-      if(item.data?.history) item.data.history = null;
+      if(item.data?.history?.length) item.data.history = null;
+      item.queue_save();
     });
+    this.notices?.remove('pruning sources');
+    this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
     this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
     // remove smart_blocks
     const remove_smart_blocks = Object.values(this.block_collection.items)
@@ -60,6 +62,7 @@ export class SmartSources extends SmartEntities {
     }
     this.notices?.remove('pruning blocks');
     this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
+    await this.process_save_queue();
     // queue_embed for meta_changed
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
