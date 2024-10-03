@@ -39,22 +39,22 @@ const class_to_collection_key = {
 };
 
 export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdapter {
-  get fs() { return this.collection.data_fs || this.env.smart_env_settings.fs; }
+  get fs() { return this.collection.data_fs || this.env.data_fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
    */
-  get data_folder() { return this.collection.data_folder || 'multi'; }
+  get data_folder() { return this.collection.data_dir || 'multi'; }
 
   /**
    * Asynchronously loads collection item data from .ajson file specified by data_path.
    */
   async load(item) {
-    const data_path = this.data_folder + this.fs.sep + item.multi_ajson_file_name + '.ajson';
     if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
     try{
-      const data_ajson = (await this.fs.read(data_path)).trim();
+      // no_cache is necessary to prevent caching issues in Obsidian (may need to clarify mechanism since seemed to stop after initial force load without cache)
+      const data_ajson = (await this.fs.adapter.read(item.data_path, 'utf-8', {no_cache: true})).trim();
       if(!data_ajson){
-        console.log("Data file not found: ", data_path, data_ajson);
+        console.log(`Data file not found: ${item.data_path}`);
         return item.queue_import(); // queue import and return early if data file missing or empty
       }
       const ajson_lines = data_ajson.split('\n');
@@ -89,12 +89,12 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
         })
       ;
       item._queue_load = false;
-      if (ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(data_path, rebuilt_ajson.join('\n'));
+      if (ajson_lines.length !== Object.keys(parsed_data).length) this.fs.write(item.data_path, rebuilt_ajson.join('\n'));
       item.loaded_at = Date.now();
     }catch(err){
       // if file not found, queue import
       if(err.message.includes("ENOENT")) return item.queue_import();
-      console.log("Error loading collection item: ", item.key);
+      console.log("Error loading collection item: " + item.key);
       console.warn(err.stack);
       item.queue_load();
       return;
@@ -104,13 +104,12 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
   async save(item, ajson=null) {
     if(!ajson) ajson = item.ajson;
     if(!(await this.fs.exists(this.data_folder))) await this.fs.mkdir(this.data_folder);
-    const data_path = this.data_folder + this.fs.sep + item.multi_ajson_file_name + '.ajson';
     try {
       if(item.deleted){
         this.collection.delete_item(item.key);
-        if((await this.fs.exists(data_path))) await this.fs.remove(data_path);
+        if((await this.fs.exists(item.data_path))) await this.fs.remove(item.data_path);
       } else {
-        await this.fs.append(data_path, '\n' + ajson); // prevent overwriting the file
+        await this.fs.append(item.data_path, '\n' + ajson); // prevent overwriting the file
       }
       item._queue_save = false;
       return true;
@@ -129,7 +128,7 @@ export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdap
 
 
 export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItemDataAdapter {
-  get fs() { return this.env.smart_env_settings.fs; }
+  get fs() { return this.collection.data_fs || this.env.data_fs; }
   /**
    * @returns {string} The data folder that contains .ajson files.
    */
@@ -137,7 +136,7 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
   /**
    * @returns {string} The data path for .ajson file.
    */
-  get data_path() { return this.data_folder + this.fs.sep + this.item.multi_ajson_file_name + '.ajson'; }
+  get data_path() { return this.data_folder + "/" + this.item.multi_ajson_file_name + '.ajson'; }
 
   /**
    * Asynchronously loads collection item data from .ajson file specified by data_path.
@@ -146,7 +145,6 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
     try{
       const data_ajson = (await this.fs.read(this.data_path)).trim();
       if(!data_ajson){
-        console.log("Data file not found: ", this.data_path, data_ajson);
         return this.item.queue_import(); // queue import and return early if data file missing or empty
       }
       const ajson_lines = data_ajson.split('\n');
@@ -186,7 +184,7 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
     }catch(err){
       // if file not found, queue import
       if(err.message.includes("ENOENT")) return this.item.queue_import();
-      console.log("Error loading collection item: ", this.key);
+      console.log("Error loading collection item: " + this.key);
       console.warn(err.stack);
       this.item.queue_load();
       return;
@@ -202,7 +200,6 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
       } else {
         // await this.fs.write(this.data_path, this.item.ajson);
         await this.fs.append(this.data_path, '\n' + this.item.ajson); // prevent overwriting the file
-        // console.log("Saved item: ", this.item.key, this.data_path);
       }
       this.item._queue_save = false;
       return true;
@@ -222,12 +219,12 @@ export class MultiFileSmartCollectionItemDataAdapter extends SmartCollectionItem
  */
 export class MultiFileSmartCollectionsAdapter {
 
-  // get fs() { return this.collection.env.smart_env_settings.fs; }
+  // get fs() { return this.collection.env.data_fs; }
   // /**
   //  * @returns {string} The data path for folder that contains .ajson files.
   //  */
   // // get data_path() { return this.collection.data_path + '/multi'; }
-  // // get data_path() { return this.env.settings.env_data_dir + this.fs.sep + 'multi'; }
+  // // get data_path() { return this.env.env_data_dir + "/" + 'multi'; }
   // get data_path() { return 'multi'; }
 
   // /**
@@ -346,13 +343,13 @@ export class MultiFileSmartCollectionsAdapter {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Book.html">Book</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatModelApiAdapter.html">SmartChatModelApiAdapter</a></li><li><a href="SmartChatModelRequestAdapter.html">SmartChatModelRequestAdapter</a></li><li><a href="SmartChatModelResponseAdapter.html">SmartChatModelResponseAdapter</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartThreadDataOpenaiJsonAdapter.html">SmartThreadDataOpenaiJsonAdapter</a></li><li><a href="SmartTurns.html">SmartTurns</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Tue Sep 17 2024 22:42:52 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 03 2024 11:37:15 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

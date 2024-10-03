@@ -28,7 +28,7 @@
         <article>
             <pre class="prettyprint source linenums"><code>import { CollectionItem } from './collection_item.js';
 import { deep_merge } from './helpers.js';
-import {template as settings_template} from "./components/settings.js";
+import {render as render_settings_component} from "./components/settings.js";
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
 
@@ -49,6 +49,10 @@ export class Collection {
     this.items = {};
     this.merge_defaults();
     this.filter_results_ct = 0;
+    this.loaded = null;
+    this._loading = false;
+    this.load_time_ms = null;
+    this.settings_container = null;
   }
   static async init(env, opts = {}) {
     env[this.collection_key] = new this(env, opts);
@@ -141,7 +145,7 @@ export class Collection {
    * @return {CollectionItem[]} The retrieved items.
    */
   get_many(keys = []) {
-    if (Array.isArray(keys)) return keys.map((key) => this.get(key));
+    if (Array.isArray(keys)) return keys.map((key) => this.get(key)).filter(Boolean);
     console.error("get_many called with non-array keys: ", keys);
   }
   /**
@@ -203,11 +207,21 @@ export class Collection {
    */
   get collection_key() { return (this._collection_key) ? this._collection_key : this.constructor.collection_key; }
   set collection_key(name) { this._collection_key = name; }
-  /**
-   * Gets the keys of the items in the collection.
-   * @return {String[]} The keys of the items.
-   */
-  get keys() { return Object.keys(this.items); }
+
+  // DATA ADAPTER
+  get data_adapter() {
+    if(!this._data_adapter){
+      const config = this.env.opts.collections?.[this.collection_key];
+      const data_adapter_class = config?.data_adapter
+        ?? this.env.opts.collections?.smart_collections?.data_adapter
+      ;
+      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_key + " or smart_collections");
+      this._data_adapter = new data_adapter_class(this);
+    }
+    return this._data_adapter;
+  }
+  get data_dir() { return 'multi'; }
+  get data_fs() { return this.env.data_fs; }
   /**
    * Gets the class name of the item type the collection manages.
    * @return {String} The item class name.
@@ -228,30 +242,19 @@ export class Collection {
    * @return {Function} The item type constructor.
    */
   get item_type() { return this.env.item_types[this.item_class_name]; }
+  /**
+   * Gets the keys of the items in the collection.
+   * @return {String[]} The keys of the items.
+   */
+  get keys() { return Object.keys(this.items); }
 
-
-  // may be moved to SmartSources (should not be needed in this or SmartEntities)
-  get fs() { return this.env.fs; }
-
-  // DATA ADAPTER
-  get data_adapter() {
-    if(!this._data_adapter){
-      const config = this.env.opts.collections?.[this.collection_key];
-      const data_adapter_class = config?.data_adapter
-        ?? this.env.opts.collections?.smart_collections?.data_adapter
-      ;
-      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_key + " or smart_collections");
-      this._data_adapter = new data_adapter_class(this);
-    }
-    return this._data_adapter;
-  }
   /**
    * @deprecated use data_adapter instead (2024-09-14)
    */
   get adapter(){ return this.data_adapter; }
   /**
    * Gets the data path from the environment.
-   * @deprecated use env.settings.env_data_dir
+   * @deprecated use env.env_data_dir
    * @returns {string} The data path.
    */
   get data_path() { return this.env.data_path; } // DEPRECATED
@@ -304,13 +307,14 @@ export class Collection {
       await Promise.all(batch.map(item => item.load()));
     }
     this.env.collections[this.collection_key] = 'loaded';
-    console.log("Loaded " + this.collection_key + " in " + (Date.now() - time_start) + "ms");
+    this.load_time_ms = Date.now() - time_start;
+    console.log("Loaded " + this.collection_key + " in " + this.load_time_ms + "ms");
     this._loading = false;
-    this.loaded = true;
+    this.loaded = load_queue.length;
     this.notices?.remove('loading');
   }
   get settings_config() { return this.process_settings_config({}); }
-  process_settings_config(_settings_config, prefix = this.collection_key) {
+  process_settings_config(_settings_config, prefix = '') {
     const add_prefix = (key) =>
       prefix &amp;&amp; !key.includes(`${prefix}.`) ? `${prefix}.${key}` : key;
 
@@ -319,7 +323,7 @@ export class Collection {
       let new_val = { ...val };
 
       if (new_val.conditional) {
-        if (!new_val.conditional(this.settings)) return acc;
+        if (!new_val.conditional(this)) return acc;
         delete new_val.conditional; // Remove conditional to prevent re-checking downstream
       }
 
@@ -348,24 +352,45 @@ export class Collection {
     }
     return this.env.settings[this.collection_key];
   }
-  async re_render_settings() {
-    if(!this.settings_container) return;
-    this.settings_container.innerHTML = '';
-    await this.render_settings(this.settings_container);
+  get render_settings_component() {
+    return (typeof this.opts.components?.settings === 'function'
+      ? this.opts.components.settings
+      : render_settings_component
+    ).bind(this.smart_view);
   }
-  async render_settings(container=null) {
+  get smart_view() {
+    if(!this._smart_view) this._smart_view = this.env.init_module('smart_view');
+    return this._smart_view;
+  }
+  /**
+   * Renders the settings for the collection.
+   * @param {HTMLElement} container - The container element to render the settings into.
+   * @param {Object} opts - Additional options for rendering.
+   * @param {Object} opts.settings_keys - An array of keys to render.
+   */
+  async render_settings(container=this.settings_container, opts = {}) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
     if(!container) throw new Error("Container is required");
     container.innerHTML = '';
     container.innerHTML = '&lt;div class="sc-loading">Loading ' + this.collection_key + ' settings...&lt;/div>';
-    const frag = await settings_template.call(this.env.smart_view, this);
+    const frag = await this.render_settings_component(this, opts);
     container.innerHTML = '';
     container.appendChild(frag);
+    return container;
   }
-  
 
   unload() {
     this.clear();
+  }
+  async run_load() {
+    this.loaded = null;
+    this.load_time_ms = null;
+    Object.values(this.items).forEach((item) => item.queue_load());
+    this.notices?.show(`loading ${this.collection_key}`, `Loading ${this.collection_key}...`, { timeout: 0 });
+    await this.process_load_queue();
+    this.notices?.remove(`loading ${this.collection_key}`);
+    this.notices?.show('done loading', `${this.collection_key} loaded`, { timeout: 3000 });
+    this.render_settings(); // re-render settings
   }
 
 }</code></pre>
@@ -378,13 +403,13 @@ export class Collection {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="Book.html">Book</a></li><li><a href="CanvasAdapter.html">CanvasAdapter</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="GeminiAdapter.html">GeminiAdapter</a></li><li><a href="MarkdownAdapter.html">MarkdownAdapter</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatAdapters.html">SmartChatAdapters</a></li><li><a href="SmartChatMD.html">SmartChatMD</a></li><li><a href="SmartChatModel.html">SmartChatModel</a></li><li><a href="SmartChats.html">SmartChats</a></li><li><a href="SmartChatsUI.html">SmartChatsUI</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#chat_ml_to_markdown">chat_ml_to_markdown</a></li><li><a href="global.html#chatml_to_anthropic">chatml_to_anthropic</a></li><li><a href="global.html#chatml_to_cohere">chatml_to_cohere</a></li><li><a href="global.html#chatml_to_gemini">chatml_to_gemini</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#markdown_to_chat_ml">markdown_to_chat_ml</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Book.html">Book</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatModelApiAdapter.html">SmartChatModelApiAdapter</a></li><li><a href="SmartChatModelRequestAdapter.html">SmartChatModelRequestAdapter</a></li><li><a href="SmartChatModelResponseAdapter.html">SmartChatModelResponseAdapter</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartThreadDataOpenaiJsonAdapter.html">SmartThreadDataOpenaiJsonAdapter</a></li><li><a href="SmartTurns.html">SmartTurns</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li><li><a href="global.html#top_acc">top_acc</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Tue Sep 17 2024 22:42:52 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 03 2024 11:37:15 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
