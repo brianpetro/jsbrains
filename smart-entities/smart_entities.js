@@ -37,7 +37,19 @@ export class SmartEntities extends Collection {
     if(this.embed_model_key === 'None') return;
     if(this.embed_model.loading) return console.log(`SmartEmbedModel already loading for ${this.embed_model_key}`);
     if(this.embed_model.loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
-    await this.embed_model.load();
+    try{
+      await this.embed_model.load();
+    }catch(e){
+      console.error(`Error loading SmartEmbedModel for ${this.embed_model_key}: ` + JSON.stringify((e || {}), null, 2));
+      // TEMP: for backwards compatibility with legacy transformers
+      if(this.env.smart_connections_plugin?.settings?.legacy_transformers){
+        console.log("Switching to legacy transformers");
+        this.settings.embed_model[this.embed_model_key] = this.env.smart_connections_plugin.settings.legacy_transformers;
+        this.env.smart_connections_plugin.settings.legacy_transformers = null;
+        delete this.env.smart_connections_plugin.settings.legacy_transformers;
+        await this.embed_model_changed();
+      }
+    }
   }
   async unload() {
     if (typeof this.embed_model?.unload === 'function') {
