@@ -20,7 +20,7 @@
   "homepage": "https://jsbrains.org",
   "dependencies": {
     "smart-chat-model": "file:../smart-chat-model-v1",
-    "smart-sources": "file:../smart-sources-v1"
+    "smart-sources": "file:../smart-sources"
   },
   "devDependencies": {
     "ava": "^6.1.3",

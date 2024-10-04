@@ -24,7 +24,7 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-sources": "file:../smart-sources-v1"
+    "smart-sources": "file:../smart-sources"
   },
   "ava": {
     "files": [
