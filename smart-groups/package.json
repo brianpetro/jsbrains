@@ -1,18 +1,18 @@
 {
-  "name": "smart-sources",
+  "name": "smart-groups",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "0.0.1",
   "type": "module",
-  "description": "Easy to manage collections mapped to local or remote sources.",
+  "description": "Easy to manage embedded groups.",
   "main": "main.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
     "embeddings",
-    "collections",
-    "sources"
+    "clustering",
+    "groups"
   ],
   "repository": {
     "type": "git",
@@ -23,13 +23,9 @@
   },
   "homepage": "https://jsbrains.org",
   "devDependencies": {
-    "ava": "^6.0.1",
-    "canvas": "^2.11.2",
-    "pdfjs-dist-legacy": "^1.0.1"
+    "ava": "^6.0.1"
   },
   "dependencies": {
-    "pdf-lib": "^1.17.1",
-    "sharp": "^0.33.5",
     "smart-entities": "file:../smart-entities"
   },
   "ava": {
