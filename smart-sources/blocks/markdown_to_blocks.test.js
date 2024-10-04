@@ -61,15 +61,21 @@ In this case, \`#Another Top-Level Heading[2]\`. No \`#\` separates the heading 
   const expected = {
     "#Top-Level Heading": [1, 6],
     "#Top-Level Heading##Level 3 Heading (Skipping Level 2)": [3, 6],
+    "#Top-Level Heading##Level 3 Heading (Skipping Level 2)#{1}": [5, 6],
     "#Another Top-Level Heading": [7, 18],
     "#Another Top-Level Heading####Level 5 Heading (Skipping Levels 2-4)": [9, 12],
+    "#Another Top-Level Heading####Level 5 Heading (Skipping Levels 2-4)#{1}": [11, 12],
     "#Another Top-Level Heading#Second-Level Heading": [13, 18],
     "#Another Top-Level Heading#Second-Level Heading###Level 5 Child Heading": [15, 18],
+    "#Another Top-Level Heading#Second-Level Heading###Level 5 Child Heading#{1}": [17, 18],
     "#Heading Without Content": [19, 24],
     "#Heading Without Content##Subheading With Content": [21, 24],
+    "#Heading Without Content##Subheading With Content#{1}": [23, 24],
     "#Heading With Content": [25, 34],
+    "#Heading With Content#{1}": [27, 28],
     "#Heading With Content##Subheading Without Content": [29, 34],
     "#Heading With Content##Subheading Without Content#Sub-subheading With Content": [31, 34],
+    "#Heading With Content##Subheading Without Content#Sub-subheading With Content#{1}": [33, 34],
     "#Empty H1": [35, 36],
     "#List test heading": [37, 50],
     "#List test heading#{1}": [39, 41],
@@ -77,7 +83,8 @@ In this case, \`#Another Top-Level Heading[2]\`. No \`#\` separates the heading 
     "#List test heading#{3}": [43, 43],
     "#List test heading#{4}": [44, 47],
     "#List test heading#{5}": [48, 50],
-    "#Another Top-Level Heading[2]": [51, 55]
+    "#Another Top-Level Heading[2]": [51, 55],
+    "#Another Top-Level Heading[2]#{1}": [53, 55]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -97,8 +104,11 @@ Thank you for reading.`;
 
   const expected = {
     "#Introduction": [1, 3],
+    "#Introduction#{1}": [2, 3],
     "#Getting Started": [4, 6],
-    "#Conclusion": [7, 8]
+    "#Getting Started#{1}": [5, 6],
+    "#Conclusion": [7, 8],
+    "#Conclusion#{1}": [8, 8]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -164,10 +174,15 @@ Overview detailed information.
 
   const expected = {
     "#Overview": [1, 3],
+    "#Overview#{1}": [2, 3],
     "#Overview[2]": [4, 6],
+    "#Overview[2]#{1}": [5, 6],
     "#Details": [7, 9],
+    "#Details#{1}": [8, 9],
     "#Overview[3]": [10, 15],
-    "#Overview[3]#Details": [13, 15]
+    "#Overview[3]#{1}": [11, 12],
+    "#Overview[3]#Details": [13, 15],
+    "#Overview[3]#Details#{1}": [14, 15]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -203,6 +218,7 @@ Final thoughts.`;
 
   const expected = {
     "#Project": [1, 15],
+    "#Project#{1}": [2, 3],
     "#Project##Goals": [4, 8],
     "#Project##Goals#{1}": [5, 6],
     "#Project##Goals#{2}": [7, 8],
@@ -212,7 +228,8 @@ Final thoughts.`;
     "#Roadmap": [16, 22],
     "#Roadmap#{1}": [18, 20],
     "#Roadmap#{2}": [21, 22],
-    "#Conclusion": [23, 24]
+    "#Conclusion": [23, 24],
+    "#Conclusion#{1}": [24, 24]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -234,8 +251,11 @@ Content under second occurrence of top-level heading.
 
   const expected = {
     "#Heading": [1, 8],
+    "#Heading#{1}": [2, 3],
     "#Heading#Heading": [4, 8],
-    "#Heading[2]": [9, 11]
+    "#Heading#Heading#{1}": [5, 8],
+    "#Heading[2]": [9, 11],
+    "#Heading[2]#{1}": [10, 11]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -251,7 +271,8 @@ Content under heading one
 
   const expected = {
     "#": [1, 2],
-    "#Heading One": [3, 5]
+    "#Heading One": [3, 5],
+    "#Heading One#{1}": [4, 5]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -273,7 +294,8 @@ Content under heading one
 
   const expected = {
     "#---frontmatter---": [1, 7],
-    "#Heading One": [9, 11]
+    "#Heading One": [9, 11],
+    "#Heading One#{1}": [10, 11]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -292,7 +314,8 @@ Content under heading one
     "#": [1, 3],
     "##{1}": [1, 1],
     "##{2}": [2, 3],
-    "#Heading One": [4, 6]
+    "#Heading One": [4, 6],
+    "#Heading One#{1}": [5, 6]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -313,7 +336,9 @@ Some text
 
   const expected = {
     "#Heading": [1, 7],
-    "#Another Heading": [8, 10]
+    "#Heading#{1}": [2, 7],
+    "#Another Heading": [8, 10],
+    "#Another Heading#{1}": [9, 10]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -326,7 +351,8 @@ Content under heading.
 `;
 
   const expected = {
-    "#\"Heading\"": [1, 3]
+    "#\"Heading\"": [1, 3],
+    "#\"Heading\"#{1}": [2, 3]
   };
 
   const result = markdown_to_blocks(markdown);
@@ -382,6 +408,44 @@ test('should handle nested list items with line break between items', t => {
     "#Heading####New Environment": [10, 25],
     "#Heading####New Environment#{1}": [12, 18],
     "#Heading####New Environment#{2}": [19, 25]
+  };
+
+  const result = markdown_to_blocks(markdown);
+  t.deepEqual(result, expected);
+});
+
+test('should include paragraph text in sub-block if would have adjacent list items blocks', t => {
+  const markdown = `### Lorem Ipsum
+
+Dolor Sit Amet
+
+- **Consectetur**: The **Adipiscing Elit** sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+- **Ut Enim Ad Minim**:
+	- Veniam quis nostrud exercitation ullamco laboris nisi ut aliquip.
+	- Ex ea commodo consequat duis aute irure dolor in reprehenderit.
+- **Voluptate**:
+	- Velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.
+
+**Cupidatat Non Proident**
+
+- **Sunt In Culpa**: Qui officia deserunt mollit anim id est laborum.
+- **Sed Ut Perspiciatis**:
+	- Unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
+- **Totam Rem Aperiam**:
+	- Eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae.
+	- Dicta sunt explicabo nemo enim ipsam voluptatem quia voluptas sit aspernatur.
+`;
+
+  const expected = {
+    "###Lorem Ipsum": [1, 20],
+    "###Lorem Ipsum#{1}": [3, 4],
+    "###Lorem Ipsum#{2}": [5, 5],
+    "###Lorem Ipsum#{3}": [6, 8],
+    "###Lorem Ipsum#{4}": [9, 11],
+    "###Lorem Ipsum#{5}": [12, 13],
+    "###Lorem Ipsum#{6}": [14, 14],
+    "###Lorem Ipsum#{7}": [15, 16],
+    "###Lorem Ipsum#{8}": [17, 20]
   };
 
   const result = markdown_to_blocks(markdown);
