@@ -1,13 +1,29 @@
 import { SmartViewNodeAdapter } from "./node.js";
-import { Setting } from "obsidian";
+import { Setting, MarkdownRenderer, Component } from "obsidian";
+
 export class SmartViewObsidianAdapter extends SmartViewNodeAdapter {
   get setting_class() { return Setting; }
+  
   open_url(url) { window.open(url); }
+  
   render_file_select_component(elm, path, value) {
     return super.render_text_component(elm, path, value);
   }
+  
   render_folder_select_component(elm, path, value) {
     return super.render_text_component(elm, path, value);
+  }
+
+  async render_markdown(markdown, scope=null) {
+    const frag = this.main.create_doc_fragment("<div></div>");
+    await MarkdownRenderer.render(
+      this.main.env.plugin.app,
+      markdown,
+      frag, // container
+      scope?.file_path || "",
+      new Component()
+    );
+    return frag;
   }
 }
 

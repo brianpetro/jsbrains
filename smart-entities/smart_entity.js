@@ -1,6 +1,9 @@
 import { CollectionItem } from "smart-collections";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 import { EntityAdapter } from "smart-entities/adapters/_adapter.js";
+import { render as render_connections_component } from "./components/connections.js";
+import { render as render_entity_component } from "./components/entity.js";
+
 export class SmartEntity extends CollectionItem {
   constructor(env, opts = {}) {
     super(env, opts);
@@ -105,4 +108,25 @@ export class SmartEntity extends CollectionItem {
   // SmartSources (how might this be better done?)
   get_key() { return this.data.key || this.data.path; }
   get path() { return this.data.path; }
+
+  async render_connections(container, opts = {}) {
+    const frag = await render_connections_component.call(this.smart_view, this, opts);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    return container;
+  }
+
+  async render_entity(container, opts = {}) {
+    const frag = await render_entity_component.call(this.smart_view, this, opts);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    return container;
+  }
+
+  get smart_view() {
+    if (!this._smart_view) {
+      this._smart_view = this.env.init_module('smart_view');
+    }
+    return this._smart_view;
+  }
 }

@@ -57,7 +57,7 @@ export class SmartView {
    * @param {string} markdown - The markdown content.
    * @returns {Promise<*>}
    */
-  async render_markdown(markdown) { return await this.adapter.render_markdown(markdown); }
+  async render_markdown(markdown, scope=null) { return await this.adapter.render_markdown(markdown, scope); }
 
   /**
    * Gets a value from an object by path.
