@@ -54,12 +54,14 @@ export class SmartSource extends SmartEntity {
       const cache_key = this.key + JSON.stringify(opts) + "_blocks";
       if(!this.env.connections_cache[cache_key]){
         const nearest = this.env.smart_blocks.nearest(this.vec, this.filter_opts)
-        nearest.sort(sort_by_score)
-        this.env.connections_cache[cache_key] = nearest.slice(0, limit);
+          .sort(sort_by_score)
+          .slice(0, limit)
+        ;
+        this.connections_to_cache(cache_key, nearest);
       }
       connections = [
         ...connections,
-        ...this.env.connections_cache[cache_key],
+        ...this.connections_from_cache(cache_key),
       ].sort(sort_by_score).slice(0, limit);
     }
     return connections;

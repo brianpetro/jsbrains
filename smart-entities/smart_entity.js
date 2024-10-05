@@ -1,7 +1,6 @@
 import { CollectionItem } from "smart-collections";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 import { EntityAdapter } from "smart-entities/adapters/_adapter.js";
-import { render as render_connections_component } from "./components/connections.js";
 import { render as render_entity_component } from "./components/entity.js";
 
 export class SmartEntity extends CollectionItem {
@@ -55,10 +54,11 @@ export class SmartEntity extends CollectionItem {
     return this.connections_from_cache(cache_key);
   }
   connections_from_cache(cache_key) {
-    return this.env.connections_cache[cache_key].map(cache_item => {
-      cache_item.item.score = cache_item.score;
-      return cache_item.item;
-    });
+    // return this.env.connections_cache[cache_key].map(cache_item => {
+    //   cache_item.item.score = cache_item.score;
+    //   return cache_item.item;
+    // });
+    return this.env.connections_cache[cache_key];
   }
   connections_to_cache(cache_key, connections) {
     this.env.connections_cache[cache_key] = connections
@@ -108,13 +108,6 @@ export class SmartEntity extends CollectionItem {
   // SmartSources (how might this be better done?)
   get_key() { return this.data.key || this.data.path; }
   get path() { return this.data.path; }
-
-  async render_connections(container, opts = {}) {
-    const frag = await render_connections_component.call(this.smart_view, this, opts);
-    container.innerHTML = '';
-    container.appendChild(frag);
-    return container;
-  }
 
   async render_entity(container, opts = {}) {
     const frag = await render_entity_component.call(this.smart_view, this, opts);

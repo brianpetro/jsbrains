@@ -192,12 +192,18 @@ export class SmartEntities extends Collection {
     const results = hyp_vecs
       .reduce((acc, embedding, i) => {
         const nearests = this.nearest(embedding.vec, filter);
-        nearests.forEach(entity => {
-          if(!acc[entity.path] || entity.score > acc[entity.path].score){
-            acc[entity.path] = {key: entity.key, score: entity.score, entity, hypothetical_i: i};
+        nearests.forEach(item => {
+          if(!acc[item.path] || item.score > acc[item.path].score){
+            acc[item.path] = {
+              key: item.key,
+              score: item.score,
+              item,
+              entity: item, // DEPRECATED: for temporary backwards compatibility (use item instead)
+              hypothetical_i: i,
+            };
           }else{
             // DEPRECATED: handling when last score added to entity is not top score (needs to be fixed in Entities.nearest handling)
-            entity.score = acc[entity.path].score;
+            item.score = acc[item.path].score;
           }
         });
         return acc;
