@@ -124,9 +124,7 @@ export class SmartEntity extends CollectionItem {
   }
 
   get smart_view() {
-    if (!this._smart_view) {
-      this._smart_view = this.env.init_module('smart_view');
-    }
+    if (!this._smart_view) this._smart_view = this.env.init_module('smart_view');
     return this._smart_view;
   }
 }

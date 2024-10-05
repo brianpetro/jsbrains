@@ -38,11 +38,11 @@ export class SmartView {
   }
 
   /**
-   * Adds an icon (implemented in adapter).
+   * Gets an icon (implemented in adapter).
    * @param {string} icon_name - The name of the icon.
-   * @returns {*}
+   * @returns {string} The icon HTML.
    */
-  add_icon(icon_name) { return this.adapter.add_icon(icon_name); }
+  get_icon_html(icon_name) { return this.adapter.get_icon_html(icon_name); }
 
   /**
    * Renders a single setting component (implemented in adapter).

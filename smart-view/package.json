@@ -18,5 +18,6 @@
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
+    "lucide-static": "^0.414.0"
   }
 }

@@ -1,7 +1,13 @@
-import { SmartViewNodeAdapter } from "./node.js";
-import { Setting, MarkdownRenderer, Component } from "obsidian";
+import { SmartViewAdapter } from "./_adapter.js";
+import {
+  Setting,
+  MarkdownRenderer,
+  Component,
+  getIcon,
+  Keymap
+} from "obsidian";
 
-export class SmartViewObsidianAdapter extends SmartViewNodeAdapter {
+export class SmartViewObsidianAdapter extends SmartViewAdapter {
   get setting_class() { return Setting; }
   
   open_url(url) { window.open(url); }
@@ -14,17 +20,28 @@ export class SmartViewObsidianAdapter extends SmartViewNodeAdapter {
     return super.render_text_component(elm, path, value);
   }
 
-  async render_markdown(markdown, scope=null) {
-    const frag = this.main.create_doc_fragment("<div></div>");
-    await MarkdownRenderer.render(
-      this.main.env.plugin.app,
-      markdown,
-      frag, // container
-      scope?.file_path || "",
-      new Component()
-    );
+  async render_markdown(markdown, scope) {
+    if(!scope) return console.warn("Scope required for rendering markdown in Obsidian adapter");
+    // MarkdownRenderer attempts to get container parent and throws error if not present
+    // So wrap in extra div to act as parent and render into inner div
+    const frag = this.main.create_doc_fragment("<div><div class='inner'></div></div>");
+    const container = frag.querySelector(".inner");
+    try{
+      await MarkdownRenderer.render(
+        scope.env.plugin.app,
+        markdown,
+        container,
+        scope?.file_path || "",
+        new Component()
+      );
+    }catch(e){
+      console.warn("Error rendering markdown in Obsidian adapter", e);
+    }
     return frag;
   }
+  get_icon_html(name) { return getIcon(name).outerHTML; }
+  // Obsidian Specific
+  is_mod_event(event) { return Keymap.isModEvent(event); }
 }
 
 // export class SmartViewObsidianAdapter extends SmartViewNodeAdapter {
