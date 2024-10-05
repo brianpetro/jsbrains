@@ -144,7 +144,7 @@ export class SmartBlock extends SmartEntity {
       const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})
         .reduce((acc, [key, range]) => {
           if(!key.startsWith(this.sub_key+"#")) return acc;
-          if(range[0] === match_line_start + 1) acc.has_line_start = key;
+          if(range[0] === match_line_start) acc.has_line_start = key;
           if(range[1] === match_line_end) acc.has_line_end = key;
           return acc;
         }, {has_line_start: null, has_line_end: null})
