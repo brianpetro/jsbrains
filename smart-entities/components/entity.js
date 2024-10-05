@@ -12,10 +12,6 @@ async function get_markdown(scope) {
 }
 
 export async function post_process(scope, frag, opts = {}) {
-  frag.querySelector('.sc-entity').addEventListener('click', (event) => {
-    this.handle_entity_click(event, scope);
-  });
-
   return frag;
 }    
 
