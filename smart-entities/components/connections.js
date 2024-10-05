@@ -1,7 +1,8 @@
 export async function build_html(scope, opts = {}) {
   const results = scope.find_connections(opts);
+  const expanded_view = scope.env.settings.expanded_view;
   const resultsHtml = results.map(result => `
-    <div class="search-result${!opts.expanded_view ? ' sc-collapsed' : ''}" data-path="${result.path.replace(/"/g, '&quot;')}" data-collection="${result.collection_key}">
+    <div class="search-result${expanded_view ? '' : ' sc-collapsed'}" data-path="${result.path.replace(/"/g, '&quot;')}" data-collection="${result.collection_key}">
       <span class="header">
         ${this.get_icon_html('right-triangle')}
         <a class="search-result-file-title" href="#" title="${result.path.replace(/"/g, '&quot;')}" draggable="true">
@@ -20,8 +21,7 @@ export async function build_html(scope, opts = {}) {
         ${scope.env.smart_sources.keys.length} (${scope.env.smart_blocks.keys.length})
       </p>
       <button class="sc-refresh">${this.get_icon_html('refresh-cw')}</button>
-      <button class="sc-fold-all">${this.get_icon_html('fold-vertical')}</button>
-      <button class="sc-unfold-all">${this.get_icon_html('unfold-vertical')}</button>
+      <button class="sc-fold-toggle">${this.get_icon_html(expanded_view ? 'fold-vertical' : 'unfold-vertical')}</button>
       <button class="sc-filter">${this.get_icon_html('sliders-horizontal')}</button>
       <button class="sc-search">${this.get_icon_html('search')}</button>
     </div>
@@ -54,6 +54,7 @@ export async function post_process(scope, frag, opts = {}) {
     const entity = scope.env[collection_key].get(elm.dataset.path);
     await entity.render_entity(elm.querySelector("li"), opts);
   });
+
   container.querySelectorAll(".search-result").forEach(elm => {
     if(typeof opts.add_result_listeners === 'function'){
       opts.add_result_listeners(elm);
@@ -61,6 +62,29 @@ export async function post_process(scope, frag, opts = {}) {
   });
 
   await Promise.all(resultPromises);
+
+  // Add fold/unfold functionality
+  const toggle_button = frag.querySelector(".sc-fold-toggle");
+  toggle_button.addEventListener("click", () => {
+    if (scope.env.settings.expanded_view) {
+      container.querySelectorAll(".search-result").forEach((elm) => elm.classList.add("sc-collapsed"));
+    } else {
+      container.querySelectorAll(".search-result").forEach((elm) => {
+        elm.classList.remove("sc-collapsed");
+        const collection_key = elm.dataset.collection;
+        const entity = scope.env[collection_key].get(elm.dataset.path);
+        entity.render_entity(elm.querySelector("li"));
+      });
+    }
+    scope.env.settings.expanded_view = !scope.env.settings.expanded_view;
+    if (scope.env.settings.expanded_view) {
+      toggle_button.innerHTML = this.get_icon_html('fold-vertical');
+      toggle_button.setAttribute('aria-label', 'Fold all');
+    } else {
+      toggle_button.innerHTML = this.get_icon_html('unfold-vertical');
+      toggle_button.setAttribute('aria-label', 'Unfold all');
+    }
+  });
 
   return frag;
 }
