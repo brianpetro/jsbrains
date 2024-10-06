@@ -21,13 +21,11 @@
 
 import { SmartEntity } from "./smart_entity.js";
 import { SmartEntities } from "./smart_entities.js";
-import { top_acc } from "./top_acc.js";
 import { cos_sim } from "./cos_sim.js";
 
 export {
   SmartEntity,
   SmartEntities,
   // unnecessary?
-  top_acc,
   cos_sim,
 }

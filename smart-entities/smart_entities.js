@@ -1,5 +1,5 @@
 import { Collection } from "smart-collections";
-import { top_acc } from "./top_acc.js";
+import { results_acc } from "./top_acc.js";
 import { cos_sim } from "./cos_sim.js";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 
@@ -90,7 +90,12 @@ export class SmartEntities extends Collection {
     return this._embed_model;
   }
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
-  // DEPRECATED in favor of entity-based nearest_to(entity, filter)
+  /**
+   * Finds the nearest entities to a vector.
+   * @param {Array<number>} vec 
+   * @param {Object} filter 
+   * @returns {<Result[]>} Result objects with score and item
+   */
   nearest(vec, filter = {}) {
     if (!vec) return console.log("no vec");
     const {
@@ -99,12 +104,11 @@ export class SmartEntities extends Collection {
     const nearest = this.filter(filter)
       .reduce((acc, item) => {
         if (!item.vec) return acc; // skip if no vec
-        item.score = cos_sim(vec, item.vec);
-        item.sim = item.score; // DEPRECATED alias
-        top_acc(acc, item, results_count); // update acc
+        const result = { item, score: cos_sim(vec, item.vec) };
+        results_acc(acc, result, results_count); // update acc
         return acc;
-      }, { min: 0, items: new Set() });
-    return Array.from(nearest.items);
+      }, { min: 0, results: new Set() });
+    return Array.from(nearest.results);
   }
   get file_name() { return this.collection_key + '-' + this.smart_embed_model_key.split("/").pop(); }
   get smart_embed_model_key() {
@@ -180,6 +184,13 @@ export class SmartEntities extends Collection {
     }
     return opts;
   }
+  /**
+   * Lookup entities based on hypotheticals.
+   * @param {Object} params - The parameters for the lookup.
+   * @param {Array} params.hypotheticals - The hypotheticals to lookup.
+   * @param {Object} params.filter - The filter to use for the lookup.
+   * @returns {Promise<Array>} The results of the lookup (Result objects with score and item)
+   */
   async lookup(params={}) {
     const { hypotheticals = [] } = params;
     if(!hypotheticals?.length) return {error: "hypotheticals is required"};
@@ -191,19 +202,19 @@ export class SmartEntities extends Collection {
     };
     const results = hyp_vecs
       .reduce((acc, embedding, i) => {
-        const nearests = this.nearest(embedding.vec, filter);
-        nearests.forEach(item => {
-          if(!acc[item.path] || item.score > acc[item.path].score){
-            acc[item.path] = {
-              key: item.key,
-              score: item.score,
-              item,
-              entity: item, // DEPRECATED: for temporary backwards compatibility (use item instead)
+        const results = this.nearest(embedding.vec, filter);
+        results.forEach(result => {
+          if(!acc[result.item.path] || result.score > acc[result.item.path].score){
+            acc[result.item.path] = {
+              key: result.item.key,
+              score: result.score,
+              item: result.item,
+              entity: result.item, // DEPRECATED: for temporary backwards compatibility (use item instead)
               hypothetical_i: i,
             };
           }else{
             // DEPRECATED: handling when last score added to entity is not top score (needs to be fixed in Entities.nearest handling)
-            item.score = acc[item.path].score;
+            result.score = acc[result.item.path].score;
           }
         });
         return acc;
@@ -225,11 +236,6 @@ export class SmartEntities extends Collection {
     return top_k;
   }
   get settings_config() {
-    // return this.process_settings_config({
-    //   ...super.settings_config,
-    //   ...(this.embed_model?.settings_config || {}),
-    //   ...settings_config,
-    // });
     return {
       ...super.settings_config,
       ...(this.embed_model?.settings_config || {}),

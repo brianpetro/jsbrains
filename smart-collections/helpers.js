@@ -50,22 +50,22 @@ export function cos_sim(vector1, vector2) {
   return normA === 0 || normB === 0 ? 0 : dotProduct / (normA * normB);
 }
 
-/**
- * Maintains a collection of top items based on their similarity measure.
- * @param {Object} _acc - The accumulator object that stores items and their minimum similarity.
- * @param {Object} item - The new item to consider for inclusion.
- * @param {number} [ct=10] - The count of top items to maintain.
- */
-export function top_acc(_acc, item, ct = 10) {
-  if (_acc.items.size < ct) {
-    _acc.items.add(item);
-  } else if (item.sim > _acc.min) {
-    _acc.items.add(item);
-    _acc.items.delete(_acc.minItem);
-    _acc.minItem = Array.from(_acc.items).reduce((min, curr) => (curr.sim < min.sim ? curr : min));
-    _acc.min = _acc.minItem.sim;
-  }
-}
+// /**
+//  * Maintains a collection of top items based on their similarity measure.
+//  * @param {Object} _acc - The accumulator object that stores items and their minimum similarity.
+//  * @param {Object} item - The new item to consider for inclusion.
+//  * @param {number} [ct=10] - The count of top items to maintain.
+//  */
+// export function top_acc(_acc, item, ct = 10) {
+//   if (_acc.items.size < ct) {
+//     _acc.items.add(item);
+//   } else if (item.sim > _acc.min) {
+//     _acc.items.add(item);
+//     _acc.items.delete(_acc.minItem);
+//     _acc.minItem = Array.from(_acc.items).reduce((min, curr) => (curr.sim < min.sim ? curr : min));
+//     _acc.min = _acc.minItem.sim;
+//   }
+// }
 
 /**
  * Delays the execution of the next line in the code by a specified number of milliseconds.

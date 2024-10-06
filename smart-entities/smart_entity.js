@@ -61,9 +61,10 @@ export class SmartEntity extends CollectionItem {
     return this.env.connections_cache[cache_key];
   }
   connections_to_cache(cache_key, connections) {
-    this.env.connections_cache[cache_key] = connections
-      .map(item => ({score: item.score, item}))
-    ;
+    // this.env.connections_cache[cache_key] = connections
+    //   .map(item => ({score: item.score, item}))
+    // ;
+    this.env.connections_cache[cache_key] = connections;
   }
 
   // getters
