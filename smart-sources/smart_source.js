@@ -273,7 +273,8 @@ export class SmartSource extends SmartEntity {
   get blocks() {
     if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key)); // fastest (no iterating over all blocks)
     else if(this.last_history) return this.block_collection.get_many(Object.keys(this.last_history.blocks)); // TEMP: for backwards compatibility (2024-09-30)
-    else return this.block_collection.filter({key_starts_with: this.key});
+    // else return this.block_collection.filter({key_starts_with: this.key});
+    return [];
   }
   /**
    * @deprecated only for backwards compatibility in this.blocks (2024-09-30)
