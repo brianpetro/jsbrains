@@ -4,6 +4,7 @@ import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 import { create_hash } from "../utils/create_hash.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { get_line_range } from "../utils/get_line_range.js";
+import { block_read, block_update, block_destroy } from "../blocks/markdown_crud.js";
 
 export class MarkdownSourceAdapter extends TextSourceAdapter {
   get fs() { return this.source_collection.fs; }
@@ -208,33 +209,25 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   }
 
   async block_read(opts = {}) {
-    if(!this.item.line_start) return "BLOCK NOT FOUND (no line_start)";
     const source_content = await this.read();
     
-    // if (opts.no_changes && this.smart_change) {
-    //   const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
-    //   content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
-    // }
-    // if (opts.headings) {
-    //   content = this.prepend_headings(content, opts.headings);
-    // }
-    // if (opts.add_depth) {
-    //   content = increase_heading_depth(content, opts.add_depth);
-    // }
-    const block_content = get_line_range(source_content, this.item.line_start, this.item.line_end);
-    const breadcrumbs = this.item.breadcrumbs;
-    const embed_input = breadcrumbs + "\n" + block_content;
-    const hash = await create_hash(embed_input);
-    if(hash !== this.item.hash){
-      const blocks = markdown_to_blocks(source_content);
-      this.item.source?.queue_import();
-      const block_range = Object.entries(blocks).find(([k,v]) => k === this.item.sub_key)?.[1];
-      if(!block_range) return "BLOCK NOT FOUND (not in updated parsed blocks)";
-      return get_line_range(source_content, block_range[0], block_range[1]);
+    try {
+      const block_content = block_read(source_content, this.item.sub_key);
+      const breadcrumbs = this.item.breadcrumbs;
+      const embed_input = breadcrumbs + "\n" + block_content;
+      const hash = await create_hash(embed_input);
+      
+      if (hash !== this.item.hash) {
+        this.item.source?.queue_import();
+        return block_read(source_content, this.item.sub_key);
+      }
+      
+      return block_content;
+    } catch (error) {
+      console.warn("Error reading block:", error.message);
+      return "BLOCK NOT FOUND";
     }
-    return block_content;
   }
-
 
   prepend_headings(content, mode) {
     const headings = this.file_path.split('#').slice(1);
@@ -283,22 +276,23 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async _block_update(new_block_content) {
     const full_content = await this.read();
-    const all_lines = full_content.split("\n");
-    const new_content = [
-      ...all_lines.slice(0, this.item.line_start),
-      new_block_content,
-      ...all_lines.slice(this.item.line_end + 1),
-    ].join("\n");
-    await this.item.source._update(new_content);
-    await this.item.source.import();
+    try {
+      const updated_content = block_update(full_content, this.item.sub_key, new_block_content);
+      await this.item.source._update(updated_content);
+      await this.item.source.import();
+    } catch (error) {
+      console.warn("Error updating block:", error.message);
+    }
   }
 
   async block_remove() {
-    if(this.item.sub_blocks.length){
-      // leave heading if has sub-blocks
-      await this._block_update((await this.block_read({ no_changes: "before", headings: "last" })).split("\n")[0]);
-    }else{
-      await this._block_update("");
+    const full_content = await this.read();
+    try {
+      const updated_content = block_destroy(full_content, this.item.sub_key);
+      await this.item.source._update(updated_content);
+      await this.item.source.import();
+    } catch (error) {
+      console.warn("Error removing block:", error.message);
     }
     this.item.delete();
   }
@@ -357,5 +351,3 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     await this.item.source.import();
   }
 }
-
-

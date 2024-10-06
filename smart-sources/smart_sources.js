@@ -1,4 +1,5 @@
 import { SmartEntities } from "smart-entities";
+import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 export class SmartSources extends SmartEntities {
   constructor(env, opts = {}) {
     super(env, opts);
@@ -154,6 +155,17 @@ export class SmartSources extends SmartEntities {
       .sort((a, b) => b.score - a.score) // sort by relevance 
       .map(result => result.item)
     ;
+  }
+  async lookup(params={}){
+    let results = await super.lookup(params);
+    if(this.env.smart_blocks?.settings?.embed_blocks) {
+      const k = params.k || this.env.settings.lookup_k || 10;
+      results = [
+        ...results,
+        ...(await this.block_collection.lookup(params)),
+      ].sort(sort_by_score).slice(0, k);
+    }
+    return results;
   }
 
   async import_file(file){
