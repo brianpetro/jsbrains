@@ -102,13 +102,7 @@ export class SmartBlock extends SmartEntity {
   get file_type() { return this.source.file_type; }
   get folder() { return this.path.split("/").slice(0, -1).join("/"); }
   get embed_link() {
-    // if regex matches "page #" (case-insensitive), return page number
-    if(/^.*page\s*(\d+).*$/.test(this.sub_key)){
-      const number = this.sub_key.match(/^.*page\s*(\d+).*$/i)[1];
-      return `![[${this.source.path}#page=${number}]]`;
-    }else{
-      return this.source.embed_link;
-    }
+    return `![[${this.link}]]`;
   }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get has_lines() { return this.lines && this.lines.length === 2; }
@@ -127,6 +121,15 @@ export class SmartBlock extends SmartEntity {
   get lines() { return this.source?.data?.blocks?.[this.sub_key]; }
   get line_start() { return this.lines?.[0]; }
   get line_end() { return this.lines?.[1]; }
+  get link() {
+    // if regex matches "page #" (case-insensitive), return page number
+    if(/^.*page\s*(\d+).*$/i.test(this.sub_key)){
+      const number = this.sub_key.match(/^.*page\s*(\d+).*$/i)[1];
+      return `${this.source.path}#page=${number}`;
+    }else{
+      return this.source.path;
+    }
+  }
   // use text length to detect changes
   get name() {
     const source_name = this.source.name;
@@ -218,7 +221,5 @@ export class SmartBlock extends SmartEntity {
   // DEPRECATED since v2
   get note() { return this.source; }
   get note_key() { return this.key.split("#")[0]; }
-  // backwards compatibility (DEPRECATED)
-  get link() { return this.key; }
 
 }

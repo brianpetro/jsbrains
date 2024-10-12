@@ -234,7 +234,7 @@ export class SmartSources extends SmartEntities {
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
         if(acc[adapter_constructor]) return acc; // skip if already added same adapter_constructor
         const item = this.items[Object.keys(this.items).find(i => i.endsWith(file_extension))];
-        const adapter_instance = new adapter_constructor(item);
+        const adapter_instance = new adapter_constructor(item || new this.item_type(this.env, {}));
         if(adapter_instance.settings_config){
           acc[adapter_constructor.name] = {
             type: "html",
