@@ -27,7 +27,6 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
     // So wrap in extra div to act as parent and render into inner div
     const frag = this.main.create_doc_fragment("<div><div class='inner'></div></div>");
     const container = frag.querySelector(".inner");
-    console.log('component', component);
     try{
       await MarkdownRenderer.render(
         scope.env.plugin.app,

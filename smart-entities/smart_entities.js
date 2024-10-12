@@ -156,7 +156,7 @@ export class SmartEntities extends Collection {
     } = opts;
     
     if(entity) {
-      opts.exclude_key_starts_with = entity.key; // exclude current entity
+      opts.exclude_key_starts_with = entity.source_key || entity.key; // exclude current entity
       // include/exclude filters
       if (exclude_filter) {
         if (opts.exclude_key_starts_with) {
@@ -220,7 +220,6 @@ export class SmartEntities extends Collection {
         return acc;
       }, {})
     ;
-    console.log("lookup results", results);
     const k = params.k || this.env.settings.lookup_k || 10;
     const top_k = Object.values(results)
       .sort(sort_by_score)

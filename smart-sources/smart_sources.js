@@ -128,7 +128,6 @@ export class SmartSources extends SmartEntities {
       console.warn("search_filter.keywords not set");
       return [];
     }
-    console.log("search_filter", search_filter);
     this.search_results_ct = 0;
     const initial_results = this.filter(filter_opts);
     const search_results = [];
@@ -150,7 +149,6 @@ export class SmartSources extends SmartEntities {
       );
       search_results.push(...batch_results.filter(Boolean));
     }
-    console.log("search_results_ct", this.search_results_ct);
     return search_results
       .sort((a, b) => b.score - a.score) // sort by relevance 
       .map(result => result.item)

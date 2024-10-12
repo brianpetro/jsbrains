@@ -144,6 +144,7 @@ export class SmartBlock extends SmartEntity {
     const next_line = this.data.lines[1] + 1;
     return this.source.blocks?.find(block => next_line === block.data?.lines?.[0]);
   }
+  get outlink_paths() { return this.source.outlink_paths; }
   get path() { return this.key; }
   /**
    * Should embed if block is not completely covered by sub_blocks (and those sub_blocks are large enough to embed)

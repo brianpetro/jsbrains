@@ -3,10 +3,7 @@ import { SmartHttpRequestAdapter, SmartHttpResponseAdapter } from "./_adapter.js
 export class SmartHttpRequestFetchAdapter extends SmartHttpRequestAdapter {
   async request(request_params) {
     const { url, ...opts } = request_params;
-    console.log('url', url);
-    console.log('opts', opts);
     const resp = await fetch(url, opts);
-    console.log('resp', resp);
     return new SmartHttpResponseFetchAdapter(resp);
   }
 }

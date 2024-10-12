@@ -1,5 +1,3 @@
-import { SmartHttpRequestFetchAdapter } from "./adapters/fetch.js";
-
 export class SmartHttpRequest {
   /**
    * @param {object} opts - Options for the SmartHttpRequest class
@@ -8,7 +6,8 @@ export class SmartHttpRequest {
    */
   constructor(opts={}) {
     this.opts = opts;
-    this.adapter = opts.adapter ? new opts.adapter(this) : new SmartHttpRequestFetchAdapter(this);
+    if(!opts.adapter) throw new Error("HttpRequestAdapter is required");
+    this.adapter = new opts.adapter(this);
   }
   /**
    * Returns a well-formed response object

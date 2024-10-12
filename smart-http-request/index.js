@@ -21,5 +21,6 @@
 
 import { SmartHttpRequest } from "./smart_http_request.js";
 import { SmartHttpObsidianRequestAdapter } from "./adapters/obsidian.js";
+import { SmartHttpRequestFetchAdapter } from "./adapters/fetch.js";
 
-export { SmartHttpRequest, SmartHttpObsidianRequestAdapter };
+export { SmartHttpRequest, SmartHttpObsidianRequestAdapter, SmartHttpRequestFetchAdapter };
