@@ -40,6 +40,7 @@ export class SmartChatModel extends SmartModel {
   get platform_key() {
     return this.opts.platform_key // opts added at init take precedence
       || this.settings.platform_key // then settings
+      || 'openai' // default to openai
     ;
   }
   get settings() { return this.opts.settings; }
@@ -59,7 +60,7 @@ export class SmartChatModel extends SmartModel {
         description: "Select a chat model to use with Smart Chat.",
         options_callback: 'get_models_as_options_sync',
         // callback: 'changed_chat_model',
-        conditional: (_this) => !local_platforms.includes(_this.settings.platform_key),
+        conditional: (_this) => !local_platforms.includes(_this.settings.platform_key) && _this.settings.platform_key && _this.settings[_this.settings.platform_key]?.api_key,
       },
       "[CHAT_PLATFORM].model_name": {
         name: 'Model Name',
