@@ -12,27 +12,29 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
   
   open_url(url) { window.open(url); }
   
-  render_file_select_component(elm, path, value) {
+  async render_file_select_component(elm, path, value) {
     return super.render_text_component(elm, path, value);
   }
   
-  render_folder_select_component(elm, path, value) {
+  async render_folder_select_component(elm, path, value) {
     return super.render_text_component(elm, path, value);
   }
 
   async render_markdown(markdown, scope) {
+    const component = scope.env.smart_connections_plugin.view;
     if(!scope) return console.warn("Scope required for rendering markdown in Obsidian adapter");
     // MarkdownRenderer attempts to get container parent and throws error if not present
     // So wrap in extra div to act as parent and render into inner div
     const frag = this.main.create_doc_fragment("<div><div class='inner'></div></div>");
     const container = frag.querySelector(".inner");
+    console.log('component', component);
     try{
       await MarkdownRenderer.render(
         scope.env.plugin.app,
         markdown,
         container,
         scope?.file_path || "",
-        new Component()
+        component || new Component()
       );
     }catch(e){
       console.warn("Error rendering markdown in Obsidian adapter", e);

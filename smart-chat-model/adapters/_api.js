@@ -95,7 +95,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       ...req,
     });
     const request_params = _req.to_platform();
+    // console.log('request_params', request_params);
     const http_resp = await this.http_adapter.request(request_params);
+    // console.log('http_resp', http_resp);
     const _res = new this.res_adapter(this, await http_resp.json());
     return _res.to_openai();
   }

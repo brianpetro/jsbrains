@@ -1,4 +1,6 @@
 import { SmartEntity } from "smart-entities";
+import { render as render_source_component } from "./components/source.js";
+import { create_hash } from "./utils/create_hash.js";
 
 export class SmartBlock extends SmartEntity {
   static get defaults() {
@@ -99,6 +101,15 @@ export class SmartBlock extends SmartEntity {
   get file_path() { return this.source.file_path; }
   get file_type() { return this.source.file_type; }
   get folder() { return this.path.split("/").slice(0, -1).join("/"); }
+  get embed_link() {
+    // if regex matches "page #" (case-insensitive), return page number
+    if(/^.*page\s*(\d+).*$/.test(this.sub_key)){
+      const number = this.sub_key.match(/^.*page\s*(\d+).*$/i)[1];
+      return `![[${this.source.path}#page=${number}]]`;
+    }else{
+      return this.source.embed_link;
+    }
+  }
   get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
   get has_lines() { return this.lines && this.lines.length === 2; }
   get is_block() { return this.key.includes("#"); }
@@ -190,6 +201,9 @@ export class SmartBlock extends SmartEntity {
   get mtime() { return this.source.mtime; }
   get multi_ajson_file_name() { return this.source.multi_ajson_file_name; }
   get smart_change_adapter() { return this.source.smart_change_adapter; }
+
+  // COMPONENTS
+  get component() { return render_source_component; }
 
   // CURRENTLY UNUSED
   async get_next_k_shot(i) {

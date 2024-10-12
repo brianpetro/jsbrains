@@ -6,7 +6,7 @@ export async function render(scope, opts = {}) {
   }).join('\n');
   const frag = this.create_doc_fragment(html);
   await this.render_setting_components(frag, {scope});
-  return post_process(scope, frag, opts);
+  return await post_process.call(this, scope, frag, opts);
 }
 
 export async function post_process(scope, frag, opts = {}) {

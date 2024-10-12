@@ -17,9 +17,8 @@ export async function post_process(scope, frag, opts = {}) {
 
 function should_render_embed(entity) {
   if (!entity) return false;
-  if (entity.is_canvas) return true;
-  if (entity.is_excalidraw) return true;
-  if (entity.source?.is_canvas) return true;
-  if (entity.source?.is_excalidraw) return true;
+  if (entity.is_canvas || entity?.source?.is_canvas) return true;
+  if (entity.is_excalidraw || entity?.source?.is_excalidraw) return true;
+  if (entity.file_type !== 'md') return true;
   return false;
 }

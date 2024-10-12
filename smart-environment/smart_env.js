@@ -382,15 +382,19 @@ function camel_case_to_snake_case(str) {
  */
 export function deep_merge_no_overwrite(target, source) {
   for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      if (is_obj(source[key])) {
-        if (!target.hasOwnProperty(key) || !is_obj(target[key])) {
-          target[key] = {};
+    try{
+      if (source.hasOwnProperty(key)) {
+        if (is_obj(source[key])) {
+          if (!target.hasOwnProperty(key) || !is_obj(target[key])) {
+            target[key] = {};
+          }
+          deep_merge_no_overwrite(target[key], source[key]);
+        } else if (!target.hasOwnProperty(key)) {
+          target[key] = source[key];
         }
-        deep_merge_no_overwrite(target[key], source[key]);
-      } else if (!target.hasOwnProperty(key)) {
-        target[key] = source[key];
       }
+    }catch(e){
+      console.warn(`deep_merge_no_overwrite error (${key}): ${e.message}`);
     }
   }
   return target;

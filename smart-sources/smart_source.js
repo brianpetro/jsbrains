@@ -1,6 +1,6 @@
-import { create_hash } from "./utils/create_hash.js";
 import { SmartEntity } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { render as render_source_component } from "./components/source.js";
 
 export class SmartSource extends SmartEntity {
   static get defaults() {
@@ -21,7 +21,7 @@ export class SmartSource extends SmartEntity {
   async import(){
     this._queue_import = false;
     try{
-      if(this.file.stat.size > 1000000) {
+      if(this.file_type === 'md' && this.file.stat.size > 1000000) {
         console.log(`Smart Connections: Skipping large file: ${this.path}`);
         return;
       }
@@ -41,7 +41,7 @@ export class SmartSource extends SmartEntity {
         await this.source_adapter.import();
         this.loaded_at = Date.now(); // reset loaded_at to now to prevent unneeded reloads
         this.queue_embed();
-      }else console.log(`Smart Connections: No changes to ${this.path}`);
+      } // else console.log(`Smart Connections: No changes to ${this.path}`);
     }catch(err){
       this.queue_import();
       console.error(err, err.stack);
@@ -340,6 +340,9 @@ export class SmartSource extends SmartEntity {
     else this._source_adapter = new this.source_adapters["default"](this);
     return this._source_adapter;
   }
+
+  // COMPONENTS
+  get component() { return render_source_component; }
 
   // currently unused, but useful for later
   get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }

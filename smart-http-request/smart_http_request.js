@@ -8,7 +8,7 @@ export class SmartHttpRequest {
    */
   constructor(opts={}) {
     this.opts = opts;
-    this.adapter = opts.adapter ? new opts.adapter() : new SmartHttpRequestFetchAdapter();
+    this.adapter = opts.adapter ? new opts.adapter(this) : new SmartHttpRequestFetchAdapter(this);
   }
   /**
    * Returns a well-formed response object

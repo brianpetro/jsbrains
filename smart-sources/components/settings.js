@@ -9,7 +9,7 @@ export async function render(scope, opts = {}) {
     ${settings_html}
   </div>`
   const frag = this.create_doc_fragment(html);
-  return post_process.call(this, scope, frag, opts);
+  return await post_process.call(this, scope, frag, opts);
 }
 
 export async function post_process(scope, frag, opts = {}) {

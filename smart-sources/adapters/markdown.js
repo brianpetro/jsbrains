@@ -1,7 +1,6 @@
 import { increase_heading_depth } from "../utils/increase_heading_depth.js";
 import { TextSourceAdapter } from "./text.js";
 import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
-import { create_hash } from "../utils/create_hash.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { get_line_range } from "../utils/get_line_range.js";
 import { block_read, block_update, block_destroy } from "../blocks/markdown_crud.js";
@@ -15,7 +14,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   async import() {
     const content = await this._read();
     if(!content) return console.warn("No content to import for " + this.file_path);
-    const hash = await create_hash(content);
+    const hash = await this.create_hash(content);
     if(this.data.blocks && this.data.hash === hash) return console.log("File stats changed, but content is the same. Skipping import.");
     this.data.hash = hash; // set import hash
     this.data.last_read_hash = hash;
@@ -33,7 +32,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
         size: block_content.length,
       });
       block._embed_input = block.breadcrumbs + "\n" + block_content; // improve performance by preventing extra read
-      block.data.hash = await create_hash(block._embed_input);
+      block.data.hash = await this.create_hash(block._embed_input);
     }
   }
 
@@ -73,7 +72,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async read(opts = {}) {
     let content = await this._read();
-    this.source.data.last_read_hash = await create_hash(content);
+    this.source.data.last_read_hash = await this.create_hash(content);
     if(this.source.last_read_hash !== this.source.hash){
       this.source.loaded_at = null;
       await this.source.import();
@@ -215,11 +214,11 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
       const block_content = block_read(source_content, this.item.sub_key);
       const breadcrumbs = this.item.breadcrumbs;
       const embed_input = breadcrumbs + "\n" + block_content;
-      const hash = await create_hash(embed_input);
+      const hash = await this.create_hash(embed_input);
       
       if (hash !== this.item.hash) {
         this.item.source?.queue_import();
-        return block_read(source_content, this.item.sub_key);
+        return this._block_read(source_content, this.item.sub_key);
       }
       
       return block_content;
@@ -227,6 +226,9 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
       console.warn("Error reading block:", error.message);
       return "BLOCK NOT FOUND";
     }
+  }
+  _block_read(source_content, block_key){
+    return block_read(source_content, block_key);
   }
 
   prepend_headings(content, mode) {

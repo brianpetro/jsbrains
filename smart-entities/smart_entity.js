@@ -110,15 +110,6 @@ export class SmartEntity extends CollectionItem {
   get_key() { return this.data.key || this.data.path; }
   get path() { return this.data.path; }
 
-  async render_entity(container, opts = {}) {
-    const frag = await render_entity_component.call(this.smart_view, this, opts);
-    container.innerHTML = '';
-    container.appendChild(frag);
-    return container;
-  }
-
-  get smart_view() {
-    if (!this._smart_view) this._smart_view = this.env.init_module('smart_view');
-    return this._smart_view;
-  }
+  // COMPONENTS
+  get component() { return render_entity_component; }
 }

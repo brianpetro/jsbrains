@@ -249,4 +249,21 @@ export class CollectionItem {
     this.env.settings[this.collection_key] = settings;
     this.env.smart_settings.save();
   }
+
+  // COMPONENTS
+  async render_item(container, opts = {}) {
+    const frag = await this.component.call(this.smart_view, this, opts);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    return container;
+  }
+  get smart_view() {
+    if (!this._smart_view) this._smart_view = this.env.init_module('smart_view');
+    return this._smart_view;
+  }
+  /**
+   * Override in child classes to set the component for this item
+   * @returns {Function} The render function for this component
+   */
+  get component() { return item_component; }
 }

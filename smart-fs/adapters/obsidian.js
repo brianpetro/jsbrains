@@ -148,7 +148,8 @@ export class SmartFsObsidianAdapter {
       const base64 = this.obsidian.arrayBufferToBase64(array_buffer);
       return base64;
     }
-    throw new Error(`Unsupported encoding: ${encoding}`);
+    const array_buffer = await this.obsidian_adapter.readBinary(rel_path);
+    return array_buffer;
   }
 
   /**

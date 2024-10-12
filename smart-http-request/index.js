@@ -20,5 +20,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartHttpRequest } from "./smart_http_request.js";
+import { SmartHttpObsidianRequestAdapter } from "./adapters/obsidian.js";
 
-export { SmartHttpRequest };
+export { SmartHttpRequest, SmartHttpObsidianRequestAdapter };

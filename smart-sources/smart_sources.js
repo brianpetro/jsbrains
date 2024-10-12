@@ -231,9 +231,16 @@ export class SmartSources extends SmartEntities {
     return {
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
-      ...Object.values(this.source_adapters).reduce((acc, adapter) => {
-        if(adapter.settings_config){
-          acc = { ...acc, ...adapter.settings_config };
+      ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
+        if(acc[adapter_constructor]) return acc; // skip if already added same adapter_constructor
+        const item = this.items[Object.keys(this.items).find(i => i.endsWith(file_extension))];
+        const adapter_instance = new adapter_constructor(item);
+        if(adapter_instance.settings_config){
+          acc[adapter_constructor.name] = {
+            type: "html",
+            value: `<h4>${adapter_constructor.name} adapter</h4>`
+          }
+          acc = { ...acc, ...adapter_instance.settings_config };
         }
         return acc;
       }, {}),
@@ -358,6 +365,19 @@ export class SmartSources extends SmartEntities {
     return this.env.fs.file_paths
       .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
       .length;
+  }
+
+  async render_settings(container=this.settings_container, opts = {}){
+    // prepare settings (THIS IS A PATCH: async render_setting_component fails to load)
+    const settings_config = this.settings_config; // trigger loading adapter modules
+    if(this.pdf_adapter?.chat_model){
+      await this.pdf_adapter.chat_model.get_models();
+    }
+    if(this.image_adapter?.chat_model){
+      await this.image_adapter.chat_model.get_models();
+    }
+    // END PATCH
+    await super.render_settings(container, opts);
   }
 
 }

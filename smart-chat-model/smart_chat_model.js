@@ -14,6 +14,10 @@ export class SmartChatModel extends SmartModel {
     const models = await this.adapter.get_models();
     return Object.values(models).map(model => ({ value: model.key }));
   }
+  get_models_as_options_sync() {
+    const models = this.adapter.models;
+    return Object.values(models).map(model => ({ value: model.key }));
+  }
   async stream(req, handlers={}){ return await this.adapter.stream(req, handlers); }
   stop_stream() { this.adapter.stop_stream(); }
   async test_api_key(){ return await this.adapter.test_api_key(); }
@@ -53,7 +57,7 @@ export class SmartChatModel extends SmartModel {
         name: 'Chat Model',
         type: "dropdown",
         description: "Select a chat model to use with Smart Chat.",
-        options_callback: 'get_models_as_options',
+        options_callback: 'get_models_as_options_sync',
         // callback: 'changed_chat_model',
         conditional: (_this) => !local_platforms.includes(_this.settings.platform_key),
       },

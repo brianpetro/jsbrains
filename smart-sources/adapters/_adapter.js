@@ -1,3 +1,4 @@
+import { create_hash } from "../utils/create_hash.js";
 export class SourceAdapter {
   constructor(item) {
     this.item = item;
@@ -25,4 +26,6 @@ export class SourceAdapter {
   async block_remove() { throw new Error("remove method not implemented for " + this.item.file_type); }
   async block_move_to(entity_ref) { throw new Error("move_to method not implemented for " + this.item.file_type); }
   async block_merge(content, opts = {}) { throw new Error("merge method not implemented for " + this.item.file_type); }
+  // HELPER METHODS
+  async create_hash(content) { return await create_hash(content); }
 }
