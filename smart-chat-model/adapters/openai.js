@@ -25,6 +25,17 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     const models = await this.get_models();
     return models.length > 0;
   }
+  get settings_config() {
+    return {
+      "[CHAT_PLATFORM].high_image_resolution": {
+        name: 'High Resolution Images',
+        type: "toggle",
+        description: "Enable high resolution images for the chat model (this will increase costs).",
+        default: false,
+        conditional: (_this) => _this.adapter?.model_config?.multimodal,
+      },
+    };
+  }
 }
 // Manual model context for now since OpenAI doesn't provide this info in the API response
 // may require updating when new models are released

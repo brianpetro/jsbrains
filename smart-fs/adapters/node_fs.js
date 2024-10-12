@@ -167,7 +167,7 @@ export class NodeFsSmartFsAdapter {
         path: folder ? folder + '/' + item.name : item.name,
       };
       if(this.smart_fs.is_excluded(file.path)) return acc;
-      if(item.isFile()){
+      if(item.isFile() && !item.isDirectory()){ // isFile() alone was returning true for directories containing "." in name
         if(opts.type === 'folder') return acc;
         file.type = 'file';
         // set to getter that calls statSync and formats the result
