@@ -38,10 +38,15 @@ export class SmartChatModel extends SmartModel {
   }
   get platform() { return platforms[this.platform_key]; }
   get platform_key() {
-    return this.opts.platform_key // opts added at init take precedence
+    const platform_key = this.opts.platform_key // opts added at init take precedence
       || this.settings.platform_key // then settings
       || 'openai' // default to openai
     ;
+    if(this.adapters[platform_key]) return platform_key;
+    else {
+      console.warn(`Platform ${platform_key} not supported, defaulting to openai`);
+      return 'openai'; // default to openai if platform not supported
+    }
   }
   get settings() { return this.opts.settings; }
   get settings_config() {

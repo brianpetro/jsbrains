@@ -1,7 +1,8 @@
 import { create_hash } from "../utils/create_hash.js";
 export class SourceAdapter {
-  constructor(item) {
+  constructor(item, opts = {}) {
     this.item = item;
+    this.opts = opts;
   }
   get collection() { return this.item.collection; }
   get env() { return this.collection.env; }
