@@ -35,7 +35,6 @@ class MyCollectionItem extends CollectionItem { ... };
 - Encapsulates data and behavior of an item.
 - Methods: update, save, initialize, parse.
 
-
 ### Filtering
 
 Both `Collection` and `CollectionItem` classes support advanced filtering options through the `filter_opts` parameter. This allows for flexible and powerful querying of items within a collection.
@@ -61,8 +60,57 @@ const collection = new MyCollection();
 const filtered_items = collection.list({ key_starts_with: 'prefix' });
 ```
 
+### Components and Rendering
 
+Smart Collections includes a components/ directory that provides a rendering pattern for collection items and settings. This pattern allows for flexible and customizable rendering of collection data.
 
+#### Settings Component
+
+The `settings.js` file in the components/ directory defines a render function for collection settings:
+
+```javascript
+export async function render(scope, opts = {}) {
+  // Render logic for settings
+}
+
+export async function post_process(scope, frag, opts = {}) {
+  // Post-processing logic for rendered settings
+}
+```
+
+This component is used to render settings for a collection, allowing for easy customization of the settings interface.
+
+#### Item Component
+
+While not explicitly defined in the provided files, the component pattern can be extended to individual collection items. You can create a custom render function for your collection items:
+
+```javascript
+async function render_item(item, opts = {}) {
+  // Custom rendering logic for an individual item
+}
+```
+
+#### Usage
+
+To use these components, you can call them from your collection or item classes:
+
+```javascript
+class MyCollection extends Collection {
+  async render_settings(container, opts = {}) {
+    const frag = await this.render_settings_component(this, opts);
+    container.appendChild(frag);
+  }
+}
+
+class MyCollectionItem extends CollectionItem {
+  async render(container, opts = {}) {
+    const frag = await this.component.call(this.smart_view, this, opts);
+    container.appendChild(frag);
+  }
+}
+```
+
+This component-based rendering pattern allows for a clean separation of concerns between data management and presentation, making it easier to customize the display of your collection data.
 
 ## about
 Smart Collections was built for the [Smart Connections](https://smartconnections.app) Obsidian plugin and [Smart Predictions Framework](https://wfhbrian.com/).

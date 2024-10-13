@@ -28,27 +28,72 @@ Key principles:
 
 Smart Environment enables individuals and teams to leverage the power of AI while maintaining control over their data and workflows. Designed for extensibility, it provides a framework for integrating AI capabilities into your existing tools and processes.
 
-Singleton pattern is used to ensure that only one instance of Smart Environment is created. This instance is accessible through a global reference, which is either `window` or `global`, depending on the environment.
+The SmartEnv class uses a singleton pattern to ensure that only one instance of Smart Environment is created. This instance is accessible through a global reference, which is either `window` or `global`, depending on the environment.
 
-## interface
-### `static async create(main, opts={})`
-- detects if `global_ref.smart_env` exists
-    - creates `global_ref.smart_env` if not
-    - returns `global_ref.smart_env`
+## Interface
 
-#### `opts={}`
-- `global_ref` specified in constructor
-    - must be object
-        - defaults to `window || global`
-    - sets `smart_env` property
+### `static async create(main, main_env_opts={})`
 
+Creates or updates a SmartEnv instance.
 
-## `env`
+- `main`: The main object to be added to the SmartEnv instance.
+- `main_env_opts`: Options for configuring the SmartEnv instance.
 
-![](../assets/Smart%20Env%20env%20property.png)
+Returns: The SmartEnv instance.
 
-## `render_settings(opts={})`
-- renders settings UI for each collection and Smart Modules
+### `constructor(opts={})`
+
+Initializes a new SmartEnv instance.
+
+- `opts`: Configuration options for the SmartEnv instance.
+
+### `async init(main, main_env_opts = {})`
+
+Initializes the SmartEnv instance with the provided main object and options.
+
+### `init_main(main, main_env_opts = {})`
+
+Adds a new main object to the SmartEnv instance.
+
+### `async load_main(main_key)`
+
+Loads the main object and its associated collections.
+
+### `async init_collections(config=this.opts)`
+
+Initializes collections based on the provided configuration.
+
+### `async load_collections(collections=this.collections)`
+
+Loads the specified collections.
+
+### `merge_options(opts)`
+
+Merges provided options into the SmartEnv instance, performing a deep merge for objects.
+
+### `unload_main(main_key)`
+
+Unloads a main object and its associated collections and options.
+
+### `save()`
+
+Saves all collections in the SmartEnv instance.
+
+### `init_module(module_key, opts={})`
+
+Initializes a module with the given key and options.
+
+### `async render_settings(container=this.settings_container)`
+
+Renders the settings UI for the SmartEnv instance.
+
+### `async save_settings(settings)`
+
+Saves the current settings to the file system.
+
+### `async load_settings()`
+
+Loads the settings from the file system.
 
 ## Rendering Settings
 
@@ -95,3 +140,32 @@ The `render_settings` method and its associated template can be easily customize
 - Adding validation and error handling for setting inputs
 
 By leveraging this flexible architecture, Smart Environment ensures that settings for all components can be easily managed and displayed in a cohesive, user-friendly interface.
+
+## Usage
+
+```js
+import { SmartEnv } from 'smart-environment';
+
+class MyApp {
+  constructor() {
+    this.init();
+  }
+
+  async init() {
+    this.env = await SmartEnv.create(this, {
+      env_path: '/path/to/my/app',
+      collections: {
+        // Define your collections here
+      },
+      modules: {
+        // Define your modules here
+      }
+    });
+    
+    // Your app initialization code here
+  }
+}
+
+const app = new MyApp();
+```
+

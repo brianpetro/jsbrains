@@ -1,75 +1,92 @@
 # JS Brains
-JS Brains is a collection of lightweight modules for building intelligent applications with JavaScript, like [Smart Connections](https://github.com/brianpetro/obsidian-smart-connections). It's designed to empower developers to easily integrate AI capabilities into their projects, with a focus on minimal dependencies, extendability, and security.
 
-## Vision
+JS Brains is a collection of lightweight modules for building intelligent applications with JavaScript. It's designed to empower developers to easily integrate AI capabilities into their projects, with a focus on minimal dependencies, extendability, and security.
 
-Our mission is to democratize AI development for JavaScript developers, providing a robust toolkit that simplifies the creation of smart, AI-powered applications while maintaining high standards of performance and security.
+## Vision and Mission
 
-- **Minimal Dependencies**: Designed to be lightweight and secure
-- **Web-Native**: Optimized for performance in web environments
-- **Extendable**: Flexible architecture allowing for custom solutions
-- **Developer-Friendly**: Simplifies AI integration for developers of all skill levels
-- **Security-Focused**: Minimizes vulnerabilities through careful dependency management
+Our mission is to democratize AI development for JavaScript developers, providing a robust toolkit that simplifies the creation of smart, AI-powered applications while maintaining high standards of performance and security. We aim to:
 
-## [Docs](https://brianpetro.github.io/jsbrains)
+- Lower the barrier to entry for AI integration in web applications
+- Promote best practices in AI development and deployment
+- Foster a community of developers building intelligent, scalable applications
+- Empower individuals with AI tools that respect their privacy and enhance productivity
 
-## Principles of JS Brains
+## Core Principles
 
-### Minimal Dependency
-JS Brains is designed to operate with low to no external dependencies, making it a lightweight and secure option for users. This principle ensures that the project can be easily integrated into existing systems without introducing complex dependencies that might affect performance or security.
-
-### Web-Native and Lightweight
-The project is built to be web-native, emphasizing performance and ease of use within web environments. This aligns with the goal of making the project lightweight, ensuring that it does not consume excessive resources, which is crucial for maintaining fast and responsive applications.
-
-### Extendability
-JS Brains is structured to be extendable, allowing developers to build upon the existing base to create tailored solutions that meet specific needs. This flexibility is a core principle, as it empowers developers to innovate and expand the functionality according to emerging requirements or opportunities.
-
-### Ease of Development and Security for End-Users
-The project aims to simplify the development process, making it easier for developers to implement AI into their projects. At the same time, it prioritizes minimal dependencies to maximize security for end-users, addressing potential vulnerabilities that could arise from third-party libraries.
-
-### Mission-Oriented Design
-JS Brains is mission-driven, with a clear purpose to enable JavaScript developers to build AI applications easily. This involves creating a framework that provides the necessary tools and resources while being straightforward enough for developers at various skill levels to use effectively.
-
-## Core Modules
-
-- **Smart Chat Model**: Facilitates intelligent conversational interfaces
-- **Smart Chunks**: Efficient text processing and analysis
-- **Smart Collections**: Manages and organizes AI-related data structures
-- **Smart Embed Model**: Handles text embedding for semantic analysis
-- **Smart Entities**: Entity recognition and management system
-- **Smart Ranker Model**: Implements content ranking algorithms
-
+- **Minimal Dependencies**: Designed to be lightweight and secure, reducing potential vulnerabilities and simplifying integration.
+- **Web-Native**: Optimized for performance in web environments, ensuring smooth operation across various platforms.
+- **Extendable**: Flexible architecture allowing for custom solutions and easy integration of new AI models or services.
+- **Developer-Friendly**: Simplifies AI integration for developers of all skill levels, with clear documentation and intuitive APIs.
+- **Security-Focused**: Minimizes vulnerabilities through careful dependency management and secure coding practices.
+- **User-Aligned**: Prioritizes user privacy and control, ensuring that AI tools serve the user's best interests.
 
 ## Smart Environment
 
-JS Brains uses a Smart Environment (`env`) as a central orchestrator for module interactions. This design allows for seamless integration between different components and facilitates easy extension of functionality.
+JS Brains uses a Smart Environment (`env`) as a central orchestrator for module interactions. This design allows for:
+
+- Seamless integration between different components
+- Easy extension of functionality
+- Centralized configuration and management
+- Consistent data flow and state management across modules
+
+The Smart Environment acts as a backbone for building complex AI-powered applications, providing a unified interface for various AI functionalities.
 
 ## Architecture: The Adapter Pattern
 
-JS Brains utilizes the adapter pattern as a core architectural principle, providing flexibility and extensibility across different AI models and platforms.
+JS Brains utilizes the adapter pattern as a core architectural principle, providing flexibility and extensibility across different AI models and platforms. This approach offers several benefits:
 
-### What is the Adapter Pattern?
+1. **Unified Interface**: Developers can use a consistent API regardless of the underlying AI model or service, simplifying code and reducing cognitive load.
 
-The adapter pattern is a structural design pattern that allows objects with incompatible interfaces to collaborate. In JS Brains, it's used to create a consistent interface for interacting with various AI models and services.
+2. **Easy Integration**: New AI models or services can be added by creating new adapters without changing the core module code, allowing for rapid expansion of capabilities.
 
-### How JS Brains Implements the Adapter Pattern
+3. **Flexibility**: Users can switch between different AI providers or models by simply changing the adapter, without modifying their application code. This enables easy experimentation and optimization.
 
-Each core module in JS Brains (such as SmartChatModel, SmartEmbedModel, etc.) uses adapters to interface with different AI providers or model implementations. This approach offers several benefits:
+4. **Future-Proofing**: As new AI models emerge, they can be quickly integrated into JS Brains through new adapters, ensuring the library stays current with the latest advancements in AI technology.
 
-1. **Unified Interface**: Developers can use a consistent API regardless of the underlying AI model or service.
-2. **Easy Integration**: New AI models or services can be added by creating new adapters without changing the core module code.
-3. **Flexibility**: Users can switch between different AI providers or models by simply changing the adapter, without modifying their application code.
-4. **Future-Proofing**: As new AI models emerge, they can be quickly integrated into JS Brains through new adapters.
-
-### Example: SmartChatModel Adapters
-
-The SmartChatModel module includes adapters for various chat models:
-
-- OpenAI GPT adapter
-- Anthropic Claude adapter
-- Google PaLM adapter
-- Custom model adapter
-
-By using these adapters, developers can easily switch between different chat models or even use multiple models in the same application, all through a consistent interface.
+5. **Abstraction of Complexity**: The adapter pattern hides the complexities of different AI services behind a common interface, allowing developers to focus on building features rather than managing integrations.
 
 This architectural choice aligns with our principles of extendability and ease of development, allowing JS Brains to evolve with the rapidly changing AI landscape while providing a stable foundation for developers.
+
+## Use Cases: Smart Connections
+
+One of the primary applications of JS Brains is the Smart Connections plugin for Obsidian, which demonstrates the power and flexibility of our modules. Smart Connections leverages several JS Brains modules to create an intelligent, AI-powered knowledge management system:
+
+1. **Semantic Search**: Using the Smart Embed Model and Smart Ranker Model, Smart Connections enables users to find semantically related notes and content within their knowledge base.
+
+2. **AI-Powered Chat**: The Smart Chat Model allows users to interact with their notes using natural language, getting intelligent responses based on their personal knowledge base.
+
+3. **Dynamic Knowledge Graphs**: Smart Entities and Smart Collections work together to create and maintain dynamic knowledge graphs, helping users visualize and navigate their interconnected ideas.
+
+4. **Automated Tagging and Categorization**: Smart Chunks and Smart Entities collaborate to automatically analyze and categorize content, making knowledge management more efficient.
+
+5. **Personalized Recommendations**: By combining various modules, Smart Connections can provide personalized content recommendations, helping users discover relevant information within their notes.
+
+These use cases demonstrate how JS Brains modules can be combined to create powerful, AI-driven applications that enhance productivity and knowledge management.
+
+## Our Mission: Empowering Individuals with AI
+
+At the core of JS Brains is a mission to empower individuals with AI tools that respect their privacy and enhance their productivity. We believe that:
+
+1. **AI should serve the user**: Our tools are designed to align with user interests and values, not corporate profit motives.
+
+2. **Privacy is paramount**: We prioritize user data protection and provide transparency in our AI implementations.
+
+3. **Open-source drives innovation**: By making our core modules open-source, we foster a community of developers who can contribute to and benefit from collective advancements in AI technology.
+
+4. **Accessibility is key**: We strive to make AI tools accessible to developers of all skill levels, democratizing access to advanced AI capabilities.
+
+By adhering to these principles, we aim to create a ecosystem of AI tools that users can trust and rely on to enhance their personal and professional lives.
+
+## Core Modules
+
+For detailed information on how to use each module, please refer to their respective README files linked in the Core Modules section above. Each module is designed to be used independently or in conjunction with others, providing maximum flexibility for your project needs.
+
+- [Smart Chat Model](https://github.com/brianpetro/jsbrains/tree/main/smart-chat-model#readme): Facilitates intelligent conversational interfaces
+- [Smart Chunks](https://github.com/brianpetro/jsbrains/tree/main/smart-chunks#readme): Efficient text processing and analysis
+- [Smart Collections](https://github.com/brianpetro/jsbrains/tree/main/smart-collections#readme): Manages and organizes AI-related data structures
+- [Smart Embed Model](https://github.com/brianpetro/jsbrains/tree/main/smart-embed-model#readme): Handles text embedding for semantic analysis
+- [Smart Entities](https://github.com/brianpetro/jsbrains/tree/main/smart-entities#readme): Entity recognition and management system
+- [Smart Environment](https://github.com/brianpetro/jsbrains/tree/main/smart-environment#readme): Orchestrates interactions between modules
+- [Smart Ranker Model](https://github.com/brianpetro/jsbrains/tree/main/smart-ranker-model#readme): Implements content ranking algorithms
+- [Smart Sources](https://github.com/brianpetro/jsbrains/tree/main/smart-sources#readme): Manages and organizes sources of information
+- [Smart Templates](https://github.com/brianpetro/jsbrains/tree/main/smart-templates#readme): Enables structured outputs using templates
