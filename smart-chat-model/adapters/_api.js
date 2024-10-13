@@ -231,7 +231,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the default model configuration.
    * @returns {Object} The default model configuration.
    */
-  get default_model_config() { return this.models.find(m => m.key === this.model_key); }
+  get default_model_config() { return this.models.find(m => m.key === this.model_key) || {}; }
 
   /**
    * Get the models.
