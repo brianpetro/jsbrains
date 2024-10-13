@@ -190,7 +190,7 @@ export class SmartBlock extends SmartEntity {
   get source_collection() { return this.env.smart_sources; }
   get source_key() { return this.key.split("#")[0]; }
   get sub_blocks() {
-    return this.source?.blocks?.filter(block => block.key.startsWith(this.key+"#")) || [];
+    return this.source?.blocks?.filter(block => block.key.startsWith(this.key+"#") && block.line_start > this.line_start && block.line_end <= this.line_end) || [];
   }
 
   // source dependent

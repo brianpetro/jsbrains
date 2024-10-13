@@ -36,7 +36,7 @@ export class SmartSources extends SmartEntities {
     await this.fs.refresh(); // refresh source files in case they have changed
     this.notices?.show('pruning sources', "Pruning sources...", { timeout: 0 });
     const remove_sources = Object.values(this.items)
-      .filter(item => item.is_gone || item.excluded || !item.should_embed)
+      .filter(item => item.is_gone || item.excluded || !item.should_embed || !item.data.blocks)
     ;
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];

@@ -64,6 +64,7 @@ export class SmartEntities extends Collection {
     return this.settings?.embed_model?.model_key || "TaylorAI/bge-micro-v2";
   }
   get embed_model_settings() {
+    if(!this.settings.embed_model) this.settings.embed_model = {};
     if(!this.settings.embed_model?.[this.embed_model_key]) this.settings.embed_model[this.embed_model_key] = {};
     return this.settings.embed_model[this.embed_model_key];
   }
