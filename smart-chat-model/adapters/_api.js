@@ -97,9 +97,16 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     const request_params = _req.to_platform();
     // console.log('request_params', request_params);
     const http_resp = await this.http_adapter.request(request_params);
+    if(!http_resp) return null;
     // console.log('http_resp', http_resp);
     const _res = new this.res_adapter(this, await http_resp.json());
-    return _res.to_openai();
+    try{
+      return _res.to_openai();
+    } catch (error) {
+      console.error('Error in SmartChatModelApiAdapter.complete():', error);
+      console.error(http_resp);
+      return null;
+    }
   }
 
   // STREAMING
@@ -261,7 +268,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.platform_settings.max_output_tokens; }
+  get max_output_tokens() { return this.platform_settings.max_output_tokens || this.default_model_config.max_output_tokens; }
 
   /**
    * Get the platform object.

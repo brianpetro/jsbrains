@@ -121,7 +121,25 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
         stopSequences: this._req.stop || [],
       },
       ...(this.tools && { tools: this._transform_tools_to_gemini() }),
-      ...(this._req.tool_choice && { tool_choice: this._req.tool_choice })
+      ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_NONE"
+        }
+      ]
     };
 
     return {
@@ -204,7 +222,7 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
       model: this.adapter.model_key,
       choices: [{
         index: 0,
-        message: this._transform_message_to_openai(first_candidate.content),
+        message: first_candidate?.content ? this._transform_message_to_openai(first_candidate.content) : '',
         finish_reason: this._get_openai_finish_reason(first_candidate.finishReason)
       }],
       usage: this._transform_usage_to_openai()
