@@ -100,13 +100,13 @@ export class SmartEntities extends Collection {
   nearest(vec, filter = {}) {
     if (!vec) return console.log("no vec");
     const {
-      results_count = 50, // DO: default configured in settings
+      limit = 50, // DO: default configured in settings
     } = filter;
     const nearest = this.filter(filter)
       .reduce((acc, item) => {
         if (!item.vec) return acc; // skip if no vec
         const result = { item, score: cos_sim(vec, item.vec) };
-        results_acc(acc, result, results_count); // update acc
+        results_acc(acc, result, limit); // update acc
         return acc;
       }, { min: 0, results: new Set() });
     return Array.from(nearest.results);
@@ -157,13 +157,16 @@ export class SmartEntities extends Collection {
     } = opts;
     
     if(entity) {
-      opts.exclude_key_starts_with = entity.source_key || entity.key; // exclude current entity
+      if (typeof opts.exclude_key_starts_with_any === 'undefined') opts.exclude_key_starts_with_any = [];
+      if (opts.exclude_key_starts_with) {
+        opts.exclude_key_starts_with_any = [
+          opts.exclude_key_starts_with,
+        ];
+        delete opts.exclude_key_starts_with;
+      }
+      opts.exclude_key_starts_with_any.push((entity.source_key || entity.key)); // exclude current entity
       // include/exclude filters
       if (exclude_filter) {
-        if (opts.exclude_key_starts_with) {
-          opts.exclude_key_starts_with_any = [opts.exclude_key_starts_with];
-          delete opts.exclude_key_starts_with;
-        } else if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
         if (typeof exclude_filter === "string") opts.exclude_key_starts_with_any.push(exclude_filter);
         else if (Array.isArray(exclude_filter)) opts.exclude_key_starts_with_any.push(...exclude_filter);
       }
@@ -197,6 +200,12 @@ export class SmartEntities extends Collection {
     if(!hypotheticals?.length) return {error: "hypotheticals is required"};
     if(!this.smart_embed) return {error: "Embedding search is not enabled."};
     const hyp_vecs = await this.smart_embed.embed_batch(hypotheticals.map(h => ({embed_input: h})));
+    const limit = params.filter?.limit
+      || params.k // DEPRECATED: for backwards compatibility
+      || this.env.settings.lookup_k
+      || 10
+    ;
+    if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
     const filter = {
       ...(this.env.chats?.current?.scope || {}),
       ...(params.filter || {}),
@@ -221,10 +230,9 @@ export class SmartEntities extends Collection {
         return acc;
       }, {})
     ;
-    const k = params.k || this.env.settings.lookup_k || 10;
     const top_k = Object.values(results)
       .sort(sort_by_score)
-      .slice(0, k)
+      .slice(0, limit)
     ;
     // DO: decided how to re-implement these functions
     // console.log("nearest before std dev slice", top_k.length);

@@ -175,6 +175,9 @@ export class CollectionItem {
 
     // Exclude keys that start with any of the provided prefixes
     if (exclude_key_starts_with_any && exclude_key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
+    
+    // Exclude keys that include a specific string
+    if (exclude_key_includes && this.key.includes(exclude_key_includes)) return false;
 
     // Include only keys that end with a specific string
     if (key_ends_with && !this.key.endsWith(key_ends_with)) return false;
@@ -187,9 +190,6 @@ export class CollectionItem {
 
     // Include only keys that include a specific string
     if (key_includes && !this.key.includes(key_includes)) return false;
-
-    // Exclude keys that include a specific string
-    if (exclude_key_includes && this.key.includes(exclude_key_includes)) return false;
 
     // OVERRIDE FILTER LOGIC here: pattern: if(opts.pattern && !this.data[opts.pattern.matcher]) return false;
 

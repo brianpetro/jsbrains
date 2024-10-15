@@ -155,13 +155,18 @@ export class SmartSources extends SmartEntities {
     ;
   }
   async lookup(params={}){
+    const limit = params.filter?.limit
+      || params.k // DEPRECATED: for backwards compatibility
+      || this.env.settings.lookup_k
+      || 10
+    ;
+    if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
     let results = await super.lookup(params);
     if(this.env.smart_blocks?.settings?.embed_blocks) {
-      const k = params.k || this.env.settings.lookup_k || 10;
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
-      ].sort(sort_by_score).slice(0, k);
+      ].sort(sort_by_score).slice(0, limit);
     }
     return results;
   }
