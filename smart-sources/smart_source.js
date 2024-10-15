@@ -47,11 +47,17 @@ export class SmartSource extends SmartEntity {
       console.error(err, err.stack);
     }
   }
-  find_connections(opts={}) {
-    let connections = super.find_connections(opts);
-    const {limit = 50} = this.filter_opts; // super modifies opts and sets this.find_connections_opts
-    if(!opts.exclude_blocks_from_source_connections) {
-      const cache_key = this.key + JSON.stringify(opts) + "_blocks";
+  find_connections(params={}) {
+    let connections = super.find_connections(params);
+    const limit = params.filter?.limit
+      || params.limit // DEPRECATED: for backwards compatibility
+      || this.settings.env.smart_view_filter?.results_limit
+      || 20
+    ;
+    if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
+    if(params.limit) delete params.limit; // backwards compatibility
+    if(!params.exclude_blocks_from_source_connections) {
+      const cache_key = this.key + JSON.stringify(params) + "_blocks";
       if(!this.env.connections_cache[cache_key]){
         const nearest = this.env.smart_blocks.nearest(this.vec, this.filter_opts)
           .sort(sort_by_score)

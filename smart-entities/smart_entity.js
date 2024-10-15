@@ -35,14 +35,20 @@ export class SmartEntity extends CollectionItem {
   }
   async get_embed_input() { } // override in child class
   // find_connections v2 (smart action)
-  find_connections(opts={}) {
+  find_connections(params={}) {
     this.filter_opts = {
       ...(this.env.settings.smart_view_filter || {}),
-      ...opts,
+      ...params,
       entity: this,
     };
-    const {limit = 50} = opts;
-    const cache_key = this.key + JSON.stringify(opts); // no objects/instances in cache key
+    const limit = params.filter?.limit
+      || params.limit // DEPRECATED: for backwards compatibility
+      || this.settings.env.smart_view_filter?.results_limit
+      || 10
+    ;
+    if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
+    if(params.limit) delete params.limit; // backwards compatibility
+    const cache_key = this.key + JSON.stringify(params); // no objects/instances in cache key
     if(!this.env.connections_cache) this.env.connections_cache = {};
     if(!this.env.connections_cache[cache_key]){
       const connections = this.nearest(this.filter_opts)
@@ -54,16 +60,9 @@ export class SmartEntity extends CollectionItem {
     return this.connections_from_cache(cache_key);
   }
   connections_from_cache(cache_key) {
-    // return this.env.connections_cache[cache_key].map(cache_item => {
-    //   cache_item.item.score = cache_item.score;
-    //   return cache_item.item;
-    // });
     return this.env.connections_cache[cache_key];
   }
   connections_to_cache(cache_key, connections) {
-    // this.env.connections_cache[cache_key] = connections
-    //   .map(item => ({score: item.score, item}))
-    // ;
     this.env.connections_cache[cache_key] = connections;
   }
 
