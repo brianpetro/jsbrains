@@ -20,8 +20,15 @@ export class SmartChatModel extends SmartModel {
   }
   async stream(req, handlers={}){ return await this.adapter.stream(req, handlers); }
   stop_stream() { this.adapter.stop_stream(); }
-  async test_api_key(){ return await this.adapter.test_api_key(); }
   async count_tokens(input){ return await this.adapter.count_tokens(input); }
+  re_render_settings(){
+    if(this.opts.re_render_settings) this.opts.re_render_settings();
+    else console.warn('No re-render settings function provided for SmartChatModel');
+  }
+  async test_api_key(){
+    if(this.adapter.test_api_key) await this.adapter.test_api_key();
+    this.re_render_settings();
+  }
   get adapters() { return this.opts.adapters; }
   get adapter() { 
     if(!this._adapters[this.platform_key]){
@@ -57,22 +64,15 @@ export class SmartChatModel extends SmartModel {
         description: "Select a chat model platform to use with Smart Chat.",
         options_callback: 'get_platforms_as_options',
         is_scope: true, // trigger re-render of settings when changed
-        // callback: 'changed_chat_model_platform',
+        callback: 're_render_settings',
       },
       "[CHAT_PLATFORM].model_key": {
         name: 'Chat Model',
         type: "dropdown",
         description: "Select a chat model to use with Smart Chat.",
         options_callback: 'get_models_as_options_sync',
-        // callback: 'changed_chat_model',
+        callback: 're_render_settings',
         conditional: (_this) => !local_platforms.includes(_this.settings.platform_key) && _this.settings.platform_key && _this.settings[_this.settings.platform_key]?.api_key,
-      },
-      "[CHAT_PLATFORM].model_name": {
-        name: 'Model Name',
-        type: "text",
-        description: "Enter the model name for the chat model platform.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
       },
       "[CHAT_PLATFORM].api_key": {
         name: 'API Key',
@@ -80,6 +80,14 @@ export class SmartChatModel extends SmartModel {
         description: "Enter your API key for the chat model platform.",
         callback: 'test_api_key',
         is_scope: true, // trigger re-render of settings when changed (reload models dropdown)
+      },
+      // LOCAL PLATFORM SETTINGS (probably should move to local adapter)
+      "[CHAT_PLATFORM].model_name": {
+        name: 'Model Name',
+        type: "text",
+        description: "Enter the model name for the chat model platform.",
+        // callback: 'changed_chat_model',
+        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
       },
       "[CHAT_PLATFORM].protocol": {
         name: 'Protocol',
