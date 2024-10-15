@@ -86,12 +86,12 @@ export class SmartSource extends SmartEntity {
   }
   open() { this.env.smart_connections_plugin.open_note(this.path); }
   get_block_by_line(line) {
-    return Object.entries(this.data.blocks)
+    return Object.entries(this.data.blocks || {})
       .reduce((acc, [sub_key, range]) => {
         if(acc) return acc; // skip check if block already found
         if(range[0] <= line && range[1] >= line){
           const block = this.block_collection.get(this.key + sub_key);
-          if(block.vec) return block; // return if block has vec
+          if(block?.vec) return block; // return if block has vec
         }
         return acc;
       }, null)
