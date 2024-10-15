@@ -161,7 +161,7 @@ var SmartEmbedModel = class extends SmartModel {
     };
     if (!this.opts.adapter) return console.warn("SmartEmbedModel adapter not set");
     if (!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
-    this.opts.use_gpu = !!navigator.gpu && this.opts.gpu_batch_size !== 0;
+    this.opts.use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.opts.gpu_batch_size !== 0;
     if (this.opts.adapter === "transformers" && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
   }
   get adapters() {
@@ -216,6 +216,9 @@ var SmartEmbedModel = class extends SmartModel {
   }
   get dims() {
     return this.opts.dims;
+  }
+  get min_chars() {
+    return this.settings?.[this.opts.model_key]?.min_chars || 300;
   }
   // TODO: replace static opts with dynamic reference to canonical settings via opts.settings (like smart-chat-model-v2)
   get settings() {
@@ -296,6 +299,8 @@ var SmartEmbedAdapter = class {
   async embed_batch(input) {
     throw new Error("Not implemented");
   }
+  unload() {
+  }
 };
 
 // adapters/transformers.js
@@ -316,7 +321,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     return this.smart_embed.opts.use_gpu || false;
   }
   async load() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.16");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.21");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
