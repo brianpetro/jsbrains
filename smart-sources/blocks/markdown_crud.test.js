@@ -158,3 +158,47 @@ Content under heading 1.`;
 
   t.is(error.message, `BLOCK NOT FOUND: No block found with key "${block_key}".`, 'block_destroy should throw error for invalid block_key');
 });
+
+test('block_update should update frontmatter correctly', t => {
+  const content = `---
+title: Original Title
+date: 2023-04-20
+tags:
+  - tag1
+  - tag2
+---
+
+# Heading 1
+Content under heading 1.
+
+# Heading 2
+Content under heading 2.`;
+
+  const block_key = '#---frontmatter---';
+  const new_frontmatter = `---
+title: Updated Title
+date: 2023-04-21
+tags:
+  - tag1
+  - tag2
+  - tag3
+---`;
+
+  const expected = `---
+title: Updated Title
+date: 2023-04-21
+tags:
+  - tag1
+  - tag2
+  - tag3
+---
+
+# Heading 1
+Content under heading 1.
+
+# Heading 2
+Content under heading 2.`;
+
+  const result = block_update(content, block_key, new_frontmatter);
+  t.is(result, expected, 'block_update should correctly update the frontmatter');
+});
