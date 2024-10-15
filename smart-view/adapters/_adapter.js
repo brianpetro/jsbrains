@@ -190,7 +190,11 @@ export class SmartViewAdapter {
       text.inputEl.type = "password";
       text.setPlaceholder(elm.dataset.placeholder || "");
       if (value) text.setValue(value);
-      text.onChange(async (value) => this.handle_on_change(path, value, elm, scope));
+      let debounceTimer;
+      text.onChange(async (value) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope), 2000);
+      });
     });
     return smart_setting;
   }
@@ -203,7 +207,11 @@ export class SmartViewAdapter {
       if (typeof value !== 'undefined') number.inputEl.value = parseInt(value);
       number.inputEl.min = elm.dataset.min || 0;
       if (elm.dataset.max) number.inputEl.max = elm.dataset.max;
-      number.onChange(async (value) => this.handle_on_change(path, parseInt(value), elm, scope));
+      let debounceTimer;
+      number.onChange(async (value) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, parseInt(value), elm, scope), 2000);
+      });
     });
     return smart_setting;
   }
@@ -226,9 +234,11 @@ export class SmartViewAdapter {
     smart_setting.addTextArea(textarea => {
       textarea.setPlaceholder(elm.dataset.placeholder || "");
       textarea.setValue(value || "");
+      let debounceTimer;
       textarea.onChange(async (value) => {
-        value = value.split("\n").map(v => v.trim()).filter(v => v).join("\n");
-        this.handle_on_change(path, value, elm, scope);
+        value = value.split("\n").map(v => v.trim()).filter(v => v);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope), 2000);
       });
     });
     return smart_setting;
