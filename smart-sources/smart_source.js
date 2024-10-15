@@ -51,7 +51,7 @@ export class SmartSource extends SmartEntity {
     let connections = super.find_connections(params);
     const limit = params.filter?.limit
       || params.limit // DEPRECATED: for backwards compatibility
-      || this.settings.env.smart_view_filter?.results_limit
+      || this.env.settings.smart_view_filter?.results_limit
       || 20
     ;
     if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
