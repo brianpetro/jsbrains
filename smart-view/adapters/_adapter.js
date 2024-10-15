@@ -108,6 +108,7 @@ export class SmartViewAdapter {
       let value = elm.dataset.value ?? this.main.get_by_path(scope.settings, path);
       if (typeof value === 'undefined' && typeof elm.dataset.default !== 'undefined') {
         value = elm.dataset.default;
+        if(typeof value === 'string') value = value.toLowerCase() === 'true' ? true : value === 'false' ? false : value;
         this.main.set_by_path(scope.settings, path, value);
       }
 

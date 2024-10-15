@@ -152,5 +152,6 @@ export const settings_config = {
     type: "toggle",
     description: "Use legacy transformers (v2) instead of v3.",
     callback: 'embed_model_changed',
+    default: true,
   },
 };
