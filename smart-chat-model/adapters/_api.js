@@ -544,6 +544,7 @@ export class SmartChatModelResponseAdapter {
       created: this.created,
       choices: this._transform_choices_to_openai(),
       usage: this._transform_usage_to_openai(),
+      raw: this._res,
     };
   }
 
