@@ -280,13 +280,18 @@ export class SmartSources extends SmartEntities {
     return this._smart_change;
   }
 
-  async run_load(){
+  async run_load() {
     await super.run_load();
     this.blocks.render_settings();
+    this.render_settings(); // Re-render settings to update buttons
   }
 
   async run_import(){
     const start_time = Date.now();
+    // Queue import for items with changed metadata
+    Object.values(this.items).forEach(item => {
+      if (item.meta_changed) item.queue_import();
+    });
     await this.process_import_queue();
     const end_time = Date.now();
     console.log(`Time spent importing: ${end_time - start_time}ms`);
@@ -294,40 +299,32 @@ export class SmartSources extends SmartEntities {
     this.blocks.render_settings();
   }
 
-  async run_refresh(){
+  async run_prune(){
     await this.prune();
     await this.process_save_queue();
-    this.items = {}; // clear items
-    this.block_collection.items = {}; // clear blocks
-    await this.init_items();
-    await this.process_load_queue();
-    await this.render_settings();
-    await this.process_import_queue();
-    Object.values(this.block_collection.items).forEach(item => !item.vec ? item.queue_embed() : null);
-    await this.process_embed_queue();
     this.render_settings();
     this.blocks.render_settings();
   }
 
-  async run_force_refresh(){
-    console.log("run_force_refresh");
+  async run_clear_all(){
+    this.notices?.show('clearing all', "Clearing all data...", { timeout: 0 });
     this.clear();
     this.block_collection.clear();
-    console.log("cleared");
-    console.log("items " + Object.keys(this.items).length);
-    console.log("blocks " + Object.keys(this.block_collection.items).length);
-    // re-init fs
     this._fs = null;
     await this.fs.init();
     await this.init_items();
     this._excluded_headings = null;
-    console.log("init_items " + Object.keys(this.items).length);
+    
     Object.values(this.items).forEach(item => {
       item.queue_import();
       item.queue_embed();
-      item.loaded_at = Date.now() + 9999999999; // prevent re-loading during import
     });
+    
     await this.process_import_queue();
+    this.notices?.remove('clearing all');
+    this.notices?.show('cleared all', "All data cleared and reimported", { timeout: 3000 });
+    this.render_settings();
+    this.blocks.render_settings();
   }
 
   get excluded_patterns() {

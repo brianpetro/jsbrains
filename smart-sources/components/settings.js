@@ -14,18 +14,27 @@ export async function render(scope, opts = {}) {
 
 export async function post_process(scope, frag, opts = {}) {
   await this.render_setting_components(frag, {scope});
+  
   frag.querySelector('.sources-load-btn')?.addEventListener('click', () => {
     scope.run_load();
   });
-  frag.querySelector('.sources-import-btn')?.addEventListener('click', () => {
-    scope.run_import();
-  });
-  frag.querySelector('.sources-refresh-btn')?.addEventListener('click', () => {
-    scope.run_refresh();
-  });
-  frag.querySelector('.sources-force-refresh-btn')?.addEventListener('click', () => {
-    scope.run_force_refresh();
-  });
+  
+  if (scope.loaded) {
+    frag.querySelector('.sources-import-btn')?.addEventListener('click', () => {
+      scope.run_import();
+    });
+    
+    frag.querySelector('.sources-prune-btn')?.addEventListener('click', () => {
+      scope.run_prune();
+    });
+    
+    frag.querySelector('.sources-clear-all-btn')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all data and re-import? This action cannot be undone.')) {
+        scope.run_clear_all();
+      }
+    });
+  }
+  
   return frag;
 }
 
@@ -90,14 +99,20 @@ function get_block_heading_html(scope) {
 
 function get_button_html(scope) {
   if(scope.collection_key !== 'smart_sources') return '';
-  const load_btn_html = scope.loaded ? `<button class="sources-load-btn">Re-load Sources</button>` : `<button class="sources-load-btn">Load Sources</button>`;
-  const import_btn_html = scope.loaded ? `<button class="sources-import-btn">Run Import</button>` : '';
-  const refresh_btn_html = scope.loaded ? `<button class="sources-refresh-btn">Refresh All (prune + import)</button>` : '';
-  const force_refresh_btn_html = scope.loaded ? `<button class="sources-force-refresh-btn">Force Refresh All (clear all + import)</button>` : '';
+  
+  const load_btn_html = `<button class="sources-load-btn">${scope.loaded ? 'Re-load' : 'Load'} Sources</button>`;
+  
+  let additional_buttons = '';
+  if (scope.loaded) {
+    additional_buttons = `
+      <button class="sources-import-btn">Import</button>
+      <button class="sources-prune-btn">Prune</button>
+      <button class="sources-clear-all-btn">Clear All &amp; Re-import</button>
+    `;
+  }
+  
   return `
     ${load_btn_html}
-    ${import_btn_html}
-    ${refresh_btn_html}
-    ${force_refresh_btn_html}
+    ${additional_buttons}
   `;
 }
