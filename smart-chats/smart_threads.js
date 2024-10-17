@@ -1,6 +1,6 @@
 import { SmartSources, SmartSource } from "smart-sources";
-import { template } from "./components/_component.js";
-import {template as settings_template} from "./components/settings.js";
+import { render as chat_template } from "./components/chat.js";
+import { render as settings_template } from "./components/settings.js";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json.js";
 
 export class SmartThreads extends SmartSources {
@@ -17,11 +17,11 @@ export class SmartThreads extends SmartSources {
     }
     return this._data_fs;
   }
-  get fs() { return this.data_fs; } // TODO: if chat_history NOT json and history folder setting is set then use that as fs_path
+  get fs() { return this.data_fs; }
   get chat_model() {
     if(!this._chat_model){
       const module_config = this.env.opts.modules.smart_chat_model;
-      const _class = config?.class ?? module_config;
+      const _class = module_config?.class ?? module_config;
       this._chat_model = new _class({
         settings: this.settings.chat_model,
         adapters: module_config.adapters,
@@ -30,11 +30,13 @@ export class SmartThreads extends SmartSources {
     return this._chat_model;
   }
   async render(container=this.container, thread=null) {
-    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
-    this.component = await template.call(this.env.smart_view, this, thread);
+    if(this.component?.remove) this.component.remove();
+    this.component = await chat_template.call(this.env.smart_view, thread, {
+      attribution: this.attribution,
+    });
     container.empty().appendChild(this.component);
     this.thread_container = this.component.querySelector('.sc-chat-box');
-    await this.thread.render(this.thread_container);
+    if(thread) await thread.render(this.thread_container);
     return this.component;
   }
   async render_settings(container=this.settings_container) {
@@ -60,9 +62,6 @@ export class SmartThreads extends SmartSources {
   get settings_config() {
     const chat_model_settings_config = Object.entries(this.chat_model.settings_config).reduce((acc, [key, val]) => {
       const new_key = 'chat_model.' + key;
-      // string callback may be deprecated in favor of function
-      // if(typeof val.callback === 'string') val.callback = 'chat_model.' + val.callback;
-      // if(typeof val.options_callback === 'string') val.options_callback = 'chat_model.' + val.options_callback;
       if(typeof val.callback === 'string'){
         this[val.callback] = this.chat_model[val.callback].bind(this.chat_model);
       }
@@ -73,7 +72,6 @@ export class SmartThreads extends SmartSources {
       return acc;
     }, {});
     return this.process_settings_config({
-      // ...super.settings_config, // necessary?
       ...chat_model_settings_config,
       ...settings_config,
     });
@@ -84,7 +82,7 @@ export const settings_config = {
   // TODO
 }
 
-import {template as thread_template} from "./components/thread.js";
+import { render as thread_template } from "./components/thread.js";
 export class SmartThread extends SmartSource {
   static get defaults() {
     return {
@@ -98,7 +96,7 @@ export class SmartThread extends SmartSource {
   }
   get_key() { return this.data.created_at; }
   async render(container=null) {
-    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
+    if(this.component?.remove) this.component.remove();
     this.component = await thread_template.call(this.env.smart_view, this);
     if(container){
       container.empty();
@@ -111,8 +109,6 @@ export class SmartThread extends SmartSource {
     await Promise.all(turns.map(turn => this.env.smart_turns.create_or_update(turn)));
     await Promise.all(messages.map(message => this.env.smart_messages.create_or_update(message)));
   }
-  // "from chatml" (openai chat completion object) to DataAdapter format and Turn/Message instances
-  // should always be converted to openai compatible format in Smart Chat Model (for now)
   async parse_response(response) { return await this.chat_data_adapter.parse_response(response); }
   async to_request() { return await this.chat_data_adapter.to_request(); }
   async complete() {
@@ -120,7 +116,6 @@ export class SmartThread extends SmartSource {
     const response = await this.chat_model.complete(request);
     await this.new_response(response);
   }
-  // GETTERS
   get chat_data_adapter() {
     if(!this._chat_data_adapter) {
       this._chat_data_adapter = new SmartThreadDataOpenaiJsonAdapter(this);
@@ -142,7 +137,8 @@ export class SmartTurns extends SmartBlocks {
   process_import_queue() {}
   get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
 }
-import {template as turn_template} from "./components/turn.js";
+
+import { render as turn_template } from "./components/turn.js";
 export class SmartTurn extends SmartBlock {
   static get defaults() {
     return {
@@ -164,7 +160,7 @@ export class SmartTurn extends SmartBlock {
     }
   }
   async render(container=null) {
-    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
+    if(this.component?.remove) this.component.remove();
     this.component = await turn_template.call(this.env.smart_view, this);
     if(container) container.appendChild(this.component);
     return this.component;
@@ -177,7 +173,7 @@ export class SmartMessages extends SmartBlocks {
   get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
 }
 
-import {template as message_template} from "./components/message.js";
+import { render as message_template } from "./components/message.js";
 export class SmartMessage extends SmartBlock {
   static get defaults() {
     return {
