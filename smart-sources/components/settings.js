@@ -28,9 +28,11 @@ export async function post_process(scope, frag, opts = {}) {
       scope.run_prune();
     });
     
-    frag.querySelector('.sources-clear-all-btn')?.addEventListener('click', () => {
+    frag.querySelector('.sources-clear-all-btn')?.addEventListener('click', async () => {
       if (confirm('Are you sure you want to clear all data and re-import? This action cannot be undone.')) {
-        scope.run_clear_all();
+        await scope.run_clear_all();
+        scope.render_settings();
+        scope.blocks.render_settings();
       }
     });
   }

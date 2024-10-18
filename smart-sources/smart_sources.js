@@ -166,9 +166,9 @@ export class SmartSources extends SmartEntities {
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
-      ].sort(sort_by_score).slice(0, limit);
+      ].sort(sort_by_score);
     }
-    return results;
+    return results.slice(0, limit);
   }
 
   async import_file(file){
@@ -318,13 +318,12 @@ export class SmartSources extends SmartEntities {
     Object.values(this.items).forEach(item => {
       item.queue_import();
       item.queue_embed();
+      item.loaded_at = Date.now() + 9999999999; // prevent re-loading during import
     });
     
     await this.process_import_queue();
     this.notices?.remove('clearing all');
     this.notices?.show('cleared all', "All data cleared and reimported", { timeout: 3000 });
-    this.render_settings();
-    this.blocks.render_settings();
   }
 
   get excluded_patterns() {
