@@ -28,7 +28,7 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
   init_file_path(file_path){
-    this.items[file_path] = new this.item_type(this.env, { path: file_path });
+    return this.items[file_path] = new this.item_type(this.env, { path: file_path });
   }
 
   // removes old data files

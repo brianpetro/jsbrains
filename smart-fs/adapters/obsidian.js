@@ -22,6 +22,33 @@ export class SmartFsObsidianAdapter {
   }
   get fs_path() { return this.smart_fs.fs_path; }
 
+  get_file(file_path) {
+    const file = {};
+    file.path = file_path
+      .replace(/\\/g, '/') // normalize slashes
+      .replace(this.smart_fs.fs_path, '') // remove fs_path
+      .replace(/^\//, '') // remove leading slash
+    ;
+    file.type = 'file';
+    file.extension = file.path.split('.').pop().toLowerCase();
+    file.name = file.path.split('/').pop();
+    file.basename = file.name.split('.').shift();
+    Object.defineProperty(file, 'stat', {
+      get: () => {
+        const tfile = this.obsidian_app.vault.getAbstractFileByPath(file_path);
+        if (tfile) {
+          return {
+            ctime: tfile.stat.ctime,
+            mtime: tfile.stat.mtime,
+            size: tfile.stat.size,
+          };
+        }
+        return null;
+      }
+    });
+    return file;
+  }
+
   /**
    * Append content to a file
    * 
