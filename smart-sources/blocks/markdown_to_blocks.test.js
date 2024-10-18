@@ -451,3 +451,29 @@ Dolor Sit Amet
   const result = markdown_to_blocks(markdown);
   t.deepEqual(result, expected);
 });
+
+test('headings with the same title at different levels with multiple blank lines between them SHOULD WORK WITH H5', t => {
+  const markdown = `##### Heading
+Content under heading.
+
+###### Heading
+Content under subheading.
+
+
+
+##### Heading
+Content under second occurrence of top-level heading.
+`;
+
+  const expected = {
+    "#####Heading": [1, 8],
+    "#####Heading#{1}": [2, 3],
+    "#####Heading#Heading": [4, 8],
+    "#####Heading#Heading#{1}": [5, 8],
+    "#####Heading[2]": [9, 11],
+    "#####Heading[2]#{1}": [10, 11]
+  };
+
+  const result = markdown_to_blocks(markdown);
+  t.deepEqual(result, expected);
+});

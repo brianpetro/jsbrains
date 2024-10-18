@@ -5,6 +5,7 @@ export function markdown_to_blocks(markdown) {
   const heading_lines = {};
   const heading_counts = {}; // For tracking multiple occurrences of top-level headings
   const sub_block_counts = {}; // Map from heading key to counts of sub-blocks under it
+  const subheading_counts = {}; // For tracking duplicate subheadings under the same parent
   let current_list_item = null;
   let current_content_block = null;
   let in_frontmatter = false;
@@ -78,14 +79,6 @@ export function markdown_to_blocks(markdown) {
       const level = heading_match[1].length;
       let title = heading_match[2].trim();
 
-      // Handle multiple occurrences of top-level headings
-      if (level === 1) {
-        heading_counts[title] = (heading_counts[title] || 0) + 1;
-        if (heading_counts[title] > 1) {
-          title += `[${heading_counts[title]}]`;
-        }
-      }
-
       // Pop headings from stack until last level < current level
       while (
         heading_stack.length > 0 &&
@@ -127,6 +120,25 @@ export function markdown_to_blocks(markdown) {
       } else {
         parent_key = ''; // No parent key for top-level headings
         parent_level = 0;
+      }
+
+      // Handle duplicates
+      if (heading_stack.length === 0) {
+        // This is a top-level heading
+        heading_counts[title] = (heading_counts[title] || 0) + 1;
+        if (heading_counts[title] > 1) {
+          title += `[${heading_counts[title]}]`;
+        }
+      } else {
+        // Subheading under parent
+        if (!subheading_counts[parent_key]) {
+          subheading_counts[parent_key] = {};
+        }
+        subheading_counts[parent_key][title] = (subheading_counts[parent_key][title] || 0) +1;
+        const count = subheading_counts[parent_key][title];
+        if (count > 1) {
+          title += `#{${count}}`;
+        }
       }
 
       // Calculate number of '#'s to add based on level difference
