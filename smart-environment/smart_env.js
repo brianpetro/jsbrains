@@ -312,7 +312,8 @@ export class SmartEnv {
    */
   async load_settings() {
     if (!(await this.data_fs.exists('smart_env.json'))) await this.save_settings({});
-    let settings = this.opts.default_settings || {}; // set defaults if provided
+    // must deep copy default_settings to avoid mutating the original object (prevents unexpected behavior)
+    let settings = JSON.parse(JSON.stringify(this.opts.default_settings || {})); // set defaults if provided
     deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
     deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings
     this._saved = true;
