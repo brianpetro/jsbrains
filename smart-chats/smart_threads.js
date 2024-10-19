@@ -4,6 +4,7 @@ import { render as settings_template } from "./components/settings.js";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json.js";
 
 export class SmartThreads extends SmartSources {
+  init() {}
   get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
   get data_fs() {
     if(!this._data_fs) {
@@ -56,6 +57,9 @@ export class SmartThreads extends SmartSources {
         openai: {
           model_key: 'gpt-4o',
         },
+      },
+      embed_model: {
+        model_key: 'None',
       },
     };
   }
@@ -136,6 +140,7 @@ export class SmartTurns extends SmartBlocks {
   process_load_queue() {}
   process_import_queue() {}
   get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
+  init() {}
 }
 
 import { render as turn_template } from "./components/turn.js";
@@ -171,6 +176,7 @@ export class SmartMessages extends SmartBlocks {
   process_load_queue() {}
   process_import_queue() {}
   get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
+  init() {}
 }
 
 import { render as message_template } from "./components/message.js";

@@ -83,6 +83,7 @@ export class SmartEntities extends Collection {
    */
   get smart_embed() { return this.embed_model; }
   get embed_model() {
+    if(this.embed_model_key === "None") return null;
     if(!this._embed_model) this._embed_model = new this.env.opts.modules.smart_embed_model.class(this.env, {
       model_key: this.embed_model_key,
       ...(this.settings.embed_model?.[this.embed_model_key] || {}),
@@ -111,14 +112,7 @@ export class SmartEntities extends Collection {
       }, { min: 0, results: new Set() });
     return Array.from(nearest.results);
   }
-  get file_name() { return this.collection_key + '-' + this.smart_embed_model_key.split("/").pop(); }
-  get smart_embed_model_key() {
-    return (
-      this.env.settings?.[this.collection_key]?.embed_model
-      || this.env.settings?.[this.collection_key + "_embed_model"] // DEPRECATED: backwards compatibility
-      || "None"
-    );
-  }
+  get file_name() { return this.collection_key + '-' + this.embed_model_key.split("/").pop(); }
   // get data_dir() { return this.env.env_data_dir + "/" + this.embed_model_key.replace("/", "_"); }
 
   /**

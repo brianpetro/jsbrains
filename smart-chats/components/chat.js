@@ -1,7 +1,6 @@
-import { create_document_fragment } from "./_component.js";
 import { render as render_thread } from "./thread.js";
 
-export async function render(thread) {
+export async function render(thread=null, opts={}) {
   const top_bar_buttons = [
     { title: 'Open Conversation Note', icon: 'external-link' },
     { title: 'Chat History', icon: 'history' },
@@ -10,7 +9,7 @@ export async function render(thread) {
     { title: 'New Chat', icon: 'plus' }
   ].map(btn => `
     <button title="${btn.title}" ${btn.style ? `style="${btn.style}"` : ''}>
-      ${this.get_icon(btn.icon)}
+      ${this.get_icon_html(btn.icon)}
     </button>
   `).join('');
 
@@ -29,7 +28,7 @@ export async function render(thread) {
       <div class="sc-chat-form">
         <textarea class="sc-chat-input" placeholder="Try &quot;Based on my notes&quot; or &quot;Summarize [[this note]]&quot; or &quot;Important tasks in /folder/&quot;"></textarea>
         <div class="sc-btn-container">
-          <span id="sc-abort-button" style="display: none;">${this.get_icon('square')}</span>
+          <span id="sc-abort-button" style="display: none;">${this.get_icon_html('square')}</span>
           <button class="send-button" id="sc-send-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 32 32">
               <circle cx="16" cy="16" r="16" fill="currentColor" />
@@ -41,14 +40,14 @@ export async function render(thread) {
     </div>
       ${opts.attribution || ''}
   `;
-  const frag = create_document_fragment(main_html);
+  const frag = this.create_doc_fragment(main_html);
   const chat_box = frag.querySelector('.sc-chat-box');
 
   if (thread) {
     const thread_frag = await render_thread(thread);
     chat_box.appendChild(thread_frag);
   } else {
-    const welcome_message = create_document_fragment(`
+    const welcome_message = this.create_doc_fragment(`
       <div class="sc-message assistant">
         <div class="sc-message-content">
           <span>Hi there, welcome to the Smart Chat.&nbsp;Ask me a question about your notes and I'll try to answer it.</span>
@@ -58,29 +57,23 @@ export async function render(thread) {
     chat_box.appendChild(welcome_message);
   }
 
-  return post_process(collection, frag);
+  return post_process.call(this, thread, frag);
 }
 
-export function post_process(collection, frag) {
+export function post_process(thread, frag) {
   const chat_input = frag.querySelector('.sc-chat-form textarea');
   chat_input.addEventListener('keydown', (e) => {
-    collection.key_down_handler(e);
+    thread.key_down_handler(e);
   });
   const abort_button = frag.querySelector('#sc-abort-button');
   abort_button.addEventListener('click', () => {
-    collection.chat_model.abort_current_response();
-    collection.clear_streaming_ux();
+    thread.chat_model.abort_current_response();
+    thread.clear_streaming_ux();
   });
   const send_button = frag.querySelector('#sc-send-button');
   send_button.addEventListener('click', () => {
-    collection.handle_send();
+    thread.handle_send();
   });
   // Left empty for now
   return frag;
-}
-
-
-// HELPER FUNCTIONS
-export function create_document_fragment(html) {
-  return document.createRange().createContextualFragment(html);
 }

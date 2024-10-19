@@ -39,7 +39,7 @@ export class SmartBlock extends SmartEntity {
 
   should_clear_embeddings(data) {
     if(this.is_new) return true;
-    if(this.embed_model_key !== "None" && this.vec?.length !== this.embed_model.dims) return true;
+    if(this.embed_model && this.embed_model_key !== "None" && this.vec?.length !== this.embed_model.dims) return true;
     if(this.data.length !== data.length) return true;
     return false;
   }
@@ -154,7 +154,7 @@ export class SmartBlock extends SmartEntity {
    */
   get should_embed() {
     try{
-      if(this.size < this.source_collection.embed_model.min_chars) return false;
+      if(this.embed_model && this.size < this.embed_model.min_chars) return false;
       const match_line_start = this.line_start + 1;
       const match_line_end = this.line_end;
       const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})

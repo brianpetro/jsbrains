@@ -1,17 +1,12 @@
-import { create_document_fragment } from "./_component.js";
 export async function render(turn, data) {
-  const turn_container = msg.role === 'system' ? create_system_turn_frag(turn) : create_participant_turn_frag(turn);
+  const turn_container = msg.role === 'system'
+    ? this.create_doc_fragment(`<div class="sc-${turn.role}"></div>`)
+    : this.create_doc_fragment(`<div class="sc-message ${turn.role}"></div>`)
+  ;
   for(const msg of turn.messages) {
     await msg.render(turn_container);
   }
   return post_process(turn, turn_container);
-}
-
-function create_system_turn_frag(turn) {
-  return create_document_fragment(`<div class="sc-${turn.role}"></div>`);
-}
-function create_participant_turn_frag(turn) {
-  return create_document_fragment(`<div class="sc-message ${turn.role}"></div>`);
 }
 
 export function post_process(turn, frag) {
