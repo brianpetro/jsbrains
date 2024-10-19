@@ -96,7 +96,8 @@ export class SmartBlock extends SmartEntity {
   }
   get excluded() {
     const block_headings = this.path.split("#").slice(1); // remove first element (file path)
-    return this.source_collection.excluded_headings.some(heading => block_headings.includes(heading));
+    if(this.source_collection.excluded_headings.some(heading => block_headings.includes(heading))) return true;
+    return this.source.excluded;
   }
   get file_path() { return this.source.file_path; }
   get file_type() { return this.source.file_type; }
@@ -196,7 +197,6 @@ export class SmartBlock extends SmartEntity {
   // source dependent
   get data_path() { return this.source.data_path; }
   get data_file() { return this.source.data_file; }
-  get excluded() { return this.source.excluded; }
   get excluded_lines() { return this.source.excluded_lines; }
   get file() { return this.source.file; }
   get is_canvas() { return this.source.is_canvas; }
