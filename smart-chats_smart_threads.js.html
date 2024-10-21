@@ -26,58 +26,54 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>import { SmartSources, SmartSource } from "smart-sources";
-import { render as chat_template } from "./components/chat.js";
+            <pre class="prettyprint source linenums"><code>import { SmartSources, SmartSource, SmartBlocks, SmartBlock } from "smart-sources";
+import { render as chat_template } from "./components/threads.js";
 import { render as settings_template } from "./components/settings.js";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json.js";
 
 export class SmartThreads extends SmartSources {
-  init() {}
-  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
-  get data_fs() {
-    if(!this._data_fs) {
-      const config = this.env.opts.collections?.smart_threads;
-      const _class = config?.class ?? config;
-      this._data_fs = new _class(this.env, {
-        adapter: config.adapter,
+  async init() {
+    await this.fs.init();
+    await this.chat_model.get_models(); // pre-load models for settings
+  }
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + ".smart-env/chats"; }
+  get fs() {
+    if(!this._fs){
+      this._fs = new this.env.opts.modules.smart_fs.class(this.env, {
+        adapter: this.env.opts.modules.smart_fs.adapter,
         fs_path: this.data_folder,
-        exclude_patterns: [],
       });
     }
-    return this._data_fs;
+    return this._fs;
   }
-  get fs() { return this.data_fs; }
   get chat_model() {
-    if(!this._chat_model){
-      const module_config = this.env.opts.modules.smart_chat_model;
-      const _class = module_config?.class ?? module_config;
-      this._chat_model = new _class({
+    if (!this._chat_model) {
+      this._chat_model = new this.env.opts.modules.smart_chat_model.class({
         settings: this.settings.chat_model,
-        adapters: module_config.adapters,
+        adapters: this.env.opts.modules.smart_chat_model.adapters,
+        http_adapter: this.env.opts.modules.smart_chat_model.http_adapter,
+        re_render_settings: this.render_settings.bind(this),
       });
     }
     return this._chat_model;
   }
-  async render(container=this.container, thread=null) {
-    if(this.component?.remove) this.component.remove();
-    this.component = await chat_template.call(this.env.smart_view, thread, {
-      attribution: this.attribution,
-    });
-    container.empty().appendChild(this.component);
-    this.thread_container = this.component.querySelector('.sc-chat-box');
-    if(thread) await thread.render(this.thread_container);
-    return this.component;
+  get chat_model_settings() {
+    return this.settings?.chat_model?.[this.settings.chat_model?.platform_key || 'openai'];
   }
-  async render_settings(container=this.settings_container) {
-    if(!this.settings_container || this.settings_container !== container) this.settings_container = container;
-    this.settings_container.empty();
-    this.settings_container.innerHTML = '&lt;div class="sc-loading">Loading settings...&lt;/div>';
-    const frag = await settings_template.call(this.env.smart_view, this, this.settings_container);
-    this.settings_container.empty();
-    this.settings_container.appendChild(frag);
+  async render(container=this.container, opts={}) {
+    if(container &amp;&amp; (!this.container || this.container !== container)) this.container = container;
+    const frag = await chat_template.call(this.smart_view, this, opts);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    return frag;
   }
-  get container() { return this.opts.container; }
-  set container(container) { this.opts.container = container; }
+  get render_settings_component() {
+    return settings_template.bind(this.smart_view);
+  }
+  get container() { return this._container; }
+  set container(container) { this._container = container; }
+  get current() { return this._current; }
+  set current(thread) { this._current = thread; }
   get default_settings() {
     return {
       chat_model: {
@@ -92,26 +88,8 @@ export class SmartThreads extends SmartSources {
     };
   }
   get settings_config() {
-    const chat_model_settings_config = Object.entries(this.chat_model.settings_config).reduce((acc, [key, val]) => {
-      const new_key = 'chat_model.' + key;
-      if(typeof val.callback === 'string'){
-        this[val.callback] = this.chat_model[val.callback].bind(this.chat_model);
-      }
-      if(typeof val.options_callback === 'string'){
-        this[val.options_callback] = this.chat_model[val.options_callback].bind(this.chat_model);
-      }
-      acc[new_key] = val;
-      return acc;
-    }, {});
-    return this.process_settings_config({
-      ...chat_model_settings_config,
-      ...settings_config,
-    });
+    return this.process_settings_config(this.chat_model.settings_config, `chat_model`);
   }
-}
-
-export const settings_config = {
-  // TODO
 }
 
 import { render as thread_template } from "./components/thread.js";
@@ -119,85 +97,123 @@ export class SmartThread extends SmartSource {
   static get defaults() {
     return {
       data: {
-        created_at: Date.now(),
+        created_at: null,
         responses: {},
-        turns: {},
         messages: {},
       }
     }
   }
-  get_key() { return this.data.created_at; }
-  async render(container=null) {
-    if(this.component?.remove) this.component.remove();
-    this.component = await thread_template.call(this.env.smart_view, this);
-    if(container){
-      container.empty();
-      container.appendChild(this.component);
+
+  get_key() {
+    return this.data.created_at ? this.data.created_at : this.data.created_at = Date.now().toString();
+  }
+
+  get container() { return this._container; }
+  set container(container) { this._container = container; }
+  async render(container = this.container) {
+    if(!container){
+      container = this.collection.container.querySelector('.sc-chat-box');
     }
-    return this.component;
+    if(!container) return console.warn("No container found for SmartThread");
+    if(!this.container) this.container = container;
+    const frag = await thread_template.call(this.smart_view, this);
+    if (container) {
+      container.empty();
+      container.appendChild(frag);
+    }
+    return frag;
   }
+
+  /**
+   * Handles sending a user message.
+   */
+  async handle_send() {
+    try {
+      // Access the chat input textarea from the UI
+      const input_field = this.container.querySelector('.sc-chat-input');
+      const message_content = input_field.value.trim();
+
+      // Validate input
+      if (!message_content) {
+        // Optionally, provide user feedback for empty input
+        console.warn("Cannot send empty message.");
+        return;
+      }
+
+      // Create and add the user message
+      await this.new_user_message(message_content);
+
+      // Clear the input field
+      input_field.value = '';
+
+      // Scroll to the latest message
+      this.container.scrollTop = this.container.scrollHeight;
+
+    } catch (error) {
+      console.error("Error in handle_send:", error);
+    }
+  }
+
+  /**
+   * Creates a new user message and adds it to the thread.
+   * @param {string} content - The content of the user's message.
+   */
+  async new_user_message(content) {
+    this.collection.current = this;
+    try {
+      const new_msg_data = {
+        thread_key: this.key,
+        content: content,
+        role: 'user',
+        msg_i: Object.keys(this.data.messages || {}).length + 1,
+      };
+      // Create a new SmartMessage for the user's message
+      await this.env.smart_messages.create_or_update(new_msg_data);
+    } catch (error) {
+      console.error("Error in new_user_message:", error);
+    }
+  }
+
   async new_response(response) {
-    const {turns, messages} = await this.parse_response(response);
-    await Promise.all(turns.map(turn => this.env.smart_turns.create_or_update(turn)));
-    await Promise.all(messages.map(message => this.env.smart_messages.create_or_update(message)));
+    const { messages } = await this.parse_response(response);
+    const msg_i = Object.keys(this.data.messages || {}).length + 1;
+    const msg_items = await Promise.all(messages.map(message => this.env.smart_messages.create_or_update({
+      ...message,
+      thread_key: this.key,
+      msg_i,
+    })));
+    this.container.scrollTop = this.container.scrollHeight;
   }
-  async parse_response(response) { return await this.chat_data_adapter.parse_response(response); }
-  async to_request() { return await this.chat_data_adapter.to_request(); }
+
+  async parse_response(response) {
+    return await this.chat_data_adapter.parse_response(response);
+  }
+
+  async to_request() {
+    return await this.chat_data_adapter.to_request();
+  }
+
   async complete() {
     const request = await this.to_request();
     const response = await this.chat_model.complete(request);
     await this.new_response(response);
   }
+
   get chat_data_adapter() {
-    if(!this._chat_data_adapter) {
+    if (!this._chat_data_adapter) {
       this._chat_data_adapter = new SmartThreadDataOpenaiJsonAdapter(this);
     }
     return this._chat_data_adapter;
   }
-  get chat_model() { return this.thread.chat_model; }
-}
 
-import { SmartBlocks, SmartBlock } from "smart-sources";
+  get chat_model() { return this.collection.chat_model; }
 
-/**
- * SmartTurns
- * Mostly a placeholder for now since ChatML doesn't allow for
- * multiple same-role messages in a row.
- */
-export class SmartTurns extends SmartBlocks {
-  process_load_queue() {}
-  process_import_queue() {}
-  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + "multi" + "/" + "chats"; }
-  init() {}
-}
+  get messages() { return Object.keys(this.data.messages || {}).map(key => this.env.smart_messages.get(key)); }
 
-import { render as turn_template } from "./components/turn.js";
-export class SmartTurn extends SmartBlock {
-  static get defaults() {
-    return {
-      data: {
-        choice_index: 0,
-        turn_index: 0,
-        role: null,
-        messages: {},
-      }
-    }
-  }
-  get_key() { return `${this.thread.key}#${this.data.turn_index}{${this.data.choice_index}}`; }
-  get thread() { return this.source; }
-  get role() { return this.data.role; }
-  async init() {
-    this.thread.data.turns[this.key] = true;
-    if(this.data.tool_calls){
-      // TODO handle tool calls
-    }
-  }
-  async render(container=null) {
-    if(this.component?.remove) this.component.remove();
-    this.component = await turn_template.call(this.env.smart_view, this);
-    if(container) container.appendChild(this.component);
-    return this.component;
-  }
+  // necessary source overrides
+  get path() { return this.data.created_at; }
+
+
 }
 
 export class SmartMessages extends SmartBlocks {
@@ -212,30 +228,35 @@ export class SmartMessage extends SmartBlock {
   static get defaults() {
     return {
       data: {
-        choice_index: 0,
-        turn_index: 0,
+        thread_key: null,
         content: null,
+        role: null,
         tool_calls: null,
         tool_call_id: null,
         image_url: null,
+        msg_i: null,
       }
     }
   }
-  get_key() { return `${this.thread.key}#${this.data.turn_index}{${this.data.choice_index}}`; }
-  get turn() { return this.source; }
-  get thread() { return this.turn.thread; }
-  get role() { return this.turn.role; }
+  get_key() { return `${this.data.thread_key}#${this.data.msg_i}`; }
   async init() {
+    while(!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
     this.thread.data.messages[this.key] = true;
-    this.turn.data.messages[this.key] = true;
-    if(this.role === 'user') await this.thread.complete();
+    await this.render();
+    if(this.data.role === 'user') await this.thread.complete();
   }
-  async render(container=null) {
-    if(this.component?.remove) this.component.remove(); // delete if exists (not settting null since not checked elsewhere)
-    this.component = await message_template.call(this.env.smart_view, this);
-    if(container) container.appendChild(this.component);
-    return this.component;
+  async render(container=this.thread.container) {
+    const frag = await message_template.call(this.smart_view, this);
+    if(container) container.appendChild(frag);
+    return frag;
   }
+  get content() { return this.data.content; }
+  get role() { return this.data.role; }
+  get thread() { return this.source; }
+  // necessary source overrides
+  get source_key() { return this.data.thread_key; }
+  get source_collection() { return this.env.smart_threads; }
+  get path() { return this.data.thread_key; }
 }
 </code></pre>
         </article>
@@ -247,13 +268,13 @@ export class SmartMessage extends SmartBlock {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Book.html">Book</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatModelApiAdapter.html">SmartChatModelApiAdapter</a></li><li><a href="SmartChatModelRequestAdapter.html">SmartChatModelRequestAdapter</a></li><li><a href="SmartChatModelResponseAdapter.html">SmartChatModelResponseAdapter</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartThreadDataOpenaiJsonAdapter.html">SmartThreadDataOpenaiJsonAdapter</a></li><li><a href="SmartTurns.html">SmartTurns</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Book.html">Book</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatModelApiAdapter.html">SmartChatModelApiAdapter</a></li><li><a href="SmartChatModelRequestAdapter.html">SmartChatModelRequestAdapter</a></li><li><a href="SmartChatModelResponseAdapter.html">SmartChatModelResponseAdapter</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartThreadDataOpenaiJsonAdapter.html">SmartThreadDataOpenaiJsonAdapter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Oct 19 2024 13:53:44 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Oct 21 2024 20:11:04 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

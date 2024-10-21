@@ -27,6 +27,7 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>import { SmartChatDataAdapter } from "./_adapter.js";
+
 /**
  * @class SmartThreadDataOpenaiJsonAdapter
  * @extends SmartChatDataAdapter
@@ -35,21 +36,21 @@
  */
 export class SmartThreadDataOpenaiJsonAdapter extends SmartChatDataAdapter {
   parse_response(response) {
-    const resp_key = this.data.turns.length;
+    const resp_key = Object.keys(this.data.responses).length;
     this.data.responses[resp_key] = response;
-    const turn_index = this.data.turns.length;
-    return parse_openai_chat_completion(response, turn_index);
+    return parse_openai_chat_completion(response);
   }
+
   to_request() {
     const request = {
       messages: this.item.messages.map(msg => {
         const _msg = {
           role: msg.role,
         };
-        if(msg.data.content) _msg.content = msg.data.content;
-        if(msg.data.tool_calls) _msg.tool_calls = msg.data.tool_calls;
-        if(msg.data.tool_call_id) _msg.tool_call_id = msg.data.tool_call_id;
-        if(msg.data.image_url) _msg.image_url = msg.data.image_url;
+        if (msg.data.content) _msg.content = msg.data.content;
+        if (msg.data.tool_calls) _msg.tool_calls = msg.data.tool_calls;
+        if (msg.data.tool_call_id) _msg.tool_call_id = msg.data.tool_call_id;
+        if (msg.data.image_url) _msg.image_url = msg.data.image_url;
         return _msg;
       }),
     };
@@ -57,37 +58,30 @@ export class SmartThreadDataOpenaiJsonAdapter extends SmartChatDataAdapter {
   }
 }
 
-function parse_openai_chat_completion(response, turn_index) {
-  const turns = [];
+function parse_openai_chat_completion(response) {
   const messages = [];
-  if(response.choices) response.choices.forEach((choice, choice_index) => {
-    const turn = {
-      choice_index,
-      turn_index,
-      ...parse_openai_choice(choice),
-    };
-    const message = {
-      choice_index,
-      turn_index,
-      ...parse_openai_message(choice.message),
-    };
-    turns.push(turn);
-    messages.push(message);
-  });
-  return {turns, messages};
-}
-function parse_openai_choice(choice) {
-  const turn_data = {};
-  if(choice.role) turn_data.role = choice.message.role;
-  return turn_data;
+  if (response.choices) {
+    response.choices.forEach((choice, choice_index) => {
+      const message = {
+        choice_index,
+        ...parse_openai_message(choice.message),
+      };
+      messages.push(message);
+    });
+  }
+  return { messages };
 }
 
 function parse_openai_message(message) {
-  const message_data = {};
-  if(message.content) message_data.content = message.content;
-  if(message.function_call) message_data.function_call = message.function_call;
+  const message_data = {
+    role: message.role,
+  };
+  if (message.content) message_data.content = message.content;
+  if (message.function_call) message_data.function_call = message.function_call;
+  if (message.tool_calls) message_data.tool_calls = message.tool_calls;
   return message_data;
-}</code></pre>
+}
+</code></pre>
         </article>
     </section>
 
@@ -97,13 +91,13 @@ function parse_openai_message(message) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Book.html">Book</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatModelApiAdapter.html">SmartChatModelApiAdapter</a></li><li><a href="SmartChatModelRequestAdapter.html">SmartChatModelRequestAdapter</a></li><li><a href="SmartChatModelResponseAdapter.html">SmartChatModelResponseAdapter</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartThreadDataOpenaiJsonAdapter.html">SmartThreadDataOpenaiJsonAdapter</a></li><li><a href="SmartTurns.html">SmartTurns</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Book.html">Book</a></li><li><a href="Collection.html">Collection</a></li><li><a href="CollectionItem.html">CollectionItem</a></li><li><a href="MultiFileSmartCollectionsAdapter.html">MultiFileSmartCollectionsAdapter</a></li><li><a href="SmartChatModelApiAdapter.html">SmartChatModelApiAdapter</a></li><li><a href="SmartChatModelRequestAdapter.html">SmartChatModelRequestAdapter</a></li><li><a href="SmartChatModelResponseAdapter.html">SmartChatModelResponseAdapter</a></li><li><a href="SmartMarkdown.html">SmartMarkdown</a></li><li><a href="SmartThreadDataOpenaiJsonAdapter.html">SmartThreadDataOpenaiJsonAdapter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#add">add</a></li><li><a href="global.html#collection_instance_name_from">collection_instance_name_from</a></li><li><a href="global.html#cos_sim">cos_sim</a></li><li><a href="global.html#create_uid">create_uid</a></li><li><a href="global.html#deep_merge">deep_merge</a></li><li><a href="global.html#is_valid_tool_call">is_valid_tool_call</a></li><li><a href="global.html#sequential_async_processor">sequential_async_processor</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#subtract">subtract</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Oct 19 2024 13:53:44 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Oct 21 2024 20:11:04 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
