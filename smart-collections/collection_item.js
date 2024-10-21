@@ -27,7 +27,8 @@ export class CollectionItem {
     // this.brain = this.env; // DEPRECATED
     this.config = this.env?.config;
     this.merge_defaults();
-    if (data) this.data = data;
+    // if (data) this.data = data;
+    if (data) deep_merge(this.data, data);
     if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 

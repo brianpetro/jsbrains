@@ -157,6 +157,16 @@ export class SmartView {
     if (typeof setting_config.conditional === 'function' && !setting_config.conditional(scope)) return false;
     return true;
   }
+
+  /**
+   * Handles the smooth transition effect when opening overlays.
+   * @param {HTMLElement} overlay_container - The overlay container element.
+   */
+  on_open_overlay(overlay_container) {
+    overlay_container.style.transition = "background-color 0.5s ease-in-out";
+    overlay_container.style.backgroundColor = "var(--bold-color)";
+    setTimeout(() => { overlay_container.style.backgroundColor = ""; }, 500);
+  }
 }
 
 

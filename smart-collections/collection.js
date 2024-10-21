@@ -348,6 +348,7 @@ export class Collection {
     const frag = await this.render_settings_component(this, opts);
     container.innerHTML = '';
     container.appendChild(frag);
+    this.smart_view.on_open_overlay(container);
     return container;
   }
 

@@ -3,27 +3,29 @@ import { SmartEntities } from "smart-entities";
 export class SmartBlocks extends SmartEntities {
   init() { /* mute */ }
 
-  async create(key, content) {
-    if(!content) content = "-"; // default to a single dash (prevent block being ignored by parser)
-    const source_key = key.split("#")[0];
-    let source = this.source_collection.get(source_key);
-    const headings = key.split("#").slice(1);
-    const content_with_all_headings = [
-      ...headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`),
-      ...content.split("\n")
-    ]
-    // remove back-to-back duplicates
-    .filter((heading, i, arr) => heading !== arr[i-1])
-    .join("\n");
-    if(!source) {
-      source = await this.env.smart_sources.create(source_key, content_with_all_headings);
-    }else{
-      await source.update(content_with_all_headings, { mode: 'merge_append' });
-    }
-    await source.import();
-    const block = this.get(key);
-    return block;
-  }
+  // remove because markdown-specific
+  // async create(key, content) {
+  //   if(!content) content = "-"; // default to a single dash (prevent block being ignored by parser)
+  //   const source_key = key.split("#")[0];
+  //   let source = this.source_collection.get(source_key);
+  //   const headings = key.split("#").slice(1);
+  //   const content_with_all_headings = [
+  //       ...headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`),
+  //       ...content.split("\n")
+  //     ]
+  //     // remove back-to-back duplicates
+  //     .filter((heading, i, arr) => heading !== arr[i-1])
+  //     .join("\n")
+  //   ;
+  //   if(!source) {
+  //     source = await this.env.smart_sources.create(source_key, content_with_all_headings);
+  //   }else{
+  //     await source.update(content_with_all_headings, { mode: 'merge_append' });
+  //   }
+  //   await source.import();
+  //   const block = this.get(key);
+  //   return block;
+  // }
 
   get embed_model() { return this.source_collection?.embed_model; }
   get embed_model_key() { return this.source_collection?.embed_model_key; }
