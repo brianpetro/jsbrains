@@ -1,6 +1,6 @@
 import { render as render_thread } from "./thread.js";
 
-export async function render(thread=null, opts={}) {
+export async function render(threads = null, opts = {}) {
   const top_bar_buttons = [
     { title: 'Open Conversation Note', icon: 'external-link' },
     { title: 'Chat History', icon: 'history' },
@@ -13,7 +13,7 @@ export async function render(thread=null, opts={}) {
     </button>
   `).join('');
 
-  const name = thread ? thread.name : 'Untitled';
+  const name = threads.current?.name || 'Untitled';
 
   const main_html = `
     <div class="sc-chat-container">
@@ -43,37 +43,51 @@ export async function render(thread=null, opts={}) {
   const frag = this.create_doc_fragment(main_html);
   const chat_box = frag.querySelector('.sc-chat-box');
 
-  if (thread) {
-    const thread_frag = await render_thread(thread);
-    chat_box.appendChild(thread_frag);
-  } else {
-    const welcome_message = this.create_doc_fragment(`
-      <div class="sc-message assistant">
-        <div class="sc-message-content">
-          <span>Hi there, welcome to the Smart Chat.&nbsp;Ask me a question about your notes and I'll try to answer it.</span>
-        </div>
-      </div>
-    `);
-    chat_box.appendChild(welcome_message);
+  if (!threads.current) {
+    threads.current = await threads.create_or_update({});
   }
+  await threads.current.render(chat_box);
 
-  return post_process.call(this, thread, frag);
+  return post_process.call(this, threads, frag, opts);
 }
 
-export function post_process(thread, frag) {
+export function post_process(threads, frag, opts = {}) {
   const chat_input = frag.querySelector('.sc-chat-form textarea');
   chat_input.addEventListener('keydown', (e) => {
-    thread.key_down_handler(e);
+    const handler_resp = opts.key_down_handler ? opts.key_down_handler(e) : null;
+    if(handler_resp === 'send'){ 
+      threads.current.new_user_message(chat_input.value);
+    }
   });
+
   const abort_button = frag.querySelector('#sc-abort-button');
   abort_button.addEventListener('click', () => {
-    thread.chat_model.abort_current_response();
-    thread.clear_streaming_ux();
+    threads.current.chat_model.abort_current_response();
+    threads.current.clear_streaming_ux();
   });
+
   const send_button = frag.querySelector('#sc-send-button');
   send_button.addEventListener('click', () => {
-    thread.handle_send();
+    threads.current.new_user_message(chat_input.value);
   });
-  // Left empty for now
+
+  // settings button
+  const settings_button = frag.querySelector('button[title="Chat Settings"]');
+  const overlay_container = frag.querySelector(".sc-overlay");
+  console.log(overlay_container, frag);
+  settings_button.addEventListener('click', () => {
+    threads.render_settings(overlay_container);
+  });
+
+  // new chat button
+  const new_chat_button = frag.querySelector('button[title="New Chat"]');
+  new_chat_button.addEventListener('click', () => {
+    threads.current = null
+    threads.render();
+  });
+  
+  // refocus chat input
+  chat_input.focus();
+
   return frag;
 }

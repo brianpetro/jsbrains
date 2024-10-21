@@ -258,13 +258,3 @@ const smart_chats_settings_config_schema = {
   "required": ["chat_model"],
   "additionalProperties": true
 };
-
-// Export all schemas
-module.exports = {
-  smart_threads_schema,
-  smart_turn_schema,
-  smart_message_schema,
-  smart_turns_schema,
-  smart_messages_schema,
-  smart_chats_settings_config_schema
-};

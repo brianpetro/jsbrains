@@ -303,10 +303,3 @@ const smart_chat_response_schema = {
   },
   "required": ["id", "object", "created", "model", "choices", "usage"]
 };
-
-// Export all schemas
-module.exports = {
-  smart_chat_model_schema,
-  smart_chat_request_schema,
-  smart_chat_response_schema
-};
