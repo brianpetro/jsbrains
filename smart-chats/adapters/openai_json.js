@@ -13,19 +13,24 @@ export class SmartThreadDataOpenaiJsonAdapter extends SmartChatDataAdapter {
     return parse_openai_chat_completion(response);
   }
 
-  to_request() {
-    const request = {
-      messages: this.item.messages.map(msg => {
-        const _msg = {
-          role: msg.role,
-        };
-        if (msg.data.content) _msg.content = msg.data.content;
-        if (msg.data.tool_calls) _msg.tool_calls = msg.data.tool_calls;
-        if (msg.data.tool_call_id) _msg.tool_call_id = msg.data.tool_call_id;
-        if (msg.data.image_url) _msg.image_url = msg.data.image_url;
-        return _msg;
-      }),
-    };
+  async to_request() {
+    const request = { messages: [] };
+    for(const msg of this.item.messages){
+      if(msg.role === 'user') {
+        request.messages.push(
+          ...(await msg.get_message_with_context()) // returns array of messages
+        );
+        continue;
+      }
+      const _msg = {
+        role: msg.role,
+      };
+      if (msg.data.content) _msg.content = msg.content;
+      if (msg.data.tool_calls) _msg.tool_calls = msg.data.tool_calls;
+      if (msg.data.tool_call_id) _msg.tool_call_id = msg.data.tool_call_id;
+      if (msg.data.image_url) _msg.image_url = msg.data.image_url;
+      request.messages.push(_msg);
+    }
     return request;
   }
 }

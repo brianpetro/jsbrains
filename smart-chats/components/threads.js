@@ -1,5 +1,3 @@
-import { render as render_thread } from "./thread.js";
-
 export async function render(threads = null, opts = {}) {
   const top_bar_buttons = [
     { title: 'Open Conversation Note', icon: 'external-link' },
@@ -57,6 +55,7 @@ export function post_process(threads, frag, opts = {}) {
     const handler_resp = opts.key_down_handler ? opts.key_down_handler(e) : null;
     if(handler_resp === 'send'){ 
       threads.current.new_user_message(chat_input.value);
+      chat_input.value = '';
     }
   });
 
@@ -69,12 +68,12 @@ export function post_process(threads, frag, opts = {}) {
   const send_button = frag.querySelector('#sc-send-button');
   send_button.addEventListener('click', () => {
     threads.current.new_user_message(chat_input.value);
+    chat_input.value = '';
   });
 
   // settings button
   const settings_button = frag.querySelector('button[title="Chat Settings"]');
   const overlay_container = frag.querySelector(".sc-overlay");
-  console.log(overlay_container, frag);
   settings_button.addEventListener('click', () => {
     threads.render_settings(overlay_container);
   });
