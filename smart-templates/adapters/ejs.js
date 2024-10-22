@@ -5,8 +5,8 @@ export class SmartTemplateEjsAdapter {
 
   get file_types() { return ['ejs']; }
 
-  async parse_variables() {
-    const template_content = await this.template.read();
+  async parse_variables(template_content=null) {
+    if(!template_content) template_content = await this.template.read();
     const variables = [];
     const ejs_regex = /<%[-_=]?\s*=?\s*([\w.]+(\[\w+])?)\s*[-_]?%>/g;
     const curly_regex = /\{\{\s*([\w.]+(\[\w+])?)\s*(?::\s*['"]([^'"]*)['"]\s*)?\}\}/g;

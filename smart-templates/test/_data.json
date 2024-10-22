@@ -1,0 +1,33 @@
+{
+  "SmartTemplate:template.st.ejs": {
+    "path": "template.st.ejs",
+    "embeddings": {},
+    "embedding": {},
+    "history": [],
+    "class_name": "SmartTemplate",
+    "last_read_hash": "0504db9213fd84d512e622b706f6a967cde24688291c19dcbe6b4cba297d0a5d",
+    "blocks": {
+      "#": [
+        1,
+        1
+      ]
+    },
+    "content": "Hello, <%= stringVar %>! You have <%= numberVar %> new messages.",
+    "mtime": 1729607880089,
+    "size": 166,
+    "hash": "0504db9213fd84d512e622b706f6a967cde24688291c19dcbe6b4cba297d0a5d",
+    "outlinks": []
+  },
+  "SmartTemplate:template.st.md": {
+    "path": "template.st.md",
+    "embeddings": {},
+    "embedding": {},
+    "history": [],
+    "class_name": "SmartTemplate",
+    "last_read_hash": "3479d2a4e05b37e6fe922ea8e8654ced2c0545a5a56fa8b565f1a0e54405a8d1",
+    "blocks": null,
+    "content": "Hello, {{ name }}! You have {{ count }} new messages.\n{{ \"manually added\" }}\n{{\"manually added 2\"}}\n{{ with space }}\n{{ with-hyphen }}\n{{ \"manually added 3\" }}\n{{ \"manually added 4\" }}\n{{ \"should work with inline 'apostrophes' like this\" }}\n{{ not_a_var }}\n{{ another_not_a_var }}",
+    "mtime": 1729607880082,
+    "size": 282
+  }
+}

@@ -77,7 +77,7 @@ export class SmartTemplateMarkdownAdapter {
         let name = match.replace(/{{\s*=?\s*([\w\s.-]+(\[\w+])?)\s*}}/g, '$1').trim();
         const prompt_key = name.replace(/[-\s]/g, '_'); // Replace hyphens and spaces with underscores
         const prompt = (this.template.env.smart_templates.var_prompts[prompt_key]?.prompt || name + ' prompt').trim();
-        variables.push({ name: prompt_key, prompt });
+        variables.push({ name: prompt_key, prompt, inline: false });
       }
     });
     return variables;
