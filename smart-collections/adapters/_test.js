@@ -27,20 +27,21 @@ export class SmartCollectionTestDataAdapter extends SmartCollectionDataAdapter {
         return item.queue_import();
       }
 
-      const parsed_data = {};
-      data.split('\n').forEach(line => {
-        try {
-          const parsed = JSON.parse(`{${line}}`);
-          if (Object.values(parsed)[0] === null) {
-            if (parsed_data[Object.keys(parsed)[0]]) delete parsed_data[Object.keys(parsed)[0]];
-          } else {
-            Object.assign(parsed_data, parsed);
-          }
-        } catch (err) {
-          console.warn("Error parsing line: ", line);
-          console.warn(err.stack);
-        }
-      });
+      // const parsed_data = {};
+      // data.split('\n').forEach(line => {
+      //   try {
+      //     const parsed = JSON.parse(`{${line}}`);
+      //     if (Object.values(parsed)[0] === null) {
+      //       if (parsed_data[Object.keys(parsed)[0]]) delete parsed_data[Object.keys(parsed)[0]];
+      //     } else {
+      //       Object.assign(parsed_data, parsed);
+      //     }
+      //   } catch (err) {
+      //     console.warn("Error parsing line: ", line);
+      //     console.warn(err.stack);
+      //   }
+      // });
+      const parsed_data = data;
 
       Object.entries(parsed_data).forEach(([parsed_ajson_key, value]) => {
         if (!value) return; // handle null values (deleted)
@@ -74,11 +75,11 @@ export class SmartCollectionTestDataAdapter extends SmartCollectionDataAdapter {
         this.collection.delete_item(item.key);
         delete this.test_data[ajson_key];
       } else {
-        this.test_data[ajson_key] += '\n' + ajson;
+        this.test_data[ajson_key] = item.data;
       }
 
       // Simulate writing to file
-      fs.writeFileSync(this.data_path, JSON.stringify(this.test_data, null, 2));
+      // fs.writeFileSync(this.data_path, JSON.stringify(this.test_data, null, 2));
 
       item._queue_save = false;
       return true;

@@ -186,7 +186,7 @@ export class SourceTestAdapter extends SourceAdapter {
 
     const hash = await create_hash(this.content);
     if (this.data.hash === hash) {
-      console.log("File stats changed, but content is the same. Skipping import.");
+      // console.log("File stats changed, but content is the same. Skipping import.");
       return;
     }
 
@@ -199,19 +199,21 @@ export class SourceTestAdapter extends SourceAdapter {
     const outlinks = get_markdown_links(this.content);
     this.data.outlinks = outlinks;
 
-    for (const [sub_key, value] of Object.entries(blocks)) {
-      const block_key = this.item.key + sub_key;
-      const block_content = this.content.split("\n").slice(value[0] - 1, value[1]).join("\n");
-      const block_outlinks = get_markdown_links(block_content);
-
-      const block = await this.item.block_collection.create_or_update({
-        key: block_key,
-        outlinks: block_outlinks,
-        size: block_content.length,
-      });
-
-      block._embed_input = block.breadcrumbs + "\n" + block_content;
-      block.data.hash = await create_hash(block._embed_input);
+    if(this.item.block_collection){
+      for (const [sub_key, value] of Object.entries(blocks)) {
+        const block_key = this.item.key + sub_key;
+        const block_content = this.content.split("\n").slice(value[0] - 1, value[1]).join("\n");
+        const block_outlinks = get_markdown_links(block_content);
+  
+        const block = await this.item.block_collection.create_or_update({
+          key: block_key,
+          outlinks: block_outlinks,
+          size: block_content.length,
+        });
+  
+        block._embed_input = block.breadcrumbs + "\n" + block_content;
+        block.data.hash = await create_hash(block._embed_input);
+      }
     }
   }
 

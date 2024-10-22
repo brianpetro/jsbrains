@@ -95,7 +95,7 @@ export class SmartEnv {
     const main = this[main_key];
     await this.init_collections(main_env_opts); // init so settings can be accessed
     await this.ready_to_load_collections(main);
-    console.log('ready to load collections');
+    // console.log('ready to load collections');
     const main_collections = Object.keys(main_env_opts.collections).reduce((acc, key) => {
       if(!this.collections[key]) return acc; // skip if not initialized
       acc[key] = this[key]; // add ref to collection instance to acc
@@ -138,8 +138,7 @@ export class SmartEnv {
         }
       } else {
         if (this.opts[key] !== undefined) {
-          // console.warn(`SmartEnv: Overwriting existing property ${key} with ${value}`);
-          console.warn(`SmartEnv: Overwriting existing property ${key} with ${this.mains[this.mains.length-1]} smart_env_config`);
+          // console.warn(`SmartEnv: Overwriting existing property ${key} with ${this.mains[this.mains.length-1]} smart_env_config`);
         }
         this.opts[key] = value;
       }
