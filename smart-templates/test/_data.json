@@ -29,5 +29,10 @@
     "content": "Hello, {{ name }}! You have {{ count }} new messages.\n{{ \"manually added\" }}\n{{\"manually added 2\"}}\n{{ with space }}\n{{ with-hyphen }}\n{{ \"manually added 3\" }}\n{{ \"manually added 4\" }}\n{{ \"should work with inline 'apostrophes' like this\" }}\n{{ not_a_var }}\n{{ another_not_a_var }}\n{{ array_var[] }}",
     "mtime": 1729607880082,
     "size": 282
+  },
+  "SmartTemplate:frontmatter_test.st.md": {
+    "class_name": "SmartTemplate",
+    "path": "frontmatter_test.st.md",
+    "content": "---name: \"Enter the user's name\"\ncount: \"Enter the number of unread messages\"---Hello, {{ name }}! You have {{ count }} new messages."
   }
 }

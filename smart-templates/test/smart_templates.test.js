@@ -4,6 +4,7 @@ import { load_test_env } from './_env.js';
 // Sample template contents
 const ejsTemplatePath = 'template.st.ejs';
 const markdownTemplatePath = 'template.st.md';
+const frontmatter_test_filename = 'frontmatter_test.st.md';
 
 const ejsTemplateContent = `Hello, <%= stringVar %>! You have <%= numberVar %> new messages.`;
 
@@ -19,6 +20,11 @@ const markdownTemplateContent = `Hello, {{ name }}! You have {{ count }} new mes
 {{ another_not_a_var }}
 {{ array_var[] }}
  `;
+const frontmatter_template_content = `---
+name: "Enter the user's name"
+count: "Enter the number of unread messages"
+---
+Hello, {{ name }}! You have {{ count }} new messages.`;
 
 
 test.beforeEach(async t => {
@@ -29,7 +35,7 @@ test.beforeEach(async t => {
 
   mockFs[ejsTemplatePath] = ejsTemplateContent;
   mockFs[markdownTemplatePath] = markdownTemplateContent;
-
+  mockFs[frontmatter_test_filename] = frontmatter_template_content;
   await t.context.env.smart_templates.init();
 });
 
@@ -297,3 +303,12 @@ test('Render template with different output modes', async t => {
   t.is(renderedReplaceAll, expectedAppend, 'Rendered content should match for replace-all mode');
 });
 
+test('should parse variable prompts from frontmatter', async t => {
+  const template = t.context.env.smart_templates.items[frontmatter_test_filename];
+  const variables = await template.parse_variables();
+  const expected = [
+    { name: 'name', prompt: 'Enter the user\'s name', inline: false, type: 'string' },
+    { name: 'count', prompt: 'Enter the number of unread messages', inline: false, type: 'string' }
+  ];
+  t.deepEqual(variables, expected, 'Should correctly parse variable prompts from frontmatter');
+});

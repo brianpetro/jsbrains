@@ -113,16 +113,19 @@ export class SmartTemplate extends SmartSource {
   async parse_variables() {
     if (!this._parsed_variables) {
       this._parsed_variables = await this.template_adapter.parse_variables();
-
+  
       // Add variables to SmartTemplates _variables object
       if (!this.settings.var_prompts) {
         this.settings.var_prompts = {};
       }
       this._parsed_variables.forEach((variable, i) => {
-        this._parsed_variables[i] = {
-          ...variable,
-          ...(this.settings.var_prompts?.[variable.name] || {}),
-        };
+        // Only apply var_prompts if prompt is not already set by template_opts
+        if (!variable.prompt) {
+          this._parsed_variables[i] = {
+            ...variable,
+            ...(this.settings.var_prompts?.[variable.name] || {}),
+          };
+        }
       });
     }
     return this._parsed_variables;
