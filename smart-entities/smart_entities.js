@@ -35,6 +35,7 @@ export class SmartEntities extends Collection {
   }
   async load_smart_embed() {
     if(this.embed_model_key === 'None') return;
+    if(!this.embed_model) return;
     if(this.embed_model.loading) return console.log(`SmartEmbedModel already loading for ${this.embed_model_key}`);
     if(this.embed_model.loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
     try{
@@ -84,7 +85,7 @@ export class SmartEntities extends Collection {
   get smart_embed() { return this.embed_model; }
   get embed_model() {
     if(this.embed_model_key === "None") return null;
-    if(!this._embed_model) this._embed_model = new this.env.opts.modules.smart_embed_model.class(this.env, {
+    if(!this._embed_model && this.env.opts.modules.smart_embed_model?.class) this._embed_model = new this.env.opts.modules.smart_embed_model.class(this.env, {
       model_key: this.embed_model_key,
       ...(this.settings.embed_model?.[this.embed_model_key] || {}),
       settings: this.settings.embed_model,
