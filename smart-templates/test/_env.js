@@ -45,6 +45,7 @@ class MockSmartChatModel extends SmartChatModel {
                     // name: 'Alice',
                     // count: 10,
                     // not_a_var: 'not a var',
+                    array_var: ['item1', 'item2']
                   })
                 }
               }

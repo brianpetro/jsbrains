@@ -17,6 +17,7 @@ const markdownTemplateContent = `Hello, {{ name }}! You have {{ count }} new mes
 {{ "should work with inline 'apostrophes' like this" }}
 {{ not_a_var }}
 {{ another_not_a_var }}
+{{ array_var[] }}
  `;
 
 
@@ -60,17 +61,18 @@ test.serial('Extract variables from Markdown template', async t => {
   const variables = await template.parse_variables();
   
   const expectedVariables = [
-    { name: 'name', prompt: 'name prompt', inline: false },
-    { name: 'count', prompt: 'count prompt', inline: false },
-    { name: 'var_1', prompt: 'manually added', inline: true },
-    { name: 'var_2', prompt: 'manually added 2', inline: true },
-    { name: 'with_space', prompt: 'with space prompt', inline: false },
-    { name: 'with_hyphen', prompt: 'with-hyphen prompt', inline: false },
-    { name: 'var_3', prompt: 'manually added 3', inline: true },
-    { name: 'var_4', prompt: 'manually added 4', inline: true },
-    { name: 'var_5', prompt: 'should work with inline \'apostrophes\' like this', inline: true },
-    { name: 'not_a_var', prompt: "not_a_var prompt", inline: false },
-    { name: 'another_not_a_var', prompt: "another_not_a_var prompt", inline: false }
+    { name: 'name', prompt: 'name prompt', inline: false, type: 'string' },
+    { name: 'count', prompt: 'count prompt', inline: false, type: 'string' },
+    { name: 'var_1', prompt: 'manually added', inline: true, type: 'string' },
+    { name: 'var_2', prompt: 'manually added 2', inline: true, type: 'string' },
+    { name: 'with_space', prompt: 'with space prompt', inline: false, type: 'string' },
+    { name: 'with_hyphen', prompt: 'with-hyphen prompt', inline: false, type: 'string' },
+    { name: 'var_3', prompt: 'manually added 3', inline: true, type: 'string' },
+    { name: 'var_4', prompt: 'manually added 4', inline: true, type: 'string' },
+    { name: 'var_5', prompt: 'should work with inline \'apostrophes\' like this', inline: true, type: 'string' },
+    { name: 'not_a_var', prompt: "not_a_var prompt", inline: false, type: 'string' },
+    { name: 'another_not_a_var', prompt: "another_not_a_var prompt", inline: false, type: 'string' },
+    { name: 'array_var', prompt: 'array_var prompt', inline: false, type: 'array' }
   ];
   
   t.deepEqual(variables, expectedVariables, 'Should correctly extract variables from Markdown template');
@@ -102,6 +104,7 @@ test('Complete method generates correct context', async t => {
     var_3: 'completed 3',
     var_4: 'completed 4',
     var_5: 'completed with \'apostrophes\' like this',
+    array_var: "[\n  \"item1\",\n  \"item2\"\n]"
     // var_6: 'manually added 6',
   };
   
@@ -169,7 +172,8 @@ test('Render Markdown template with context', async t => {
     var_4: 'Inline Content D',
     var_5: "should work with inline 'apostrophes' like this",
     not_a_var: 'Should not appear',
-    another_not_a_var: 'Should also not appear'
+    another_not_a_var: 'Should also not appear',
+    array_var: "[\n  \"item1\",\n  \"item2\"\n]"
   };
   
   const rendered = await template.render(context);
@@ -183,7 +187,11 @@ Inline Content C
 Inline Content D
 should work with inline 'apostrophes' like this
 Should not appear
-Should also not appear`;
+Should also not appear
+[
+  "item1",
+  "item2"
+]`;
   
   t.is(rendered, expected, 'Rendered Markdown template should match expected output');
 });
@@ -213,7 +221,11 @@ completed 3
 completed 4
 completed with 'apostrophes' like this
 
-`;
+
+[
+  "item1",
+  "item2"
+]`;
   
   t.is(rendered_content, expected, 'Complete and Render method should correctly generate and render Markdown content');
 });

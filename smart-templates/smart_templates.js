@@ -131,13 +131,22 @@ export class SmartTemplate extends SmartSource {
   async get_chatml_tools(opts = {}) {
     const variables = await this.parse_variables();
     const properties = variables.reduce((acc, variable) => {
-      acc[variable.name] = { 
-        type: 'string', 
-        description: variable.prompt || `Value for ${variable.name}`
-      };
+      const description = variable.prompt || `Value for ${variable.name}`;
+      if (variable.type === 'array') {
+        acc[variable.name] = {
+          type: 'array',
+          items: { type: 'string' }, // Assuming array of strings for simplicity
+          description
+        };
+      } else {
+        acc[variable.name] = {
+          type: 'string',
+          description
+        };
+      }
       return acc;
     }, {});
-
+  
     return {
       type: "function",
       function: {
@@ -205,11 +214,7 @@ export class SmartTemplate extends SmartSource {
 
     Object.entries(generated_content).forEach(([key, value]) => {
       if (typeof value !== 'string' && typeof value !== 'number') {
-        if (Array.isArray(value)) {
-          generated_content[key] = value.join('\n');
-        } else {
-          generated_content[key] = value ? JSON.stringify(value) : '';
-        }
+        generated_content[key] = value ? JSON.stringify(value, null, 2) : '';
       }
     });
 

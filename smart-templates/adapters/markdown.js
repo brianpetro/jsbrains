@@ -71,17 +71,32 @@ export class SmartTemplateMarkdownAdapter {
         variables.push({
           name: `var_${i++}`,
           prompt: match.replace(/{{\s*"([^"]+)"\s*}}/g, '$1').trim(),
+          type: 'string',
           inline: true
         });
       } else {
-        let name = match.replace(/{{\s*=?\s*([\w\s.-]+(\[\w+])?)\s*}}/g, '$1').trim();
+        let name = match.replace(/{{\s*=?\s*([\w\s.-]+(\[\])?)\s*}}/g, '$1').trim();
+        
+        let isArray = false;
+        if (name.endsWith('[]')) {
+          isArray = true;
+          name = name.slice(0, -2); // Remove the [] from the variable name
+        }
+        
         const prompt_key = name.replace(/[-\s]/g, '_'); // Replace hyphens and spaces with underscores
         const prompt = (this.template.env.smart_templates.var_prompts[prompt_key]?.prompt || name + ' prompt').trim();
-        variables.push({ name: prompt_key, prompt, inline: false });
+        
+        variables.push({ 
+          name: prompt_key, 
+          prompt, 
+          inline: false,
+          type: isArray ? 'array' : 'string', // Mark as array if detected
+        });
       }
     });
     return variables;
   }
+  
 }
 
 export function convert_to_ejs(content) {
@@ -93,6 +108,23 @@ export function convert_to_ejs(content) {
     content = content.replace(match, `<%- var_${index + 1} %>`);
   });
   // replace mustache syntax with EJS syntax
-  content = content.replace(/{{\s*([\w\s-]+)\s*}}/g, (match, p1) => `<%- ${p1.trim().replace(/[\s-]+/g, '_')} %>`);
+  content = content.replace(/{{\s*([\w\s-]+)(\[\])?\s*}}/g, (match, p1) => `<%- ${p1.trim().replace(/[\s-]+/g, '_')} %>`);
   return content;
 }
+// export function convert_to_ejs(content) {
+//   // detect brackets with quotes
+//   const regex = /{{\s*"([^"]+)"\s*}}/g;
+//   const matches = content.match(regex);
+//   // for each match, replace with var_<match>
+//   matches?.forEach((match, index) => {
+//     content = content.replace(match, `<%- var_${index + 1} %>`);
+//   });
+//   // replace mustache syntax with EJS syntax
+//   content = content.replace(/{{\s*([\w\s-]+)(\[\])?\s*}}/g, (match, p1, p2) => {
+//     if (p2) {
+//       return `<%- ${p1.trim().replace(/[\s-]+/g, '_')} %>`;
+//     }
+//     return `<%- ${p1.trim().replace(/[\s-]+/g, '_')} %>`;
+//   });
+//   return content;
+// }
