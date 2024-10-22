@@ -52,11 +52,57 @@ export async function render(threads = null, opts = {}) {
 export function post_process(threads, frag, opts = {}) {
   const chat_input = frag.querySelector('.sc-chat-form textarea');
   chat_input.addEventListener('keydown', (e) => {
-    const handler_resp = opts.key_down_handler ? opts.key_down_handler(e) : null;
-    if(handler_resp === 'send'){ 
+    const mod = this.adapter.is_mod_event(e); // properly handle if the meta/ctrl key is pressed
+    if (e.key === "Enter" && mod) {
+      e.preventDefault();
       threads.current.new_user_message(chat_input.value);
       chat_input.value = '';
     }
+    // console.log("key", e.key);
+    if(!["/", "@", "["].includes(e.key)) return;
+    // get cursor position
+    const pos = chat_input.selectionStart;
+    // if key is open square bracket
+    if (e.key === "[") {
+      if(!opts.open_file_suggestion_modal) return;
+      // if previous char is [
+      if (chat_input.value[pos - 1] === "[") {
+        // open file suggestion modal (timeout so that last key is added to input)
+        setTimeout(() => { opts.open_file_suggestion_modal() }, 10);
+        return;
+      }
+    } else {
+      this.brackets_ct = 0;
+    }
+    // if / is pressed
+    if (e.key === "/") {
+      if(!opts.open_folder_suggestion_modal) return;
+      // if this is first char or previous char is space (timeout so that last key is added to input)
+      if (chat_input.value.length === 0 || [" ", "\n"].includes(chat_input.value[pos - 1])) {
+        // open folder suggestion modal (timeout so that last key is added to input)
+        setTimeout(() => { opts.open_folder_suggestion_modal() }, 10);
+        return;
+      }
+    }
+    // if @ is pressed
+    if (e.key === "@") {
+      if(!opts.open_system_prompt_modal) return;
+      // if this is first char or previous char is space
+      if (chat_input.value.length === 0 || [" ", "\n"].includes(chat_input.value[pos - 1])) {
+        // open system prompt suggestion modal (timeout so that last key is added to input)
+        setTimeout(() => { opts.open_system_prompt_modal() }, 10);
+        return;
+      }
+    }
+  });
+
+  // key up handlers
+  chat_input.addEventListener('keyup', (e) => {
+    clearTimeout(this.resize_debounce);
+    this.resize_debounce = setTimeout(() => {
+      chat_input.style.height = 'auto';
+      chat_input.style.height = `${chat_input.scrollHeight}px`;
+    }, 200);
   });
 
   const abort_button = frag.querySelector('#sc-abort-button');

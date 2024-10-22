@@ -19,10 +19,10 @@ export async function render(message, opts={}) {
     return frag;
   }
   const frag = message.data.role === 'system' ? create_system_message_frag(message) : create_participant_message_frag(message);
-  return post_process(message, frag);
+  return await post_process.call(this, message, frag);
 }
 
-export function post_process(message, frag) {
+export async function post_process(message, frag) {
   const copy_button = frag.querySelector('.sc-msg-button');
   if (copy_button) {
     copy_button.addEventListener('click', () => {
@@ -34,5 +34,9 @@ export function post_process(message, frag) {
       });
     });
   }
+  const msg_span = frag.querySelector('span');
+  const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
+  msg_span.innerHTML = '';
+  msg_span.appendChild(markdown_rendered_frag);
   return frag;
 }
