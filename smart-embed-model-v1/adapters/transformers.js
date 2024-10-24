@@ -15,7 +15,6 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
 
   async load() {
     const { pipeline, env, AutoTokenizer } = await import('@xenova/transformers');
-    // const { pipeline, env, AutoTokenizer } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.9');
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true,

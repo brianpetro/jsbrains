@@ -278,7 +278,8 @@ var settings_config = {
     name: "Legacy Transformers (no GPU)",
     type: "toggle",
     description: "Use legacy transformers (v2) instead of v3.",
-    callback: "embed_model_changed"
+    callback: "embed_model_changed",
+    default: true
   }
 };
 
@@ -321,7 +322,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     return this.smart_embed.opts.use_gpu || false;
   }
   async load() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.21");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
