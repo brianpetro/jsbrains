@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: SmartThreadDataOpenaiJsonAdapter</title>
+    <title>JSDoc: Source: smart-collections/utils/deep_equal.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,148 +17,53 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: SmartThreadDataOpenaiJsonAdapter</h1>
+    <h1 class="page-title">Source: smart-collections/utils/deep_equal.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>SmartThreadDataOpenaiJsonAdapter<span class="signature">()</span><span class="type-signature"></span></h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-
-    
-
-    
-    <h4 class="name" id="SmartThreadDataOpenaiJsonAdapter"><span class="type-signature"></span>new SmartThreadDataOpenaiJsonAdapter<span class="signature">()</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Stores SmartThread data in default collection data.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="smart-chats_adapters_openai_json.js.html">smart-chats/adapters/openai_json.js</a>, <a href="smart-chats_adapters_openai_json.js.html#line3">line 3</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    </div>
-
-    
-        <h3 class="subsection-title">Extends</h3>
-
-        
-
-
-    <ul>
-        <li>SmartChatDataAdapter</li>
-    </ul>
-
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Compares two values deeply to determine if they are equal.
+ * @param {*} obj1 - The first value to compare.
+ * @param {*} obj2 - The second value to compare.
+ * @param {WeakMap} [visited=new WeakMap()] - WeakMap of visited objects to handle circular references.
+ * @returns {boolean} True if the values are deeply equal, false otherwise.
+ */
+export function deep_equal(obj1, obj2, visited = new WeakMap()) {
+  // Handle direct equality and null/undefined cases
+  if (obj1 === obj2) return true;
+  if (obj1 === null || obj2 === null || obj1 === undefined || obj2 === undefined) return false;
+  
+  // Handle different types, including Array check
+  if (typeof obj1 !== typeof obj2 || Array.isArray(obj1) !== Array.isArray(obj2)) return false;
+  
+  // Handle arrays
+  if (Array.isArray(obj1)) {
+    if (obj1.length !== obj2.length) return false;
+    return obj1.every((item, index) => deep_equal(item, obj2[index], visited));
+  }
+  
+  // Handle objects (but not arrays)
+  if (typeof obj1 === 'object') {
+    // Handle circular references
+    if (visited.has(obj1)) return visited.get(obj1) === obj2;
+    visited.set(obj1, obj2);
+
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    if (keys1.length !== keys2.length) return false;
+    return keys1.every(key => deep_equal(obj1[key], obj2[key], visited));
+  }
+  
+  // Handle other types
+  return obj1 === obj2;
+}</code></pre>
+        </article>
+    </section>
 
 
 
