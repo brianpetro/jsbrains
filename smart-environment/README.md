@@ -141,6 +141,177 @@ The `render_settings` method and its associated template can be easily customize
 
 By leveraging this flexible architecture, Smart Environment ensures that settings for all components can be easily managed and displayed in a cohesive, user-friendly interface.
 
+## Configuration: `smart_env.config.js` and `main_env_opts`
+
+Smart Environment uses a configuration system based on two key concepts:
+
+1. **smart_env.config.js** - A static configuration file that defines the default environment setup
+2. **main_env_opts** - Runtime options passed during initialization
+
+The Smart Environment relies on a configuration object, `main_env_opts`, during initialization to set up the environment according to your specific needs. This configuration defines collections, modules, settings, and other options that the Smart Environment uses to orchestrate its components.
+
+The `smart_env.config.js` file defines the core configuration for your Smart Environment instance. This file should export a configuration object that defines:
+
+### Understanding `smart_env.config.js`
+
+The `smart_env.config.js` file is the primary place where you define your `main_env_opts`. This file exports a configuration object that specifies how the Smart Environment should be set up. By organizing your configuration in this file, you maintain a clear separation between your application's logic and its configuration, making it easier to manage and scale.
+
+- **`env_path`**: Specifies the base path for your environment. This could be the root directory of your application or any other path where your environment's data will reside.
+- **`collections`**: Defines the collections that the Smart Environment will manage. Each collection should specify its class and any necessary adapters or item types.
+- **`modules`**: Specifies the modules (also known as Smart Modules) to be included in the environment. Each module should define its class and any necessary adapters.
+- **`default_settings`**: Provides default settings for the environment, which can be overridden by user settings.
+- **`components`**: Defines UI components for settings, connections, or other interactive elements.
+
+### Using `main_env_opts` in Initialization
+
+When initializing the Smart Environment, you need to provide `main_env_opts` to the `SmartEnv.create` method. This configuration object should be imported from your `smart_env.config.js` file.
+
+
+### Importance of `main_env_opts`
+
+The `main_env_opts` object is essential for initializing the Smart Environment. It provides all the necessary configurations, including paths, collections, modules, settings, and components. By defining `main_env_opts` in the `smart_env.config.js` file, you achieve:
+
+- **Modularity**: Keep configuration separate from application logic.
+- **Reusability**: Easily share and reuse configurations across different projects or environments.
+- **Maintainability**: Simplify updates and changes to the configuration without modifying the core application code.
+
+### Multiple Mains and Configurations
+
+If your application uses multiple mains (primary objects) or needs to manage different configurations, you can define separate `smart_env.config.js` files for each main. The Smart Environment will merge these configurations appropriately.
+
+### Normalizing Options
+
+The Smart Environment internally normalizes the options provided in `main_env_opts` to ensure consistency. This includes:
+
+- **Key Formatting**: Converts camelCase keys to snake_case to maintain a consistent naming convention.
+- **Class Definitions**: Ensures that collections and modules are properly defined with a `class` property.
+- **Deep Merging**: Merges nested objects without overwriting existing properties unless specified.
+
+### Key Components of `main_env_opts`
+
+- **`global_ref`**: A reference to the global object (e.g., `window` in browsers). This is used to store the singleton instance of the Smart Environment.
+- **`env_path`**: The base path for the environment, important for file system operations.
+- **`collections`**: Defines the data collections managed by the environment.
+    - Each collection should have:
+        - **`class`**: The constructor function or class for the collection.
+        - **`data_adapter`**: Adapter for handling data persistence.
+        - **`item_types`**: Definitions of item classes within the collection.
+- **`modules`**: Specifies additional functionalities or services.
+    - Each module should have:
+        - **`class`**: The constructor function or class for the module.
+        - **`adapter`**: Adapter specific to the module's operation.
+- **`default_settings`**: Default configuration settings that can be overridden by user preferences.
+- **`components`**: UI components for rendering settings, views, and other interactive elements.
+
+```js
+export const smart_env_config = {
+  // Global reference (window/global)
+  global_ref: window,
+  
+  // Base path for the environment
+  env_path: '',
+  
+  // Collections to initialize
+  collections: {
+    smart_sources: {
+      class: SmartSources,
+      data_adapter: SmartCollectionMultiFileDataAdapter,
+      // Collection-specific options...
+    },
+    // Other collections...
+  },
+
+  // Available item types
+  item_types: {
+    SmartSource,
+    SmartBlock,
+  },
+
+  // Module configurations
+  modules: {
+    smart_fs: {
+      class: SmartFs,
+      adapter: SmartFsAdapter,
+    },
+    smart_view: {
+      class: SmartView,
+      adapter: ViewAdapter,
+    },
+    // Other modules...
+  },
+
+  // Default settings
+  default_settings: {
+    file_exclusions: 'Untitled',
+    folder_exclusions: 'smart-chats',
+    // Other default settings...
+  }
+};
+```
+
+### Runtime Options (main_env_opts)
+
+When initializing Smart Environment, you must provide runtime options through `main_env_opts`. These options typically import and extend the base configuration:
+
+```js
+import { smart_env_config } from './smart_env.config.js';
+
+const main_env_opts = {
+  ...smart_env_config,
+  // Override or add runtime-specific options
+  env_path: '/custom/path',
+  collections: {
+    ...smart_env_config.collections,
+    // Add or modify collections
+  }
+};
+
+// Initialize Smart Environment
+const env = await SmartEnv.create(main, main_env_opts);
+```
+
+### Configuration Merging
+
+Smart Environment merges configurations in this order:
+
+1. Default internal options
+2. Base configuration from smart_env.config.js
+3. Runtime options from main_env_opts
+4. Settings loaded from the environment's data directory
+
+This allows for flexible configuration while maintaining sensible defaults.
+
+### Required Configuration
+
+At minimum, your configuration should specify:
+
+- **collections**: The collection classes to initialize
+- **modules**: Core modules like smart_fs, smart_view
+- **item_types**: Available item types for collections
+- **env_path**: Base path for the environment (if not using default)
+
+Example of minimal configuration:
+
+```js
+const minimal_config = {
+  collections: {
+    smart_sources: {
+      class: SmartSources,
+      data_adapter: DataAdapter
+    }
+  },
+  modules: {
+    smart_fs: {
+      class: SmartFs,
+      adapter: FsAdapter
+    }
+  },
+  item_types: {
+    SmartSource
+  }
+};
+```
+
 ## Usage
 
 ```js
