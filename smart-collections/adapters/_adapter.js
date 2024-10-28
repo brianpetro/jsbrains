@@ -3,8 +3,12 @@ export class SmartCollectionDataAdapter{
     this.collection = collection;
   }
   // REQUIRED METHODS IN SUBCLASSES
-  async load() { throw new Error("SmartCollectionItemAdapter: load() not implemented"); }
-  async save() { throw new Error("SmartCollectionItemAdapter: save() not implemented"); }
+  async load() {
+    throw new Error("SmartCollectionDataAdapter: load() not implemented");
+  }
+  async save() {
+    throw new Error("SmartCollectionDataAdapter: save() not implemented");
+  }
   // END REQUIRED METHODS IN SUBCLASSES
 
   get env() { return this.collection.env; }

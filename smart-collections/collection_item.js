@@ -1,5 +1,6 @@
 import { create_uid, deep_merge } from './helpers.js';
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
+import { deep_equal } from "./utils/deep_equal.js";
 
 /**
  * Represents an item within a collection, providing methods for data manipulation, validation, and interaction with its collection.
@@ -67,26 +68,30 @@ export class CollectionItem {
    * @returns {boolean} True if data was successfully updated.
    */
   update_data(data) {
-    data = JSON.stringify(data, this.update_data_replacer);
-    data = JSON.parse(data);
-    const data_entries = Object.entries(data);
-    const changed = data_entries.some(([key, value]) => this.data[key] !== value);
-    if(!changed) return false; // return false if no changes
-    deep_merge(this.data, data); // deep merge data
-    return true; // return true if data changed (default true)
+    const sanitized_data = this.sanitize_data(data);
+    const changed = !deep_equal(this.data, sanitized_data);
+    if (!changed) return false;
+    deep_merge(this.data, sanitized_data);
+    return true;
   }
-
+  
   /**
-   * Custom replacer function for JSON.stringify used in update_data to handle special object types.
-   * @param {string} key - The key of the property being stringified.
-   * @param {any} value - The value of the property being stringified.
-   * @returns {any} The value to be used in the JSON string.
+   * Sanitizes the data of an item to ensure it can be safely saved.
+   * @param {Object} data - The data to sanitize.
+   * @returns {Object} The sanitized data.
    */
-  update_data_replacer(key, value) {
-    if (value instanceof CollectionItem) return value.ref;
-    if (Array.isArray(value)) return value.map((val) => (val instanceof CollectionItem) ? val.ref : val);
-    return value;
+  sanitize_data(data) {
+    if (data instanceof CollectionItem) return data.ref;
+    if (Array.isArray(data)) return data.map(val => this.sanitize_data(val));
+    if (typeof data === 'object' && data !== null) {
+      return Object.keys(data).reduce((acc, key) => {
+        acc[key] = this.sanitize_data(data[key]);
+        return acc;
+      }, {});
+    }
+    return data;
   }
+  
   // init - for data not in this.data
   /**
    * Initializes the item with input_data, potentially asynchronously.
@@ -164,9 +169,7 @@ export class CollectionItem {
       key_starts_with,
       key_starts_with_any,
       key_includes,
-      limit,
     } = filter_opts;
-    if(limit && this.collection.filter_results_ct >= limit) return null;
 
     // Exclude keys that are in the exclude_keys array
     if (exclude_keys?.includes(this.key)) return false;

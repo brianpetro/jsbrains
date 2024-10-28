@@ -20,7 +20,6 @@ export class Collection {
     this.config = this.env.config;
     this.items = {};
     this.merge_defaults();
-    this.filter_results_ct = 0;
     this.loaded = null;
     this._loading = false;
     this.load_time_ms = null;
@@ -73,7 +72,7 @@ export class Collection {
   find_by(data) {
     if(data.key) return this.get(data.key);
     const temp = new this.item_type(this.env);
-    const temp_data = JSON.parse(JSON.stringify(data, temp.update_data_replacer));
+    const temp_data = JSON.parse(JSON.stringify(data, temp.sanitize_data(data)));
     deep_merge(temp.data, temp_data); // deep merge data
     return temp.key ? this.get(temp.key) : null;
   }
@@ -84,15 +83,15 @@ export class Collection {
    * @return {CollectionItem[]} The filtered items.
    */
   filter(filter_opts={}) {
-    this.filter_results_ct = 0;
     this.filter_opts = this.prepare_filter(filter_opts);
-    const results = Object.entries(this.items).map(([key, item]) => {
-      if(filter_opts.limit && this.filter_results_ct >= filter_opts.limit) return null;
-      if(item.filter(this.filter_opts)){
-        this.filter_results_ct++;
-        return item;
-      } else return null;
-    }).filter(Boolean);
+    const results = [];
+    const { limit } = this.filter_opts;
+    for (const item of Object.values(this.items)) {
+      if (limit && results.length >= limit) break;
+      if (item.filter(filter_opts)) {
+        results.push(item);
+      }
+    }
     return results;
   }
   // alias for filter
