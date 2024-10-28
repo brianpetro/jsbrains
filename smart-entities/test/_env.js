@@ -3,7 +3,6 @@ import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SmartEntity } from '../smart_entity.js';
 import { SmartEntities } from '../smart_entities.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
-import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 
@@ -38,7 +37,6 @@ class TestMain {
       env_path: __dirname,
       env_data_dir: 'test',
       modules: {
-        smart_chunks: SmartChunks,
         smart_embed_model: SmartEmbedModel,
         smart_fs: {
           class: SmartFs,

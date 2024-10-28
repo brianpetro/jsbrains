@@ -21,12 +21,8 @@
 
 const SmartChatModel = require('./smart-chat-model');
 const SmartChats = require('./smart-chats');
-const SmartChunks = require('./smart-chunks');
 const SmartCollections = require('./smart-collections');
-const SmartEmbed = require('./smart-embed');
 
 exports.SmartChatModel = SmartChatModel;
 exports.SmartChats = SmartChats;
-exports.SmartChunks = SmartChunks;
 exports.SmartCollections = SmartCollections;
-exports.SmartEmbed = SmartEmbed;

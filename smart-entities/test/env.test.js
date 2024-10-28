@@ -5,7 +5,6 @@ import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SmartEntity } from '../smart_entity.js';
 import { SmartEntities } from '../smart_entities.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
-import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import { EntityAdapter } from '../adapters/_adapter.js';
@@ -32,7 +31,6 @@ test('load_test_env initializes the environment correctly', t => {
 test('SmartEnv is initialized with correct options', t => {
   const env_opts = t.context.env.main.smart_env_config;
   t.is(env_opts.env_data_dir, 'test');
-  t.is(env_opts.modules.smart_chunks, SmartChunks);
   t.is(env_opts.modules.smart_embed_model, SmartEmbedModel);
   t.is(env_opts.modules.smart_fs.class, SmartFs);
   t.is(env_opts.modules.smart_fs.adapter, SmartFsTestAdapter);
@@ -91,7 +89,6 @@ test('SmartEntity getters work correctly', t => {
   const smart_entities = t.context.env.smart_entities;
   const entity = smart_entities.get(Object.keys(smart_entities.items)[0]);
 
-  t.truthy(entity.smart_chunks);
   t.truthy(entity.embed_link);
   t.truthy(entity.name);
   t.truthy(entity.embed_model_key);

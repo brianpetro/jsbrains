@@ -71,7 +71,6 @@ export class SmartEntity extends CollectionItem {
   get embed_model_key() { return this.collection.embed_model_key; }
   get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
   get should_show_full_path() { return this.env.settings.show_full_path; }
-  get smart_chunks() { return this.collection.smart_chunks; }
   /**
    * @deprecated Use this.embed_model instead
    */

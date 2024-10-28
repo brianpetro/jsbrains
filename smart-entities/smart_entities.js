@@ -14,18 +14,6 @@ export class SmartEntities extends Collection {
     this.total_tokens = 0;
     this.total_time = 0;
   }
-  get smart_chunks() {
-    if(!this._smart_chunks) {
-      const config = this.env.opts.modules.smart_chunks;
-      const _class = config?.class ?? config;
-      if(!_class) throw new Error("No class in `env.opts.modules.smart_chunks`");
-      this._smart_chunks = new _class(this, {
-        ...this.env.settings,
-        skip_blocks_with_headings_only: true
-      });
-    }
-    return this._smart_chunks;
-  }
   async init() {
     await super.init();
     await this.load_smart_embed();

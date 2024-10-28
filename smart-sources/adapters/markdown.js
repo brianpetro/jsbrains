@@ -127,10 +127,7 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const { blocks } = await this.item.smart_chunks.parse({
-      content,
-      file_path: this.file_path,
-    });
+    const blocks = markdown_to_blocks(content);
 
     if (!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
 

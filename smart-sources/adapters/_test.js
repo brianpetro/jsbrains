@@ -4,6 +4,7 @@ import { create_hash } from "../utils/create_hash.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { get_line_range } from "../utils/get_line_range.js";
 import { increase_heading_depth } from "../utils/increase_heading_depth.js";
+import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 
 export class SourceTestAdapter extends SourceAdapter {
   constructor(item) {
@@ -98,10 +99,7 @@ export class SourceTestAdapter extends SourceAdapter {
 
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const { blocks } = await this.item.smart_chunks.parse({
-      content,
-      file_path: this.file_path,
-    });
+    const blocks = markdown_to_blocks(content);
 
     if (!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
 

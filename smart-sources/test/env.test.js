@@ -7,7 +7,6 @@ import { SmartSources } from '../smart_sources.js';
 import { SmartBlock } from '../smart_block.js';
 import { SmartBlocks } from '../smart_blocks.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
-import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import fs from 'fs';
@@ -33,7 +32,6 @@ test('load_test_env initializes the environment correctly', t => {
 test('SmartEnv is initialized with correct options', t => {
     const env_opts = t.context.env.main.smart_env_config;
     t.is(env_opts.env_data_dir, 'test');
-    t.is(env_opts.modules.smart_chunks, SmartChunks);
     t.is(env_opts.modules.smart_embed_model, SmartEmbedModel);
     t.is(env_opts.modules.smart_fs.class, SmartFs);
     t.is(env_opts.modules.smart_fs.adapter, SmartFsTestAdapter);

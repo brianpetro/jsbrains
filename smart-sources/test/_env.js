@@ -9,7 +9,6 @@ import { SmartBlocks } from '../smart_blocks.js';
 // import { SmartDirectory } from '../smart_directory.js';
 // import { SmartDirectories } from '../smart_directories.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
-import { SmartChunks } from '../../smart-chunks/smart_chunks.js';
 import { SmartEmbedModel } from '../../smart-embed-model-v1/smart_embed_model.js';
 import { SmartEmbedTransformersAdapter } from '../../smart-embed-model-v1/adapters/transformers.js';
 import { SmartEmbedOpenAIAdapter } from '../../smart-embed-model-v1/adapters/openai.js';
@@ -26,7 +25,6 @@ class TestMain {
       env_path: __dirname,
       env_data_dir: 'test',
       modules: {
-        smart_chunks: SmartChunks,
         smart_embed_model: {
           class: SmartEmbedModel,
           adapters: {
