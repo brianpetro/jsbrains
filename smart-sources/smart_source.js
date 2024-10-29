@@ -248,10 +248,8 @@ export class SmartSource extends SmartEntity {
    */
   async merge(content, opts = {}) {
     try {
-      // console.log('Merging content into source:', this.path);
       await this.source_adapter.merge(content, opts);
       await this.import();
-      // console.log('Merge completed');
     } catch (error) {
       console.error('Error during merge:', error);
       throw error;
@@ -266,7 +264,12 @@ export class SmartSource extends SmartEntity {
       ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
     ].join("\n");
     await super.save(ajson);
-    blocks_to_save.forEach(block => block._queue_save = false);
+    blocks_to_save.forEach(block => {
+      block._queue_save = false;
+      if(block.deleted && this.block_collection.items[block.key]){
+        this.block_collection.delete_item(block.key);
+      }
+    });
   }
   on_load_error(err){
     super.on_load_error(err);

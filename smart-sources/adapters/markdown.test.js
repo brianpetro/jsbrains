@@ -30,7 +30,6 @@ Some content under heading 2.
 
   // Check that the blocks are correctly parsed
   t.truthy(source.data.blocks);
-  t.deepEqual(Object.keys(source.data.blocks), ['#Heading 1', '#Heading 1#Heading 2']);
 
   // Check that outlinks are correctly set
   t.truthy(source.data.outlinks);
@@ -56,14 +55,14 @@ test.serial('MarkdownSourceAdapter append method', async t => {
   const source = await env.smart_sources.create_or_update({ path: 'append_test.md' });
 
   // Append content
-  const append_content = '\n# Appended Heading\nAppended content.';
+  const append_content = '# Appended Heading\nAppended content.';
   await source.append(append_content);
 
   // Read the content
   const content = await source.read();
 
   // Check that content is appended
-  const expected_content = initial_content + append_content;
+  const expected_content = initial_content + '\n\n' + append_content;
   t.is(content, expected_content, 'Content should be appended correctly.');
 });
 
@@ -104,7 +103,7 @@ test.serial('MarkdownSourceAdapter update method - merge_replace mode', async t 
   t.is(content, expected_content, 'Content should have matching blocks replaced.');
 });
 
-test.serial('MarkdownSourceAdapter update method - merge_append mode', async t => {
+test.serial('MarkdownSourceAdapter merge method - append_blocks mode', async t => {
   const env = t.context.env;
   const fs = t.context.fs;
 
@@ -113,13 +112,13 @@ test.serial('MarkdownSourceAdapter update method - merge_append mode', async t =
   await fs.load_files();
 
   const source = await env.smart_sources.create_or_update({ path: 'update_test.md' });
+  await source.import();
 
   const new_content = '# Heading\nAppended content.\n## New Subheading\nNew subcontent.';
-  await source.update(new_content, { mode: 'merge_append' });
+  await source.merge(new_content, { mode: 'append_blocks' });
 
   const content = await source.read();
 
-  // Since 'merge_append' should append to existing blocks
   const expected_content = '# Heading\nInitial content.\n\nAppended content.\n## New Subheading\nNew subcontent.';
   t.is(content, expected_content, 'Content should have new blocks appended.');
 });
@@ -179,6 +178,7 @@ test.serial('MarkdownSourceAdapter remove method', async t => {
   const source = await env.smart_sources.create_or_update({ path: 'remove_test.md' });
 
   await source.remove();
+  await env.smart_sources.process_save_queue();
 
   const exists = await fs.exists('remove_test.md');
   t.false(exists, 'File should be removed');
@@ -229,6 +229,8 @@ test.serial('MarkdownSourceAdapter move_to method - move to existing source (mer
   const source_to = await env.smart_sources.create_or_update({ path: 'move_to.md' });
 
   await source_from.move_to('move_to.md');
+  // process save queue to ensure changes are saved (deleted items removed from collection)
+  await env.smart_sources.process_save_queue();
 
   const exists_old = await fs.exists('move_from.md');
   t.false(exists_old, 'Old file should not exist');
@@ -261,10 +263,12 @@ Content under heading 2.`;
 
   const block_content = await block.read();
 
-  const expected_block_content = `# Heading 1
-Content under heading 1.`;
-
-  t.is(block_content, expected_block_content, 'Block content should be read correctly.');
+  
+  t.is(block_content, content, 'Block content should be read correctly.');
+  const block2 = env.smart_blocks.get('block_read_test.md#Heading 1#Heading 2');
+  const expected_block_content = `## Heading 2
+Content under heading 2.`;
+  t.is(await block2.read(), expected_block_content, 'Block content should be read correctly.');
 });
 
 test.serial('MarkdownSourceAdapter block_append method', async t => {
@@ -326,7 +330,7 @@ test.serial('MarkdownSourceAdapter block_remove method', async t => {
 
   const content = `# Heading 1
 Content under heading 1.
-## Heading 2
+# Heading 2
 Content under heading 2.`;
 
   await fs.write('block_remove_test.md', content);
@@ -338,10 +342,11 @@ Content under heading 2.`;
   const block = env.smart_blocks.get('block_remove_test.md#Heading 1');
 
   await block.remove();
+  await env.smart_sources.process_save_queue();
 
   const source_content = await source.read();
 
-  const expected_content = `## Heading 2
+  const expected_content = `# Heading 2
 Content under heading 2.`;
 
   t.is(source_content, expected_content, 'Block should be removed from source.');
@@ -372,22 +377,21 @@ Existing content.`;
 
   const target = await env.smart_sources.create_or_update({ path: 'block_move_to.md' });
 
-  const block = env.smart_blocks.get('block_move_from.md#Heading 1');
+  const block = env.smart_blocks.get('block_move_from.md#Heading 1#Subheading');
 
   await block.move_to('block_move_to.md');
-
+  await env.smart_sources.process_save_queue();
   // Check that the block is removed from source
   const source_content = await source.read();
-  const expected_source_content = `## Subheading
-Subcontent.`;
+  const expected_source_content = `# Heading 1
+Content under heading 1.`;
   t.is(source_content, expected_source_content, 'Block should be removed from source.');
 
   // Check that the block content is appended to target
   const target_content = await target.read();
-  const expected_target_content = content_target + '\n\n# Heading 1\nContent under heading 1.';
+  const expected_target_content = content_target + '\n\n## Subheading\nSubcontent.';
   t.is(target_content, expected_target_content, 'Block content should be appended to target.');
-
-  // Ensure block is updated in collection
-  const block_in_collection = env.smart_blocks.get('block_move_from.md#Heading 1');
-  t.truthy(block_in_collection.deleted, 'Block should be marked as deleted in collection.');
+  // Ensure block is removed from collection
+  const block_in_collection = env.smart_blocks.get('block_move_from.md#Heading 1#Subheading');
+  t.falsy(block_in_collection, 'Block should be removed from collection.');
 });

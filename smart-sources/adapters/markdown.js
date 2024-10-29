@@ -13,26 +13,38 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
 
   async import() {
     const content = await this._read();
-    if(!content) return console.warn("No content to import for " + this.file_path);
+    if (!content) return console.warn("No content to import for " + this.file_path);
+    
     const hash = await this.create_hash(content);
-    if(this.data.blocks && this.data.hash === hash) return console.log("File stats changed, but content is the same. Skipping import.");
+    if (this.data.blocks && this.data.hash === hash) {
+      console.log("File stats changed, but content is the same. Skipping import.");
+      return;
+    }
+
     this.data.hash = hash; // set import hash
     this.data.last_read_hash = hash;
-    const blocks = markdown_to_blocks(content);
-    this.data.blocks = blocks;
+
+    const blocks_obj = markdown_to_blocks(content);
+    this.data.blocks = blocks_obj;
+
     const outlinks = get_markdown_links(content);
     this.data.outlinks = outlinks;
-    for (const [sub_key, value] of Object.entries(blocks)) {
-      const block_key = this.item.key + sub_key;
-      const block_content = content.split("\n").slice(value[0] - 1, value[1]).join("\n");
-      const block_outlinks = get_markdown_links(block_content);
-      const block = await this.item.block_collection.create_or_update({
-        key: block_key,
-        outlinks: block_outlinks,
-        size: block_content.length,
-      });
-      block._embed_input = block.breadcrumbs + "\n" + block_content; // improve performance by preventing extra read
-      block.data.hash = await this.create_hash(block._embed_input);
+
+    if (this.item.block_collection) {
+      for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
+        const block_key = `${this.source.key}${sub_key}`;
+        const block_content = get_line_range(content, line_range[0], line_range[1]);
+        const block_outlinks = get_markdown_links(block_content);
+        
+        const block = await this.item.block_collection.create_or_update({
+          key: block_key,
+          outlinks: block_outlinks,
+          size: block_content.length,
+        });
+
+        block._embed_input = `${block.breadcrumbs}\n${block_content}`; // improves perf by preventing extra read at embed-time
+        block.data.hash = await this.create_hash(block._embed_input);
+      }
     }
   }
 
@@ -54,14 +66,12 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   }
 
   async update(full_content, opts = {}) {
-    const {
-      mode = "replace_all",
-    } = opts;
+    const { mode = "append_blocks" } = opts;
     if (mode === "replace_all") {
-      await this.merge(full_content, { mode: "replace_all" });
-    } else if (mode === "merge_replace") {
+      await this._update(full_content);
+    } else if (mode === "replace_blocks") {
       await this.merge(full_content, { mode: "replace_blocks" });
-    } else if (mode === "merge_append") {
+    } else if (mode === "append_blocks") {
       await this.merge(full_content, { mode: "append_blocks" });
     }
   }
@@ -73,12 +83,12 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   async read(opts = {}) {
     let content = await this._read();
     this.source.data.last_read_hash = await this.create_hash(content);
-    if(this.source.last_read_hash !== this.source.hash){
+    if (this.source.last_read_hash !== this.source.hash) {
       this.source.loaded_at = null;
       await this.source.import();
     }
-    if (opts.no_changes) {
-      const unwrapped = this.smart_change.unwrap(content, {file_type: this.item.file_type});
+    if (opts.no_changes && this.smart_change) {
+      const unwrapped = this.smart_change.unwrap(content, { file_type: this.item.file_type });
       content = unwrapped[opts.no_changes === 'after' ? 'after' : 'before'];
     }
     if (opts.add_depth) {
@@ -102,105 +112,124 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     if (!new_path) {
       throw new Error("Invalid entity reference for move_to operation");
     }
-
+  
     const current_content = await this.read();
-    const target_source_key = new_path.split("#")[0];
+    const [target_source_key, ...headings] = new_path.split("#");
     const target_source = this.env.smart_sources.get(target_source_key);
-
-    if (new_path.includes("#")) {
-      const headings = new_path.split("#").slice(1);
-      const new_headings_content = headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
-      const new_content = new_headings_content + "\n" + current_content;
+  
+    if (headings.length > 0) {
+      const new_headings_content = this.construct_headings(headings);
+      const new_content = `${new_headings_content}\n${current_content}`;
       await this._update(new_content);
     }
-
+  
     if (target_source) {
-      await target_source.merge(current_content, { mode: 'append_blocks' });
+      await this.merge(current_content, { mode: 'append_blocks' });
     } else {
-      await this.fs.rename(this.file_path, target_source_key);
-      const new_source = await this.item.collection.create_or_update({ path: target_source_key, content: current_content });
-      await new_source.import();
+      await this.rename_and_import(target_source_key, current_content);
     }
-
+  
     if (this.item.key !== target_source_key) await this.remove();
   }
+  
+  construct_headings(headings) {
+    return headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
+  }
+  
+  async rename_and_import(target_source_key, content) {
+    await this.fs.rename(this.file_path, target_source_key);
+    const new_source = await this.item.collection.create_or_update({ path: target_source_key, content });
+    await new_source.import();
+  }
 
+  /**
+   * Merge content into the source
+   * @param {string} content - The content to merge into the source
+   * @param {Object} opts - Options for the merge operation
+   * @param {string} opts.mode - The mode to use for the merge operation. Defaults to 'append_blocks' (may also be 'replace_blocks')
+   */
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const blocks = markdown_to_blocks(content);
+    const blocks_obj = markdown_to_blocks(content);
 
-    if (!Array.isArray(blocks)) throw new Error("merge error: parse returned blocks that were not an array", blocks);
+    if (typeof blocks_obj !== 'object' || Array.isArray(blocks_obj)) {
+      console.warn("merge error: Expected an object from markdown_to_blocks, but received:", blocks_obj);
+      throw new Error("merge error: markdown_to_blocks did not return an object as expected.");
+    }
+    const { new_blocks, new_with_parent_blocks, changed_blocks, same_blocks } = await this.get_changes(blocks_obj, content);
+    for(const block of new_blocks){
+      await this.append(block.content);
+    }
+    for(const block of new_with_parent_blocks){
+      const parent_block = this.env.smart_blocks.get(block.parent_key);
+      await parent_block.append(block.content);
+    }
+    for(const block of changed_blocks){
+      const changed_block = this.item.block_collection.get(block.key);
+      if(mode === "replace_blocks"){
+        await changed_block.update(block.content);
+      }else{
+        await changed_block.append(block.content);
+      }
+    }
+  }
 
-    blocks.forEach(block => {
-      block.content = content
-        .split("\n")
-        .slice(block.lines[0], block.lines[1] + 1)
-        .join("\n");
-
-      const match = this.item.blocks.find(b => b.key === block.path);
-      if (match) {
-        block.matched = true;
-        match.matched = true;
+  async get_changes(blocks_obj, content) {
+    const new_blocks = [];
+    const new_with_parent_blocks = [];
+    const changed_blocks = [];
+    const same_blocks = [];
+    const existing_blocks = this.source.data.blocks || {};
+    for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
+      const has_existing = !!existing_blocks[sub_key];
+      const block_key = `${this.source.key}${sub_key}`;
+      const block_content = get_line_range(content, line_range[0], line_range[1]);
+      if(!has_existing){
+        new_blocks.push({
+          key: block_key,
+          state: "new",
+          content: block_content,
+        });
+        continue;
       }
-    });
-
-    if (mode === "replace_all") {
-      if (this.smart_change) {
-        let all = "";
-        const new_blocks = blocks.sort((a, b) => a.lines[0] - b.lines[0]);
-        if (new_blocks[0].lines[0] > 0) {
-          all += content.split("\n").slice(0, new_blocks[0].lines[0]).join("\n");
-        }
-        for (let i = 0; i < new_blocks.length; i++) {
-          const block = new_blocks[i];
-          if (all.length) all += "\n";
-          if (block.matched) {
-            const og = this.env.smart_blocks.get(block.path);
-            all += this.smart_change.wrap("content", {
-              before: await og.read({ no_changes: "before", headings: "last" }),
-              after: block.content,
-              adapter: this.item.smart_change_adapter
-            });
-          } else {
-            all += this.smart_change.wrap("content", {
-              before: "",
-              after: block.content,
-              adapter: this.item.smart_change_adapter
-            });
-          }
-        }
-        const unmatched_old = this.item.blocks.filter(b => !b.matched);
-        for (let i = 0; i < unmatched_old.length; i++) {
-          const block = unmatched_old[i];
-          all += (all.length ? "\n" : "") + this.smart_change.wrap("content", {
-            before: await block.read({ no_changes: "before", headings: "last" }),
-            after: "",
-            adapter: this.item.smart_change_adapter
-          });
-        }
-        await this._update(all);
-      } else {
-        await this._update(content);
+      let has_parent;
+      let headings = sub_key.split("#");
+      let parent_key;
+      while(!has_parent && headings.length > 0){
+        headings.pop(); // remove the last heading
+        parent_key = headings.join("#");
+        has_parent = !!existing_blocks[parent_key];
       }
-    } else {
-      for (let i = 0; i < blocks.length; i++) {
-        const block = blocks[i];
-        if (block.matched) {
-          const to_block = this.env.smart_blocks.get(block.path);
-          if (mode === "append_blocks") {
-            await to_block.append(block.content);
-          } else {
-            await to_block.update(block.content);
-          }
-        }
+      if(has_parent){
+        new_with_parent_blocks.push({
+          key: block_key,
+          parent_key: `${this.source.key}${parent_key}`,
+          state: "new",
+          content: block_content,
+        });
+        continue;
       }
-      const unmatched_content = blocks
-        .filter(block => !block.matched)
-        .map(block => block.content)
-        .join("\n");
-      if (unmatched_content.length) {
-        await this.append(unmatched_content);
+      const block = this.item.env.smart_blocks.get(block_key);
+      const content_hash = await this.create_hash(block_content);
+      if(content_hash !== block.hash){
+        changed_blocks.push({
+          key: block_key,
+          state: "changed",
+          content: block_content,
+        });
+        continue;
       }
+      same_blocks.push({
+        key: block_key,
+        state: "same",
+        content: block_content,
+      });
+    }
+    return {
+      new_blocks,
+      new_with_parent_blocks,
+      changed_blocks,
+      same_blocks,
     }
   }
 
@@ -226,19 +255,6 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
   }
   _block_read(source_content, block_key){
     return block_read(source_content, block_key);
-  }
-
-  prepend_headings(content, mode) {
-    const headings = this.file_path.split('#').slice(1);
-    let prepend_content = '';
-    
-    if (mode === 'all') {
-      prepend_content = headings.map((h, i) => '#'.repeat(i + 1) + ' ' + h).join('\n');
-    } else if (mode === 'last') {
-      prepend_content = '#'.repeat(headings.length) + ' ' + headings[headings.length - 1];
-    }
-    
-    return prepend_content + (prepend_content ? '\n' : '') + content;
   }
 
   async block_append(append_content) {

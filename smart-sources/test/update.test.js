@@ -39,7 +39,7 @@ test.serial('SmartSource update (mode=append_blocks) operation', async t => {
   await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
   try {
-    await merge_to_source.update(merge_content_input, { mode: 'merge_append' });
+    await merge_to_source.merge(merge_content_input, { mode: 'append_blocks' });
     const content = await merge_to_source.read();
     t.is(content.trim(), expected_merge_append_blocks_output.trim(), 'Content should be merged');
   } catch (error) {
@@ -80,7 +80,7 @@ test.serial('SmartSource update (mode=append_blocks) with smart_change', async t
   // );
   await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
-  await merge_to_source.update(merge_content_input, { mode: 'merge_append' });
+  await merge_to_source.merge(merge_content_input, { mode: 'append_blocks' });
   t.is((await merge_to_source.read()).trim(), expected_merge_append_blocks_output_with_change_syntax.trim(), 'Content should be merged');
 });
 
@@ -105,7 +105,7 @@ test.serial('SmartSource update (mode=replace_blocks) operation', async t => {
   env.smart_change = null;
   await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
-  await merge_to_source.update(merge_replace_blocks_content_input, { mode: 'merge_replace' });
+  await merge_to_source.merge(merge_replace_blocks_content_input, { mode: 'replace_blocks' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_blocks_output.trim(), 'Content should be merged');
 });
 
@@ -136,7 +136,7 @@ test.serial('SmartSource update (mode=replace_blocks) with smart_change', async 
   
   await t.context.fs.write('merge_to.md', initial_merge_content);
   const merge_to_source = await env.smart_sources.create_or_update({ path: 'merge_to.md' });
-  await merge_to_source.update(merge_replace_blocks_content_input, { mode: 'merge_replace' });
+  await merge_to_source.merge(merge_replace_blocks_content_input, { mode: 'replace_blocks' });
   t.is((await merge_to_source.read()).trim(), expected_merge_replace_blocks_output_with_change_syntax.trim(), 'Content should be merged');
 });
 
