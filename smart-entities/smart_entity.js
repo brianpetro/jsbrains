@@ -35,23 +35,27 @@ export class SmartEntity extends CollectionItem {
   }
   async get_embed_input() { } // override in child class
   // find_connections v2 (smart action)
-  find_connections(params={}) {
-    this.filter_opts = {
+  prepare_find_connections_filter_opts(params={}) {
+    const opts = {
       ...(this.env.settings.smart_view_filter || {}),
       ...params,
       entity: this,
     };
+    if(opts.filter?.limit) delete opts.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
+    if(opts.limit) delete opts.limit; // backwards compatibility
+    return opts;
+  }
+  find_connections(params={}) {
+    const filter_opts = this.prepare_find_connections_filter_opts(params);
     const limit = params.filter?.limit
       || params.limit // DEPRECATED: for backwards compatibility
       || this.env.settings.smart_view_filter?.results_limit
       || 10
     ;
-    if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
-    if(params.limit) delete params.limit; // backwards compatibility
     const cache_key = this.key + JSON.stringify(params); // no objects/instances in cache key
     if(!this.env.connections_cache) this.env.connections_cache = {};
     if(!this.env.connections_cache[cache_key]){
-      const connections = this.nearest(this.filter_opts)
+      const connections = this.nearest(filter_opts)
         .sort(sort_by_score)
         .slice(0, limit)
       ;

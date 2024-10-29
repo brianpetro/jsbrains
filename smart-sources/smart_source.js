@@ -48,7 +48,10 @@ export class SmartSource extends SmartEntity {
     }
   }
   find_connections(params={}) {
-    let connections = super.find_connections(params);
+    let connections;
+    if(this.block_collection.settings.embed_blocks && params.exclude_source_connections) connections = [];
+    else connections = super.find_connections(params);
+    const filter_opts = this.prepare_find_connections_filter_opts(params);
     const limit = params.filter?.limit
       || params.limit // DEPRECATED: for backwards compatibility
       || this.env.settings.smart_view_filter?.results_limit
@@ -58,8 +61,9 @@ export class SmartSource extends SmartEntity {
     if(params.limit) delete params.limit; // backwards compatibility
     if(!params.exclude_blocks_from_source_connections) {
       const cache_key = this.key + JSON.stringify(params) + "_blocks";
+      if(!this.env.connections_cache) this.env.connections_cache = {};
       if(!this.env.connections_cache[cache_key]){
-        const nearest = this.env.smart_blocks.nearest(this.vec, this.filter_opts)
+        const nearest = this.env.smart_blocks.nearest(this.vec, filter_opts)
           .sort(sort_by_score)
           .slice(0, limit)
         ;
