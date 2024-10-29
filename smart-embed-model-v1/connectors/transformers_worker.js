@@ -322,7 +322,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     return this.smart_embed.opts.use_gpu || false;
   }
   async load() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.1");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
