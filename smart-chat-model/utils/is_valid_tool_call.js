@@ -1,42 +1,4 @@
 /**
-   const tools_example = [
-    {
-      "type": "function",
-      "function": {
-        "name": "get_current_weather",
-        "description": "Get the current weather in a given location",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "location": {
-              "type": "string",
-              "description": "The city and state, e.g. San Francisco, CA",
-            },
-            "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
-          },
-          "required": ["location"],
-        },
-      }
-    },
-    {
-    "type": "function",
-    "function": {
-      "name": "lookup",
-      "description": "Semantic search",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "hypotheticals": {
-            "type": "array",
-            "items": {"type": "string"}
-          }
-        }
-      }
-    }
-  }
-];
- */
-/**
  * Validates a tool call against its specification to ensure all parameters are correct.
  * This function checks if all provided keys in the tool call content match the expected types,
  * handles type coercion for numeric values, validates against enums, and ensures all required
