@@ -160,6 +160,7 @@ class SmartFs {
    */
   is_excluded(_path) {
     try {
+      if(_path.includes('#')) return true; // ignore paths with # as it is incompatible with block keys
       if (!this.excluded_patterns.length) return false;
       return this.excluded_patterns.some(pattern => pattern.test(_path));
     } catch(e) {
