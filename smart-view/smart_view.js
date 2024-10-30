@@ -99,24 +99,6 @@ export class SmartView {
   }
 
   /**
-   * Adds toggle listeners to elements with data-toggle attribute.
-   * @param {DocumentFragment} frag - The document fragment containing toggle elements.
-   * @param {Function|null} callback - Optional callback for custom toggle behavior.
-   */
-  add_toggle_listeners(frag, callback=null) {
-    frag.querySelectorAll('[data-toggle]').forEach((toggle_elm) => {
-      toggle_elm.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const group = toggle_elm.dataset.toggle;
-        const targets = document.querySelectorAll(`[data-group="${group}"]`);
-        if(callback) callback(group, targets, toggle_elm); // custom behavior (allows persistence of state in scope)
-        else targets.forEach((elm) => elm.classList.toggle('collapsed')); // default behavior
-      });
-    });
-  }
-
-  /**
    * Renders HTML for a setting component based on its configuration.
    * @param {Object} setting_config - The configuration object for the setting.
    * @returns {string} The rendered HTML string.

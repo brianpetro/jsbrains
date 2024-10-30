@@ -310,8 +310,9 @@ export class SmartViewAdapter {
       smart_setting.addButton(button => {
         button.setButtonText(elm.dataset.btn);
         button.inputEl.addEventListener("click", (e) => {
-          if (elm.dataset.btnCallback && typeof this[elm.dataset.btnCallback] === "function") {
-            this[elm.dataset.btnCallback](path, null, smart_setting, scope);
+          if (elm.dataset.btnCallback && typeof scope[elm.dataset.btnCallback] === "function") {
+            if(elm.dataset.btnCallbackArg) scope[elm.dataset.btnCallback](elm.dataset.btnCallbackArg);
+            else scope[elm.dataset.btnCallback](path, null, smart_setting, scope);
           } else if (elm.dataset.btnHref) {
             this.open_url(elm.dataset.btnHref);
           } else if (elm.dataset.callback && typeof this.main.get_by_path(scope, elm.dataset.callback) === "function") {
