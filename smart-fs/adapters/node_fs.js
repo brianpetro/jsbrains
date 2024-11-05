@@ -28,12 +28,22 @@ export class NodeFsSmartFsAdapter {
     file.basename = file.name.split('.').shift();
     Object.defineProperty(file, 'stat', {
       get: () => {
-        const stat = this.statSync(file_path);
-        return {
-          ctime: stat.ctime.getTime(),
-          mtime: stat.mtime.getTime(),
-          size: stat.size,
-        };
+        try {
+          const stat = this.statSync(file_path);
+          return {
+            ctime: stat.ctime.getTime(),
+            mtime: stat.mtime.getTime(),
+            size: stat.size,
+          };
+        } catch (error) {
+          console.warn(`Error getting stat for file: ${file_path}`, error);
+          return {
+            ctime: 0,
+            mtime: 0,
+            size: 0,
+            error: error,
+          };
+        }
       }
     });
     return file;
@@ -173,12 +183,22 @@ export class NodeFsSmartFsAdapter {
         // set to getter that calls statSync and formats the result
         Object.defineProperty(file, 'stat', {
           get: () => {
-            const stat = this.statSync(file.path);
-            return {
-              ctime: stat.ctime.getTime(),
-              mtime: stat.mtime.getTime(),
-              size: stat.size,
-            };
+            try {
+              const stat = this.statSync(file.path);
+              return {
+                ctime: stat.ctime.getTime(),
+                mtime: stat.mtime.getTime(),
+                size: stat.size,
+              };
+            } catch (error) {
+              console.warn(`Error getting stat for file: ${file.path}`, error);
+              return {
+                ctime: 0,
+                mtime: 0,
+                size: 0,
+                error: error,
+              };
+            }
           }
         });
         acc[file.path] = file;
