@@ -6,11 +6,24 @@ const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // 
 
 /**
  * Base class representing a collection of items with various methods to manipulate and retrieve these items.
+ * Provides core functionality for managing collections including CRUD operations, filtering, and settings management.
+ * 
+ * Key features:
+ * - Maintains items in a flat key-instance structure for optimal performance
+ * - Supports batch and queue processing patterns
+ * - Handles collection-level data folder configuration
+ * - Provides filtering and type detection capabilities
+ * 
+ * @see Smart Collection docs for detailed architecture and patterns
  */
 export class Collection {
   /**
    * Constructs a new Collection instance.
-   * @param {Object} env - The environment context containing configurations and adapters.
+   * @param {Object} env - The environment context containing configurations and adapters
+   * @param {Object} [opts={}] - Optional configuration settings
+   * @param {string} [opts.custom_collection_key] - Custom key to override default collection name
+   * @param {string} [opts.data_dir] - Custom data directory path
+   * @param {boolean} [opts.prevent_load_on_init] - Whether to prevent loading items during initialization
    */
   constructor(env, opts = {}) {
     this.env = env;
@@ -25,6 +38,13 @@ export class Collection {
     this.load_time_ms = null;
     this.settings_container = null;
   }
+
+  /**
+   * Initializes a new collection in the environment.
+   * @param {Object} env - The environment context
+   * @param {Object} [opts={}] - Optional configuration settings
+   * @returns {Promise<void>}
+   */
   static async init(env, opts = {}) {
     env[this.collection_key] = new this(env, opts);
     await env[this.collection_key].init();
@@ -33,7 +53,8 @@ export class Collection {
 
   /**
    * Gets the collection name derived from the class name.
-   * @return {String} The collection name.
+   * Converts camelCase to snake_case.
+   * @return {string} The collection name
    */
   static get collection_key() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
 
@@ -42,8 +63,9 @@ export class Collection {
 
   /**
    * Creates or updates an item in the collection based on the provided data.
-   * @param {Object} data - The data to create or update an item.
-   * @returns {Promise<CollectionItem>|CollectionItem} The newly created or updated item.
+   * If an existing item is found, it updates it; otherwise, creates a new item.
+   * @param {Object} [data={}] - The data to create or update an item with
+   * @returns {Promise<CollectionItem>|CollectionItem} The created or updated item
    */
   create_or_update(data = {}) {
     const existing = this.find_by(data);
@@ -66,8 +88,9 @@ export class Collection {
 
   /**
    * Finds an item in the collection that matches the given data.
-   * @param {Object} data - The criteria used to find the item.
-   * @returns {CollectionItem|null} The found item or null if not found.
+   * First checks for a key match, then creates a temporary item to find matches.
+   * @param {Object} data - The data to match against
+   * @returns {CollectionItem|null} The matching item or null if not found
    */
   find_by(data) {
     if(data.key) return this.get(data.key);
@@ -78,9 +101,10 @@ export class Collection {
   }
   // READ
   /**
-   * Filters the items in the collection based on the provided options.
-   * @param {Object} filter_opts - The options used to filter the items.
-   * @return {CollectionItem[]} The filtered items.
+   * Filters items in the collection based on provided options.
+   * @param {Object} [filter_opts={}] - Filter options to apply
+   * @param {number} [filter_opts.limit] - Maximum number of items to return
+   * @returns {CollectionItem[]} Array of filtered items
    */
   filter(filter_opts={}) {
     this.filter_opts = this.prepare_filter(filter_opts);
@@ -180,6 +204,12 @@ export class Collection {
   set collection_key(name) { this._collection_key = name; }
 
   // DATA ADAPTER
+  /**
+   * Gets the data adapter instance for this collection.
+   * Lazily initializes the adapter based on configuration.
+   * @returns {DataAdapter} The data adapter instance for this collection
+   * @throws {Error} If no data adapter class is found in configuration
+   */
   get data_adapter() {
     if(!this._data_adapter){
       const config = this.env.opts.collections?.[this.collection_key];
@@ -191,8 +221,20 @@ export class Collection {
     }
     return this._data_adapter;
   }
+
+  /**
+   * Gets the data directory strategy for this collection.
+   * Default is 'multi' for multi-file storage.
+   * @returns {string} The data directory strategy
+   */
   get data_dir() { return 'multi'; }
+
+  /**
+   * Gets the filesystem adapter from the environment.
+   * @returns {FileSystem} The filesystem adapter
+   */
   get data_fs() { return this.env.data_fs; }
+
   /**
    * Gets the class name of the item type the collection manages.
    * @return {String} The item class name.
@@ -203,16 +245,19 @@ export class Collection {
     else if (name.endsWith('s')) return name.slice(0, -1); // Sources -> Source
     else return name + "Item"; // Collection -> CollectionItem
   }
+
   /**
    * Gets the name of the item type the collection manages, derived from the class name.
    * @return {String} The item name.
    */
   get item_name() { return this.item_class_name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+
   /**
    * Gets the constructor of the item type the collection manages.
    * @return {Function} The item type constructor.
    */
   get item_type() { return this.env.item_types[this.item_class_name]; }
+
   /**
    * Gets the keys of the items in the collection.
    * @return {String[]} The keys of the items.
@@ -251,6 +296,11 @@ export class Collection {
       current_class = Object.getPrototypeOf(current_class);
     }
   }
+  /**
+   * Processes the save queue for all items marked for saving.
+   * Shows a notification during the save process.
+   * @returns {Promise<void>}
+   */
   async process_save_queue() {
     this.notices?.show('saving', "Saving " + this.collection_key + "...", { timeout: 0 });
     if(this._saving) return console.log("Already saving");
@@ -264,6 +314,12 @@ export class Collection {
     this._saving = false;
     this.notices?.remove('saving');
   }
+  /**
+   * Processes the load queue for all items marked for loading.
+   * Loads items in batches for better performance.
+   * Shows a notification during the load process.
+   * @returns {Promise<void>}
+   */
   async process_load_queue() {
     this.notices?.show('loading', "Loading " + this.collection_key + "...", { timeout: 0 });
     if(this._loading) return console.log("Already loading");
@@ -316,19 +372,39 @@ export class Collection {
     }, {});
   }
   process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
+  /**
+   * Gets the default settings for this collection.
+   * Override in subclasses to provide collection-specific defaults.
+   * @returns {Object} The default settings object
+   */
   get default_settings() { return {}; }
+  /**
+   * Gets the current settings for this collection.
+   * Initializes with default settings if none exist.
+   * @returns {Object} The current settings object
+   */
   get settings() {
     if(!this.env.settings[this.collection_key]){
       this.env.settings[this.collection_key] = this.default_settings;
     }
     return this.env.settings[this.collection_key];
   }
+  /**
+   * Gets the settings component renderer function.
+   * Uses custom component if provided in opts, otherwise uses default.
+   * @returns {Function} The settings component renderer function
+   */
   get render_settings_component() {
     return (typeof this.opts.components?.settings === 'function'
       ? this.opts.components.settings
       : render_settings_component
     ).bind(this.smart_view);
   }
+  /**
+   * Gets the smart view instance from the environment.
+   * Lazily initializes if not already created.
+   * @returns {SmartView} The smart view instance
+   */
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.env.init_module('smart_view');
     return this._smart_view;

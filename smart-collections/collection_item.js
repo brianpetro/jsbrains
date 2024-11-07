@@ -4,6 +4,14 @@ import { deep_equal } from "./utils/deep_equal.js";
 
 /**
  * Represents an item within a collection, providing methods for data manipulation, validation, and interaction with its collection.
+ * 
+ * Key features:
+ * - Supports nested item relationships (sub-items and linked items)
+ * - Handles data persistence and change detection
+ * - Provides lazy loading capabilities
+ * - Manages item key syntax and validation
+ * 
+ * @see Smart Collection docs for detailed item architecture
  */
 export class CollectionItem {
   /**
@@ -12,27 +20,29 @@ export class CollectionItem {
    */
   static get defaults() {
     return {
-      data: {
-        // key: null,
-      },
+      data: {}
     };
   }
 
   /**
    * Creates an instance of CollectionItem.
-   * @param {Object} brain - The central storage or context.
-   * @param {Object|null} data - Initial data for the item.
+   * @param {Object} env - The central storage or context.
+   * @param {Object|null} [data=null] - Initial data for the item.
    */
   constructor(env, data = null) {
     this.env = env;
-    // this.brain = this.env; // DEPRECATED
     this.config = this.env?.config;
     this.merge_defaults();
-    // if (data) this.data = data;
     if (data) deep_merge(this.data, data);
     if(!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
+  /**
+   * Creates and initializes a new CollectionItem instance.
+   * @param {Object} env - The environment context.
+   * @param {Object} data - Initial data for the item.
+   * @returns {CollectionItem} The initialized item.
+   */
   static load(env, data){
     const item = new this(env, data);
     item.init();
@@ -54,14 +64,27 @@ export class CollectionItem {
   }
 
   /**
-   * Generates or retrieves a unique key for the item. Can be overridden in child classes.
-   * @returns {string} The unique key.
+   * Generates or retrieves a unique key for the item.
+   * Key syntax supports:
+   * - [i] for sequences
+   * - / for super-sources (groups, directories, clusters)
+   * - # for sub-sources (blocks)
+   * @returns {string} The unique key
    */
   get_key() {
-    // console.log("called default get_key");
     return create_uid(this.data);
   }
-  // update_data - for data in this.data
+
+  /**
+   * Ensures the item is loaded, implementing lazy loading pattern.
+   * @returns {Promise<void>}
+   */
+  async ensure_loaded() {
+    if (this._queue_load) {
+      await this.load();
+    }
+  }
+
   /**
    * Updates the data of this item with new data.
    * @param {Object} data - The new data for the item.
@@ -74,11 +97,12 @@ export class CollectionItem {
     deep_merge(this.data, sanitized_data);
     return true;
   }
-  
+
   /**
    * Sanitizes the data of an item to ensure it can be safely saved.
-   * @param {Object} data - The data to sanitize.
-   * @returns {Object} The sanitized data.
+   * Handles CollectionItem references, arrays, and nested objects.
+   * @param {*} data - The data to sanitize.
+   * @returns {*} The sanitized data.
    */
   sanitize_data(data) {
     if (data instanceof CollectionItem) return data.ref;
@@ -91,8 +115,7 @@ export class CollectionItem {
     }
     return data;
   }
-  
-  // init - for data not in this.data
+
   /**
    * Initializes the item with input_data, potentially asynchronously.
    * Handles interactions with other collection items.
@@ -126,7 +149,11 @@ export class CollectionItem {
 
   /**
    * Validates the item's data before saving.
-   * @returns {boolean} True if the data is valid for saving.
+   * Ensures key meets requirements:
+   * - Key exists and is not empty
+   * - Key is not 'undefined'
+   * - Key follows correct syntax for item type
+   * @returns {boolean} True if the data is valid for saving
    */
   validate_save() {
     if(!this.key) return false;
