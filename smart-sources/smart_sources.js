@@ -1,12 +1,31 @@
 import { SmartEntities } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+
+/**
+ * @class SmartSources
+ * @extends SmartEntities
+ * @classdesc Manages a collection of SmartSource entities, handling initialization, pruning, importing, and searching of sources.
+ */
 export class SmartSources extends SmartEntities {
+  /**
+   * Creates an instance of SmartSources.
+   * @constructor
+   * @param {Object} env - The environment instance.
+   * @param {Object} [opts={}] - Configuration options.
+   */
   constructor(env, opts = {}) {
     super(env, opts);
+    /** @type {number} Counter for search results */
     this.search_results_ct = 0;
+    /** @type {Array<string>|null} Cached excluded headings */
     this._excluded_headings = null;
   }
 
+  /**
+   * Initializes the SmartSources instance by performing an initial scan of sources.
+   * @async
+   * @returns {Promise<void>}
+   */
   async init() {
     await super.init();
     this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
@@ -15,44 +34,65 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
 
+  /**
+   * Initializes items by setting up the file system and loading sources.
+   * @async
+   * @returns {Promise<void>}
+   */
   async init_items() {
-    this._fs = null; // clear fs so reloads exclusions
-    // init smart_fs
+    this._fs = null; // Clear fs to reload exclusions
+    // Initialize smart_fs
     await this.fs.init();
-    // init smart_sources
+    // Initialize smart_sources
     Object.values(this.fs.files)
-      .filter(file => this.source_adapters[file.extension]) // skip files without source adapter
-      .forEach(file => this.init_file_path(file.path))
-    ;
+      .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
+      .forEach(file => this.init_file_path(file.path));
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
+
+  /**
+   * Initializes a file path by creating a new SmartSource instance.
+   * @param {string} file_path - The path of the file to initialize.
+   * @returns {SmartSource} The initialized SmartSource instance.
+   */
   init_file_path(file_path){
     return this.items[file_path] = new this.item_type(this.env, { path: file_path });
   }
 
-  // removes old data files
+  /**
+   * Removes old data files by pruning sources and blocks.
+   * @async
+   * @returns {Promise<void>}
+   */
   async prune() {
-    await this.fs.refresh(); // refresh source files in case they have changed
+    await this.fs.refresh(); // Refresh source files in case they have changed
     this.notices?.show('pruning sources', "Pruning sources...", { timeout: 0 });
+    
+    // Identify sources to remove
     const remove_sources = Object.values(this.items)
-      .filter(item => item.is_gone || item.excluded || !item.should_embed || !item.data.blocks)
-    ;
+      .filter(item => item.is_gone || item.excluded || !item.should_embed || !item.data.blocks);
+    
+    // Remove identified sources
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
       await this.data_fs.remove(source.data_path);
       source.delete();
     }
+    
     await this.process_save_queue();
-    // TEMP: remove last_history from smart_sources
+    
+    // TEMP: Remove last_history from smart_sources
     Object.values(this.items).forEach(item => {
       if(item.data?.history?.length) item.data.history = null;
       item.queue_save();
     });
+    
     this.notices?.remove('pruning sources');
     this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
     this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
-    // remove smart_blocks
+    
+    // Identify blocks to remove
     const remove_smart_blocks = Object.values(this.block_collection.items)
       // .filter(item => item.vec && (item.is_gone || !item.should_embed || !item.data?.hash))
       .filter(item => {
@@ -72,22 +112,32 @@ export class SmartSources extends SmartEntities {
         return false;
       })
     ;
+    
+    // Remove identified blocks
     for(let i = 0; i < remove_smart_blocks.length; i++){
       const item = remove_smart_blocks[i];
       if(item.is_gone) item.delete();
       else item.remove_embeddings();
     }
+    
     this.notices?.remove('pruning blocks');
     this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
     console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
+    
     await this.process_save_queue();
-    // queue_embed for meta_changed
+    
+    // Queue embedding for items with changed metadata
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
       if (item.meta_changed) item.queue_import();
       else if (item.is_unembedded) item.queue_embed();
     }
   }
+
+  /**
+   * Builds a map of links between sources.
+   * @returns {Object} An object mapping link paths to source keys.
+   */
   build_links_map() {
     const links_map = {};
     for (const source of Object.values(this.items)) {
@@ -98,13 +148,26 @@ export class SmartSources extends SmartEntities {
     }
     return links_map;
   }
+
+  /**
+   * Refreshes the SmartSources by pruning, importing, and processing embed queues.
+   * @async
+   * @returns {Promise<void>}
+   */
   async refresh(){
     await this.prune();
     await this.process_import_queue();
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
   }
-  // CRUD
+
+  /**
+   * Creates a new source with the given key and content.
+   * @async
+   * @param {string} key - The key (path) of the new source.
+   * @param {string} content - The content to write to the new source.
+   * @returns {Promise<SmartSource>} The created SmartSource instance.
+   */
   async create(key, content) {
     await this.fs.write(key, content);
     await this.fs.refresh();
@@ -112,11 +175,14 @@ export class SmartSources extends SmartEntities {
     await source.import();
     return source;
   }
-  // SEARCH
+
   /**
-   * Lexical search for matching SmartSource content.
+   * Performs a lexical search for matching SmartSource content.
+   * @async
    * @param {Object} search_filter - The filter criteria for the search.
-   * @returns {Promise<Array<Entity>>} A promise that resolves to an array of matching entities.
+   * @param {string[]} search_filter.keywords - An array of keywords to search for.
+   * @param {number} [search_filter.limit] - The maximum number of results to return.
+   * @returns {Promise<Array<SmartSource>>} A promise that resolves to an array of matching SmartSource entities.
    */
   async search(search_filter = {}) {
     const {
@@ -150,17 +216,26 @@ export class SmartSources extends SmartEntities {
       search_results.push(...batch_results.filter(Boolean));
     }
     return search_results
-      .sort((a, b) => b.score - a.score) // sort by relevance 
+      .sort((a, b) => b.score - a.score) // Sort by relevance 
       .map(result => result.item)
     ;
   }
-  async lookup(params={}){
+
+  /**
+   * Looks up entities based on the provided parameters.
+   * @async
+   * @param {Object} [params={}] - Parameters for the lookup.
+   * @param {Object} [params.filter] - Filter options.
+   * @param {number} [params.k] - Deprecated. Use `params.filter.limit` instead.
+   * @returns {Promise<Array<SmartSource>>} A promise that resolves to an array of matching SmartSource entities.
+   */
+  async lookup(params={}) {
     const limit = params.filter?.limit
       || params.k // DEPRECATED: for backwards compatibility
       || this.env.settings.lookup_k
       || 10
     ;
-    if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
+    if(params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
     let results = await super.lookup(params);
     if(this.env.smart_blocks?.settings?.embed_blocks) {
       results = [
@@ -171,24 +246,36 @@ export class SmartSources extends SmartEntities {
     return results.slice(0, limit);
   }
 
+  /**
+   * Imports a file by adding it to the file system and initializing the corresponding SmartSource.
+   * @async
+   * @param {Object} file - The file object to import.
+   * @param {string} file.path - The path of the file.
+   * @returns {Promise<void>}
+   */
   async import_file(file){
-    // add file to fs
+    // Add file to fs
     this.fs.files[file.path] = file;
     this.fs.file_paths.push(file.path);
-    // create source
+    // Create source
     const source = await this.create_or_update({ path: file.path });
-    // import
+    // Import
     await source.import();
-    // process embed queue
+    // Process embed queue
     await this.process_embed_queue();
-    // process save queue
+    // Process save queue
     await this.process_save_queue();
   }
 
+  /**
+   * Processes the load queue by loading items and optionally importing them.
+   * @async
+   * @returns {Promise<void>}
+   */
   async process_load_queue(){
     await super.process_load_queue();
-    if(this.collection_key === 'smart_sources'){ // excludes sub-classes
-      Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // sets _queue_embed if no vec
+    if(this.collection_key === 'smart_sources'){ // Excludes sub-classes
+      Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // Sets _queue_embed if no vec
     }
     this.block_collection.loaded = Object.keys(this.block_collection.items).length;
     if(!this.opts.prevent_import_on_load){
@@ -196,19 +283,26 @@ export class SmartSources extends SmartEntities {
     }
   }
 
+  /**
+   * Processes the import queue by importing queued items in batches.
+   * @async
+   * @returns {Promise<void>}
+   */
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     console.log("import_queue " + import_queue.length);
     if(import_queue.length){
       const time_start = Date.now();
-      // import 100 at a time
+      // Import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
         this.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
       this.notices?.remove('import progress');
       this.notices?.show('done import', [`Processed import queue in ${Date.now() - time_start}ms`], { timeout: 3000 });
-    }else this.notices?.show('no import queue', ["No items in import queue"]);
+    } else {
+      this.notices?.show('no import queue', ["No items in import queue"]);
+    }
     const start_time = Date.now();
     this.env.links = this.build_links_map();
     const end_time = Date.now();
@@ -216,9 +310,33 @@ export class SmartSources extends SmartEntities {
     await this.process_embed_queue();
     await this.process_save_queue();
   }
+
+  /**
+   * Retrieves the source adapters based on the collection configuration.
+   * @readonly
+   * @returns {Object} An object mapping file extensions to adapter constructors.
+   */
   get source_adapters() { return this.env.opts.collections?.[this.collection_key]?.source_adapters || {}; }
+
+  /**
+   * Retrieves the notices system from the environment.
+   * @readonly
+   * @returns {Object} The notices object.
+   */
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
+
+  /**
+   * Retrieves the currently active note.
+   * @readonly
+   * @returns {SmartSource|null} The current SmartSource instance or null if none.
+   */
   get current_note() { return this.get(this.env.smart_connections_plugin.app.workspace.getActiveFile().path); }
+
+  /**
+   * Retrieves the file system instance, initializing it if necessary.
+   * @readonly
+   * @returns {SmartFS} The file system instance.
+   */
   get fs() {
     if(!this._fs){
       this._fs = new this.env.opts.modules.smart_fs.class(this.env, {
@@ -230,19 +348,24 @@ export class SmartSources extends SmartEntities {
     return this._fs;
   }
 
+  /**
+   * Retrieves the settings configuration by combining superclass settings and adapter-specific settings.
+   * @readonly
+   * @returns {Object} The settings configuration object.
+   */
   get settings_config(){
     return {
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
-        if(acc[adapter_constructor]) return acc; // skip if already added same adapter_constructor
+        if(acc[adapter_constructor]) return acc; // Skip if already added same adapter_constructor
         const item = this.items[Object.keys(this.items).find(i => i.endsWith(file_extension))];
         const adapter_instance = new adapter_constructor(item || new this.item_type(this.env, {}));
         if(adapter_instance.settings_config){
           acc[adapter_constructor.name] = {
             type: "html",
             value: `<h4>${adapter_constructor.name} adapter</h4>`
-          }
+          };
           acc = { ...acc, ...adapter_instance.settings_config };
         }
         return acc;
@@ -251,11 +374,25 @@ export class SmartSources extends SmartEntities {
     };
   }
 
-  get block_collection() { return this.env.smart_blocks; }
   /**
-   * @deprecated use block_collection instead
+   * Retrieves the block collection associated with SmartSources.
+   * @readonly
+   * @returns {SmartBlocks} The block collection instance.
+   */
+  get block_collection() { return this.env.smart_blocks; }
+
+  /**
+   * @deprecated Use `block_collection` instead.
+   * @readonly
+   * @returns {SmartBlocks} The block collection instance.
    */
   get blocks(){ return this.env.smart_blocks; }
+
+  /**
+   * Retrieves the embed queue containing items and their blocks to be embedded.
+   * @readonly
+   * @returns {Array<Object>} The embed queue.
+   */
   get embed_queue() {
     try{
       const embed_blocks = this.block_collection.settings.embed_blocks;
@@ -271,8 +408,13 @@ export class SmartSources extends SmartEntities {
     }
   }
 
+  /**
+   * Retrieves the SmartChange instance if enabled and active.
+   * @readonly
+   * @returns {SmartChange|undefined} The SmartChange instance or undefined if not enabled.
+   */
   get smart_change() {
-    if(!this.opts.smart_change) return; // disabled at config level
+    if(!this.opts.smart_change) return; // Disabled at config level
     if(typeof this.settings?.smart_change?.active !== 'undefined' && !this.settings.smart_change.active) return console.warn('smart_change disabled by settings');
     if(!this._smart_change){
       this._smart_change = new this.opts.smart_change.class(this.opts.smart_change);
@@ -280,12 +422,22 @@ export class SmartSources extends SmartEntities {
     return this._smart_change;
   }
 
+  /**
+   * Runs the load process by invoking superclass methods and rendering settings.
+   * @async
+   * @returns {Promise<void>}
+   */
   async run_load() {
     await super.run_load();
     this.blocks.render_settings();
     this.render_settings(); // Re-render settings to update buttons
   }
 
+  /**
+   * Runs the import process by queuing imports for changed items and processing the import queue.
+   * @async
+   * @returns {Promise<void>}
+   */
   async run_import(){
     const start_time = Date.now();
     // Queue import for items with changed metadata
@@ -299,6 +451,11 @@ export class SmartSources extends SmartEntities {
     this.blocks.render_settings();
   }
 
+  /**
+   * Runs the prune process to clean up sources and blocks.
+   * @async
+   * @returns {Promise<void>}
+   */
   async run_prune(){
     await this.prune();
     await this.process_save_queue();
@@ -306,6 +463,11 @@ export class SmartSources extends SmartEntities {
     this.blocks.render_settings();
   }
 
+  /**
+   * Clears all data by removing sources and blocks, reinitializing the file system, and reimporting items.
+   * @async
+   * @returns {Promise<void>}
+   */
   async run_clear_all(){
     this.notices?.show('clearing all', "Clearing all data...", { timeout: 0 });
     this.clear();
@@ -318,7 +480,7 @@ export class SmartSources extends SmartEntities {
     Object.values(this.items).forEach(item => {
       item.queue_import();
       item.queue_embed();
-      item.loaded_at = Date.now() + 9999999999; // prevent re-loading during import
+      item.loaded_at = Date.now() + 9999999999; // Prevent re-loading during import
     });
     
     await this.process_import_queue();
@@ -326,6 +488,11 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('cleared all', "All data cleared and reimported", { timeout: 3000 });
   }
 
+  /**
+   * Retrieves the patterns used to exclude files and folders from processing.
+   * @readonly
+   * @returns {Array<string>} An array of exclusion patterns.
+   */
   get excluded_patterns() {
     return [
       ...(this.file_exclusions?.map(file => `${file}**`) || []),
@@ -334,10 +501,20 @@ export class SmartSources extends SmartEntities {
     ];
   }
 
+  /**
+   * Retrieves the file exclusion patterns from settings.
+   * @readonly
+   * @returns {Array<string>} An array of file exclusion patterns.
+   */
   get file_exclusions() {
     return (this.env.settings?.file_exclusions?.length) ? this.env.settings.file_exclusions.split(",").map((file) => file.trim()) : [];
   }
 
+  /**
+   * Retrieves the folder exclusion patterns from settings.
+   * @readonly
+   * @returns {Array<string>} An array of folder exclusion patterns.
+   */
   get folder_exclusions() {
     return (this.env.settings?.folder_exclusions?.length) ? this.env.settings.folder_exclusions.split(",").map((folder) => {
       folder = folder.trim();
@@ -346,6 +523,11 @@ export class SmartSources extends SmartEntities {
     }) : [];
   }
 
+  /**
+   * Retrieves the excluded headings from settings.
+   * @readonly
+   * @returns {Array<string>} An array of excluded headings.
+   */
   get excluded_headings() {
     if (!this._excluded_headings){
       this._excluded_headings = (this.env.settings?.excluded_headings?.length) ? this.env.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
@@ -353,6 +535,11 @@ export class SmartSources extends SmartEntities {
     return this._excluded_headings;
   }
 
+  /**
+   * Retrieves the count of included files that are not excluded.
+   * @readonly
+   * @returns {number} The number of included files.
+   */
   get included_files() {
     return this.fs.file_paths
       .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
@@ -360,15 +547,27 @@ export class SmartSources extends SmartEntities {
       .length;
   }
 
+  /**
+   * Retrieves the total number of files, regardless of exclusion.
+   * @readonly
+   * @returns {number} The total number of files.
+   */
   get total_files() {
     return this.env.fs.file_paths
       .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
       .length;
   }
 
+  /**
+   * Renders the settings UI components.
+   * @async
+   * @param {HTMLElement} [container=this.settings_container] - The container element for settings.
+   * @param {Object} [opts={}] - Additional options.
+   * @returns {Promise<void>}
+   */
   async render_settings(container=this.settings_container, opts = {}){
-    // prepare settings (THIS IS A PATCH: async render_setting_component fails to load)
-    const settings_config = this.settings_config; // trigger loading adapter modules
+    // Prepare settings (THIS IS A PATCH: async render_setting_component fails to load)
+    const settings_config = this.settings_config; // Trigger loading adapter modules
     if(this.pdf_adapter?.chat_model){
       await this.pdf_adapter.chat_model.get_models();
     }
