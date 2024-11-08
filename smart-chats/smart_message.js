@@ -1,5 +1,5 @@
 import { SmartBlock } from "smart-sources";
-import { message_template } from "./components/message";
+import { render as message_template } from "./components/message";
 import { contains_folder_reference, extract_folder_references } from "./utils/folder_references";
 import { contains_internal_link, extract_internal_links } from "./utils/internal_links";
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";

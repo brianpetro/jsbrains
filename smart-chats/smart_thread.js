@@ -1,6 +1,6 @@
 import { SmartSource } from "smart-sources";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json";
-import { thread_template } from "./components/thread";
+import { render as thread_template } from "./components/thread";
 
 export class SmartThread extends SmartSource {
   static get defaults() {
