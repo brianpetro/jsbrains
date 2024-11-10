@@ -92,7 +92,56 @@ export class SmartTemplates extends SmartSources {
   // TEMP SMART SOURCE OVERRIDES
   async process_load_queue(){}
 
+  async detect_template(source_key) {
+    const source = this.env.smart_sources.get(source_key);
+    if (!source) return null;
 
+    const content = await source.read();
+    
+    // Check each template for structural matches
+    const matches = await Promise.all(
+      Object.values(this.items).map(async template => {
+        const {template: template_content} = await template.get_template();
+        const match_score = await this.calculate_template_match_score(content, template_content);
+        return {
+          template_key: template.key,
+          score: match_score
+        };
+      })
+    );
+
+    // Return best match if score exceeds threshold
+    const best_match = matches.reduce((best, current) => 
+      current.score > (best?.score || 0) ? current : best, null);
+    
+    return best_match?.score > 0.7 ? best_match.template_key : null;
+  }
+
+  async calculate_template_match_score(content, template_content) {
+    // Extract structure (headings, block patterns) from both contents
+    const content_structure = this.extract_structure(content);
+    const template_structure = this.extract_structure(template_content);
+    
+    // Calculate similarity based on matching structural elements
+    const matching_elements = content_structure.filter(element => 
+      template_structure.includes(element));
+    
+    return matching_elements.length / template_structure.length;
+  }
+
+  extract_structure(content) {
+    const structure = [];
+    
+    // Extract headings
+    const heading_matches = content.match(/^#+\s+.+$/gm) || [];
+    structure.push(...heading_matches);
+    
+    // Extract block patterns
+    const block_matches = content.match(/^```[\s\S]*?```$/gm) || [];
+    structure.push(...block_matches);
+    
+    return structure;
+  }
 }
 
 import { SmartSource } from '../smart-sources/smart_source.js';
@@ -301,5 +350,106 @@ export class SmartTemplate extends SmartSource {
       this._ejs_template_adapter = new (this.collection.template_adapters.ejs || this.env.smart_templates.template_adapters.ejs)(this);
     }
     return this._ejs_template_adapter;
+  }
+
+  async progressive_completion(render_opts = {}) {
+    const variables = await this.parse_variables();
+    const context = { ...render_opts.context };
+    const results = [];
+
+    for (const variable of variables) {
+      // Generate partial template with completed variables so far
+      const partial_context = { ...context, ...Object.fromEntries(results) };
+      const partial_template = await this.render(partial_context);
+
+      // Perform lookup if enabled
+      if (render_opts.lookup) {
+        const lookup_results = await this.collection.env.smart_sources.lookup({
+          content: partial_template,
+          limit: render_opts.lookup_n || 3
+        });
+        context.lookup_results = lookup_results;
+      }
+
+      // Generate completion for current variable
+      const completion = await this.complete({
+        ...render_opts,
+        context: {
+          ...context,
+          current_variable: variable.name,
+          current_prompt: variable.prompt,
+          partial_template
+        }
+      });
+
+      results.push([variable.name, completion[variable.name]]);
+    }
+
+    return Object.fromEntries(results);
+  }
+
+  async progressive_render(render_opts = {}) {
+    const completed_context = await this.progressive_completion(render_opts);
+    return this.render(completed_context);
+  }
+
+  async create_template_output(content, opts = {}) {
+    const target_key = opts.target_key || this.key;
+    const target = this.collection.env.smart_sources.get(target_key);
+    
+    if (!target) {
+      // Create new file if target doesn't exist
+      await this.collection.env.smart_sources.create({
+        key: target_key,
+        content
+      });
+      return;
+    }
+
+    const existing_content = await target.read();
+    
+    if (opts.create_or_update && !await this.collection.detect_template(target_key)) {
+      // Create new if target exists but isn't a template
+      const new_key = `${target_key}.template`;
+      await this.collection.env.smart_sources.create({
+        key: new_key,
+        content
+      });
+      return;
+    }
+
+    // Update existing content based on output_mode
+    await this.render({
+      ...opts,
+      context: { existing_content, ...opts.context },
+      to_key: target_key
+    });
+  }
+
+  async prepare_context(render_opts = {}) {
+    let context = { ...render_opts.context };
+
+    // Handle include_connections
+    if (render_opts.include_connections > 0) {
+      const connections = await this.find_connections({ 
+        limit: render_opts.include_connections 
+      });
+      context.connections = connections;
+    }
+
+    // Handle lookup_template if specified
+    if (render_opts.lookup_template) {
+      const lookup_template = this.collection.get(render_opts.lookup_template);
+      if (lookup_template) {
+        const lookup_results = await lookup_template.complete({
+          context,
+          lookup: true,
+          lookup_n: render_opts.lookup_n
+        });
+        context.lookup_results = lookup_results;
+      }
+    }
+
+    return context;
   }
 }
