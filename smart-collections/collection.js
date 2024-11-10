@@ -102,11 +102,15 @@ export class Collection {
   // READ
   /**
    * Filters items in the collection based on provided options.
-   * @param {Object} [filter_opts={}] - Filter options to apply
+   * @param {Object|Function} [filter_opts={}] - Filter options to apply
    * @param {number} [filter_opts.limit] - Maximum number of items to return
    * @returns {CollectionItem[]} Array of filtered items
    */
   filter(filter_opts={}) {
+    // handle function filters
+    if(typeof filter_opts === 'function'){
+      return Object.values(this.items).filter(filter_opts);
+    }
     this.filter_opts = this.prepare_filter(filter_opts);
     const results = [];
     const { limit } = this.filter_opts;
