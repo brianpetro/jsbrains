@@ -6,7 +6,8 @@ import { render as settings_template } from "./components/settings.js";
  * @class SmartThreads
  * @extends SmartSources
  * @description Collection class for managing chat threads. Handles thread creation,
- * rendering, and chat model integration.
+ * rendering, chat model integration, and settings management. Provides centralized
+ * control for all chat-related operations.
  */
 export class SmartThreads extends SmartSources {
   /**
@@ -53,6 +54,9 @@ export class SmartThreads extends SmartSources {
   /**
    * @property {Object} chat_model_settings - Settings for the current chat model
    * @readonly
+   * @returns {Object} Settings object containing:
+   * @returns {string} platform_key - Selected AI platform (e.g., 'openai')
+   * @returns {Object} model_settings - Platform-specific model settings
    */
   get chat_model_settings() {
     return this.settings?.chat_model?.[this.settings.chat_model?.platform_key || 'openai'];
@@ -75,6 +79,11 @@ export class SmartThreads extends SmartSources {
   /**
    * @property {Object} default_settings - Default configuration for models
    * @readonly
+   * @returns {Object} settings - Default settings object containing:
+   * @returns {Object} settings.chat_model - Chat model configuration
+   * @returns {string} settings.chat_model.platform_key - Default platform
+   * @returns {Object} settings.chat_model.openai - OpenAI-specific settings
+   * @returns {Object} settings.embed_model - Embedding model configuration
    */
   get default_settings() {
     return {

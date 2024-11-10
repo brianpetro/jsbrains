@@ -1,4 +1,18 @@
-export async function render(threads = null, opts = {}) {
+/**
+ * @module components/threads
+ * @description Renders the main chat interface including threads list, active thread, and input area
+ */
+
+/**
+ * Renders the main chat interface
+ * @async
+ * @param {SmartThreads} threads_collection - Collection of chat threads
+ * @param {Object} [opts={}] - Rendering options
+ * @param {boolean} [opts.show_settings=false] - Whether to show settings panel
+ * @param {boolean} [opts.show_threads=true] - Whether to show threads list
+ * @returns {DocumentFragment} Rendered chat interface
+ */
+export async function render(threads_collection, opts = {}) {
   const top_bar_buttons = [
     { title: 'Open Conversation Note', icon: 'external-link' },
     { title: 'Chat History', icon: 'history' },
@@ -11,7 +25,7 @@ export async function render(threads = null, opts = {}) {
     </button>
   `).join('');
 
-  const name = threads.current?.name || 'Untitled';
+  const name = threads_collection.current?.name || 'Untitled';
 
   const main_html = `
     <div class="sc-chat-container">
@@ -41,21 +55,28 @@ export async function render(threads = null, opts = {}) {
   const frag = this.create_doc_fragment(main_html);
   const chat_box = frag.querySelector('.sc-chat-box');
 
-  if (!threads.current) {
-    threads.current = await threads.create_or_update({});
+  if (!threads_collection.current) {
+    threads_collection.current = await threads_collection.create_or_update({});
   }
-  await threads.current.render(chat_box);
+  await threads_collection.current.render(chat_box);
 
-  return post_process.call(this, threads, frag, opts);
+  return post_process.call(this, threads_collection, frag, opts);
 }
 
-export function post_process(threads, frag, opts = {}) {
+/**
+ * Post-processes the rendered chat interface
+ * @async
+ * @param {SmartThreads} threads_collection - Collection of chat threads
+ * @param {DocumentFragment} frag - Rendered fragment
+ * @param {Object} opts - Processing options
+ */
+export async function post_process(threads_collection, frag, opts) {
   const chat_input = frag.querySelector('.sc-chat-form textarea');
   chat_input.addEventListener('keydown', (e) => {
     const mod = this.adapter.is_mod_event(e); // properly handle if the meta/ctrl key is pressed
     if (e.key === "Enter" && mod) {
       e.preventDefault();
-      threads.current.new_user_message(chat_input.value);
+      threads_collection.current.new_user_message(chat_input.value);
       chat_input.value = '';
     }
     // console.log("key", e.key);
@@ -107,13 +128,13 @@ export function post_process(threads, frag, opts = {}) {
 
   const abort_button = frag.querySelector('#sc-abort-button');
   abort_button.addEventListener('click', () => {
-    threads.current.chat_model.abort_current_response();
-    threads.current.clear_streaming_ux();
+    threads_collection.current.chat_model.abort_current_response();
+    threads_collection.current.clear_streaming_ux();
   });
 
   const send_button = frag.querySelector('#sc-send-button');
   send_button.addEventListener('click', () => {
-    threads.current.new_user_message(chat_input.value);
+    threads_collection.current.new_user_message(chat_input.value);
     chat_input.value = '';
   });
 
@@ -121,14 +142,14 @@ export function post_process(threads, frag, opts = {}) {
   const settings_button = frag.querySelector('button[title="Chat Settings"]');
   const overlay_container = frag.querySelector(".sc-overlay");
   settings_button.addEventListener('click', () => {
-    threads.render_settings(overlay_container);
+    threads_collection.render_settings(overlay_container);
   });
 
   // new chat button
   const new_chat_button = frag.querySelector('button[title="New Chat"]');
   new_chat_button.addEventListener('click', () => {
-    threads.current = null
-    threads.render();
+    threads_collection.current = null
+    threads_collection.render();
   });
   
   // refocus chat input

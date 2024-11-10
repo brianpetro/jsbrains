@@ -8,7 +8,9 @@ import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/s
 /**
  * @class SmartMessage
  * @extends SmartBlock
- * @description Represents a single message in a chat thread, handling content parsing and context extraction
+ * @description Represents a single message in a chat thread. Handles content parsing, context extraction,
+ * and integration with various data sources including folders, internal links, and system prompts.
+ * Supports both text and image content types.
  */
 export class SmartMessage extends SmartBlock {
   /**
@@ -63,9 +65,15 @@ export class SmartMessage extends SmartBlock {
 
   /**
    * Parses a user message instance using OLD parsing utilities.
-   * Handles folder references, internal links, self-referential keywords, and system prompts.
-   * @param {Object} message_instance - The message instance to parse.
-   * @returns {Object} Parsed message suitable for OpenAI API.
+   * @async
+   * @param {Object} message_instance - The message instance to parse
+   * @returns {Object} context - Parsed context object containing:
+   * @returns {Array<string>} [context.system_prompt_refs] - Referenced system prompts
+   * @returns {Array<Object>} [context.internal_links] - Extracted internal links
+   * @returns {Array<string>} [context.folder_refs] - Referenced folders
+   * @returns {boolean} [context.has_self_ref] - Whether message contains self-references
+   * @returns {Array<string>} [context.hypotheticals] - Generated hypothetical notes
+   * @returns {Array<Object>} [context.lookup_results] - Semantic search results
    */
   async parse_user_message() {
     this.context = {};
@@ -120,9 +128,11 @@ export class SmartMessage extends SmartBlock {
 
   /**
    * Constructs a message with its associated context based on the parsed user input.
-   * This includes internal links, folder references, and system prompt references.
-   *
-   * @returns {Object} An object containing the assembled messages with context.
+   * @async
+   * @returns {Array<Object>} messages - Array of message objects containing:
+   * @returns {Object} [messages[].role] - Message role ('system' or 'user')
+   * @returns {string} [messages[].content] - Text content including context
+   * @returns {string} [messages[].image_url] - Base64 encoded image URL if present
    */
   async get_message_with_context() {
     const messages = [];
@@ -199,9 +209,13 @@ export class SmartMessage extends SmartBlock {
 
   /**
    * Fetches and processes internal links, embedding images as Base64 data URLs.
-   *
-   * @param {Array<string>} paths - Array of paths.
-   * @returns {string} Concatenated content from the paths with images embedded.
+   * @async
+   * @param {Array<string>} paths - Array of paths to fetch content from
+   * @returns {Array<Object>} contents - Array of content objects:
+   * @returns {string} contents[].type - Content type ('text' or 'image')
+   * @returns {string} [contents[].content] - Text content if type is 'text'
+   * @returns {string} [contents[].image_url] - Base64 image URL if type is 'image'
+   * @throws {Error} When unable to fetch or process content
    */
   async fetch_content(paths) {
     try {
@@ -230,10 +244,11 @@ export class SmartMessage extends SmartBlock {
   }
 
   /**
-   * Generates hypothetical notes for context
+   * Generates hypothetical notes for semantic search context
    * @async
-   * @param {string} content - Content to generate hypotheticals from
-   * @returns {Array<string>} Array of hypothetical notes
+   * @param {string} content - User message content to generate hypotheticals from
+   * @returns {Array<string>} hypotheticals - Array of generated hypothetical notes
+   * @returns {string} hypotheticals[] - Each hypothetical in format: "FOLDER > FILE > HEADING: CONTENT"
    */
   async get_hypotheticals(content) {
     try {

@@ -1,4 +1,17 @@
-export async function render(thread, data) {
+/**
+ * @module components/thread
+ * @description Renders a single chat thread with its messages
+ */
+
+/**
+ * Renders a chat thread
+ * @async
+ * @param {SmartThread} thread - Thread instance to render
+ * @param {Object} [data={}] - Additional data for rendering
+ * @param {boolean} [data.show_welcome=true] - Whether to show welcome message for empty threads
+ * @returns {DocumentFragment} Rendered thread interface
+ */
+export async function render(thread, data = {}) {
   const create_welcome_message = () => {
     return [
       this.create_doc_fragment(`
@@ -21,7 +34,13 @@ export async function render(thread, data) {
   return post_process(thread, container);
 }
 
-export function post_process(thread, frag) {
+/**
+ * Post-processes the rendered thread
+ * @async
+ * @param {SmartThread} thread - Thread instance
+ * @param {DocumentFragment} frag - Rendered fragment
+ */
+export async function post_process(thread, frag) {
   // Implement any post-processing logic here
   return frag;
 }

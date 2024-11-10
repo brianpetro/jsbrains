@@ -5,7 +5,9 @@ import { render as thread_template } from "./components/thread";
 /**
  * @class SmartThread
  * @extends SmartSource
- * @description Represents a single chat thread, managing messages and interactions with the AI model
+ * @description Represents a single chat thread. Manages message history, handles user interactions,
+ * coordinates with AI models, and maintains thread state. Supports real-time UI updates and
+ * message context management.
  */
 export class SmartThread extends SmartSource {
   /**

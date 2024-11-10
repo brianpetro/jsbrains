@@ -1,4 +1,18 @@
-export async function render(message, opts={}) {
+/**
+ * @module components/message
+ * @description Renders individual chat messages with support for various content types
+ */
+
+/**
+ * Renders a chat message
+ * @async
+ * @param {SmartMessage} message - Message instance to render
+ * @param {Object} [opts={}] - Rendering options
+ * @param {boolean} [opts.show_role=true] - Whether to show message role
+ * @param {boolean} [opts.show_timestamp=true] - Whether to show message timestamp
+ * @returns {DocumentFragment} Rendered message interface
+ */
+export async function render(message, opts = {}) {
   const create_system_message_frag = (message) => {
     const frag = this.create_doc_fragment(`
       <div class="sc-message system" data-content="${message.content}">
@@ -22,7 +36,14 @@ export async function render(message, opts={}) {
   return await post_process.call(this, message, frag);
 }
 
-export async function post_process(message, frag) {
+/**
+ * Post-processes the rendered message
+ * @async
+ * @param {SmartMessage} message - Message instance
+ * @param {DocumentFragment} frag - Rendered fragment
+ * @param {Object} opts - Processing options
+ */
+export async function post_process(message, frag, opts) {
   const copy_button = frag.querySelector('.sc-msg-button');
   if (copy_button) {
     copy_button.addEventListener('click', () => {
@@ -39,4 +60,14 @@ export async function post_process(message, frag) {
   msg_span.innerHTML = '';
   msg_span.appendChild(markdown_rendered_frag);
   return frag;
+}
+
+/**
+ * Processes markdown content in messages
+ * @private
+ * @param {string} content - Raw markdown content
+ * @returns {string} Processed HTML content
+ */
+function process_markdown(content) {
+  // ... implementation
 }
