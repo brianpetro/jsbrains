@@ -2,7 +2,16 @@ import { SmartSource } from "smart-sources";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json";
 import { render as thread_template } from "./components/thread";
 
+/**
+ * @class SmartThread
+ * @extends SmartSource
+ * @description Represents a single chat thread, managing messages and interactions with the AI model
+ */
 export class SmartThread extends SmartSource {
+  /**
+   * @static
+   * @property {Object} defaults - Default configuration for a new thread
+   */
   static get defaults() {
     return {
       data: {
@@ -13,9 +22,20 @@ export class SmartThread extends SmartSource {
     };
   }
 
+  /**
+   * Generates a unique key for the thread based on creation timestamp
+   * @returns {string} Unique thread identifier
+   */
   get_key() {
     return this.data.created_at ? this.data.created_at : this.data.created_at = Date.now().toString();
   }
+
+  /**
+   * Renders the thread interface
+   * @async
+   * @param {HTMLElement} [container] - Container element to render into
+   * @returns {DocumentFragment} Rendered thread interface
+   */
   async render(container = this.container) {
     if (!container) {
       container = this.collection.container.querySelector('.sc-chat-box');
@@ -31,7 +51,8 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * Handles sending a user message.
+   * Handles sending a user message from the UI
+   * @async
    */
   async handle_send() {
     try {
@@ -61,8 +82,9 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * Creates a new user message and adds it to the thread.
-   * @param {string} content - The content of the user's message.
+   * Creates a new user message and adds it to the thread
+   * @async
+   * @param {string} content - The content of the user's message
    */
   async new_user_message(content) {
     this.collection.current = this;
@@ -80,6 +102,11 @@ export class SmartThread extends SmartSource {
     }
   }
 
+  /**
+   * Processes and adds an AI response to the thread
+   * @async
+   * @param {Object} response - Raw response from the AI model
+   */
   async new_response(response) {
     const { messages } = await this.parse_response(response);
     const msg_i = Object.keys(this.data.messages || {}).length + 1;
@@ -91,34 +118,67 @@ export class SmartThread extends SmartSource {
     this.container.scrollTop = this.container.scrollHeight;
   }
 
+  /**
+   * Parses an AI response using the thread's data adapter
+   * @async
+   * @param {Object} response - Raw response from the AI model
+   * @returns {Object} Parsed response data
+   */
   async parse_response(response) {
     return await this.chat_data_adapter.parse_response(response);
   }
 
+  /**
+   * Prepares the request payload for the AI model
+   * @async
+   * @returns {Object} Formatted request payload
+   */
   async to_request() {
     return await this.chat_data_adapter.to_request();
   }
 
+  /**
+   * Sends the current thread state to the AI model and processes the response
+   * @async
+   */
   async complete() {
     const request = await this.to_request();
     const response = await this.chat_model.complete(request);
     await this.new_response(response);
   }
 
+  /**
+   * @property {SmartChatDataAdapter} chat_data_adapter - Adapter for data format conversions
+   * @readonly
+   */
   get chat_data_adapter() {
     if (!this._chat_data_adapter) {
       this._chat_data_adapter = new SmartThreadDataOpenaiJsonAdapter(this);
     }
     return this._chat_data_adapter;
   }
+
+  /**
+   * @property {Object} chat_model - The AI chat model instance
+   * @readonly
+   */
   get chat_model() { return this.collection.chat_model; }
+
+  /**
+   * @property {HTMLElement} container - Container element for the thread UI
+   */
   get container() { return this._container; }
   set container(container) { this._container = container; }
 
+  /**
+   * @property {Array<SmartMessage>} messages - All messages in the thread
+   * @readonly
+   */
   get messages() { return Object.keys(this.data.messages || {}).map(key => this.env.smart_messages.get(key)); }
 
-  // necessary source overrides
+  /**
+   * @property {string} path - Path identifier for the thread
+   * @readonly
+   */
   get path() { return this.data.created_at; }
-
-
 }

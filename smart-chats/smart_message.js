@@ -5,7 +5,16 @@ import { contains_internal_link, extract_internal_links } from "./utils/internal
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
 
+/**
+ * @class SmartMessage
+ * @extends SmartBlock
+ * @description Represents a single message in a chat thread, handling content parsing and context extraction
+ */
 export class SmartMessage extends SmartBlock {
+  /**
+   * @static
+   * @property {Object} defaults - Default configuration for a new message
+   */
   static get defaults() {
     return {
       data: {
@@ -19,7 +28,17 @@ export class SmartMessage extends SmartBlock {
       }
     };
   }
+
+  /**
+   * Generates a unique key for the message
+   * @returns {string} Unique message identifier
+   */
   get_key() { return `${this.data.thread_key}#${this.data.msg_i}`; }
+
+  /**
+   * Initializes the message and triggers processing if it's a user message
+   * @async
+   */
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
     this.thread.data.messages[this.key] = true;
@@ -29,6 +48,13 @@ export class SmartMessage extends SmartBlock {
       await this.thread.complete();
     }
   }
+
+  /**
+   * Renders the message in the UI
+   * @async
+   * @param {HTMLElement} [container] - Container element to render into
+   * @returns {DocumentFragment} Rendered message interface
+   */
   async render(container = this.thread.container) {
     const frag = await message_template.call(this.smart_view, this);
     if (container) container.appendChild(frag);
@@ -203,6 +229,12 @@ export class SmartMessage extends SmartBlock {
     }
   }
 
+  /**
+   * Generates hypothetical notes for context
+   * @async
+   * @param {string} content - Content to generate hypotheticals from
+   * @returns {Array<string>} Array of hypothetical notes
+   */
   async get_hypotheticals(content) {
     try {
       // Prepare the function call for HyDE Lookup
@@ -259,17 +291,55 @@ export class SmartMessage extends SmartBlock {
       console.error("HyDE Lookup Error:", error);
     }
   }
+
+  /**
+   * Parses AI response to extract hypotheticals
+   * @param {Object} response - AI response object
+   * @returns {Array<string>} Extracted hypotheticals
+   */
   parse_hypotheticals(response) {
     return JSON.parse(response.choices[0].message.tool_calls[0].function.arguments || '{}').hypotheticals;
   }
 
+  /**
+   * @property {string} content - Message content
+   * @readonly
+   */
   get content() { return this.data.content; }
+
+  /**
+   * @property {Object} context - Message context data
+   */
   get context() { return this.data.context; }
   set context(context) { this.data.context = context; }
+
+  /**
+   * @property {string} role - Message sender role ('user' or 'assistant')
+   * @readonly
+   */
   get role() { return this.data.role; }
+
+  /**
+   * @property {SmartThread} thread - Parent thread reference
+   * @readonly
+   */
   get thread() { return this.source; }
-  // necessary source overrides
+
+  /**
+   * @property {string} source_key - Key for source reference
+   * @readonly
+   */
   get source_key() { return this.data.thread_key; }
+
+  /**
+   * @property {SmartThreads} source_collection - Collection reference
+   * @readonly
+   */
   get source_collection() { return this.env.smart_threads; }
+
+  /**
+   * @property {string} path - Path identifier for the message
+   * @readonly
+   */
   get path() { return this.data.thread_key; }
 }

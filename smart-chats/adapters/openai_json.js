@@ -3,16 +3,26 @@ import { SmartChatDataAdapter } from "./_adapter.js";
 /**
  * @class SmartThreadDataOpenaiJsonAdapter
  * @extends SmartChatDataAdapter
- * @description
- *  Stores SmartThread data in default collection data.
+ * @description Adapter for handling OpenAI chat completion data format. Manages conversion between 
+ * internal message format and OpenAI's ChatML format.
  */
 export class SmartThreadDataOpenaiJsonAdapter extends SmartChatDataAdapter {
+  /**
+   * Parses an OpenAI chat completion response into internal message format
+   * @param {Object} response - Raw response from OpenAI API
+   * @returns {Object} Parsed response with messages array
+   */
   parse_response(response) {
     const resp_key = Object.keys(this.data.responses).length;
     this.data.responses[resp_key] = response;
     return parse_openai_chat_completion(response);
   }
 
+  /**
+   * Converts internal message format to OpenAI chat completion request format
+   * @async
+   * @returns {Object} Request object with messages array formatted for OpenAI API
+   */
   async to_request() {
     const request = { messages: [] };
     for(const msg of this.item.messages){
@@ -35,6 +45,12 @@ export class SmartThreadDataOpenaiJsonAdapter extends SmartChatDataAdapter {
   }
 }
 
+/**
+ * Parses an OpenAI chat completion response into internal format
+ * @private
+ * @param {Object} response - Raw OpenAI chat completion response
+ * @returns {Object} Parsed response with messages array
+ */
 function parse_openai_chat_completion(response) {
   const messages = [];
   if (response.choices) {
@@ -49,6 +65,12 @@ function parse_openai_chat_completion(response) {
   return { messages };
 }
 
+/**
+ * Parses a single OpenAI message into internal format
+ * @private
+ * @param {Object} message - Single message from OpenAI response
+ * @returns {Object} Parsed message data
+ */
 function parse_openai_message(message) {
   const message_data = {
     role: message.role,
