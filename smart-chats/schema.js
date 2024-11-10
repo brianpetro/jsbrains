@@ -57,53 +57,6 @@ const smart_threads_schema = {
   "required": ["container", "methods"]
 };
 
-const smart_turn_schema = {
-  "title": "SmartTurn",
-  "type": "object",
-  "description": "Schema for SmartTurn CollectionItem extending SmartBlock",
-  "properties": {
-    "turn_index": {
-      "type": "integer",
-      "description": "Index of the turn in the conversation"
-    },
-    "choice_index": {
-      "type": "integer",
-      "description": "Index of the fork/choice made during the turn"
-    },
-    "messages": {
-      "type": "array",
-      "items": { "type": "object" },
-      "description": "Messages contained in the turn"
-    },
-    "role": {
-      "type": "string",
-      "description": "Role of the message sender (user/assistant)"
-    },
-    "methods": {
-      "type": "object",
-      "description": "Methods for SmartTurn",
-      "properties": {
-        "complete_turn": {
-          "description": "Completes the turn with function calling or assistant response",
-          "type": "function"
-        },
-        "parse_user_input": {
-          "description": "Processes the user's input into a message/turn",
-          "type": "function"
-        },
-        "chunk_handler": {
-          "description": "Handles message chunking and updates the UI",
-          "type": "function"
-        },
-        "pre_process": {
-          "description": "Processes user input before creating SmartMessage and SmartTurn instances",
-          "type": "function"
-        }
-      }
-    }
-  },
-  "required": ["turn_index", "choice_index", "messages", "role", "methods"]
-};
 
 const smart_message_schema = {
   "title": "SmartMessage",
@@ -151,25 +104,6 @@ const smart_message_schema = {
     }
   },
   "required": ["role", "content", "methods"]
-};
-
-const smart_turns_schema = {
-  "title": "SmartTurns",
-  "type": "object",
-  "description": "Schema for SmartTurns Collection",
-  "properties": {
-    "methods": {
-      "type": "object",
-      "description": "Methods for SmartTurns collection",
-      "properties": {
-        "add_turn": {
-          "description": "Adds a new turn, either user or assistant",
-          "type": "function"
-        }
-      }
-    }
-  },
-  "required": ["methods"]
 };
 
 const smart_messages_schema = {
