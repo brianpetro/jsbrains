@@ -66,9 +66,9 @@ export class CollectionItem {
   /**
    * Generates or retrieves a unique key for the item.
    * Key syntax supports:
-   * - [i] for sequences
-   * - / for super-sources (groups, directories, clusters)
-   * - # for sub-sources (blocks)
+   * - `[i]` for sequences
+   * - `/` for super-sources (groups, directories, clusters)
+   * - `#` for sub-sources (blocks)
    * @returns {string} The unique key
    */
   get_key() {
