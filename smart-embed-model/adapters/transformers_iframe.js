@@ -1,18 +1,22 @@
 import { SmartEmbedIframeAdapter } from "./iframe.js";
 import { transformers_connector } from "../connectors/transformers_iframe.js";
-
+import { transformers_settings_config } from "./transformers.js";
 export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter {
-  constructor(smart_embed) {
-    super(smart_embed);
+  constructor(model) {
+    super(model);
     this.connector = transformers_connector;
-    if(this.smart_embed.settings.legacy_transformers){
+    if(this.settings.legacy_transformers || !this.use_gpu){
       this.connector = this.connector
         .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2')
       ;
-      this.smart_embed.opts.use_gpu = false;
+      this.use_gpu = false;
     }
     else this.connector = this.connector
       .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.1')
     ;
+  }
+
+  get settings_config() {
+    return transformers_settings_config;
   }
 }

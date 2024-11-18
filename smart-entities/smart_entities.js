@@ -81,7 +81,7 @@ export class SmartEntities extends Collection {
   async unload() {
     if (typeof this.embed_model?.unload === 'function') {
       await this.embed_model.unload();
-      this._embed_model = null; // triggers new instance on next access
+      this.embed_model = null; // triggers new instance on next access
     }
     super.unload();
   }
@@ -136,13 +136,15 @@ export class SmartEntities extends Collection {
    */
   get embed_model() {
     if (this.embed_model_key === "None") return null;
-    if (!this._embed_model && this.env.opts.modules.smart_embed_model?.class) this._embed_model = new this.env.opts.modules.smart_embed_model.class(this.env, {
-      model_key: this.embed_model_key,
-      ...(this.settings.embed_model?.[this.embed_model_key] || {}),
+    if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
+      // model_key: this.embed_model_key,
+      // ...(this.settings.embed_model?.[this.embed_model_key] || {}),
       settings: this.settings.embed_model,
+      adapters: this.env.opts.modules.smart_embed_model?.adapters,
     });
-    return this._embed_model;
+    return this.env._embed_model;
   }
+  set embed_model(embed_model) { this.env._embed_model = embed_model; }
 
   /**
    * Finds the nearest entities to a given entity.
@@ -372,6 +374,9 @@ export class SmartEntities extends Collection {
       this.is_processing_queue = false;
       if (!this.is_queue_halted) this._embed_queue_complete();
     } catch (e) {
+      if(e.message.includes("API key not set")){
+        this.halt_embed_queue_processing(`API key not set for ${this.embed_model_key}\nPlease set the API key in the settings.`);
+      }
       this.is_processing_queue = false;
       console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
     }
@@ -391,7 +396,7 @@ export class SmartEntities extends Collection {
       [
         `Making Smart Connections...`,
         `Embedding progress: ${this.embedded_total} / ${this.queue_total}`,
-        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
+        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
       ],
       {
         timeout: 0,
@@ -410,7 +415,7 @@ export class SmartEntities extends Collection {
     this.notices?.show('embedding_complete', [
       `Embedding complete.`,
       `${this.embedded_total} entities embedded.`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
     ], { timeout: 10000 });
   }
 
@@ -458,18 +463,18 @@ export class SmartEntities extends Collection {
    * Halts the embed queue processing.
    * @returns {void}
    */
-  halt_embed_queue_processing() {
+  halt_embed_queue_processing(msg=null) {
     this.is_queue_halted = true;
     console.log("Embed queue processing halted");
     this.notices?.remove('embedding_progress');
     this.notices?.show('embedding_paused', [
-      `Embedding paused.`,
+      msg || `Embedding paused.`,
       `Progress: ${this.embedded_total} / ${this.queue_total}`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.smart_embed.opts.model_key}`
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
     ],
       {
         timeout: 0,
-        button: { text: "Resume", callback: () => this.resume_embed_queue_processing(0) }
+        button: { text: "Resume", callback: () => this.resume_embed_queue_processing(100) }
       });
     this.env.save();
   }
@@ -482,6 +487,7 @@ export class SmartEntities extends Collection {
   resume_embed_queue_processing(delay = 0) {
     console.log("resume_embed_queue_processing");
     this.is_queue_halted = false;
+    this.notices?.remove('embedding_paused');
     setTimeout(() => {
       this.embedded_total = 0;
       this.process_embed_queue();

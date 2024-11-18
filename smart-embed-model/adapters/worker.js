@@ -1,89 +1,50 @@
-import { SmartEmbedAdapter } from "./_adapter.js";
+import { SmartEmbedMessageAdapter } from "./_message.js";
 
-export class SmartEmbedWorkerAdapter extends SmartEmbedAdapter {
-  constructor(smart_embed) {
-    super(smart_embed);
-    this.worker = null;
-    this.message_queue = {};
-    this.message_id = 0;
-    this.connector = null; // override in subclass
-    this.worker_id = `smart_embed_worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    this.message_prefix = `msg_${Math.random().toString(36).substr(2, 9)}_`;
-  }
-  get main() { return this.smart_embed; }
-
-  async load() {
-    const global_key = `smart_embed_worker_${this.smart_embed.model_key}`;
-    
-    if (!this.smart_embed[global_key]) {
-      this.smart_embed[global_key] = new Worker(this.worker_url, { type: 'module' });
-      console.log('new worker created', this.smart_embed[global_key]);
+export class SmartEmbedWorkerAdapter extends SmartEmbedMessageAdapter {
+    constructor(model) {
+        super(model);
+        this.worker = null;
+        this.worker_id = `smart_embed_worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    
-    this.worker = this.smart_embed[global_key];
-    console.log('worker', this.worker);
-    console.log('worker_url', this.worker_url);
 
-    // Set up message listener
-    this.worker.addEventListener('message', this._handle_message.bind(this));
-
-    // Initialize the model in the worker
-    await this._send_message('load', { ...{...this.smart_embed.opts, adapters: null, settings: null}, worker_id: this.worker_id });
-    await new Promise(resolve => {
-      const check_model_loaded = () => {
-        console.log('check_model_loaded', this.smart_embed.model_loaded);
-        if (this.smart_embed.model_loaded) {
-          resolve();
-        } else {
-          setTimeout(check_model_loaded, 100);
+    async load() {
+        const global_key = `smart_embed_worker_${this.model.model_key}`;
+        
+        if (!this.model[global_key]) {
+            this.model[global_key] = new Worker(this.worker_url, { type: 'module' });
+            console.log('new worker created', this.model[global_key]);
         }
-      };
-      check_model_loaded();
-    });
-    console.log('model loaded');
-  }
+        
+        this.worker = this.model[global_key];
+        console.log('worker', this.worker);
+        console.log('worker_url', this.worker_url);
 
-  async _send_message(method, params) {
-    return new Promise((resolve, reject) => {
-      const id = `${this.message_prefix}${this.message_id++}`;
-      this.message_queue[id] = { resolve, reject };
-      this.worker.postMessage({ method, params, id, worker_id: this.worker_id });
-    });
-  }
+        // Set up message listener
+        this.worker.addEventListener('message', this._handle_message.bind(this));
 
-  _handle_message(event) {
-    const { id, result, error, worker_id } = event.data;
-    if (worker_id !== this.worker_id) return;
-    if (!id.startsWith(this.message_prefix)) return;
-
-    if (result?.model_loaded) {
-      console.log('model loaded');
-      this.smart_embed.model_loaded = true;
+        // Initialize the model in the worker
+        await this._send_message('load', { ...{...this.model.opts, adapters: null, settings: null}, worker_id: this.worker_id });
+        await new Promise(resolve => {
+            const check_model_loaded = () => {
+                console.log('check_model_loaded', this.model.model_loaded);
+                if (this.model.model_loaded) {
+                    resolve();
+                } else {
+                    setTimeout(check_model_loaded, 100);
+                }
+            };
+            check_model_loaded();
+        });
+        console.log('model loaded');
     }
-    if (this.message_queue[id]) {
-      if (error) {
-        this.message_queue[id].reject(new Error(error));
-      } else {
-        this.message_queue[id].resolve(result);
-      }
-      delete this.message_queue[id];
+
+    _post_message(message_data) {
+        this.worker.postMessage({ ...message_data, worker_id: this.worker_id });
     }
-  }
 
-  async count_tokens(input) {
-    return this._send_message('count_tokens', { input });
-  }
-
-  async embed_batch(inputs) {
-    const filtered_inputs = inputs.filter(item => item.embed_input?.length > 0);
-    if (!filtered_inputs.length) return [];
-    const embed_inputs = filtered_inputs.map(item => ({ embed_input: item.embed_input }));
-    const result = await this._send_message('embed_batch', { inputs: embed_inputs });
-
-    return filtered_inputs.map((item, i) => {
-      item.vec = result[i].vec;
-      item.tokens = result[i].tokens;
-      return item;
-    });
-  }
+    _handle_message(event) {
+        const { id, result, error, worker_id } = event.data;
+        if (worker_id !== this.worker_id) return;
+        this._handle_message_result(id, result, error);
+    }
 }

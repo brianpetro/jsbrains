@@ -11,7 +11,7 @@ let smart_env = {
   }
 }
 
-async function processMessage(data) {
+async function process_message(data) {
   const { method, params, id, iframe_id } = data;
   try {
     let result;
@@ -37,4 +37,4 @@ async function processMessage(data) {
     return { id, error: error.message, iframe_id };
   }
 }
-processMessage({ method: 'init' });
+process_message({ method: 'init' });

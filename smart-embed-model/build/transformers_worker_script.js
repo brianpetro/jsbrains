@@ -24,7 +24,12 @@ async function process_message(data) {
       case 'load':
         console.log('load', params);
         if(!model) {
-          model = new SmartEmbedModel(smart_env, { ...params, adapters: { transformers: SmartEmbedTransformersAdapter }, adapter: 'transformers' });
+          model = new SmartEmbedModel({
+            ...params,
+            adapters: { transformers: SmartEmbedTransformersAdapter },
+            adapter: 'transformers',
+            settings: {}
+          });
           await model.load();
         }
         result = { model_loaded: true };

@@ -31,7 +31,7 @@ export class SmartRankIframeAdapter extends SmartRankAdapter {
                 window.addEventListener('message', async (event) => {
                     if (event.origin !== '${this.origin}' || event.data.iframe_id !== '${this.iframe_id}') return console.log('message ignored (listener)', event);
                     // Process the message and send the response back
-                    const response = await processMessage(event.data);
+                    const response = await process_message(event.data);
                     window.parent.postMessage({ ...response, iframe_id: '${this.iframe_id}' }, '${this.origin}');
                 });
               </script>

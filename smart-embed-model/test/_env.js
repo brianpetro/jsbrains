@@ -28,6 +28,9 @@ export async function load_test_env(t) {
   // await env.init();
   await env.opts.modules.smart_embed_model.class.load(env, {
     model_key: 'TaylorAI/bge-micro-v2',
+    adapters: {
+      transformers: SmartEmbedTransformersAdapter,
+    },
   });
   t.context.env = env;
 }

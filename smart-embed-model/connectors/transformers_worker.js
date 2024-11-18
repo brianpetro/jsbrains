@@ -1,13 +1,192 @@
 // ../smart-model/smart_model.js
 var SmartModel = class {
+  /**
+   * Create a SmartModel instance.
+   * @param {Object} opts - Configuration options
+   * @param {string} [opts.adapter] - Initial adapter to load
+   * @param {Object} [opts.adapters] - Map of available adapters
+   * @param {Object} [opts.settings] - Model settings
+   * @param {Object} [opts.model_config] - Model-specific configuration
+   */
   constructor(opts = {}) {
     this.opts = opts;
+    this.validate_opts(opts);
+    this.state = "unloaded";
+    this._adapter = null;
   }
+  async initialize() {
+    this.load_adapter(this.model_config.adapter);
+    await this.load();
+  }
+  /**
+   * Validate required options.
+   * @param {Object} opts - Configuration options
+   */
+  validate_opts(opts) {
+    if (!opts.adapters) throw new Error("opts.adapters is required");
+    if (!opts.settings) throw new Error("opts.settings is required");
+    if (!this.model_config.adapter) {
+      throw new Error("model_config.adapter is required");
+    }
+  }
+  /**
+   * Get the default model key to use
+   * @returns {string} Default model identifier
+   */
+  get default_model_key() {
+    throw new Error("default_model_key must be overridden in sub-class");
+  }
+  /**
+   * Get available models configuration
+   * @returns {Object} Map of model configurations
+   */
+  get models() {
+  }
+  /**
+   * Get the current model key
+   * @returns {string} Current model key
+   */
+  get model_key() {
+    return this.opts.model_key || this.settings.model_key || this.default_model_key;
+  }
+  /**
+   * Get the current model configuration
+   * @returns {Object} Combined base and custom model configuration
+   */
+  get model_config() {
+    const model_key = this.model_key;
+    const base_config = this.models[model_key] || {};
+    return {
+      ...base_config,
+      ...this.settings,
+      ...this.opts.model_config
+    };
+  }
+  /**
+   * Get the current settings
+   * @returns {Object} Current settings
+   */
+  get settings() {
+    return this.opts.settings;
+  }
+  async load() {
+    this.set_state("loading");
+    if (!this.adapter?.loaded) {
+      await this.invoke_adapter_method("load");
+    }
+    this.set_state("loaded");
+  }
+  async unload() {
+    if (this.adapter?.loaded) {
+      this.set_state("unloading");
+      await this.invoke_adapter_method("unload");
+      this.set_state("unloaded");
+    }
+  }
+  /**
+   * Set the state of the SmartModel.
+   * @param {string} new_state - The new state to set.
+   */
+  set_state(new_state) {
+    const valid_states = ["unloaded", "loading", "loaded", "unloading"];
+    if (!valid_states.includes(new_state)) {
+      throw new Error(`Invalid state: ${new_state}`);
+    }
+    this.state = new_state;
+  }
+  // Replace individual state getters/setters with a unified state management
+  get is_loading() {
+    return this.state === "loading";
+  }
+  get is_loaded() {
+    return this.state === "loaded";
+  }
+  get is_unloading() {
+    return this.state === "unloading";
+  }
+  get is_unloaded() {
+    return this.state === "unloaded";
+  }
+  // ADAPTERS
+  /**
+   * Get the map of available adapters
+   * @returns {Object} Map of adapter names to adapter classes
+   */
+  get adapters() {
+    return this.opts.adapters || {};
+  }
+  set_adapter(adapter_name) {
+    const AdapterClass = this.adapters[adapter_name];
+    if (!AdapterClass) {
+      throw new Error(`Adapter "${adapter_name}" not found.`);
+    }
+    if (this._adapter?.constructor.name.toLowerCase() === adapter_name.toLowerCase()) {
+      return;
+    }
+    this._adapter = new AdapterClass(this);
+  }
+  async load_adapter(adapter_name) {
+    this.set_adapter(adapter_name);
+    if (!this._adapter.loaded) {
+      this.set_state("loading");
+      try {
+        await this.invoke_adapter_method("load");
+        this.set_state("loaded");
+      } catch (err) {
+        this.set_state("unloaded");
+        throw new Error(`Failed to load adapter: ${err.message}`);
+      }
+    }
+  }
+  /**
+   * Get the current active adapter instance
+   * @returns {Object} The active adapter instance
+   * @throws {Error} If adapter not found
+   */
+  get adapter() {
+    const adapter_name = this.model_config.adapter;
+    if (!adapter_name) {
+      throw new Error(`Adapter not set for model.`);
+    }
+    if (!this._adapter) {
+      this.load_adapter(adapter_name);
+    }
+    return this._adapter;
+  }
+  ensure_adapter_ready(method) {
+    if (!this.adapter) {
+      throw new Error("No adapter loaded.");
+    }
+    if (typeof this.adapter[method] !== "function") {
+      throw new Error(`Adapter does not implement method: ${method}`);
+    }
+  }
+  /**
+   * Delegate method calls to the active adapter.
+   * @param {string} method - The method to call on the adapter.
+   * @param {...any} args - Arguments to pass to the adapter method.
+   * @returns {any} The result of the adapter method call.
+   */
+  async invoke_adapter_method(method, ...args) {
+    this.ensure_adapter_ready(method);
+    return await this.adapter[method](...args);
+  }
+  // SETTINGS
+  /**
+   * Get the settings configuration schema
+   * @returns {Object} Settings configuration object
+   */
   get settings_config() {
     return this.process_settings_config({
       // SETTINGS GO HERE
     });
   }
+  /**
+   * Process settings configuration with conditionals and prefixes
+   * @param {Object} _settings_config - Raw settings configuration
+   * @param {string} [prefix] - Optional prefix for setting keys
+   * @returns {Object} Processed settings configuration
+   */
   process_settings_config(_settings_config, prefix = null) {
     return Object.entries(_settings_config).reduce((acc, [key, val]) => {
       if (val.conditional) {
@@ -19,6 +198,11 @@ var SmartModel = class {
       return acc;
     }, {});
   }
+  /**
+   * Process individual setting key for prefixes/variables
+   * @param {string} key - Setting key to process
+   * @returns {string} Processed setting key
+   */
   process_setting_key(key) {
     return key;
   }
@@ -142,66 +326,23 @@ var models_default = {
   }
 };
 
-// ../smart-http-request/smart_http_request.js
-var SmartHttpRequest = class {
-  /**
-   * @param {object} opts - Options for the SmartHttpRequest class
-   * @param {SmartHttpRequestAdapter} opts.adapter - The adapter constructor to use for making HTTP requests
-   * @param {Obsidian.requestUrl} opts.obsidian_request_adapter - For use with Obsidian adapter
-   */
-  constructor(opts = {}) {
-    this.opts = opts;
-    if (!opts.adapter) throw new Error("HttpRequestAdapter is required");
-    this.adapter = new opts.adapter(this);
-  }
-  /**
-   * Returns a well-formed response object
-   * @param {object} request_params - Parameters for the HTTP request
-   * @param {string} request_params.url - The URL to make the request to
-   * @param {string} [request_params.method='GET'] - The HTTP method to use
-   * @param {object} [request_params.headers] - Headers to include in the request
-   * @param {*} [request_params.body] - The body of the request (for POST, PUT, etc.)
-   * @returns {SmartHttpResponseAdapter} instance of the SmartHttpResponseAdapter class
-   * @example
-   * const response = await smart_http_request.request({
-   *   url: 'https://api.example.com/data',
-   *   method: 'GET',
-   *   headers: { 'Content-Type': 'application/json' }
-   * });
-   * console.log(await response.json());
-   */
-  async request(request_params) {
-    return await this.adapter.request(request_params);
-  }
-};
-
 // smart_embed_model.js
 var SmartEmbedModel = class extends SmartModel {
   /**
-   * Create a SmartEmbedModel instance.
-   * @param {object} opts - Options for the model, including settings.
+   * Create a SmartEmbedModel instance
+   * @param {Object} opts - Configuration options
+   * @param {string} [opts.adapter] - Adapter identifier
+   * @param {Object} [opts.adapters] - Available adapters
+   * @param {boolean} [opts.use_gpu] - Enable GPU acceleration
+   * @param {number} [opts.gpu_batch_size] - Batch size for GPU processing
+   * @param {number} [opts.batch_size] - General batch size
+   * @param {Object} [opts.model_config] - Model-specific configuration
+   * @param {string} [opts.model_config.adapter] - Adapter to use (e.g. 'openai')
+   * @param {number} [opts.model_config.dims] - Embedding dimensions
+   * @param {number} [opts.model_config.max_tokens] - Maximum tokens to process
    */
   constructor(opts = {}) {
     super(opts);
-    this._adapters = {};
-    this._http_adapter = null;
-    this.opts = {
-      ...models_default[opts.settings?.model_key],
-      ...opts
-    };
-    if (!this.opts.adapter) return console.warn("SmartEmbedModel adapter not set");
-    if (!this.opts.adapters[this.opts.adapter]) return console.warn(`SmartEmbedModel adapter ${this.opts.adapter} not found`);
-    this.opts.use_gpu = !!navigator?.gpu && this.opts.gpu_batch_size !== 0;
-    if (this.opts.adapter === "transformers" && this.opts.use_gpu) this.opts.batch_size = this.opts.gpu_batch_size || 10;
-  }
-  async load() {
-    this.loading = true;
-    await this.adapter.load();
-    this.loading = false;
-    this.loaded = true;
-  }
-  async unload() {
-    await this.adapter.unload();
   }
   /**
    * Count the number of tokens in the input string.
@@ -209,7 +350,7 @@ var SmartEmbedModel = class extends SmartModel {
    * @returns {Promise<number>} A promise that resolves with the number of tokens.
    */
   async count_tokens(input) {
-    return this.adapter.count_tokens(input);
+    return await this.invoke_adapter_method("count_tokens", input);
   }
   /**
    * Embed the input into a numerical array.
@@ -226,44 +367,20 @@ var SmartEmbedModel = class extends SmartModel {
    * @returns {Promise<Array<Object>>} A promise that resolves with an array of objects containing `vec` and `tokens` properties.
    */
   async embed_batch(inputs) {
-    return await this.adapter.embed_batch(inputs);
+    return await this.invoke_adapter_method("embed_batch", inputs);
   }
+  /**
+   * Get the current batch size
+   * @returns {number} Batch size for processing
+   */
   get batch_size() {
-    return this.opts.batch_size || 1;
+    return this.adapter.batch_size || 1;
   }
-  get max_tokens() {
-    return this.opts.max_tokens || 512;
+  get models() {
+    return models_default;
   }
-  get dims() {
-    return this.opts.dims;
-  }
-  get model_config() {
-    return models_default[this.model_key];
-  }
-  get settings() {
-    return this.opts.settings;
-  }
-  get adapter_key() {
-    return this.model_config.adapter;
-  }
-  get model_key() {
-    return this.opts.model_key || this.settings.model_key;
-  }
-  get adapters() {
-    return this.opts.adapters;
-  }
-  get adapter() {
-    if (!this._adapters[this.adapter_key]) {
-      this._adapters[this.adapter_key] = new this.adapters[this.adapter_key](this);
-    }
-    return this._adapters[this.adapter_key];
-  }
-  get http_adapter() {
-    if (!this._http_adapter) {
-      if (this.opts.http_adapter) this._http_adapter = this.opts.http_adapter;
-      else this._http_adapter = new SmartHttpRequest();
-    }
-    return this._http_adapter;
+  get default_model_key() {
+    return "TaylorAI/bge-micro-v2";
   }
   get settings_config() {
     const _settings_config = {
@@ -271,41 +388,37 @@ var SmartEmbedModel = class extends SmartModel {
         name: "Embedding Model",
         type: "dropdown",
         description: "Select an embedding model.",
-        options_callback: "get_embedding_model_options",
+        options_callback: "embed_model.get_embedding_model_options",
         callback: "embed_model_changed",
         default: "TaylorAI/bge-micro-v2"
+        // required: true
       },
       "[EMBED_MODEL].min_chars": {
         name: "Minimum Embedding Length",
         type: "number",
         description: "Minimum length of note to embed.",
         placeholder: "Enter number ex. 300"
-      },
-      "[EMBED_MODEL].api_key": {
-        name: "OpenAI API Key for embeddings",
-        type: "password",
-        description: "Required for OpenAI embedding models",
-        placeholder: "Enter OpenAI API Key",
-        callback: "restart",
-        conditional: (_this) => !_this.settings.model_key?.includes("/")
-      },
-      "[EMBED_MODEL].gpu_batch_size": {
-        name: "GPU Batch Size",
-        type: "number",
-        description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-        placeholder: "Enter number ex. 10",
-        callback: "restart"
+        // callback: 'refresh_embeddings',
+        // required: true,
       },
       ...this.adapter.settings_config || {}
     };
-    return this.process_settings_config(_settings_config);
+    return this.process_settings_config(_settings_config, "embed_model");
   }
   process_setting_key(key) {
-    return key.replace(/\[EMBED_MODEL\]/g, this.settings.model_key);
+    return key.replace(/\[EMBED_MODEL\]/g, this.model_key);
   }
+  /**
+   * Get available embedding model options
+   * @returns {Array<Object>} Array of model options with value and name
+   */
   get_embedding_model_options() {
-    return Object.entries(models_default).map(([key, model2]) => ({ value: key, name: key }));
+    return Object.entries(this.models).map(([key, model2]) => ({ value: key, name: key }));
   }
+  /**
+   * Get embedding model options including 'None' option
+   * @returns {Array<Object>} Array of model options with value and name
+   */
   get_block_embedding_model_options() {
     const options = this.get_embedding_model_options();
     options.unshift({ value: "None", name: "None" });
@@ -313,15 +426,61 @@ var SmartEmbedModel = class extends SmartModel {
   }
 };
 
-// adapters/_adapter.js
-var SmartEmbedAdapter = class {
-  constructor(smart_embed) {
-    this.smart_embed = smart_embed;
-    this.settings = smart_embed.settings;
-    this.model_config = smart_embed.model_config;
-    this.http_adapter = smart_embed.http_adapter;
+// ../smart-model/adapters/_adapter.js
+var SmartModelAdapter = class {
+  constructor(model2) {
+    this.model = model2;
+    this.state = "unloaded";
   }
   async load() {
+    this.set_state("loaded");
+  }
+  unload() {
+    this.set_state("unloaded");
+  }
+  get model_key() {
+    return this.model.model_key;
+  }
+  get model_config() {
+    return this.model.model_config;
+  }
+  get settings() {
+    return this.model.settings;
+  }
+  get model_settings() {
+    return this.settings?.[this.model_key] || {};
+  }
+  /**
+   * Set the state of the SmartModel.
+   * @param {string} new_state - The new state to set.
+   */
+  set_state(new_state) {
+    const valid_states = ["unloaded", "loading", "loaded", "unloading"];
+    if (!valid_states.includes(new_state)) {
+      throw new Error(`Invalid state: ${new_state}`);
+    }
+    this.state = new_state;
+  }
+  // Replace individual state getters/setters with a unified state management
+  get is_loading() {
+    return this.state === "loading";
+  }
+  get is_loaded() {
+    return this.state === "loaded";
+  }
+  get is_unloading() {
+    return this.state === "unloading";
+  }
+  get is_unloaded() {
+    return this.state === "unloaded";
+  }
+};
+
+// adapters/_adapter.js
+var SmartEmbedAdapter = class extends SmartModelAdapter {
+  constructor(model2) {
+    super(model2);
+    this.smart_embed = model2;
   }
   async count_tokens(input) {
     throw new Error("count_tokens method not implemented");
@@ -332,30 +491,52 @@ var SmartEmbedAdapter = class {
   async embed_batch(inputs) {
     throw new Error("embed_batch method not implemented");
   }
-  unload() {
+  get dims() {
+    return this.model_config.dims;
+  }
+  get max_tokens() {
+    return this.model_config.max_tokens;
+  }
+  // get batch_size() { return this.model_config.batch_size; }
+  get use_gpu() {
+    if (typeof this._use_gpu === "undefined") {
+      if (typeof this.model.opts.use_gpu !== "undefined") this._use_gpu = this.model.opts.use_gpu;
+      else this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
+    }
+    return this._use_gpu;
+  }
+  set use_gpu(value) {
+    this._use_gpu = value;
+  }
+  get batch_size() {
+    if (this.use_gpu && this.model_settings?.gpu_batch_size) return this.model_settings.gpu_batch_size;
+    return this.model.opts.batch_size || this.model_config.batch_size || 1;
   }
 };
 
 // adapters/transformers.js
 var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
-  constructor(smart_embed) {
-    super(smart_embed);
-    this.model_key = this.smart_embed.model_key;
-    this.model_config = this.smart_embed.model_config;
-    this.model = null;
+  constructor(model2) {
+    super(model2);
+    this.pipeline = null;
     this.tokenizer = null;
   }
-  get batch_size() {
-    return this.smart_embed.batch_size;
-  }
-  get max_tokens() {
-    return this.smart_embed.max_tokens;
-  }
-  get use_gpu() {
-    return this.smart_embed.opts.use_gpu || false;
-  }
   async load() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.1");
+    await this.load_transformers();
+    this.loaded = true;
+  }
+  async unload() {
+    if (this.pipeline) {
+      if (this.pipeline.destroy) await this.pipeline.destroy();
+      this.pipeline = null;
+    }
+    if (this.tokenizer) {
+      this.tokenizer = null;
+    }
+    this.loaded = false;
+  }
+  async load_transformers() {
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
@@ -368,7 +549,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       console.log("[Transformers] Using CPU");
       env.backends.onnx.wasm.numThreads = 8;
     }
-    this.model = await pipeline("feature-extraction", this.model_key, pipeline_opts);
+    this.pipeline = await pipeline("feature-extraction", this.model_key, pipeline_opts);
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
   }
   async count_tokens(input) {
@@ -377,14 +558,24 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     return { tokens: input_ids.data.length };
   }
   async embed_batch(inputs) {
-    if (!this.model) await this.load();
+    if (!this.pipeline) await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
     if (!filtered_inputs.length) return [];
     if (filtered_inputs.length > this.batch_size) {
-      throw new Error(`Input size (${filtered_inputs.length}) exceeds maximum batch size (${this.batch_size})`);
+      console.log(`Processing ${filtered_inputs.length} inputs in batches of ${this.batch_size}`);
+      const results = [];
+      for (let i = 0; i < filtered_inputs.length; i += this.batch_size) {
+        const batch = filtered_inputs.slice(i, i + this.batch_size);
+        const batch_results = await this._process_batch(batch);
+        results.push(...batch_results);
+      }
+      return results;
     }
-    const tokens = await Promise.all(filtered_inputs.map((item) => this.count_tokens(item.embed_input)));
-    const embed_inputs = await Promise.all(filtered_inputs.map(async (item, i) => {
+    return await this._process_batch(filtered_inputs);
+  }
+  async _process_batch(batch_inputs) {
+    const tokens = await Promise.all(batch_inputs.map((item) => this.count_tokens(item.embed_input)));
+    const embed_inputs = await Promise.all(batch_inputs.map(async (item, i) => {
       if (tokens[i].tokens < this.max_tokens) return item.embed_input;
       let token_ct = tokens[i].tokens;
       let truncated_input = item.embed_input;
@@ -398,33 +589,55 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       return truncated_input;
     }));
     try {
-      const resp = await this.model(embed_inputs, { pooling: "mean", normalize: true });
-      return filtered_inputs.map((item, i) => {
+      const resp = await this.pipeline(embed_inputs, { pooling: "mean", normalize: true });
+      return batch_inputs.map((item, i) => {
         item.vec = Array.from(resp[i].data).map((val) => Math.round(val * 1e8) / 1e8);
         item.tokens = tokens[i].tokens;
         return item;
       });
     } catch (err) {
-      console.error("error_embedding_batch", err);
-      return Promise.all(filtered_inputs.map((item) => this.embed(item.embed_input)));
+      console.error("error_processing_batch", err);
+      return Promise.all(batch_inputs.map(async (item) => {
+        try {
+          const result = await this.pipeline(item.embed_input, { pooling: "mean", normalize: true });
+          item.vec = Array.from(result[0].data).map((val) => Math.round(val * 1e8) / 1e8);
+          item.tokens = (await this.count_tokens(item.embed_input)).tokens;
+          return item;
+        } catch (single_err) {
+          console.error("error_processing_single_item", single_err);
+          return {
+            ...item,
+            vec: [],
+            tokens: 0,
+            error: single_err.message
+          };
+        }
+      }));
     }
+  }
+  get settings_config() {
+    return transformers_settings_config;
+  }
+};
+var transformers_settings_config = {
+  "[EMBED_MODEL].gpu_batch_size": {
+    name: "GPU Batch Size",
+    type: "number",
+    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
+    placeholder: "Enter number ex. 10"
+    // callback: 'restart',
+  },
+  "legacy_transformers": {
+    name: "Legacy Transformers (no GPU)",
+    type: "toggle",
+    description: "Use legacy transformers (v2) instead of v3.",
+    callback: "embed_model_changed",
+    default: true
   }
 };
 
 // build/transformers_worker_script.js
 var model = null;
-var smart_env = {
-  smart_embed_active_models: {},
-  opts: {
-    modules: {
-      smart_embed_model: {
-        adapters: {
-          transformers: SmartEmbedTransformersAdapter
-        }
-      }
-    }
-  }
-};
 var processing_message = false;
 async function process_message(data) {
   const { method, params, id, worker_id } = data;
@@ -434,7 +647,12 @@ async function process_message(data) {
       case "load":
         console.log("load", params);
         if (!model) {
-          model = new SmartEmbedModel(smart_env, { ...params, adapters: { transformers: SmartEmbedTransformersAdapter }, adapter: "transformers" });
+          model = new SmartEmbedModel({
+            ...params,
+            adapters: { transformers: SmartEmbedTransformersAdapter },
+            adapter: "transformers",
+            settings: {}
+          });
           await model.load();
         }
         result = { model_loaded: true };

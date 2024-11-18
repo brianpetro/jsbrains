@@ -2,20 +2,8 @@ import { SmartEmbedModel } from '../smart_embed_model.js';
 import { SmartEmbedTransformersAdapter } from '../adapters/transformers.js';
 
 let model = null;
-let smart_env = {
-  smart_embed_active_models: {},
-  opts: {
-    modules: {
-      smart_embed_model: {
-        adapters: {
-          transformers: SmartEmbedTransformersAdapter
-        }
-      }
-    }
-  }
-}
 
-async function processMessage(data) {
+async function process_message(data) {
   const { method, params, id, iframe_id } = data;
   try {
     let result;
@@ -25,7 +13,12 @@ async function processMessage(data) {
         break;
       case 'load':
         console.log('load', params);
-        model = new SmartEmbedModel(smart_env, { ...params, adapters: { transformers: SmartEmbedTransformersAdapter }, adapter: 'transformers' });
+        model = new SmartEmbedModel({
+          ...params,
+          adapters: { transformers: SmartEmbedTransformersAdapter },
+          adapter: 'transformers',
+          settings: {}
+        });
         await model.load();
         result = { model_loaded: true };
         break;
@@ -46,4 +39,4 @@ async function processMessage(data) {
     return { id, error: error.message, iframe_id };
   }
 }
-processMessage({ method: 'init' });
+process_message({ method: 'init' });

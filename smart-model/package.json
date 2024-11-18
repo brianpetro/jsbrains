@@ -13,10 +13,12 @@
     "type": "git",
     "url": "brianpetro/jsbrains"
   },
-  "keywords": [
-  ],
+  "keywords": [],
   "bugs": {
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
-  "homepage": "https://jsbrains.org"
+  "homepage": "https://jsbrains.org",
+  "devDependencies": {
+    "ava": "^6.2.0"
+  }
 }

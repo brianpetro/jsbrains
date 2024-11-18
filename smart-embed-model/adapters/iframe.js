@@ -1,23 +1,28 @@
-import { SmartEmbedAdapter } from "./_adapter.js";
+import { SmartEmbedMessageAdapter } from "./_message.js";
 
-export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
-    constructor(smart_embed) {
-        super(smart_embed);
+export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
+    constructor(model) {
+        super(model);
         this.iframe = null;
-        this.message_queue = {};
-        this.message_id = 0;
-        this.connector = null; // override in subclass
         this.origin = window.location.origin;
-        this.iframe_id = `smart_embed_iframe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // this.iframe_id = `smart_embed_iframe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        this.iframe_id = `smart_embed_iframe`;
     }
 
     async load() {
+        // check if iframe already exists
+        const existing_iframe = document.getElementById(this.iframe_id);
+        if(existing_iframe) {
+            // remove existing iframe
+            existing_iframe.remove();
+        }
         // Create and append iframe
         this.iframe = document.createElement('iframe');
         this.iframe.style.display = 'none';
         this.iframe.id = this.iframe_id;
+        // set sandbox attribute
+        this.iframe.sandbox = 'allow-scripts allow-same-origin';
         document.body.appendChild(this.iframe);
-
         // Set up message listener
         window.addEventListener('message', this._handle_message.bind(this));
 
@@ -31,7 +36,7 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
                 window.addEventListener('message', async (event) => {
                     if (event.origin !== '${this.origin}' || event.data.iframe_id !== '${this.iframe_id}') return console.log('message ignored (listener)', event);
                     // Process the message and send the response back
-                    const response = await processMessage(event.data);
+                    const response = await process_message(event.data);
                     window.parent.postMessage({ ...response, iframe_id: '${this.iframe_id}' }, '${this.origin}');
                 });
               </script>
@@ -42,15 +47,20 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
         // Wait for iframe to load
         await new Promise(resolve => this.iframe.onload = resolve);
 
-        // Initialize the model in the iframe
-        await this._send_message('load', {
-            ...this.smart_embed.opts,
+        const load_opts = {
+            ...this.model.opts,
             adapters: null, // cannot clone classes
-            settings: null, // cannot clone Proxy objects
-        });
+            settings: null,
+            batch_size: this.batch_size,
+            use_gpu: this.use_gpu,
+        };
+        console.log({load_opts});
+        // Initialize the model in the iframe
+        await this._send_message('load', load_opts);
+            
         return new Promise(resolve => {
             const check_model_loaded = () => {
-                if (this.smart_embed.model_loaded) {
+                if (this.model.model_loaded) {
                     resolve();
                 } else {
                     setTimeout(check_model_loaded, 100);
@@ -60,46 +70,13 @@ export class SmartEmbedIframeAdapter extends SmartEmbedAdapter {
         });
     }
 
-    async _send_message(method, params) {
-        return new Promise((resolve, reject) => {
-            const id = this.message_id++;
-            this.message_queue[id] = { resolve, reject };
-            this.iframe.contentWindow.postMessage({ method, params, id, iframe_id: this.iframe_id }, this.origin);
-        });
+    _post_message(message_data) {
+        this.iframe.contentWindow.postMessage({ ...message_data, iframe_id: this.iframe_id }, this.origin);
     }
 
     _handle_message(event) {
         if (event.origin !== this.origin || event.data.iframe_id !== this.iframe_id) return;
-        
         const { id, result, error } = event.data;
-        if (result?.model_loaded) {
-            console.log('model loaded');
-            this.smart_embed.model_loaded = true;
-        }
-        if (this.message_queue[id]) {
-            if (error) {
-                this.message_queue[id].reject(new Error(error));
-            } else {
-                this.message_queue[id].resolve(result);
-            }
-            delete this.message_queue[id];
-        }
-    }
-
-    async count_tokens(input) {
-        return this._send_message('count_tokens', { input });
-    }
-
-    async embed_batch(inputs) {
-        const filtered_inputs = inputs.filter(item => item.embed_input?.length > 0);
-        if (!filtered_inputs.length) return [];
-        const embed_inputs = filtered_inputs.map(item => ({ embed_input: item.embed_input }));
-        const result = await this._send_message('embed_batch', { inputs: embed_inputs });
-
-        return filtered_inputs.map((item, i) => {
-            item.vec = result[i].vec;
-            item.tokens = result[i].tokens;
-            return item;
-        });
+        this._handle_message_result(id, result, error);
     }
 }
