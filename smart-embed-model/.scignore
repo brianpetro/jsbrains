@@ -1,0 +1,3 @@
+# Ignore files when getting folder as context using Smart Context VSCode extension https://github.com/brianpetro/smart-context-vscode
+cl100k_base.json
+connectors/**
