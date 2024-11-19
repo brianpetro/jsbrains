@@ -1,27 +1,65 @@
 /**
- * @class SmartModelAdapter
+ * Base adapter class for SmartModel implementations.
+ * Provides core functionality for state management and settings access.
+ * 
  * @abstract
+ * @class SmartModelAdapter
  */
 export class SmartModelAdapter {
+  /**
+   * Create a SmartModelAdapter instance.
+   * @param {SmartModel} model - The parent SmartModel instance
+   */
   constructor(model) {
     this.model = model;
     this.state = 'unloaded';
   }
+
+  /**
+   * Load the adapter.
+   * @async
+   * @returns {Promise<void>}
+   */
   async load() {
-    // Implement in subclasses if needed
     this.set_state('loaded');
   }
+
+  /**
+   * Unload the adapter.
+   * @returns {void}
+   */
   unload() {
-    // Implement in subclasses if needed
     this.set_state('unloaded');
   }
-  get model_key() { return this.model.model_key; }
-  get model_config() { return this.model.model_config; }
-  get settings() { return this.model.settings; }
-  get model_settings() { return this.settings?.[this.model_key] || {}; }
+
   /**
-   * Set the state of the SmartModel.
-   * @param {string} new_state - The new state to set.
+   * Get the current model key.
+   * @returns {string} Current model identifier
+   */
+  get model_key() { return this.model.model_key; }
+
+  /**
+   * Get the current model configuration.
+   * @returns {Object} Model configuration
+   */
+  get model_config() { return this.model.model_config; }
+
+  /**
+   * Get all settings.
+   * @returns {Object} All settings
+   */
+  get settings() { return this.model.settings; }
+
+  /**
+   * Get model-specific settings.
+   * @returns {Object} Settings for current model
+   */
+  get model_settings() { return this.settings?.[this.model_key] || {}; }
+
+  /**
+   * Set the adapter's state.
+   * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
+   * @throws {Error} If the state is invalid
    */
   set_state(new_state) {
     const valid_states = ['unloaded', 'loading', 'loaded', 'unloading'];

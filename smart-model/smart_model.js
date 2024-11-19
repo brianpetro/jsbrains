@@ -21,15 +21,20 @@
 
 /**
  * Base model class that provides adapter management and configuration functionality.
+ * Handles state transitions, adapter loading/unloading, and settings management.
+ * 
+ * @class SmartModel
  */
 export class SmartModel {
   /**
    * Create a SmartModel instance.
    * @param {Object} opts - Configuration options
-   * @param {string} [opts.adapter] - Initial adapter to load
-   * @param {Object} [opts.adapters] - Map of available adapters
-   * @param {Object} [opts.settings] - Model settings
-   * @param {Object} [opts.model_config] - Model-specific configuration
+   * @param {Object} opts.adapters - Map of adapter names to adapter classes
+   * @param {Object} opts.settings - Model settings configuration
+   * @param {Object} opts.model_config - Model-specific configuration
+   * @param {string} opts.model_config.adapter - Name of the adapter to use
+   * @param {string} [opts.model_key] - Optional model identifier to override settings
+   * @throws {Error} If required options are missing
    */
   constructor(opts = {}) {
     this.opts = opts;
@@ -38,6 +43,11 @@ export class SmartModel {
     this._adapter = null;
   }
   
+  /**
+   * Initialize the model by loading the configured adapter.
+   * @async
+   * @returns {Promise<void>}
+   */
   async initialize() {
     this.load_adapter(this.model_config.adapter);
     await this.load();
@@ -99,6 +109,11 @@ export class SmartModel {
    */
   get settings() { return this.opts.settings; }
 
+  /**
+   * Load the current adapter and transition to loaded state.
+   * @async
+   * @returns {Promise<void>}
+   */
   async load() {
     this.set_state('loading');
     if (!this.adapter?.loaded) {
@@ -107,6 +122,11 @@ export class SmartModel {
     this.set_state('loaded');
   }
 
+  /**
+   * Unload the current adapter and transition to unloaded state.
+   * @async
+   * @returns {Promise<void>}
+   */
   async unload() {
     if (this.adapter?.loaded) {
       this.set_state('unloading');
@@ -116,8 +136,9 @@ export class SmartModel {
   }
 
   /**
-   * Set the state of the SmartModel.
-   * @param {string} new_state - The new state to set.
+   * Set the model's state.
+   * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
+   * @throws {Error} If the state is invalid
    */
   set_state(new_state) {
     const valid_states = ['unloaded', 'loading', 'loaded', 'unloading'];
@@ -126,7 +147,6 @@ export class SmartModel {
     }
     this.state = new_state;
   }
-  // Replace individual state getters/setters with a unified state management
   get is_loading() { return this.state === 'loading'; }
   get is_loaded() { return this.state === 'loaded'; }
   get is_unloading() { return this.state === 'unloading'; }
@@ -140,16 +160,13 @@ export class SmartModel {
    */
   get adapters() { return this.opts.adapters || {}; }
 
-  set_adapter(adapter_name) {
-    const AdapterClass = this.adapters[adapter_name];
-    if (!AdapterClass) {
-        throw new Error(`Adapter "${adapter_name}" not found.`);
-    }
-    if (this._adapter?.constructor.name.toLowerCase() === adapter_name.toLowerCase()) {
-        return; // Adapter already set
-    }
-    this._adapter = new AdapterClass(this);
-  }
+  /**
+   * Load a specific adapter by name.
+   * @async
+   * @param {string} adapter_name - Name of the adapter to load
+   * @throws {Error} If adapter not found or loading fails
+   * @returns {Promise<void>}
+   */
   async load_adapter(adapter_name) {
     this.set_adapter(adapter_name);
     if (!this._adapter.loaded) {
@@ -163,7 +180,23 @@ export class SmartModel {
         }
     }
   }
-   
+
+  /**
+   * Set an adapter instance by name without loading it.
+   * @param {string} adapter_name - Name of the adapter to set
+   * @throws {Error} If adapter not found
+   */
+  set_adapter(adapter_name) {
+    const AdapterClass = this.adapters[adapter_name];
+    if (!AdapterClass) {
+        throw new Error(`Adapter "${adapter_name}" not found.`);
+    }
+    if (this._adapter?.constructor.name.toLowerCase() === adapter_name.toLowerCase()) {
+        return; // Adapter already set
+    }
+    this._adapter = new AdapterClass(this);
+  }
+
   /**
    * Get the current active adapter instance
    * @returns {Object} The active adapter instance
@@ -180,6 +213,11 @@ export class SmartModel {
     return this._adapter;
   }
 
+  /**
+   * Ensure the adapter is ready to execute a method.
+   * @param {string} method - Name of the method to check
+   * @throws {Error} If adapter not loaded or method not implemented
+   */
   ensure_adapter_ready(method) {
     if (!this.adapter) {
       throw new Error('No adapter loaded.');
@@ -189,12 +227,13 @@ export class SmartModel {
     }
   }
 
-
   /**
-   * Delegate method calls to the active adapter.
-   * @param {string} method - The method to call on the adapter.
-   * @param {...any} args - Arguments to pass to the adapter method.
-   * @returns {any} The result of the adapter method call.
+   * Invoke a method on the current adapter.
+   * @async
+   * @param {string} method - Name of the method to call
+   * @param {...any} args - Arguments to pass to the method
+   * @returns {Promise<any>} Result from the adapter method
+   * @throws {Error} If adapter not ready or method fails
    */
   async invoke_adapter_method(method, ...args) {
     this.ensure_adapter_ready(method);
@@ -217,7 +256,7 @@ export class SmartModel {
   }
 
   /**
-   * Process settings configuration with conditionals and prefixes
+   * Process settings configuration with conditionals and prefixes.
    * @param {Object} _settings_config - Raw settings configuration
    * @param {string} [prefix] - Optional prefix for setting keys
    * @returns {Object} Processed settings configuration
@@ -237,7 +276,7 @@ export class SmartModel {
   }
 
   /**
-   * Process individual setting key for prefixes/variables
+   * Process an individual setting key.
    * @param {string} key - Setting key to process
    * @returns {string} Processed setting key
    */
