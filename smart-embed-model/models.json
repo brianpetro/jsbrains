@@ -5,6 +5,24 @@
     "dims": 384,
     "max_tokens": 512,
     "name": "BGE-micro-v2",
+    "description": "Local, 512 tokens, 384 dim (recommended)",
+    "adapter": "transformers"
+  },
+  "TaylorAI/gte-tiny": {
+    "id": "TaylorAI/gte-tiny",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "GTE-tiny",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Mihaiii/Ivysaur": {
+    "id": "Mihaiii/Ivysaur",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Ivysaur",
     "description": "Local, 512 tokens, 384 dim",
     "adapter": "transformers"
   },
