@@ -2,7 +2,6 @@ import test from 'ava';
 import dotenv from 'dotenv';
 import { SmartChatModel } from '../smart_chat_model.js';
 import { SmartChatModelAnthropicAdapter, SmartChatModelAnthropicRequestAdapter, SmartChatModelAnthropicResponseAdapter } from './anthropic.js';
-import platforms from '../platforms.json' assert { type: 'json' };
 
 // Create an instance of SmartChatModel for Anthropic
 const smart_chat_model_anthropic = new SmartChatModel({
@@ -56,7 +55,7 @@ test('SmartChatModelAnthropicRequestAdapter converts OpenAI request to Anthropic
   t.is(anthropic_request.url, 'https://api.anthropic.com/v1/messages');
   t.is(anthropic_request.method, 'POST');
   t.deepEqual(anthropic_request.headers, {
-    ...platforms.anthropic.headers,
+    ...SmartChatModelAnthropicAdapter.config.headers,
     'Content-Type': 'application/json',
     'x-api-key': 'test_api_key'
   });

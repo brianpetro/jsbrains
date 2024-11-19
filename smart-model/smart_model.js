@@ -49,7 +49,7 @@ export class SmartModel {
    * @returns {Promise<void>}
    */
   async initialize() {
-    this.load_adapter(this.model_config.adapter);
+    this.load_adapter(this.adapter_name);
     await this.load();
   }
 
@@ -60,10 +60,42 @@ export class SmartModel {
   validate_opts(opts) {
     if (!opts.adapters) throw new Error("opts.adapters is required");
     if (!opts.settings) throw new Error("opts.settings is required");
-    if (!this.model_config.adapter) {
+    if (!this.adapter_name) {
       throw new Error("model_config.adapter is required");
     }
   }
+
+  /**
+   * Get the current settings
+   * @returns {Object} Current settings
+   */
+  get settings() { return this.opts.settings; }
+
+  /**
+   * Get the current adapter name
+   * @returns {string} Current adapter name
+   */
+  get adapter_name() { return this.model_config.adapter; }
+
+  /**
+   * Get adapter-specific settings.
+   * @returns {Object} Settings for current adapter
+   */
+  get adapter_settings() {
+    if(!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
+    return this.settings[this.adapter_name];
+  }
+
+  get adapter_config() {
+    const base_config = this.adapters[this.adapter_name]?.config;
+    if(!base_config) throw new Error(`Adapter "${this.adapter_name}" not found`);
+    return {
+      ...base_config,
+      ...this.adapter_settings,
+      ...this.opts.adapter_config
+    };
+  }
+
   /**
    * Get the default model key to use
    * @returns {string} Default model identifier
@@ -103,11 +135,10 @@ export class SmartModel {
     };
   }
 
-  /**
-   * Get the current settings
-   * @returns {Object} Current settings
-   */
-  get settings() { return this.opts.settings; }
+  get model_settings() {
+    if(!this.settings[this.model_key]) this.settings[this.model_key] = {};
+    return this.settings[this.model_key];
+  }
 
   /**
    * Load the current adapter and transition to loaded state.
@@ -203,7 +234,7 @@ export class SmartModel {
    * @throws {Error} If adapter not found
    */
   get adapter() {
-    const adapter_name = this.model_config.adapter;
+    const adapter_name = this.adapter_name;
     if (!adapter_name) {
       throw new Error(`Adapter not set for model.`);
     }

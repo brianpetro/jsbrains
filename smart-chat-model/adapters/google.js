@@ -2,6 +2,20 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
 
 export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
 
+  static config = {
+    description: "Google Gemini",
+    type: "API", 
+    api_key_header: "none",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
+    endpoint_streaming: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:streamGenerateContent",
+    streaming: true,
+    actions: true,
+    adapter: "Gemini",
+    models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+    default_model: "gemini-1.5-pro",
+    signup_url: "https://ai.google.dev/"
+  };
+
   get req_adapter() { return SmartChatModelGeminiRequestAdapter; }
   get res_adapter() { return SmartChatModelGeminiResponseAdapter; }
 
@@ -67,11 +81,11 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
   }
   get models_endpoint_method() { return 'GET'; }
   async get_models(refresh=false) {
-    if(!this.platform.models_endpoint){
-      if(Array.isArray(this.platform.models)) return this.platform.models;
-      else throw new Error("models_endpoint or models array is required in platforms.json");
+    if(!this.adapter_settings.models_endpoint){
+      if(Array.isArray(this.adapter_settings.models)) return this.adapter_settings.models;
+      else throw new Error("models_endpoint or adapter_settings.models array is required");
     }
-    if(!refresh && this.platform_settings.models) return this.platform_settings.models; // return cached models if not refreshing
+    if(!refresh && this.adapter_settings.models) return this.adapter_settings.models; // return cached models if not refreshing
     if(!this.api_key) {
       console.warn('No API key provided to retrieve models');
       return [];
@@ -83,7 +97,7 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
         // REMOVED HEADERS
       });
       const model_data = this.parse_model_data(await response.json());
-      this.platform_settings.models = model_data;
+      this.adapter_settings.models = model_data;
       return model_data;
     } catch (error) {
       console.error('Failed to fetch model data:', error);
@@ -93,18 +107,19 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
   parse_model_data(model_data) {
     return model_data.models
       .filter(model => model.name.startsWith('models/gemini'))
-      .map(model => {
+      .reduce((acc, model) => {
         const out = {
           model_name: model.name.split('/').pop(), 
-          key: model.name.split('/').pop(),
+          id: model.name.split('/').pop(),
           max_input_tokens: model.inputTokenLimit,
           max_output_tokens: model.maxOutputTokens,
           description: model.description,
           multimodal: model.name.includes('vision') || model.description.includes('multimodal'),
           raw: model
         };
-        return out;
-      });
+        acc[model.name.split('/').pop()] = out;
+        return acc;
+      }, {});
   }
 }
 

@@ -195,7 +195,18 @@ class SmartChat {
     if(typeof this.env?.actions?.new_user_message === 'function') await this.env.actions.new_user_message(content); // context-retrieval (adds preceding system message if necessary)
     if(typeof this.chats?.new_user_message === 'function') await this.chats.new_user_message(content); // add additional logic here (chat-format-agnostic)
     await this.add_message({role: 'user', content});
-    await this.env.chat_model.complete({});
+    // await this.env.chat_model.complete({}); // v1
+    // retrofitting
+    const messages = await this.get_messages();
+    console.log({messages});
+    // v2 handling
+    const resp = await this.env.chat_model.complete({
+      messages: messages,
+    });
+    console.log({resp});
+    // retrofitting
+    await this.add_message({role: 'assistant', content: resp.choices[0].message.content});
+    this.env.chat_ui.new_message(resp.choices[0].message.content, 'assistant');
   }
 
   // Override these for file-type specific parsing and formatting in subclasses

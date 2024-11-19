@@ -33,6 +33,12 @@ export class SmartModelAdapter {
   }
 
   /**
+   * Get all settings.
+   * @returns {Object} All settings
+   */
+  get settings() { return this.model.settings; }
+
+  /**
    * Get the current model key.
    * @returns {string} Current model identifier
    */
@@ -45,16 +51,24 @@ export class SmartModelAdapter {
   get model_config() { return this.model.model_config; }
 
   /**
-   * Get all settings.
-   * @returns {Object} All settings
-   */
-  get settings() { return this.model.settings; }
-
-  /**
    * Get model-specific settings.
    * @returns {Object} Settings for current model
    */
-  get model_settings() { return this.settings?.[this.model_key] || {}; }
+  get model_settings() { return this.model.model_settings; }
+
+  /**
+   * Get adapter-specific configuration.
+   * @returns {Object} Adapter configuration
+   */
+  get adapter_config() { return this.model.adapter_config; }
+
+  /**
+   * Get adapter-specific settings.
+   * @returns {Object} Adapter settings
+   */
+  get adapter_settings() { return this.model.adapter_settings; }
+
+
 
   /**
    * Set the adapter's state.

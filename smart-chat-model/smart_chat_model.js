@@ -1,61 +1,173 @@
-import { SmartHttpRequest } from "smart-http-request";
-import platforms from "./platforms.json" assert { type: "json" };
 import { SmartModel } from "smart-model";
+import { render as render_settings_component } from "./components/settings.js";
+
+/**
+ * SmartChatModel - A versatile class for handling chat operations using various platform adapters.
+ * @extends SmartModel
+ * 
+ * @example
+ * ```javascript
+ * const chatModel = new SmartChatModel({
+ *   platform_key: 'openai',
+ *   adapters: {
+ *     openai: OpenAIAdapter,
+ *     custom_local: LocalAdapter,
+ *   },
+ *   settings: {
+ *     openai: { api_key: 'your-api-key' },
+ *     custom_local: { hostname: 'localhost', port: 8080 },
+ *   },
+ * });
+ * 
+ * const response = await chatModel.complete({ prompt: "Hello, world!" });
+ * console.log(response);
+ * ```
+ */
 export class SmartChatModel extends SmartModel {
-  constructor(opts){
+  /**
+   * Create a SmartChatModel instance.
+   * @inheritdoc SmartModel
+   * @param {Object} opts - Configuration options.
+   * @param {string} [opts.platform_key] - Platform key to use.
+   * @param {string} [opts.model_key] - Model key to use.
+   * @param {Object} opts.adapters - Map of adapter names to adapter classes.
+   * @param {Object} opts.settings - Model settings configuration.
+   */
+  constructor(opts = {}) {
     super(opts);
-    this._adapters = {};
-    this._http_adapter = null;
   }
-  async complete(req){ return await this.adapter.complete(req); }
-  get_platforms_as_options(){ return Object.keys(platforms).map(key => ({ value: key })); }
-  async get_models(refresh=false){ return await this.adapter.get_models(refresh); }
-  async get_models_as_options(){
-    const models = await this.adapter.get_models();
-    return Object.values(models).map(model => ({ value: model.key }));
+
+  get adapter_name() { return this.platform_key; }
+  get models() { return this.adapter.models; }
+  /**
+   * Complete a chat request using the active adapter.
+   * @param {Object} req - Request parameters.
+   * @returns {Promise<Object>} Completion result.
+   */
+  async complete(req) {
+    return await this.invoke_adapter_method('complete', req);
   }
-  get_models_as_options_sync() {
-    const models = this.adapter.models;
-    return Object.values(models).map(model => ({ value: model.key }));
+
+  /**
+   * Stream chat responses using the active adapter.
+   * @param {Object} req - Request parameters.
+   * @param {Object} handlers - Handlers for streaming events.
+   * @returns {Promise<Object>} Streaming result.
+   */
+  async stream(req, handlers = {}) {
+    return await this.invoke_adapter_method('stream', req, handlers);
   }
-  async stream(req, handlers={}){ return await this.adapter.stream(req, handlers); }
-  stop_stream() { this.adapter.stop_stream(); }
-  async count_tokens(input){ return await this.adapter.count_tokens(input); }
-  re_render_settings(){
-    if(this.opts.re_render_settings) this.opts.re_render_settings();
-    else console.warn('No re-render settings function provided for SmartChatModel');
+
+  /**
+   * Stop an ongoing chat stream.
+   */
+  stop_stream() {
+    this.invoke_adapter_method('stop_stream');
   }
-  async test_api_key(){
-    if(this.adapter.test_api_key) await this.adapter.test_api_key();
+
+  /**
+   * Count tokens in the input using the active adapter.
+   * @param {string} input - Text to tokenize.
+   * @returns {Promise<Object>} Token count result.
+   */
+  async count_tokens(input) {
+    return await this.invoke_adapter_method('count_tokens', input);
+  }
+
+  /**
+   * Get available platforms as dropdown options.
+   * @returns {Array<Object>} Array of platform options.
+   */
+  get_platforms_as_options() {
+    console.log('get_platforms_as_options', this.adapters);
+    return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.config.description || key }));
+  }
+
+  /**
+   * Get available models from the active adapter.
+   * @param {boolean} [refresh=false] - Whether to refresh the model list.
+   * @returns {Promise<Object>} Available models.
+   */
+  async get_models(refresh = false) {
+    return await this.invoke_adapter_method('get_models', refresh);
+  }
+
+
+  /**
+   * Re-render settings UI if the callback is provided.
+   */
+  re_render_settings() {
+    if (this.opts.re_render_settings) {
+      this.opts.re_render_settings();
+    } else {
+      // console.warn('No re-render settings function provided for SmartChatModel');
+      this.render_settings();
+    }
+  }
+
+  /**
+   * Test the API key using the active adapter and re-render settings upon success.
+   */
+  async test_api_key() {
+    if (this.adapter.test_api_key) {
+      await this.adapter.test_api_key();
+    }
     this.re_render_settings();
   }
-  get adapters() { return this.opts.adapters; }
-  get adapter() { 
-    if(!this._adapters[this.platform_key]){
-      this._adapters[this.platform_key] = new this.adapters[this.platform_key](this);
+
+  /**
+   * Get the HTTP adapter, initializing it if necessary.
+   * @returns {SmartHttpRequest} The HTTP adapter instance.
+   */
+
+  /**
+   * Get the current platform configuration.
+   * @returns {Object} Current platform configuration.
+   */
+  get platform() {
+    const AdapterClass = this.adapters[this.platform_key];
+    if (!AdapterClass) {
+      throw new Error(`Platform "${this.platform_key}" not supported`);
     }
-    return this._adapters[this.platform_key];
+    return AdapterClass.config;
   }
-  get http_adapter() {
-    if(!this._http_adapter){
-      if(this.opts.http_adapter) this._http_adapter = this.opts.http_adapter;
-      else this._http_adapter = new SmartHttpRequest();
-    }
-    return this._http_adapter;
-  }
-  get platform() { return platforms[this.platform_key]; }
+
+  /**
+   * Get the current platform key, defaulting to 'openai' if unsupported.
+   * @returns {string} Current platform key.
+   */
   get platform_key() {
     const platform_key = this.opts.platform_key // opts added at init take precedence
       || this.settings.platform_key // then settings
-      || 'openai' // default to openai
-    ;
-    if(this.adapters[platform_key]) return platform_key;
-    else {
-      console.warn(`Platform ${platform_key} not supported, defaulting to openai`);
-      return 'openai'; // default to openai if platform not supported
+      || 'open_router'; // default to open_router
+
+    if (this.adapters[platform_key]) {
+      return platform_key;
+    } else {
+      console.warn(`Platform "${platform_key}" not supported, defaulting to "open_router".`);
+      return 'open_router'; // default to open_router if platform not supported
     }
   }
-  get settings() { return this.opts.settings; }
+
+  get default_model_key() {
+    return this.adapter.constructor.config.default_model;
+  }
+
+  /**
+   * Get the current settings.
+   * @returns {Object} Current settings.
+   */
+  get settings() {
+    return this.opts.settings;
+  }
+
+  reload_model() {
+    if(this.opts.reload_model) this.opts.reload_model();
+  }
+  /**
+   * Get the settings configuration schema.
+   * @returns {Object} Processed settings configuration.
+   */
   get settings_config() {
     const _settings_config = {
       platform_key: {
@@ -64,79 +176,59 @@ export class SmartChatModel extends SmartModel {
         description: "Select a chat model platform to use with Smart Chat.",
         options_callback: 'get_platforms_as_options',
         is_scope: true, // trigger re-render of settings when changed
-        callback: 're_render_settings',
+        // callback: 're_render_settings',
+        callback: 'reload_model',
       },
-      "[CHAT_PLATFORM].model_key": {
-        name: 'Chat Model',
-        type: "dropdown",
-        description: "Select a chat model to use with Smart Chat.",
-        options_callback: 'get_models_as_options_sync',
-        callback: 're_render_settings',
-        conditional: (_this) => !local_platforms.includes(_this.settings.platform_key) && _this.settings.platform_key && _this.settings[_this.settings.platform_key]?.api_key,
-      },
-      "[CHAT_PLATFORM].api_key": {
-        name: 'API Key',
-        type: "password",
-        description: "Enter your API key for the chat model platform.",
-        callback: 'test_api_key',
-        is_scope: true, // trigger re-render of settings when changed (reload models dropdown)
-      },
-      // LOCAL PLATFORM SETTINGS (probably should move to local adapter)
-      "[CHAT_PLATFORM].model_name": {
-        name: 'Model Name',
-        type: "text",
-        description: "Enter the model name for the chat model platform.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
-      "[CHAT_PLATFORM].protocol": {
-        name: 'Protocol',
-        type: "text",
-        description: "Enter the protocol for the local chat model.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
-      "[CHAT_PLATFORM].hostname": {
-        name: 'Hostname',
-        type: "text",
-        description: "Enter the hostname for the local chat model.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
-      "[CHAT_PLATFORM].port": {
-        name: 'Port',
-        type: "number",
-        description: "Enter the port for the local chat model.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
-      "[CHAT_PLATFORM].path": {
-        name: 'Path',
-        type: "text",
-        description: "Enter the path for the local chat model.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
-      "[CHAT_PLATFORM].streaming": {
-        name: 'Streaming',
-        type: "toggle",
-        description: "Enable streaming for the local chat model.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
-      "[CHAT_PLATFORM].max_input_tokens": {
-        name: 'Max Input Tokens',
-        type: "number",
-        description: "Enter the maximum number of input tokens for the chat model.",
-        // callback: 'changed_chat_model',
-        conditional: (_this) => local_platforms.includes(_this.settings.platform_key),
-      },
+      // Merge adapter-specific settings
       ...(this.adapter.settings_config || {}),
-    }
+    };
+
     return this.process_settings_config(_settings_config);
   }
+
+  /**
+   * Process individual setting keys by replacing placeholders with the current platform key.
+   * @param {string} key - The setting key to process.
+   * @returns {string} Processed setting key.
+   */
   process_setting_key(key) {
-    return key.replace(/\[CHAT_PLATFORM\]/g, this.platform_key);
+    return key.replace(/\[CHAT_ADAPTER\]/g, this.adapter_name);
+  }
+  /**
+   * Gets the settings component renderer function.
+   * Uses custom component if provided in opts, otherwise uses default.
+   * @returns {Function} The settings component renderer function
+   */
+  get render_settings_component() {
+    return (typeof this.opts.components?.settings === 'function'
+      ? this.opts.components.settings
+      : render_settings_component
+    ).bind(this.smart_view);
+  }
+  /**
+   * Gets the smart view instance from the environment.
+   * Lazily initializes if not already created.
+   * @returns {SmartView} The smart view instance
+   */
+  get smart_view() {
+    if(!this._smart_view) this._smart_view = this.opts.env.init_module('smart_view'); // Decided: how to better handle this? Should still avoid direct dependency so can re-use platform-level adapters
+    return this._smart_view;
+  }
+  /**
+   * Renders the settings for the collection.
+   * @param {HTMLElement} container - The container element to render the settings into.
+   * @param {Object} opts - Additional options for rendering.
+   * @param {Object} opts.settings_keys - An array of keys to render.
+   */
+  async render_settings(container=this.settings_container, opts = {}) {
+    if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
+    if(!container) throw new Error("Container is required");
+    container.innerHTML = '';
+    container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
+    const frag = await this.render_settings_component(this, opts);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    this.smart_view.on_open_overlay(container);
+    return container;
   }
 }
-const local_platforms = ['custom_local', 'ollama', 'lm_studio'];

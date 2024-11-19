@@ -24,7 +24,6 @@
     "jsdoc": "^4.0.2"
   },
   "workspaces": [
-    "smart-chat-model",
     "smart-chats",
     "smart-chunks",
     "smart-collections",

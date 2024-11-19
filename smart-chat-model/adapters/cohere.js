@@ -1,12 +1,23 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
 export class SmartChatModelCohereAdapter extends SmartChatModelApiAdapter {
+  static config = {
+    description: "Cohere Command-R",
+    type: "API",
+    endpoint: "https://api.cohere.ai/v1/chat",
+    streaming: false,
+    adapter: "Cohere",
+    models_endpoint: "https://api.cohere.ai/v1/models",
+    default_model: "command-r",
+    signup_url: "https://dashboard.cohere.com/welcome/register?redirect_uri=%2Fapi-keys"
+  };
+
   get req_adapter() { return SmartChatModelCohereRequestAdapter; }
   get res_adapter() { return SmartChatModelCohereResponseAdapter; }
 
   async count_tokens(input) {
     const req = {
-      url: `${this.platform.endpoint}/tokenize`,
+      url: `${this.endpoint}/tokenize`,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -18,23 +29,22 @@ export class SmartChatModelCohereAdapter extends SmartChatModelApiAdapter {
     return resp.json.tokens.length;
   }
 
-  get endpoint() {
-    return `${this.platform.endpoint}`;
-  }
-
   parse_model_data(model_data) {
     return model_data.models
       .filter(model => model.name.startsWith('command-'))
-      .map(model => ({
-        model_name: model.name,
-        key: model.name,
-        max_input_tokens: model.context_length,
-        tokenizer_url: model.tokenizer_url,
-        finetuned: model.finetuned,
-        description: `Max input tokens: ${model.context_length}, Finetuned: ${model.finetuned}`,
-        raw: model
-      }))
-      .sort((a, b) => a.model_name.localeCompare(b.model_name));
+      .reduce((acc, model) => {
+        acc[model.name] = {
+          model_name: model.name,
+          id: model.name,
+          max_input_tokens: model.context_length,
+          tokenizer_url: model.tokenizer_url,
+          finetuned: model.finetuned,
+          description: `Max input tokens: ${model.context_length}, Finetuned: ${model.finetuned}`,
+          raw: model
+        };
+        return acc;
+      }, {})
+    ;
   }
 }
 

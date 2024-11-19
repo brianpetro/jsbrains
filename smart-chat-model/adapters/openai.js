@@ -1,13 +1,35 @@
 import { SmartChatModelApiAdapter } from "./_api.js";
 
+/**
+ * Adapter for OpenAI's chat API.
+ * Handles token counting and API communication for OpenAI chat models.
+ * @class SmartChatModelOpenaiAdapter
+ * @extends SmartChatModelApiAdapter
+ */
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
+  static config = {
+    description: "OpenAI",
+    type: "API",
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    streaming: true,
+    actions: true,
+    models_endpoint: "https://api.openai.com/v1/models",
+    default_model: "gpt-4o-mini",
+    signup_url: "https://platform.openai.com/api-keys"
+  };
+  
+  /**
+   * Parse model data from OpenAI API response.
+   * @param {Object} model_data - Raw model data from OpenAI
+   * @returns {Array<Object>} Parsed models
+   */
   parse_model_data(model_data) {
     return model_data.data
       .filter(model => model.id.startsWith('gpt-') && !model.id.includes('-instruct'))
-      .map(model => {
+      .reduce((acc, model) => {
         const out = {
           model_name: model.id,
-          key: model.id,
+          id: model.id,
           multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo') || model.id.startsWith('gpt-4o')
         };
         const m = Object.entries(model_context).find(m => m[0] === model.id || model.id.startsWith(m[0] + '-'));
@@ -15,19 +37,36 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
           out.max_input_tokens = m[1].context;
           out.description = `context: ${m[1].context}, output: ${m[1].max_out}`;
         }
-        return out;
-      })
-      .sort((a, b) => a.model_name.localeCompare(b.model_name))
+        acc[model.id] = out;
+        return acc;
+      }, {})
     ;
   }
+
+  /**
+   * Override the HTTP method for fetching models.
+   * @returns {string} HTTP method
+   */
   get models_endpoint_method() { return 'GET'; }
+
+  /**
+   * Test the API key by fetching models.
+   * @async
+   * @returns {Promise<boolean>} True if API key is valid
+   */
   async test_api_key() {
     const models = await this.get_models();
     return models.length > 0;
   }
+
+  /**
+   * Get the settings configuration for OpenAI adapter.
+   * @returns {Object} Settings configuration object
+   */
   get settings_config() {
     return {
-      "[CHAT_PLATFORM].image_resolution": {
+      ...super.settings_config,
+      "[CHAT_ADAPTER].image_resolution": {
         name: 'Image Resolution',
         type: "dropdown",
         description: "Select the image resolution for the chat model.",
@@ -39,6 +78,7 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     };
   }
 }
+
 // Manual model context for now since OpenAI doesn't provide this info in the API response
 // may require updating when new models are released
 const model_context = {
@@ -127,5 +167,3 @@ const model_context = {
     "max_out": 8192
   }
 };
-
-  

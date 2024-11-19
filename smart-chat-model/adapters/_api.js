@@ -1,35 +1,54 @@
 import { SmartHttpRequest } from "smart-http-request";
 import { SmartStreamer } from '../streamer.js'; // move to smart-http-request???
 import { SmartChatModelAdapter } from './_adapter.js';
+import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
 
 /**
- * Base class for API adapters to handle various chat model platforms.
+ * Base API adapter class for SmartChatModel.
+ * Handles HTTP requests and response processing for remote chat services.
+ * @abstract
+ * @class SmartChatModelApiAdapter
  * @extends SmartChatModelAdapter
  */
 export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
-  constructor(main) {
-    super(main);
-  }
-
+  
   /**
    * Get the request adapter class.
-   * @returns {SmartChatModelRequestAdapter} The request adapter class.
+   * @returns {SmartChatModelRequestAdapter} The request adapter class
    */
   get req_adapter() { return SmartChatModelRequestAdapter; }
 
   /**
    * Get the response adapter class.
-   * @returns {SmartChatModelResponseAdapter} The response adapter class.
+   * @returns {SmartChatModelResponseAdapter} The response adapter class
    */
   get res_adapter() { return SmartChatModelResponseAdapter; }
 
+  /**
+   * Get or initialize the HTTP adapter.
+   * @returns {SmartHttpRequest} The HTTP adapter instance
+   */
   get http_adapter() {
-    if(!this._http_adapter){
-      if(this.main.opts.http_adapter) this._http_adapter = this.main.opts.http_adapter;
-      else this._http_adapter = new SmartHttpRequest();
+    if (!this._http_adapter) {
+      if (this.model.opts.http_adapter) this._http_adapter = this.model.opts.http_adapter;
+      else this._http_adapter = new SmartHttpRequest({ adapter: SmartHttpRequestFetchAdapter });
     }
     return this._http_adapter;
   }
+
+  get settings_config() {
+    return {
+      ...super.settings_config,
+      "[CHAT_ADAPTER].api_key": {
+        name: 'API Key',
+        type: "password",
+        description: "Enter your API key for the chat model platform.",
+        callback: 'test_api_key',
+        is_scope: true, // trigger re-render of settings when changed (reload models dropdown)
+      },
+    };
+  }
+
 
   /**
    * Count the number of tokens in a given request.
@@ -41,32 +60,36 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   /**
    * Get the available models from the platform.
    * @param {boolean} [refresh=false] - Whether to refresh the cached models.
-   * @returns {Promise<Array<Object>>} An array of model objects.
+   * @returns {Promise<Object>} An object of model objects.
    */
   async get_models(refresh=false) {
-    if(!this.platform.models_endpoint){
-      if(Array.isArray(this.platform.models)) return this.platform.models;
-      else throw new Error("models_endpoint or models array is required in platforms.json");
+    if(!this.adapter_settings.models_endpoint){
+      if(typeof this.adapter_settings.models === 'object' && Object.keys(this.adapter_settings.models).length > 0) return this.adapter_settings.models;
+      // else throw new Error("models_endpoint or adapter_settings.models object is required");
     }
-    if(!refresh && this.platform_settings?.models) return this.platform_settings.models; // return cached models if not refreshing
+    if(!refresh && this.adapter_settings?.models) return this.adapter_settings.models; // return cached models if not refreshing
     if(!this.api_key) {
       console.warn('No API key provided to retrieve models');
-      return [];
+      return {};
     }
     try {
-      const response = await this.http_adapter.request({
+      const request_params = {
         url: this.models_endpoint,
         method: this.models_endpoint_method,
         headers: {
           'Authorization': `Bearer ${this.api_key}`,
         },
-      });
+      };
+      console.log('request_params', request_params);
+      const response = await this.http_adapter.request(request_params);
+      console.log('response', response);
       const model_data = this.parse_model_data(await response.json());
-      this.platform_settings.models = model_data;
+      console.log('model_data', model_data);
+      this.adapter_settings.models = model_data;
       return model_data;
     } catch (error) {
       console.error('Failed to fetch model data:', error);
-      return [];
+      return {};
     }
   }
 
@@ -95,10 +118,10 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       ...req,
     });
     const request_params = _req.to_platform();
-    // console.log('request_params', request_params);
+    console.log('request_params', request_params);
     const http_resp = await this.http_adapter.request(request_params);
     if(!http_resp) return null;
-    // console.log('http_resp', http_resp);
+    console.log('http_resp', http_resp);
     const _res = new this.res_adapter(this, await http_resp.json());
     try{
       return _res.to_openai();
@@ -216,7 +239,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   get api_key() {
     return this.main.opts.api_key // opts added at init take precedence
-      || this.platform_settings?.api_key // then platform settings
+      || this.adapter_settings?.api_key // then adapter settings
     ;
   }
 
@@ -225,34 +248,42 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the number of choices.
    * @returns {number} The number of choices.
    */
-  get choices() { return this.platform_settings.choices; }
+  get choices() { return this.adapter_settings.choices; }
 
   /**
    * Get the default model configuration.
    * @returns {Object} The default model configuration.
    */
-  get default_model_config() { return this.models.find(m => m.key === this.model_key) || {}; }
+  get default_model_config() { return Object.values(this.models).find(m => m.id === this.model_key) || {}; }
 
   /**
    * Get the models.
    * @returns {Array} An array of model objects.
    */
-  get models() { return this.platform_settings.models || this.platform.models || []; }
+  get models() {
+    if(typeof this.adapter_settings.models === 'object' && Object.keys(this.adapter_settings.models).length > 0) return this.adapter_settings.models;
+    else {
+      this.get_models(true).then(() => {
+        this.model.re_render_settings();
+      });
+      return {};
+    }
+  }
 
-  get models_endpoint() { return this.platform.models_endpoint; }
+  get models_endpoint() { return this.adapter_config.models_endpoint; }
   get models_endpoint_method() { return 'POST'; }
 
   /**
    * Get the endpoint URL.
    * @returns {string} The endpoint URL.
    */
-  get endpoint() { return this.platform.endpoint; }
+  get endpoint() { return this.adapter_config.endpoint; }
 
   /**
    * Get the streaming endpoint URL.
    * @returns {string} The streaming endpoint URL.
    */
-  get endpoint_streaming() { return this.platform.endpoint_streaming || this.endpoint; }
+  get endpoint_streaming() { return this.adapter_config.endpoint_streaming || this.endpoint; }
 
   /**
    * Get the model key.
@@ -260,7 +291,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   get model_key() {
     return this.main.opts.model_key // opts added at init take precedence
-      || this.platform_settings.model_key // then platform settings
+      || this.adapter_settings.model_key // then adapter settings
     ;
   }
 
@@ -268,32 +299,14 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.platform_settings.max_output_tokens || this.default_model_config.max_output_tokens; }
+  get max_output_tokens() { return this.adapter_settings.max_output_tokens || this.default_model_config.max_output_tokens; }
 
-  /**
-   * Get the platform object.
-   * @returns {Object} The platform object.
-   */
-  get platform() { return this.main.platform; }
-
-  get platform_key() { return this.main.platform_key; }
-
-  /**
-   * Get the platform settings.
-   * @returns {Object} The platform settings.
-   */
-  get platform_settings() {
-    if(!this.settings[this.platform_key]) this.settings[this.platform_key] = {};
-    return this.settings[this.platform_key];
-  }
-
-  get settings() { return this.main.settings; }
 
   /**
    * Get the temperature.
    * @returns {number} The temperature.
    */
-  get temperature() { return this.platform_settings.temperature; }
+  get temperature() { return this.adapter_settings.temperature; }
 }
 
 /**
@@ -369,12 +382,12 @@ export class SmartChatModelRequestAdapter {
   get_headers() {
     const headers = {
       "Content-Type": "application/json",
-      ...(this.adapter.platform.headers || {}),
+      ...(this.adapter.adapter_config.headers || {}),
     };
 
-    if(this.adapter.platform.api_key_header !== 'none') {
-      if (this.adapter.platform.api_key_header){
-        headers[this.adapter.platform.api_key_header] = this.adapter.api_key;
+    if(this.adapter.adapter_config.api_key_header !== 'none') {
+      if (this.adapter.adapter_config.api_key_header){
+        headers[this.adapter.adapter_config.api_key_header] = this.adapter.api_key;
       }else if(this.adapter.api_key) {
         headers['Authorization'] = `Bearer ${this.adapter.api_key}`;
       }

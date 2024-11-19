@@ -3,10 +3,12 @@ var SmartModel = class {
   /**
    * Create a SmartModel instance.
    * @param {Object} opts - Configuration options
-   * @param {string} [opts.adapter] - Initial adapter to load
-   * @param {Object} [opts.adapters] - Map of available adapters
-   * @param {Object} [opts.settings] - Model settings
-   * @param {Object} [opts.model_config] - Model-specific configuration
+   * @param {Object} opts.adapters - Map of adapter names to adapter classes
+   * @param {Object} opts.settings - Model settings configuration
+   * @param {Object} opts.model_config - Model-specific configuration
+   * @param {string} opts.model_config.adapter - Name of the adapter to use
+   * @param {string} [opts.model_key] - Optional model identifier to override settings
+   * @throws {Error} If required options are missing
    */
   constructor(opts = {}) {
     this.opts = opts;
@@ -14,8 +16,13 @@ var SmartModel = class {
     this.state = "unloaded";
     this._adapter = null;
   }
+  /**
+   * Initialize the model by loading the configured adapter.
+   * @async
+   * @returns {Promise<void>}
+   */
   async initialize() {
-    this.load_adapter(this.model_config.adapter);
+    this.load_adapter(this.adapter_name);
     await this.load();
   }
   /**
@@ -28,6 +35,37 @@ var SmartModel = class {
     if (!this.model_config.adapter) {
       throw new Error("model_config.adapter is required");
     }
+  }
+  /**
+   * Get the current settings
+   * @returns {Object} Current settings
+   */
+  get settings() {
+    return this.opts.settings;
+  }
+  /**
+   * Get the current adapter name
+   * @returns {string} Current adapter name
+   */
+  get adapter_name() {
+    return this.model_config.adapter;
+  }
+  /**
+   * Get adapter-specific settings.
+   * @returns {Object} Settings for current adapter
+   */
+  get adapter_settings() {
+    if (!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
+    return this.settings[this.adapter_name];
+  }
+  get adapter_config() {
+    const base_config = this.adapters[this.adapter_name]?.config;
+    if (!base_config) throw new Error(`Adapter "${this.adapter_name}" not found`);
+    return {
+      ...base_config,
+      ...this.adapter_settings,
+      ...this.opts.adapter_config
+    };
   }
   /**
    * Get the default model key to use
@@ -62,13 +100,15 @@ var SmartModel = class {
       ...this.opts.model_config
     };
   }
-  /**
-   * Get the current settings
-   * @returns {Object} Current settings
-   */
-  get settings() {
-    return this.opts.settings;
+  get model_settings() {
+    if (!this.settings[this.model_key]) this.settings[this.model_key] = {};
+    return this.settings[this.model_key];
   }
+  /**
+   * Load the current adapter and transition to loaded state.
+   * @async
+   * @returns {Promise<void>}
+   */
   async load() {
     this.set_state("loading");
     if (!this.adapter?.loaded) {
@@ -76,6 +116,11 @@ var SmartModel = class {
     }
     this.set_state("loaded");
   }
+  /**
+   * Unload the current adapter and transition to unloaded state.
+   * @async
+   * @returns {Promise<void>}
+   */
   async unload() {
     if (this.adapter?.loaded) {
       this.set_state("unloading");
@@ -84,8 +129,9 @@ var SmartModel = class {
     }
   }
   /**
-   * Set the state of the SmartModel.
-   * @param {string} new_state - The new state to set.
+   * Set the model's state.
+   * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
+   * @throws {Error} If the state is invalid
    */
   set_state(new_state) {
     const valid_states = ["unloaded", "loading", "loaded", "unloading"];
@@ -94,7 +140,6 @@ var SmartModel = class {
     }
     this.state = new_state;
   }
-  // Replace individual state getters/setters with a unified state management
   get is_loading() {
     return this.state === "loading";
   }
@@ -115,16 +160,13 @@ var SmartModel = class {
   get adapters() {
     return this.opts.adapters || {};
   }
-  set_adapter(adapter_name) {
-    const AdapterClass = this.adapters[adapter_name];
-    if (!AdapterClass) {
-      throw new Error(`Adapter "${adapter_name}" not found.`);
-    }
-    if (this._adapter?.constructor.name.toLowerCase() === adapter_name.toLowerCase()) {
-      return;
-    }
-    this._adapter = new AdapterClass(this);
-  }
+  /**
+   * Load a specific adapter by name.
+   * @async
+   * @param {string} adapter_name - Name of the adapter to load
+   * @throws {Error} If adapter not found or loading fails
+   * @returns {Promise<void>}
+   */
   async load_adapter(adapter_name) {
     this.set_adapter(adapter_name);
     if (!this._adapter.loaded) {
@@ -137,6 +179,21 @@ var SmartModel = class {
         throw new Error(`Failed to load adapter: ${err.message}`);
       }
     }
+  }
+  /**
+   * Set an adapter instance by name without loading it.
+   * @param {string} adapter_name - Name of the adapter to set
+   * @throws {Error} If adapter not found
+   */
+  set_adapter(adapter_name) {
+    const AdapterClass = this.adapters[adapter_name];
+    if (!AdapterClass) {
+      throw new Error(`Adapter "${adapter_name}" not found.`);
+    }
+    if (this._adapter?.constructor.name.toLowerCase() === adapter_name.toLowerCase()) {
+      return;
+    }
+    this._adapter = new AdapterClass(this);
   }
   /**
    * Get the current active adapter instance
@@ -153,6 +210,11 @@ var SmartModel = class {
     }
     return this._adapter;
   }
+  /**
+   * Ensure the adapter is ready to execute a method.
+   * @param {string} method - Name of the method to check
+   * @throws {Error} If adapter not loaded or method not implemented
+   */
   ensure_adapter_ready(method) {
     if (!this.adapter) {
       throw new Error("No adapter loaded.");
@@ -162,10 +224,12 @@ var SmartModel = class {
     }
   }
   /**
-   * Delegate method calls to the active adapter.
-   * @param {string} method - The method to call on the adapter.
-   * @param {...any} args - Arguments to pass to the adapter method.
-   * @returns {any} The result of the adapter method call.
+   * Invoke a method on the current adapter.
+   * @async
+   * @param {string} method - Name of the method to call
+   * @param {...any} args - Arguments to pass to the method
+   * @returns {Promise<any>} Result from the adapter method
+   * @throws {Error} If adapter not ready or method fails
    */
   async invoke_adapter_method(method, ...args) {
     this.ensure_adapter_ready(method);
@@ -182,7 +246,7 @@ var SmartModel = class {
     });
   }
   /**
-   * Process settings configuration with conditionals and prefixes
+   * Process settings configuration with conditionals and prefixes.
    * @param {Object} _settings_config - Raw settings configuration
    * @param {string} [prefix] - Optional prefix for setting keys
    * @returns {Object} Processed settings configuration
@@ -199,7 +263,7 @@ var SmartModel = class {
     }, {});
   }
   /**
-   * Process individual setting key for prefixes/variables
+   * Process an individual setting key.
    * @param {string} key - Setting key to process
    * @returns {string} Processed setting key
    */
@@ -217,6 +281,24 @@ var models_default = {
     dims: 384,
     max_tokens: 512,
     name: "BGE-micro-v2",
+    description: "Local, 512 tokens, 384 dim (recommended)",
+    adapter: "transformers"
+  },
+  "TaylorAI/gte-tiny": {
+    id: "TaylorAI/gte-tiny",
+    batch_size: 1,
+    dims: 384,
+    max_tokens: 512,
+    name: "GTE-tiny",
+    description: "Local, 512 tokens, 384 dim",
+    adapter: "transformers"
+  },
+  "Mihaiii/Ivysaur": {
+    id: "Mihaiii/Ivysaur",
+    batch_size: 1,
+    dims: 384,
+    max_tokens: 512,
+    name: "Ivysaur",
     description: "Local, 512 tokens, 384 dim",
     adapter: "transformers"
   },
@@ -331,57 +413,90 @@ var SmartEmbedModel = class extends SmartModel {
   /**
    * Create a SmartEmbedModel instance
    * @param {Object} opts - Configuration options
-   * @param {string} [opts.adapter] - Adapter identifier
-   * @param {Object} [opts.adapters] - Available adapters
-   * @param {boolean} [opts.use_gpu] - Enable GPU acceleration
-   * @param {number} [opts.gpu_batch_size] - Batch size for GPU processing
-   * @param {number} [opts.batch_size] - General batch size
+   * @param {Object} [opts.adapters] - Map of available adapter implementations
+   * @param {boolean} [opts.use_gpu] - Whether to enable GPU acceleration
+   * @param {number} [opts.gpu_batch_size] - Batch size when using GPU
+   * @param {number} [opts.batch_size] - Default batch size for processing
    * @param {Object} [opts.model_config] - Model-specific configuration
-   * @param {string} [opts.model_config.adapter] - Adapter to use (e.g. 'openai')
+   * @param {string} [opts.model_config.adapter] - Override adapter type
    * @param {number} [opts.model_config.dims] - Embedding dimensions
    * @param {number} [opts.model_config.max_tokens] - Maximum tokens to process
+   * @param {Object} [opts.settings] - User settings
+   * @param {string} [opts.settings.api_key] - API key for remote models
+   * @param {number} [opts.settings.min_chars] - Minimum text length to embed
    */
   constructor(opts = {}) {
     super(opts);
   }
   /**
-   * Count the number of tokens in the input string.
-   * @param {string} input - The input string to process.
-   * @returns {Promise<number>} A promise that resolves with the number of tokens.
+   * Count tokens in an input string
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   * @property {number} tokens - Number of tokens in input
+   * 
+   * @example
+   * ```javascript
+   * const result = await model.count_tokens("Hello world");
+   * console.log(result.tokens); // 2
+   * ```
    */
   async count_tokens(input) {
     return await this.invoke_adapter_method("count_tokens", input);
   }
   /**
-   * Embed the input into a numerical array.
-   * @param {string|Object} input - The input to embed. Can be a string or an object with an "embed_input" property.
-   * @returns {Promise<Object>} A promise that resolves with an object containing the embedding vector at `vec` and the number of tokens at `tokens`.
+   * Generate embeddings for a single input
+   * @param {string|Object} input - Text or object with embed_input property
+   * @returns {Promise<Object>} Embedding result
+   * @property {number[]} vec - Embedding vector
+   * @property {number} tokens - Token count
+   * 
+   * @example
+   * ```javascript
+   * const result = await model.embed("Hello world");
+   * console.log(result.vec); // [0.1, 0.2, ...]
+   * ```
    */
   async embed(input) {
     if (typeof input === "string") input = { embed_input: input };
     return (await this.embed_batch([input]))[0];
   }
   /**
-   * Embed a batch of inputs into arrays of numerical arrays.
-   * @param {Array<string|Object>} inputs - The array of inputs to embed. Each input can be a string or an object with an "embed_input" property.
-   * @returns {Promise<Array<Object>>} A promise that resolves with an array of objects containing `vec` and `tokens` properties.
+   * Generate embeddings for multiple inputs in batch
+   * @param {Array<string|Object>} inputs - Array of texts or objects with embed_input
+   * @returns {Promise<Array<Object>>} Array of embedding results
+   * @property {number[]} vec - Embedding vector for each input
+   * @property {number} tokens - Token count for each input
+   * 
+   * @example
+   * ```javascript
+   * const results = await model.embed_batch([
+   *   { embed_input: "First text" },
+   *   { embed_input: "Second text" }
+   * ]);
+   * ```
    */
   async embed_batch(inputs) {
     return await this.invoke_adapter_method("embed_batch", inputs);
   }
   /**
-   * Get the current batch size
-   * @returns {number} Batch size for processing
+   * Get the current batch size based on GPU settings
+   * @returns {number} Current batch size for processing
    */
   get batch_size() {
     return this.adapter.batch_size || 1;
   }
+  /** @returns {Object} Map of available embedding models */
   get models() {
     return models_default;
   }
+  /** @returns {string} Default model key if none specified */
   get default_model_key() {
     return "TaylorAI/bge-micro-v2";
   }
+  /**
+   * Get settings configuration schema
+   * @returns {Object} Settings configuration object
+   */
   get settings_config() {
     const _settings_config = {
       model_key: {
@@ -391,15 +506,12 @@ var SmartEmbedModel = class extends SmartModel {
         options_callback: "embed_model.get_embedding_model_options",
         callback: "embed_model_changed",
         default: "TaylorAI/bge-micro-v2"
-        // required: true
       },
       "[EMBED_MODEL].min_chars": {
         name: "Minimum Embedding Length",
         type: "number",
         description: "Minimum length of note to embed.",
         placeholder: "Enter number ex. 300"
-        // callback: 'refresh_embeddings',
-        // required: true,
       },
       ...this.adapter.settings_config || {}
     };
@@ -428,31 +540,75 @@ var SmartEmbedModel = class extends SmartModel {
 
 // ../smart-model/adapters/_adapter.js
 var SmartModelAdapter = class {
+  /**
+   * Create a SmartModelAdapter instance.
+   * @param {SmartModel} model - The parent SmartModel instance
+   */
   constructor(model2) {
     this.model = model2;
     this.state = "unloaded";
   }
+  /**
+   * Load the adapter.
+   * @async
+   * @returns {Promise<void>}
+   */
   async load() {
     this.set_state("loaded");
   }
+  /**
+   * Unload the adapter.
+   * @returns {void}
+   */
   unload() {
     this.set_state("unloaded");
   }
-  get model_key() {
-    return this.model.model_key;
-  }
-  get model_config() {
-    return this.model.model_config;
-  }
+  /**
+   * Get all settings.
+   * @returns {Object} All settings
+   */
   get settings() {
     return this.model.settings;
   }
-  get model_settings() {
-    return this.settings?.[this.model_key] || {};
+  /**
+   * Get the current model key.
+   * @returns {string} Current model identifier
+   */
+  get model_key() {
+    return this.model.model_key;
   }
   /**
-   * Set the state of the SmartModel.
-   * @param {string} new_state - The new state to set.
+   * Get the current model configuration.
+   * @returns {Object} Model configuration
+   */
+  get model_config() {
+    return this.model.model_config;
+  }
+  /**
+   * Get model-specific settings.
+   * @returns {Object} Settings for current model
+   */
+  get model_settings() {
+    return this.model.model_settings;
+  }
+  /**
+   * Get adapter-specific configuration.
+   * @returns {Object} Adapter configuration
+   */
+  get adapter_config() {
+    return this.model.adapter_config;
+  }
+  /**
+   * Get adapter-specific settings.
+   * @returns {Object} Adapter settings
+   */
+  get adapter_settings() {
+    return this.model.adapter_settings;
+  }
+  /**
+   * Set the adapter's state.
+   * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
+   * @throws {Error} If the state is invalid
    */
   set_state(new_state) {
     const valid_states = ["unloaded", "loading", "loaded", "unloading"];
@@ -478,16 +634,46 @@ var SmartModelAdapter = class {
 
 // adapters/_adapter.js
 var SmartEmbedAdapter = class extends SmartModelAdapter {
+  /**
+   * Create adapter instance
+   * @param {SmartEmbedModel} model - Parent model instance
+   */
   constructor(model2) {
     super(model2);
     this.smart_embed = model2;
   }
+  /**
+   * Count tokens in input text
+   * @abstract
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   * @property {number} tokens - Number of tokens in input
+   * @throws {Error} If not implemented by subclass
+   */
   async count_tokens(input) {
     throw new Error("count_tokens method not implemented");
   }
+  /**
+   * Generate embeddings for single input
+   * @abstract
+   * @param {string|Object} input - Text to embed
+   * @returns {Promise<Object>} Embedding result
+   * @property {number[]} vec - Embedding vector
+   * @property {number} tokens - Number of tokens in input
+   * @throws {Error} If not implemented by subclass
+   */
   async embed(input) {
     throw new Error("embed method not implemented");
   }
+  /**
+   * Generate embeddings for multiple inputs
+   * @abstract
+   * @param {Array<string|Object>} inputs - Texts to embed
+   * @returns {Promise<Array<Object>>} Array of embedding results
+   * @property {number[]} vec - Embedding vector for each input
+   * @property {number} tokens - Number of tokens in each input
+   * @throws {Error} If not implemented by subclass
+   */
   async embed_batch(inputs) {
     throw new Error("embed_batch method not implemented");
   }
@@ -516,15 +702,27 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
 
 // adapters/transformers.js
 var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
+  /**
+   * Create transformers adapter instance
+   * @param {SmartEmbedModel} model - Parent model instance
+   */
   constructor(model2) {
     super(model2);
     this.pipeline = null;
     this.tokenizer = null;
   }
+  /**
+   * Load model and tokenizer
+   * @returns {Promise<void>}
+   */
   async load() {
     await this.load_transformers();
     this.loaded = true;
   }
+  /**
+   * Unload model and free resources
+   * @returns {Promise<void>}
+   */
   async unload() {
     if (this.pipeline) {
       if (this.pipeline.destroy) await this.pipeline.destroy();
@@ -535,6 +733,11 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     }
     this.loaded = false;
   }
+  /**
+   * Initialize transformers pipeline and tokenizer
+   * @private
+   * @returns {Promise<void>}
+   */
   async load_transformers() {
     const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2");
     env.allowLocalModels = false;
@@ -552,11 +755,21 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     this.pipeline = await pipeline("feature-extraction", this.model_key, pipeline_opts);
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
   }
+  /**
+   * Count tokens in input text
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   */
   async count_tokens(input) {
     if (!this.tokenizer) await this.load();
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
+  /**
+   * Generate embeddings for multiple inputs
+   * @param {Array<Object>} inputs - Array of input objects
+   * @returns {Promise<Array<Object>>} Processed inputs with embeddings
+   */
   async embed_batch(inputs) {
     if (!this.pipeline) await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
@@ -573,6 +786,12 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     }
     return await this._process_batch(filtered_inputs);
   }
+  /**
+   * Process a single batch of inputs
+   * @private
+   * @param {Array<Object>} batch_inputs - Batch of inputs to process
+   * @returns {Promise<Array<Object>>} Processed batch results
+   */
   async _process_batch(batch_inputs) {
     const tokens = await Promise.all(batch_inputs.map((item) => this.count_tokens(item.embed_input)));
     const embed_inputs = await Promise.all(batch_inputs.map(async (item, i) => {
@@ -615,6 +834,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       }));
     }
   }
+  /** @returns {Object} Settings configuration for transformers adapter */
   get settings_config() {
     return transformers_settings_config;
   }
@@ -625,7 +845,6 @@ var transformers_settings_config = {
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter number ex. 10"
-    // callback: 'restart',
   },
   "legacy_transformers": {
     name: "Legacy Transformers (no GPU)",
