@@ -4,92 +4,158 @@ SmartEmbedModel is a versatile and convenient interface for utilizing various em
 
 ## Features
 
-- Support for multiple embedding models
+- Support for multiple embedding models (local and API-based)
 - Easy-to-use API for embedding text
-- Batch processing capabilities
-- Token counting functionality
+- Batch processing capabilities with GPU acceleration
+- Token counting and management
 - Flexible configuration options
 - Support for both local and API-based models
+- WebGPU acceleration for supported models
+- Iframe and Web Worker isolation options
+
+## Installation
+
+```bash
+npm install smart-embed
+```
+
+## Quick Start
+
+```javascript
+import { SmartEmbedModel } from 'smart-embed';
+
+// Create model instance
+const embed_model = new SmartEmbedModel({
+  model_key: 'TaylorAI/bge-micro-v2', // Default local model
+  use_gpu: true, // Enable WebGPU acceleration if available
+});
+
+// Generate embeddings
+const embeddings = await embed_model.embed("Your text here");
+console.log(embeddings.vec); // Access embedding vector
+console.log(embeddings.tokens); // Access token count
+```
 
 ## Configuration
 
-SmartEmbedModel can be configured with various options (`opts{}`):
+SmartEmbedModel can be configured with various options:
 
-### Adapters
-
-- `adapters{}`: Available adapters. Default adapters include:
-  - `transformers`
-  - `openai`
-  - `transformers_iframe`
-  - `transformers_worker`
-
-### Model Configuration
-
-- `model_key`: The specific model identifier.
-- `model_config{}`: Overrides defaults in `models.json`.
-  - `adapter`: Selects the adapter to use (e.g., `transformers_iframe`).
-
-### Settings
-
-- `settings{}`: Overrides defaults in `settings_config`.
-  - `model_key`: The model key to use if not set directly.
-
-### Batch and Token Settings
-
-- `batch_size`: Number of inputs per batch.
-- `max_tokens`: Maximum tokens the model can handle.
-- `use_gpu`: Enable GPU acceleration.
-- `gpu_batch_size`: Batch size when GPU is enabled.
-
-## Available Models
-
-The available models are defined in the `models.json` file. Some of the included models are:
-
-- TaylorAI/bge-micro-v2
-- andersonbcdefg/bge-small-4096
-- Xenova/jina-embeddings-v2-base-zh
-- text-embedding-3-small
-- text-embedding-3-large
-- And more...
-
-## Adapters
-
-SmartEmbedModel uses adapters to interface with different embedding models. The available adapters are:
-
-- `transformers`: Use the `transformers` library to interface with embedding models
-  - `transformers_iframe`: Use the `transformers` library in an iframe
-  - `transformers_worker`: Use the `transformers` library in a web worker
-- `openai`: Use the `openai` library to interface with embedding models
-
-
-### SmartEmbedAdapter
-
-Base class for all adapters. Adapters must implement the following methods:
-
-- `load()`: Initialize and load the model.
-- `count_tokens(input: string | Object): Promise<number | Object>`: Count tokens in the input.
-- `embed(input: string | Object): Promise<Object>`: Embed a single input.
-- `embed_batch(inputs: Array<Object>): Promise<Array<Object>>`: Embed a batch of inputs.
-- `unload()`: Clean up and unload the model.
-
-### OpenAI Adapter
-
-Uses OpenAI's API for embeddings.
+### Core Options
 
 ```javascript
-const embed_model = new SmartEmbedModel({
-  model_key: 'text-embedding-ada-002',
+const model = new SmartEmbedModel({
+  // Model Selection
+  model_key: 'TaylorAI/bge-micro-v2', // Model identifier
+  
+  // Performance Options
+  use_gpu: true, // Enable WebGPU acceleration
+  batch_size: 32, // Default batch size
+  gpu_batch_size: 10, // Batch size when using GPU
+  
+  // Model Configuration
+  model_config: {
+    adapter: 'transformers', // Override default adapter
+    dims: 384, // Override embedding dimensions
+    max_tokens: 512 // Maximum tokens per input
+  },
+  
+  // Custom Settings
   settings: {
-    api_key: 'YOUR_OPENAI_API_KEY',
-  },
-  adapters: {
-    openai: SmartEmbedOpenAIAdapter,
-  },
+    api_key: 'YOUR_API_KEY', // For API-based models
+    min_chars: 300 // Minimum text length to embed
+  }
 });
 ```
 
+### Adapter Types
 
+1. **Transformers Adapter** - Local model processing
+```javascript
+import { SmartEmbedTransformersAdapter } from 'smart-embed-model/adapters/transformers';
 
+const model = new SmartEmbedModel({
+  model_key: 'TaylorAI/bge-micro-v2',
+  adapters: {
+    transformers: SmartEmbedTransformersAdapter
+  }
+});
+```
+
+2. **OpenAI Adapter** - API-based processing
+```javascript
+import { SmartEmbedOpenAIAdapter } from 'smart-embed-model/adapters/openai';
+
+const model = new SmartEmbedModel({
+  model_key: 'text-embedding-3-small',
+  settings: {
+    openai_api_key: 'YOUR_API_KEY'
+  },
+  adapters: {
+    openai: SmartEmbedOpenAIAdapter
+  }
+});
+```
+
+3. **Iframe/Worker Adapters** - Isolated processing
+```javascript
+import { SmartEmbedTransformersIframeAdapter } from 'smart-embed-model/adapters/transformers_iframe';
+
+const model = new SmartEmbedModel({
+  model_key: 'TaylorAI/bge-micro-v2',
+  adapters: {
+    transformers_iframe: SmartEmbedTransformersIframeAdapter
+  }
+});
+```
+
+## Available Models
+
+The library includes support for various models:
+
+### Local Models
+- `TaylorAI/bge-micro-v2` (Default)
+- `andersonbcdefg/bge-small-4096`
+- `Xenova/jina-embeddings-v2-base-zh`
+
+### API Models
+- `text-embedding-3-small`
+- `text-embedding-3-large`
+- `text-embedding-ada-002`
+
+## API Reference
+
+### Core Methods
+
+```javascript
+// Generate embeddings for single input
+const result = await model.embed("Your text here");
+
+// Process multiple inputs in batch
+const results = await model.embed_batch([
+  { embed_input: "First text" },
+  { embed_input: "Second text" }
+]);
+
+// Count tokens in text
+const tokens = await model.count_tokens("Your text here");
+```
+
+### Advanced Usage
+
+```javascript
+// GPU acceleration with custom batch size
+const model = new SmartEmbedModel({
+  use_gpu: true,
+  gpu_batch_size: 16,
+  model_config: {
+    max_tokens: 1024
+  }
+});
+
+// Automatic token truncation
+const long_text = "...very long text...";
+const result = await model.embed(long_text); // Automatically truncated if needed
+```
 
 ## License
 

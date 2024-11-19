@@ -1,16 +1,36 @@
 import { SmartEmbedAdapter } from "./_adapter.js";
 import { SmartHttpRequest } from "smart-http-request";
 import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
+
 /**
- * Base adapter class for API-based embedding models
+ * Base adapter class for API-based embedding models (e.g. OpenAI)
+ * Handles HTTP requests and response processing for remote embedding services
  * @extends SmartEmbedAdapter
+ * 
+ * @example
+ * ```javascript
+ * class MyAPIAdapter extends SmartEmbedModelApiAdapter {
+ *   async prepare_embed_input(input) {
+ *     return input.toLowerCase();
+ *   }
+ *   
+ *   prepare_request_body(inputs) {
+ *     return { texts: inputs };
+ *   }
+ *   
+ *   parse_response(resp) {
+ *     return resp.embeddings;
+ *   }
+ * }
+ * ```
  */
 export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
 
+  /** @returns {string} API endpoint URL */
   get endpoint() { return this.model_config.endpoint; }
 
   /**
-   * Get HTTP request adapter
+   * Get HTTP request adapter instance
    * @returns {SmartHttpRequest} HTTP request handler
    */
   get http_adapter() {
@@ -23,7 +43,6 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
 
   /**
    * Get API key for authentication
-   * Probably should be overridden by subclasses
    * @returns {string} API key
    */
   get api_key() {
@@ -31,16 +50,19 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
   }
 
   /**
-   * Count the number of tokens in the input string.
-   * @param {string} input - The input string to process.
-   * @returns {Promise<number>} A promise that resolves with the number of tokens.
+   * Count tokens in input text
+   * @abstract
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   * @throws {Error} If not implemented by subclass
    */
   async count_tokens(input) {
     throw new Error("count_tokens not implemented");
   }
 
   /**
-   * Estimate token count for input
+   * Estimate token count for input text
+   * Uses character-based estimation (3.7 chars per token)
    * @param {string|Object} input - Input to estimate tokens for
    * @returns {number} Estimated token count
    */
@@ -53,6 +75,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
    * Process a batch of inputs for embedding
    * @param {Array<Object>} inputs - Array of input objects
    * @returns {Promise<Array<Object>>} Processed inputs with embeddings
+   * @throws {Error} If API key is not set
    */
   async embed_batch(inputs) {
     if(!this.api_key) throw new Error("API key not set");
@@ -71,18 +94,41 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     });
   }
 
+  /**
+   * Prepare input text for embedding
+   * @abstract
+   * @param {string} embed_input - Raw input text
+   * @returns {Promise<string>} Processed input text
+   * @throws {Error} If not implemented by subclass
+   */
   async prepare_embed_input(embed_input) {
     throw new Error("prepare_embed_input not implemented");
   }
 
+  /**
+   * Prepare batch of inputs
+   * @param {Array<Object>} items - Array of input items
+   * @returns {Promise<Array<string>>} Processed input texts
+   */
   prepare_batch_input(items) {
     return items.map(item => this.prepare_embed_input(item.embed_input));
   }
 
+  /**
+   * Prepare request body for API call
+   * @abstract
+   * @param {Array<string>} embed_input - Processed input texts
+   * @returns {Object} Request body object
+   * @throws {Error} If not implemented by subclass
+   */
   prepare_request_body(embed_input) {
     throw new Error("prepare_request_body not implemented");
   }
 
+  /**
+   * Prepare request headers
+   * @returns {Object} Headers object with authorization
+   */
   prepare_request_headers() {
     let headers = {
       "Content-Type": "application/json",
@@ -94,6 +140,11 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     return headers;
   }
 
+  /**
+   * Make embedding request to API
+   * @param {Array<string>} embed_input - Processed input texts
+   * @returns {Promise<Array<Object>|null>} Embedding results or null on error
+   */
   async request_embedding(embed_input) {
     embed_input = embed_input.filter(input => input !== null && input.length > 0);
     if (embed_input.length === 0) {
@@ -110,14 +161,33 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     return this.parse_response(resp);
   }
 
+  /**
+   * Parse API response
+   * @abstract
+   * @param {Object} resp - API response object
+   * @returns {Array<Object>} Parsed embedding results
+   * @throws {Error} If not implemented by subclass
+   */
   parse_response(resp) {
     throw new Error("parse_response not implemented");
   }
 
+  /**
+   * Check if response contains error
+   * @abstract
+   * @param {Object} resp_json - Parsed response JSON
+   * @returns {boolean} True if response contains error
+   * @throws {Error} If not implemented by subclass
+   */
   is_error(resp_json) {
     throw new Error("is_error not implemented");
   }
 
+  /**
+   * Parse response body as JSON
+   * @param {Response} resp - Response object
+   * @returns {Promise<Object>} Parsed JSON
+   */
   async get_resp_json(resp) {
     return (typeof resp.json === 'function') ? await resp.json() : await resp.json;
   }
@@ -143,7 +213,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
   }
 
   /**
-   * Handle API request errors
+   * Handle API request errors with retry logic
    * @param {Error|Object} error - Error object
    * @param {Object} req - Original request
    * @param {number} retries - Number of retries attempted
@@ -160,9 +230,12 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     return null;
   }
 
+  /**
+   * Validate API key by making test request
+   * @returns {Promise<boolean>} True if API key is valid
+   */
   async validate_api_key() {
     const resp = await this.embed_batch([{embed_input: "test"}]);
     return Array.isArray(resp) && resp.length > 0 && resp[0].vec !== null;
   }
-
 }

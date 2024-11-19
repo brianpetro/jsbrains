@@ -1,14 +1,36 @@
 import { SmartEmbedMessageAdapter } from "./_message.js";
 
+/**
+ * Adapter for running embedding models in an iframe
+ * Provides isolation and separate context for model execution
+ * @extends SmartEmbedMessageAdapter
+ * 
+ * @example
+ * ```javascript
+ * const model = new SmartEmbedModel({
+ *   adapters: { iframe: SmartEmbedIframeAdapter }
+ * });
+ * ```
+ */
 export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
+    /**
+     * Create iframe adapter instance
+     * @param {SmartEmbedModel} model - Parent model instance
+     */
     constructor(model) {
         super(model);
+        /** @type {HTMLIFrameElement|null} */
         this.iframe = null;
+        /** @type {string} */
         this.origin = window.location.origin;
-        // this.iframe_id = `smart_embed_iframe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        /** @type {string} */
         this.iframe_id = `smart_embed_iframe`;
     }
 
+    /**
+     * Initialize iframe and load model
+     * @returns {Promise<void>}
+     */
     async load() {
         // check if iframe already exists
         const existing_iframe = document.getElementById(this.iframe_id);
@@ -70,10 +92,20 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         });
     }
 
+    /**
+     * Post message to iframe
+     * @protected
+     * @param {Object} message_data - Message to send
+     */
     _post_message(message_data) {
         this.iframe.contentWindow.postMessage({ ...message_data, iframe_id: this.iframe_id }, this.origin);
     }
 
+    /**
+     * Handle message from iframe
+     * @private
+     * @param {MessageEvent} event - Message event
+     */
     _handle_message(event) {
         if (event.origin !== this.origin || event.data.iframe_id !== this.iframe_id) return;
         const { id, result, error } = event.data;

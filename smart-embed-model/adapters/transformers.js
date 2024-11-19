@@ -1,16 +1,46 @@
 import { SmartEmbedAdapter } from "./_adapter.js";
 
+/**
+ * Adapter for local transformer-based embedding models
+ * Uses @xenova/transformers for model loading and inference
+ * @extends SmartEmbedAdapter
+ * 
+ * @example
+ * ```javascript
+ * const model = new SmartEmbedModel({
+ *   model_key: 'TaylorAI/bge-micro-v2',
+ *   adapters: {
+ *     transformers: SmartEmbedTransformersAdapter
+ *   }
+ * });
+ * ```
+ */
 export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
+  /**
+   * Create transformers adapter instance
+   * @param {SmartEmbedModel} model - Parent model instance
+   */
   constructor(model) {
     super(model);
+    /** @type {Pipeline|null} Transformers pipeline instance */
     this.pipeline = null;
+    /** @type {AutoTokenizer|null} Tokenizer instance */
     this.tokenizer = null;
   }
 
+  /**
+   * Load model and tokenizer
+   * @returns {Promise<void>}
+   */
   async load() {
     await this.load_transformers();
     this.loaded = true;
   }
+
+  /**
+   * Unload model and free resources
+   * @returns {Promise<void>}
+   */
   async unload() {
     if (this.pipeline) {
       if (this.pipeline.destroy) await this.pipeline.destroy();
@@ -21,6 +51,12 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     }
     this.loaded = false;
   }
+
+  /**
+   * Initialize transformers pipeline and tokenizer
+   * @private
+   * @returns {Promise<void>}
+   */
   async load_transformers() {
     const { pipeline, env, AutoTokenizer } = await import('@xenova/transformers');
 
@@ -42,12 +78,22 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
   }
 
+  /**
+   * Count tokens in input text
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   */
   async count_tokens(input) {
     if (!this.tokenizer) await this.load();
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
 
+  /**
+   * Generate embeddings for multiple inputs
+   * @param {Array<Object>} inputs - Array of input objects
+   * @returns {Promise<Array<Object>>} Processed inputs with embeddings
+   */
   async embed_batch(inputs) {
     if (!this.pipeline) await this.load();
     const filtered_inputs = inputs.filter(item => item.embed_input?.length > 0);
@@ -67,6 +113,12 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     return await this._process_batch(filtered_inputs);
   }
 
+  /**
+   * Process a single batch of inputs
+   * @private
+   * @param {Array<Object>} batch_inputs - Batch of inputs to process
+   * @returns {Promise<Array<Object>>} Processed batch results
+   */
   async _process_batch(batch_inputs) {
     const tokens = await Promise.all(batch_inputs.map(item => this.count_tokens(item.embed_input)));
     const embed_inputs = await Promise.all(batch_inputs.map(async (item, i) => {
@@ -112,18 +164,22 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     }
   }
 
+  /** @returns {Object} Settings configuration for transformers adapter */
   get settings_config() {
     return transformers_settings_config;
   }
-  
 }
+
+/**
+ * Default settings configuration for transformers adapter
+ * @type {Object}
+ */
 export const transformers_settings_config = {
   "[EMBED_MODEL].gpu_batch_size": {
     name: 'GPU Batch Size',
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter number ex. 10",
-    // callback: 'restart',
   },
   "legacy_transformers": {
     name: 'Legacy Transformers (no GPU)',

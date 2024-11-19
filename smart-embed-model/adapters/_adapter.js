@@ -1,11 +1,14 @@
 import { SmartModelAdapter } from "smart-model/adapters/_adapter.js";
 /**
- * @class SmartEmbedAdapter
- * @extends SmartModelAdapter
+ * Base adapter class for embedding models
  * @abstract
- * @inheritdoc SmartModelAdapter
+ * @extends SmartModelAdapter
  */
 export class SmartEmbedAdapter extends SmartModelAdapter {
+  /**
+   * Create adapter instance
+   * @param {SmartEmbedModel} model - Parent model instance
+   */
   constructor(model) {
     super(model);
     /**
@@ -15,18 +18,43 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
 
   }
 
+  /**
+   * Count tokens in input text
+   * @abstract
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   * @property {number} tokens - Number of tokens in input
+   * @throws {Error} If not implemented by subclass
+   */
   async count_tokens(input) {
     throw new Error('count_tokens method not implemented');
   }
 
+  /**
+   * Generate embeddings for single input
+   * @abstract
+   * @param {string|Object} input - Text to embed
+   * @returns {Promise<Object>} Embedding result
+   * @property {number[]} vec - Embedding vector
+   * @property {number} tokens - Number of tokens in input
+   * @throws {Error} If not implemented by subclass
+   */
   async embed(input) {
     throw new Error('embed method not implemented');
   }
 
+  /**
+   * Generate embeddings for multiple inputs
+   * @abstract
+   * @param {Array<string|Object>} inputs - Texts to embed
+   * @returns {Promise<Array<Object>>} Array of embedding results
+   * @property {number[]} vec - Embedding vector for each input
+   * @property {number} tokens - Number of tokens in each input
+   * @throws {Error} If not implemented by subclass
+   */
   async embed_batch(inputs) {
     throw new Error('embed_batch method not implemented');
   }
-
 
   get dims() { return this.model_config.dims; }
   get max_tokens() { return this.model_config.max_tokens; }
