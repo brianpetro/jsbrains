@@ -16,7 +16,8 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
     adapter: "OpenRouter",
     models_endpoint: "https://openrouter.ai/api/v1/models",
     default_model: "mistralai/mistral-7b-instruct:free",
-    signup_url: "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys"
+    signup_url: "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys",
+    can_use_tools: true,
   };
 
   /**

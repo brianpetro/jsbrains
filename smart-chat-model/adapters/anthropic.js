@@ -30,10 +30,10 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
       "anthropic-beta": "tools-2024-04-04"
     },
     adapter: "Anthropic",
-    actions: true,
     models_endpoint: false,
     default_model: "claude-3-5-sonnet-latest",
-    signup_url: "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
+    signup_url: "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys",
+    can_use_tools: true,
   };
 
   /**

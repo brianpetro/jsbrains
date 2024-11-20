@@ -11,10 +11,10 @@ import { SmartChatModelApiAdapter } from "./_api.js";
  * @property {string} defaults.type - Adapter type ("API")
  * @property {string} defaults.endpoint - OpenAI API endpoint
  * @property {boolean} defaults.streaming - Whether streaming is supported
- * @property {boolean} defaults.actions - Whether function calling is supported
  * @property {string} defaults.models_endpoint - Endpoint for retrieving models
  * @property {string} defaults.default_model - Default model to use
  * @property {string} defaults.signup_url - URL for API key signup
+ * @property {boolean} defaults.can_use_tools - Whether tools can be used
  */
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   static defaults = {
@@ -22,10 +22,10 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     type: "API",
     endpoint: "https://api.openai.com/v1/chat/completions",
     streaming: true,
-    actions: true,
     models_endpoint: "https://api.openai.com/v1/models",
     default_model: "gpt-4o-mini",
-    signup_url: "https://platform.openai.com/api-keys"
+    signup_url: "https://platform.openai.com/api-keys",
+    can_use_tools: true,
   };
   
   /**

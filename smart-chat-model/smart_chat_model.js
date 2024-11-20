@@ -47,6 +47,11 @@ export class SmartChatModel extends SmartModel {
    * @returns {Object} Map of model objects
    */
   get models() { return this.adapter.models; }
+  
+  get can_stream() { return this.adapter.constructor.defaults.streaming; }
+  get can_use_tools() {
+    return this.adapter.constructor.defaults.can_use_tools;
+  }
 
   /**
    * Complete a chat request.
@@ -57,7 +62,6 @@ export class SmartChatModel extends SmartModel {
     return await this.invoke_adapter_method('complete', req);
   }
 
-  get can_stream() { return this.adapter.constructor.defaults.streaming; }
   /**
    * Stream chat responses.
    * @param {Object} req - Request parameters

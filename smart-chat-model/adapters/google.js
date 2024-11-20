@@ -14,11 +14,11 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
     endpoint_streaming: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:streamGenerateContent",
     streaming: true,
-    actions: true,
     adapter: "Gemini",
     models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
     default_model: "gemini-1.5-pro",
-    signup_url: "https://ai.google.dev/"
+    signup_url: "https://ai.google.dev/",
+    can_use_tools: true,
   };
 
   /**

@@ -198,22 +198,21 @@ class SmartChat {
     // await this.env.chat_model.complete({}); // v1
     // retrofitting
     const messages = await this.get_messages();
-    console.log({messages});
+    const request = {
+      messages: messages,
+    };
+    console.log({request});
     // v2 handling
     const resp = this.env.chat_model.can_stream
       ? await this.env.chat_model.stream(
-        {
-          messages: messages,
-        },
+        request,
         {
           chunk: this.chunk_handler.bind(this),
           done: this.done_handler.bind(this),
           error: this.error_handler.bind(this),
         }
       )
-      : await this.env.chat_model.complete({
-        messages: messages,
-      })
+      : await this.env.chat_model.complete(request)
     ;
     console.log({resp});
     // retrofitting
