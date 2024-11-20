@@ -6,7 +6,7 @@ import { SmartChatModelAnthropicAdapter, SmartChatModelAnthropicRequestAdapter, 
 // Create an instance of SmartChatModel for Anthropic
 const smart_chat_model_anthropic = new SmartChatModel({
   settings: {
-    platform_key: 'anthropic',
+    adapter: 'anthropic',
     anthropic: {
       api_key: 'test_api_key',
       model_key: 'claude-2.1',

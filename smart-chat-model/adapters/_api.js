@@ -291,27 +291,17 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   get endpoint_streaming() { return this.adapter_config.endpoint_streaming || this.endpoint; }
 
   /**
-   * Get the model key.
-   * @returns {string} The model key.
-   */
-  get model_key() {
-    return this.main.opts.model_key // opts added at init take precedence
-      || this.adapter_settings.model_key // then adapter settings
-    ;
-  }
-
-  /**
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.adapter_settings.max_output_tokens || 3000; }
+  get max_output_tokens() { return this.adapter_config.max_output_tokens || 3000; }
 
 
   /**
    * Get the temperature.
    * @returns {number} The temperature.
    */
-  get temperature() { return this.adapter_settings.temperature; }
+  get temperature() { return this.adapter_config.temperature; }
 }
 
 /**

@@ -23,15 +23,13 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
 
   /**
    * Get request adapter class
-   * @returns {typeof SmartChatModelGeminiRequestAdapter} Request adapter class
    */
-  get req_adapter() { return SmartChatModelGeminiRequestAdapter; }
+  req_adapter = SmartChatModelGeminiRequestAdapter;
 
   /**
    * Get response adapter class
-   * @returns {typeof SmartChatModelGeminiResponseAdapter} Response adapter class
    */
-  get res_adapter() { return SmartChatModelGeminiResponseAdapter; }
+  res_adapter = SmartChatModelGeminiResponseAdapter;
 
   /**
    * Uses Gemini's dedicated token counting endpoint
@@ -93,10 +91,6 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
 
   get endpoint_streaming() {
     return `https://generativelanguage.googleapis.com/v1beta/models/${this.model_key}:streamGenerateContent?key=${this.api_key}`;
-  }
-
-  get models_endpoint() {
-    return `${this.constructor.defaults.models_endpoint}?key=${this.api_key}`;
   }
 
   /**

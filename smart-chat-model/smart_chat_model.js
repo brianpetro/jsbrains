@@ -8,7 +8,7 @@ import { render as render_settings_component } from "./components/settings.js";
  * @example
  * ```javascript
  * const chatModel = new SmartChatModel({
- *   platform_key: 'openai',
+ *   adapter: 'openai',
  *   adapters: {
  *     openai: OpenAIAdapter,
  *     custom_local: LocalAdapter,
@@ -24,23 +24,19 @@ import { render as render_settings_component } from "./components/settings.js";
  * ```
  */
 export class SmartChatModel extends SmartModel {
+  static defaults = {
+    adapter: 'openai',
+  };
   /**
    * Create a SmartChatModel instance.
    * @param {Object} opts - Configuration options
-   * @param {string} [opts.platform_key] - Platform key to use
-   * @param {string} [opts.model_key] - Model key to use
+   * @param {string} opts.adapter - Adapter to use
    * @param {Object} opts.adapters - Map of adapter names to adapter classes
    * @param {Object} opts.settings - Model settings configuration
    */
   constructor(opts = {}) {
     super(opts);
   }
-
-  /**
-   * Get the adapter name.
-   * @returns {string} Current platform key
-   */
-  get adapter_name() { return this.platform_key; }
 
   /**
    * Get available models.
@@ -107,35 +103,6 @@ export class SmartChatModel extends SmartModel {
   }
 
   /**
-   * Get current platform configuration.
-   * @returns {Object} Platform configuration object
-   */
-  get platform() {
-    const AdapterClass = this.adapters[this.platform_key];
-    if (!AdapterClass) {
-      throw new Error(`Platform "${this.platform_key}" not supported`);
-    }
-    return AdapterClass.defaults;
-  }
-
-  /**
-   * Get current platform key.
-   * @returns {string} Platform key
-   */
-  get platform_key() {
-    const platform_key = this.opts.platform_key // opts added at init take precedence
-      || this.settings.platform_key // then settings
-      || 'open_router'; // default to open_router
-
-    if (this.adapters[platform_key]) {
-      return platform_key;
-    } else {
-      console.warn(`Platform "${platform_key}" not supported, defaulting to "open_router".`);
-      return 'open_router'; // default to open_router if platform not supported
-    }
-  }
-
-  /**
    * Get default model key.
    * @returns {string} Default model key
    */
@@ -165,7 +132,7 @@ export class SmartChatModel extends SmartModel {
    */
   get settings_config() {
     const _settings_config = {
-      platform_key: {
+      adapter: {
         name: 'Chat Model Platform',
         type: "dropdown",
         description: "Select a chat model platform to use with Smart Chat.",

@@ -26,6 +26,9 @@
  * @class SmartModel
  */
 export class SmartModel {
+  static defaults = {
+    // override in sub-class if needed
+  };
   /**
    * Create a SmartModel instance.
    * @param {Object} opts - Configuration options
@@ -60,22 +63,32 @@ export class SmartModel {
   validate_opts(opts) {
     if (!opts.adapters) throw new Error("opts.adapters is required");
     if (!opts.settings) throw new Error("opts.settings is required");
-    if (!this.adapter_name) {
-      throw new Error("model_config.adapter is required");
-    }
   }
 
   /**
    * Get the current settings
    * @returns {Object} Current settings
    */
-  get settings() { return this.opts.settings; }
+  get settings() {
+    if(!this.opts.settings) this.opts.settings = {
+      ...this.constructor.defaults,
+    };
+    return this.opts.settings;
+  }
 
   /**
    * Get the current adapter name
    * @returns {string} Current adapter name
    */
-  get adapter_name() { return this.model_config.adapter; }
+  get adapter_name() {
+    const adapter_key = this.opts.model_config?.adapter
+      || this.opts.adapter
+      || this.settings.adapter
+      || Object.keys(this.adapters)[0]
+    ;
+    if(!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
+    return adapter_key;
+  }
 
   /**
    * Get adapter-specific settings.
@@ -87,8 +100,7 @@ export class SmartModel {
   }
 
   get adapter_config() {
-    const base_config = this.adapters[this.adapter_name]?.defaults;
-    if(!base_config) throw new Error(`Adapter "${this.adapter_name}" not found`);
+    const base_config = this.adapters[this.adapter_name]?.defaults || {};
     return {
       ...base_config,
       ...this.adapter_settings,
@@ -117,6 +129,7 @@ export class SmartModel {
   get model_key() {
     return this.opts.model_key // directly passed opts take precedence
       || this.settings.model_key // then settings
+      || this.adapter_config.model_key // then adapter config
       || this.default_model_key // then default
     ;
   }
@@ -127,10 +140,10 @@ export class SmartModel {
    */
   get model_config() {
     const model_key = this.model_key;
-    const base_config = this.models[model_key] || {};
+    const base_model_config = this.models[model_key] || {};
     return {
-      ...base_config,
-      ...this.settings,
+      ...this.adapter_config,
+      ...base_model_config,
       ...this.opts.model_config
     };
   }

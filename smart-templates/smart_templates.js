@@ -68,17 +68,17 @@ export class SmartTemplates extends SmartSources {
     return this._chat_model;
   }
   get chat_model_settings() {
-    return this.settings?.chat_model?.[this.settings.chat_model?.platform_key || 'openai'];
+    return this.settings?.chat_model?.[this.settings.chat_model?.adapter || 'openai'];
   }
-  get chat_model_platform_key() {
-    return this.env.settings.smart_templates?.chat_model_platform_key
-    || this.env.settings.chat_model_platform_key
+  get chat_model_adapter_name() {
+    return this.chat_model_settings?.adapter
+    || this.env.settings.chat_model.adapter
     || 'openai';
   }
   get item_type() { return SmartTemplate; }
   get model_config() {
-    return this.env.settings.smart_templates?.[this.chat_model_platform_key]
-    || this.env.settings[this.chat_model_platform_key];
+    return this.env.settings.smart_templates?.[this.chat_model_adapter_name]
+    || this.env.settings[this.chat_model_adapter_name];
   }
   get settings_config() {
     return this.process_settings_config(this.chat_model.settings_config, `chat_model`);

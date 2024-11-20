@@ -44,7 +44,7 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
   get models() {
     if(
       typeof this.adapter_config.models === 'object'
-      && Object.keys(this.adapter_config.models).length > 0
+      && Object.keys(this.adapter_config.models || {}).length > 0
     ) return this.adapter_config.models;
     else {
       return {};

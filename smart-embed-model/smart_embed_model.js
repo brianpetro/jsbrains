@@ -37,6 +37,9 @@ import embed_models from './models.json' assert { type: 'json' };
  * ```
  */
 export class SmartEmbedModel extends SmartModel {
+  static defaults = {
+    model_key: 'TaylorAI/bge-micro-v2',
+  };
   /**
    * Create a SmartEmbedModel instance
    * @param {Object} opts - Configuration options

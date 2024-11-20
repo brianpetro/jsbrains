@@ -10,7 +10,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 // Create an instance of SmartChatModel
 const smart_chat_model = new SmartChatModel({
   settings: {
-    platform_key: 'google_gemini',
+    adapter: 'gemini',
     google_gemini: {
       api_key: 'test_api_key',
       model_key: 'gemini-pro',

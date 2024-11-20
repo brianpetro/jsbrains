@@ -16,7 +16,6 @@ export class SmartThreads extends SmartSources {
    */
   async init() {
     await this.fs.init();
-    await this.chat_model.get_models(); // pre-load models for settings
   }
 
   /**
@@ -45,7 +44,7 @@ export class SmartThreads extends SmartSources {
    */
   get chat_model() {
     if (!this._chat_model) {
-      this._chat_model = new this.env.init_module('smart_chat_model', {
+      this._chat_model = this.env.init_module('smart_chat_model', {
         model_config: {},
         settings: this.chat_model_settings,
         env: this.env,
@@ -55,9 +54,10 @@ export class SmartThreads extends SmartSources {
     return this._chat_model;
   }
   reload_chat_model() {
+    console.log("reload_chat_model");
     this.chat_model.unload();
     this._chat_model = null;
-    this.chat_model = this.init_chat_model();
+    this.render_settings();
   }
 
   get container() { return this._container; }
@@ -80,14 +80,14 @@ export class SmartThreads extends SmartSources {
    * @readonly
    * @returns {Object} settings - Default settings object containing:
    * @returns {Object} settings.chat_model - Chat model configuration
-   * @returns {string} settings.chat_model.platform_key - Default platform
+   * @returns {string} settings.chat_model.adapter - Default adapter
    * @returns {Object} settings.chat_model.openai - OpenAI-specific settings
    * @returns {Object} settings.embed_model - Embedding model configuration
    */
   get default_settings() {
     return {
       chat_model: {
-        platform_key: 'openai',
+        adapter: 'openai',
         openai: {
           model_key: 'gpt-4o',
         },
@@ -112,12 +112,16 @@ export class SmartThreads extends SmartSources {
     return this._fs;
   }
 
-  /**
-   * @property {Function} render_settings_component - Template for settings UI
-   * @readonly
-   */
-  get render_settings_component() {
-    return settings_template.bind(this.smart_view);
+  // /**
+  //  * @property {Function} render_settings_component - Template for settings UI
+  //  * @readonly
+  //  */
+  // get render_settings_component() {
+  //   return settings_template.bind(this.smart_view);
+  // }
+  async render_settings(container=this.settings_container) {
+    if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
+    await this.chat_model.render_settings(this.settings_container);
   }
 
   /**
@@ -125,6 +129,8 @@ export class SmartThreads extends SmartSources {
    * @readonly
    */
   get settings_config() {
-    return this.process_settings_config(this.chat_model.settings_config, `chat_model`);
+    // return this.process_settings_config(this.chat_model.settings_config, `chat_model`);
+    // return this.chat_model.settings_config;
+    return {};
   }
 }
