@@ -200,13 +200,35 @@ class SmartChat {
     const messages = await this.get_messages();
     console.log({messages});
     // v2 handling
-    const resp = await this.env.chat_model.complete({
-      messages: messages,
-    });
+    const resp = this.env.chat_model.can_stream
+      ? await this.env.chat_model.stream(
+        {
+          messages: messages,
+        },
+        {
+          chunk: this.chunk_handler.bind(this),
+          done: this.done_handler.bind(this),
+          error: this.error_handler.bind(this),
+        }
+      )
+      : await this.env.chat_model.complete({
+        messages: messages,
+      })
+    ;
     console.log({resp});
     // retrofitting
-    await this.add_message({role: 'assistant', content: resp.choices[0].message.content});
-    this.env.chat_ui.new_message(resp.choices[0].message.content, 'assistant');
+    this.done_handler(resp.choices[0].message.content);
+  }
+  chunk_handler(text_chunk){
+    this.env.chat_ui.new_message(text_chunk, "assistant", true);
+  }
+  done_handler(full_str){
+    this.add_message({role: "assistant", content: full_str});
+    this.env.chat_ui.new_message(full_str, "assistant");
+  }
+  error_handler(err){
+    this.env.chat_ui.show_notice(err.message);
+    console.error(err);
   }
 
   // Override these for file-type specific parsing and formatting in subclasses
