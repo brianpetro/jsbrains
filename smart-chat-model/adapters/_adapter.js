@@ -11,7 +11,7 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
    * @override in sub-class with adapter-specific default configurations
    * @param {string} id - The adapter identifier
    */
-  static config = {};
+  static defaults = {};
   /**
    * Create a SmartChatModelAdapter instance.
    * @param {SmartChatModel} model - The parent SmartChatModel instance
@@ -28,9 +28,18 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
     this.main = model;
   }
 
+  /**
+   * Get the models.
+   * @returns {Array} An array of model objects.
+   */
   get models() {
-    // throw new Error("models getter not implemented");
-    return this.adapter_settings.models;
+    if(
+      typeof this.adapter_config.models === 'object'
+      && Object.keys(this.adapter_config.models).length > 0
+    ) return this.adapter_config.models;
+    else {
+      return {};
+    }
   }
 
   /**
@@ -84,15 +93,31 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
   }
 
   /**
+   * Validate the parameters for get_models.
+   * @returns {boolean|Array<Object>} True if parameters are valid, otherwise an array of error objects
+   */
+  validate_get_models_params(){
+    return true;
+  }
+
+  /**
    * Get available models as dropdown options synchronously.
    * @returns {Array<Object>} Array of model options.
    */
   get_models_as_options_sync() {
     const models = this.models;
+    const params_valid = this.validate_get_models_params();
+    if(params_valid !== true) return params_valid;
     if(!Object.keys(models || {}).length){
+      this.get_models(true); // refresh models
       return [{value: '', name: 'No models currently available'}];
     }
     return Object.values(models).map(model => ({ value: model.id, name: model.name || model.id })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  refresh_models() {
+    console.log('refresh_models');
+    this.get_models(true);
   }
 
   /**
@@ -106,7 +131,14 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
         type: "dropdown",
         description: "Select a chat model to use with Smart Chat.",
         options_callback: 'adapter.get_models_as_options_sync',
-        callback: 're_render_settings',
+        callback: 'reload_model',
+        default: this.constructor.defaults.default_model,
+      },
+      "[CHAT_ADAPTER].refresh_models": {
+        name: 'Refresh Models',
+        type: "button",
+        description: "Refresh the list of available models.",
+        callback: 'adapter.refresh_models',
       },
     };
   }

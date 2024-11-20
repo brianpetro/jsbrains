@@ -2,7 +2,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
 
 export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
 
-  static config = {
+  static defaults = {
     description: "Google Gemini",
     type: "API", 
     api_key_header: "none",
@@ -77,32 +77,14 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
   }
   
   get models_endpoint() {
-    return `${super.models_endpoint}?key=${this.api_key}`;
+    return `${this.constructor.defaults.models_endpoint}?key=${this.api_key}`;
   }
   get models_endpoint_method() { return 'GET'; }
-  async get_models(refresh=false) {
-    if(!this.adapter_settings.models_endpoint){
-      if(Array.isArray(this.adapter_settings.models)) return this.adapter_settings.models;
-      else throw new Error("models_endpoint or adapter_settings.models array is required");
-    }
-    if(!refresh && this.adapter_settings.models) return this.adapter_settings.models; // return cached models if not refreshing
-    if(!this.api_key) {
-      console.warn('No API key provided to retrieve models');
-      return [];
-    }
-    try {
-      const response = await this.http_adapter.request({
-        url: this.models_endpoint,
-        method: this.models_endpoint_method,
-        // REMOVED HEADERS
-      });
-      const model_data = this.parse_model_data(await response.json());
-      this.adapter_settings.models = model_data;
-      return model_data;
-    } catch (error) {
-      console.error('Failed to fetch model data:', error);
-      return [];
-    }
+  get models_request_params() {
+    return {
+      url: this.models_endpoint,
+      method: this.models_endpoint_method,
+    };
   }
   parse_model_data(model_data) {
     return model_data.models

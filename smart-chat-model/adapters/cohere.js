@@ -1,7 +1,7 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
 export class SmartChatModelCohereAdapter extends SmartChatModelApiAdapter {
-  static config = {
+  static defaults = {
     description: "Cohere Command-R",
     type: "API",
     endpoint: "https://api.cohere.ai/v1/chat",

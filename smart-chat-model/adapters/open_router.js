@@ -1,7 +1,7 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
 export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
-  static config = {
+  static defaults = {
     description: "Open Router",
     type: "API",
     endpoint: "https://openrouter.ai/api/v1/chat/completions",
@@ -32,38 +32,13 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
     return 'https://openrouter.ai/api/v1/chat/completions';
   }
 
-  /**
-   * Get the available models from the platform.
-   * @param {boolean} [refresh=false] - Whether to refresh the cached models.
-   * @returns {Promise<Object>} An object of model objects.
-   */
-  async get_models(refresh=false) {
-    if(!this.adapter_settings.models_endpoint){
-      if(typeof this.adapter_settings.models === 'object' && Object.keys(this.adapter_settings.models).length > 0) return this.adapter_settings.models;
-      // else throw new Error("models_endpoint or adapter_settings.models object is required");
-    }
-    if(!refresh && this.adapter_settings?.models) return this.adapter_settings.models; // return cached models if not refreshing
-    if(!this.api_key) {
-      console.warn('No API key provided to retrieve models');
-      return {};
-    }
-    try {
-      const request_params = {
-        url: this.models_endpoint,
-        method: 'GET',
-      };
-      console.log('request_params', request_params);
-      const response = await this.http_adapter.request(request_params);
-      console.log('response', response);
-      const model_data = this.parse_model_data(await response.json());
-      console.log('model_data', model_data);
-      this.adapter_settings.models = model_data;
-      return model_data;
-    } catch (error) {
-      console.error('Failed to fetch model data:', error);
-      return {};
-    }
+  get models_request_params() {
+    return {
+      url: this.models_endpoint,
+      method: 'GET',
+    };
   }
+
   parse_model_data(model_data) {
     if(model_data.data) {
       model_data = model_data.data;

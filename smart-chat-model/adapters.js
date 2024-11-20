@@ -4,6 +4,7 @@ import { SmartChatModelGeminiAdapter } from './adapters/google.js';
 import { SmartChatModelCohereAdapter } from './adapters/cohere.js';
 import { SmartChatModelOpenRouterAdapter } from './adapters/open_router.js';
 import { SmartChatModelCustomAdapter } from './adapters/_custom.js';
+import { SmartChatModelOllamaAdapter } from './adapters/ollama.js';
 export {
   SmartChatModelAnthropicAdapter,
   SmartChatModelOpenaiAdapter,
@@ -11,4 +12,5 @@ export {
   SmartChatModelCohereAdapter,
   SmartChatModelOpenRouterAdapter,
   SmartChatModelCustomAdapter,
+  SmartChatModelOllamaAdapter,
 };

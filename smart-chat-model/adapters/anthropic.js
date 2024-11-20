@@ -1,7 +1,7 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
 export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
-  static config = {
+  static defaults = {
     description: "Anthropic Claude",
     type: "API",
     endpoint: "https://api.anthropic.com/v1/messages",
@@ -14,12 +14,15 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
     adapter: "Anthropic",
     actions: true,
     models_endpoint: false,
-    default_model: "claude-3.5-sonnet-latest",
+    default_model: "claude-3-5-sonnet-latest",
     signup_url: "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
   };
   get res_adapter() { return SmartChatModelAnthropicResponseAdapter; }
   get req_adapter() { return SmartChatModelAnthropicRequestAdapter; }
   // Implement Anthropic-specific methods here
+  validate_get_models_params() {
+    return true;
+  }
   get_models() {
     return Promise.resolve(this.models);
   }

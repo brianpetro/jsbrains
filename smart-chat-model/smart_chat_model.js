@@ -80,17 +80,17 @@ export class SmartChatModel extends SmartModel {
    */
   get_platforms_as_options() {
     console.log('get_platforms_as_options', this.adapters);
-    return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.config.description || key }));
+    return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
   }
 
-  /**
-   * Get available models from the active adapter.
-   * @param {boolean} [refresh=false] - Whether to refresh the model list.
-   * @returns {Promise<Object>} Available models.
-   */
-  async get_models(refresh = false) {
-    return await this.invoke_adapter_method('get_models', refresh);
-  }
+  // /**
+  //  * Get available models from the active adapter.
+  //  * @param {boolean} [refresh=false] - Whether to refresh the model list.
+  //  * @returns {Promise<Object>} Available models.
+  //  */
+  // async get_models(refresh = false) {
+  //   return await this.invoke_adapter_method('get_models', refresh);
+  // }
 
 
   /**
@@ -129,7 +129,7 @@ export class SmartChatModel extends SmartModel {
     if (!AdapterClass) {
       throw new Error(`Platform "${this.platform_key}" not supported`);
     }
-    return AdapterClass.config;
+    return AdapterClass.defaults;
   }
 
   /**
@@ -150,7 +150,7 @@ export class SmartChatModel extends SmartModel {
   }
 
   get default_model_key() {
-    return this.adapter.constructor.config.default_model;
+    return this.adapter.constructor.defaults.default_model;
   }
 
   /**
@@ -162,6 +162,7 @@ export class SmartChatModel extends SmartModel {
   }
 
   reload_model() {
+    console.log('reload_model', this.opts);
     if(this.opts.reload_model) this.opts.reload_model();
   }
   /**

@@ -7,7 +7,7 @@ import { SmartChatModelApiAdapter } from "./_api.js";
  * @extends SmartChatModelApiAdapter
  */
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
-  static config = {
+  static defaults = {
     description: "OpenAI",
     type: "API",
     endpoint: "https://api.openai.com/v1/chat/completions",

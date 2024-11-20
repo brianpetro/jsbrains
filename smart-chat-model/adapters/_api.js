@@ -57,39 +57,51 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   async count_tokens(req) { throw new Error("count_tokens not implemented"); }
 
+  get models_request_params() {
+    return {
+      url: this.models_endpoint,
+      method: this.models_endpoint_method,
+      headers: {
+        'Authorization': `Bearer ${this.api_key}`,
+      },
+    };
+  }
+  validate_get_models_params() {
+    if(!this.adapter_config.models_endpoint){
+      const err_msg = `${this.model.adapter_name} models endpoint required to retrieve models`;
+      console.warn(err_msg);
+      return [{value: '', name: err_msg}];
+    }
+    if(!this.api_key) {
+      const err_msg = `${this.model.adapter_name} API key required to retrieve models`;
+      console.warn(err_msg);
+      return [{value: '', name: err_msg}];
+    }
+    return true;
+  }
   /**
    * Get the available models from the platform.
    * @param {boolean} [refresh=false] - Whether to refresh the cached models.
    * @returns {Promise<Object>} An object of model objects.
    */
   async get_models(refresh=false) {
-    if(!this.adapter_settings.models_endpoint){
-      if(typeof this.adapter_settings.models === 'object' && Object.keys(this.adapter_settings.models).length > 0) return this.adapter_settings.models;
-      // else throw new Error("models_endpoint or adapter_settings.models object is required");
-    }
-    if(!refresh && this.adapter_settings?.models) return this.adapter_settings.models; // return cached models if not refreshing
-    if(!this.api_key) {
-      console.warn('No API key provided to retrieve models');
-      return {};
-    }
+    if(!refresh
+      && this.adapter_config?.models
+      && typeof this.adapter_config.models === 'object'
+      && Object.keys(this.adapter_config.models).length > 0
+    ) return this.adapter_config.models; // return cached models if not refreshing
     try {
-      const request_params = {
-        url: this.models_endpoint,
-        method: this.models_endpoint_method,
-        headers: {
-          'Authorization': `Bearer ${this.api_key}`,
-        },
-      };
-      console.log('request_params', request_params);
-      const response = await this.http_adapter.request(request_params);
+      console.log('models_request_params', this.models_request_params);
+      const response = await this.http_adapter.request(this.models_request_params);
       console.log('response', response);
       const model_data = this.parse_model_data(await response.json());
       console.log('model_data', model_data);
-      this.adapter_settings.models = model_data;
+      this.adapter_settings.models = model_data; // set to adapter_settings to persist
+      this.model.render_settings(); // re-render settings to update models dropdown
       return model_data;
     } catch (error) {
       console.error('Failed to fetch model data:', error);
-      return {};
+      return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
     }
   }
 
@@ -114,7 +126,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   async complete(req) {
     const _req = new this.req_adapter(this, {
-      ...this.model_config,
+      ...this.model_request_params,
       ...req,
     });
     const request_params = _req.to_platform();
@@ -219,9 +231,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the model configuration.
    * @returns {Object} The model configuration.
    */
-  get model_config() {
+  get model_request_params() {
     return {
-      ...this.default_model_config,
       temperature: this.temperature || 0.3,
       n: this.choices || 1,
       model: this.model_key,
@@ -239,7 +250,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   get api_key() {
     return this.main.opts.api_key // opts added at init take precedence
-      || this.adapter_settings?.api_key // then adapter settings
+      || this.adapter_config?.api_key // then adapter settings
     ;
   }
 
@@ -248,27 +259,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the number of choices.
    * @returns {number} The number of choices.
    */
-  get choices() { return this.adapter_settings.choices; }
+  get choices() { return this.adapter_config.choices; }
 
-  /**
-   * Get the default model configuration.
-   * @returns {Object} The default model configuration.
-   */
-  get default_model_config() { return Object.values(this.models).find(m => m.id === this.model_key) || {}; }
 
-  /**
-   * Get the models.
-   * @returns {Array} An array of model objects.
-   */
-  get models() {
-    if(typeof this.adapter_settings.models === 'object' && Object.keys(this.adapter_settings.models).length > 0) return this.adapter_settings.models;
-    else {
-      this.get_models(true).then(() => {
-        this.model.re_render_settings();
-      });
-      return {};
-    }
-  }
 
   get models_endpoint() { return this.adapter_config.models_endpoint; }
   get models_endpoint_method() { return 'POST'; }
@@ -299,7 +292,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.adapter_settings.max_output_tokens || this.default_model_config.max_output_tokens; }
+  get max_output_tokens() { return this.adapter_settings.max_output_tokens || 3000; }
 
 
   /**

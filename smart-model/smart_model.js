@@ -87,7 +87,7 @@ export class SmartModel {
   }
 
   get adapter_config() {
-    const base_config = this.adapters[this.adapter_name]?.config;
+    const base_config = this.adapters[this.adapter_name]?.defaults;
     if(!base_config) throw new Error(`Adapter "${this.adapter_name}" not found`);
     return {
       ...base_config,
