@@ -144,8 +144,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   async complete(req) {
     const _req = new this.req_adapter(this, {
-      ...this.model_request_params,
       ...req,
+      stream: false,
     });
     const request_params = _req.to_platform();
     console.log('request_params', request_params);
@@ -255,23 +255,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
-   * Get the model configuration.
-   * @returns {Object} The model configuration.
-   */
-  get model_request_params() {
-    return {
-      temperature: this.temperature || 0.3,
-      n: this.choices || 1,
-      model: this.model_key,
-      max_tokens: this.max_output_tokens || 10000,
-      // DO: Needs review
-      top_p: 1,
-      presence_penalty: 0,
-      frequency_penalty: 0,
-    };
-  }
-
-  /**
    * Get the API key.
    * @returns {string} The API key.
    */
@@ -360,7 +343,7 @@ export class SmartChatModelRequestAdapter {
    * @returns {string} Model ID
    */
   get model() {
-    return this._req.model;
+    return this._req.model || this.adapter.model_config.id;
   }
 
   /**
