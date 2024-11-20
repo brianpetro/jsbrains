@@ -35,32 +35,31 @@ export class SmartThreads extends SmartSources {
     return frag;
   }
 
+  get chat_model_settings() {
+    if(!this.env.settings.chat_model) this.env.settings.chat_model = {};
+    return this.env.settings.chat_model;
+  }
   /**
    * @property {Object} chat_model - The AI chat model instance
    * @readonly
    */
   get chat_model() {
     if (!this._chat_model) {
-      this._chat_model = new this.env.opts.modules.smart_chat_model.class({
-        settings: this.settings.chat_model,
-        adapters: this.env.opts.modules.smart_chat_model.adapters,
-        http_adapter: this.env.opts.modules.smart_chat_model.http_adapter,
-        re_render_settings: this.render_settings.bind(this),
+      this._chat_model = new this.env.init_module('smart_chat_model', {
+        model_config: {},
+        settings: this.chat_model_settings,
+        env: this.env,
+        reload_model: this.reload_chat_model.bind(this),
       });
     }
     return this._chat_model;
   }
-
-  /**
-   * @property {Object} chat_model_settings - Settings for the current chat model
-   * @readonly
-   * @returns {Object} Settings object containing:
-   * @returns {string} platform_key - Selected AI platform (e.g., 'openai')
-   * @returns {Object} model_settings - Platform-specific model settings
-   */
-  get chat_model_settings() {
-    return this.settings?.chat_model?.[this.settings.chat_model?.platform_key || 'openai'];
+  reload_chat_model() {
+    this.chat_model.unload();
+    this._chat_model = null;
+    this.chat_model = this.init_chat_model();
   }
+
   get container() { return this._container; }
   set container(container) { this._container = container; }
 
