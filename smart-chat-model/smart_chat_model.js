@@ -26,103 +26,84 @@ import { render as render_settings_component } from "./components/settings.js";
 export class SmartChatModel extends SmartModel {
   /**
    * Create a SmartChatModel instance.
-   * @inheritdoc SmartModel
-   * @param {Object} opts - Configuration options.
-   * @param {string} [opts.platform_key] - Platform key to use.
-   * @param {string} [opts.model_key] - Model key to use.
-   * @param {Object} opts.adapters - Map of adapter names to adapter classes.
-   * @param {Object} opts.settings - Model settings configuration.
+   * @param {Object} opts - Configuration options
+   * @param {string} [opts.platform_key] - Platform key to use
+   * @param {string} [opts.model_key] - Model key to use
+   * @param {Object} opts.adapters - Map of adapter names to adapter classes
+   * @param {Object} opts.settings - Model settings configuration
    */
   constructor(opts = {}) {
     super(opts);
   }
 
-  get adapter_name() { return this.platform_key; }
-  get models() { return this.adapter.models; }
   /**
-   * Complete a chat request using the active adapter.
-   * @param {Object} req - Request parameters.
-   * @returns {Promise<Object>} Completion result.
+   * Get the adapter name.
+   * @returns {string} Current platform key
+   */
+  get adapter_name() { return this.platform_key; }
+
+  /**
+   * Get available models.
+   * @returns {Object} Map of model objects
+   */
+  get models() { return this.adapter.models; }
+
+  /**
+   * Complete a chat request.
+   * @param {Object} req - Request parameters
+   * @returns {Promise<Object>} Completion result
    */
   async complete(req) {
     return await this.invoke_adapter_method('complete', req);
   }
 
   /**
-   * Stream chat responses using the active adapter.
-   * @param {Object} req - Request parameters.
-   * @param {Object} handlers - Handlers for streaming events.
-   * @returns {Promise<Object>} Streaming result.
+   * Stream chat responses.
+   * @param {Object} req - Request parameters
+   * @param {Object} handlers - Event handlers for streaming
+   * @returns {Promise<string>} Complete response text
    */
   async stream(req, handlers = {}) {
     return await this.invoke_adapter_method('stream', req, handlers);
   }
 
   /**
-   * Stop an ongoing chat stream.
+   * Stop active stream.
    */
   stop_stream() {
     this.invoke_adapter_method('stop_stream');
   }
 
   /**
-   * Count tokens in the input using the active adapter.
-   * @param {string} input - Text to tokenize.
-   * @returns {Promise<Object>} Token count result.
+   * Count tokens in input text.
+   * @param {string|Object} input - Text to count tokens for
+   * @returns {Promise<number>} Token count
    */
   async count_tokens(input) {
     return await this.invoke_adapter_method('count_tokens', input);
   }
 
   /**
-   * Get available platforms as dropdown options.
-   * @returns {Array<Object>} Array of platform options.
+   * Get platforms as dropdown options.
+   * @returns {Array<Object>} Array of {value, name} option objects
    */
   get_platforms_as_options() {
     console.log('get_platforms_as_options', this.adapters);
     return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
   }
 
-  // /**
-  //  * Get available models from the active adapter.
-  //  * @param {boolean} [refresh=false] - Whether to refresh the model list.
-  //  * @returns {Promise<Object>} Available models.
-  //  */
-  // async get_models(refresh = false) {
-  //   return await this.invoke_adapter_method('get_models', refresh);
-  // }
-
-
   /**
-   * Re-render settings UI if the callback is provided.
-   */
-  re_render_settings() {
-    if (this.opts.re_render_settings) {
-      this.opts.re_render_settings();
-    } else {
-      // console.warn('No re-render settings function provided for SmartChatModel');
-      this.render_settings();
-    }
-  }
-
-  /**
-   * Test the API key using the active adapter and re-render settings upon success.
+   * Test if API key is valid.
+   * @returns {Promise<boolean>} True if API key is valid
    */
   async test_api_key() {
-    if (this.adapter.test_api_key) {
-      await this.adapter.test_api_key();
-    }
-    this.re_render_settings();
+    await this.invoke_adapter_method('test_api_key');
+    this.render_settings();
   }
 
   /**
-   * Get the HTTP adapter, initializing it if necessary.
-   * @returns {SmartHttpRequest} The HTTP adapter instance.
-   */
-
-  /**
-   * Get the current platform configuration.
-   * @returns {Object} Current platform configuration.
+   * Get current platform configuration.
+   * @returns {Object} Platform configuration object
    */
   get platform() {
     const AdapterClass = this.adapters[this.platform_key];
@@ -133,8 +114,8 @@ export class SmartChatModel extends SmartModel {
   }
 
   /**
-   * Get the current platform key, defaulting to 'openai' if unsupported.
-   * @returns {string} Current platform key.
+   * Get current platform key.
+   * @returns {string} Platform key
    */
   get platform_key() {
     const platform_key = this.opts.platform_key // opts added at init take precedence
@@ -149,25 +130,33 @@ export class SmartChatModel extends SmartModel {
     }
   }
 
+  /**
+   * Get default model key.
+   * @returns {string} Default model key
+   */
   get default_model_key() {
     return this.adapter.constructor.defaults.default_model;
   }
 
   /**
-   * Get the current settings.
-   * @returns {Object} Current settings.
+   * Get current settings.
+   * @returns {Object} Settings object
    */
   get settings() {
     return this.opts.settings;
   }
 
+  /**
+   * Reload model.
+   */
   reload_model() {
     console.log('reload_model', this.opts);
     if(this.opts.reload_model) this.opts.reload_model();
   }
+
   /**
-   * Get the settings configuration schema.
-   * @returns {Object} Processed settings configuration.
+   * Get settings configuration.
+   * @returns {Object} Settings configuration object
    */
   get settings_config() {
     const _settings_config = {
@@ -177,8 +166,8 @@ export class SmartChatModel extends SmartModel {
         description: "Select a chat model platform to use with Smart Chat.",
         options_callback: 'get_platforms_as_options',
         is_scope: true, // trigger re-render of settings when changed
-        // callback: 're_render_settings',
         callback: 'reload_model',
+        default: 'open_router',
       },
       // Merge adapter-specific settings
       ...(this.adapter.settings_config || {}),
@@ -188,17 +177,17 @@ export class SmartChatModel extends SmartModel {
   }
 
   /**
-   * Process individual setting keys by replacing placeholders with the current platform key.
-   * @param {string} key - The setting key to process.
-   * @returns {string} Processed setting key.
+   * Process setting key.
+   * @param {string} key - Setting key
+   * @returns {string} Processed key
    */
   process_setting_key(key) {
     return key.replace(/\[CHAT_ADAPTER\]/g, this.adapter_name);
   }
+
   /**
-   * Gets the settings component renderer function.
-   * Uses custom component if provided in opts, otherwise uses default.
-   * @returns {Function} The settings component renderer function
+   * Get settings component renderer.
+   * @returns {Function} Settings component renderer
    */
   get render_settings_component() {
     return (typeof this.opts.components?.settings === 'function'
@@ -206,20 +195,21 @@ export class SmartChatModel extends SmartModel {
       : render_settings_component
     ).bind(this.smart_view);
   }
+
   /**
-   * Gets the smart view instance from the environment.
-   * Lazily initializes if not already created.
-   * @returns {SmartView} The smart view instance
+   * Get smart view instance.
+   * @returns {SmartView} Smart view instance
    */
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.opts.env.init_module('smart_view'); // Decided: how to better handle this? Should still avoid direct dependency so can re-use platform-level adapters
     return this._smart_view;
   }
+
   /**
-   * Renders the settings for the collection.
-   * @param {HTMLElement} container - The container element to render the settings into.
-   * @param {Object} opts - Additional options for rendering.
-   * @param {Object} opts.settings_keys - An array of keys to render.
+   * Render settings.
+   * @param {HTMLElement} [container] - Container element
+   * @param {Object} [opts] - Render options
+   * @returns {Promise<HTMLElement>} Container element
    */
   async render_settings(container=this.settings_container, opts = {}) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;

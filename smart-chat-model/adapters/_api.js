@@ -9,6 +9,10 @@ import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.
  * @abstract
  * @class SmartChatModelApiAdapter
  * @extends SmartChatModelAdapter
+ * 
+ * @property {SmartHttpRequest} _http_adapter - The HTTP adapter instance
+ * @property {SmartChatModelRequestAdapter} req_adapter - The request adapter class
+ * @property {SmartChatModelResponseAdapter} res_adapter - The response adapter class
  */
 export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   
@@ -36,6 +40,10 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     return this._http_adapter;
   }
 
+  /**
+   * Get the settings configuration for the API adapter.
+   * @returns {Object} Settings configuration object with API key and other settings
+   */
   get settings_config() {
     return {
       ...super.settings_config,
@@ -49,14 +57,18 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     };
   }
 
+  /**
+   * Count tokens in the input text.
+   * @abstract
+   * @param {string|Object} input - Text or message object to count tokens for
+   * @returns {Promise<number>} Number of tokens in the input
+   */
+  async count_tokens(input) { throw new Error("count_tokens not implemented"); }
 
   /**
-   * Count the number of tokens in a given request.
-   * @param {Object} req - The request object.
-   * @throws {Error} Throws an error if not implemented in the subclass.
+   * Get the parameters for requesting available models.
+   * @returns {Object} Request parameters for models endpoint
    */
-  async count_tokens(req) { throw new Error("count_tokens not implemented"); }
-
   get models_request_params() {
     return {
       url: this.models_endpoint,
@@ -66,6 +78,11 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       },
     };
   }
+
+  /**
+   * Validate parameters required for getting models.
+   * @returns {true|Array<Object>} True if valid, array of error objects if invalid
+   */
   validate_get_models_params() {
     if(!this.adapter_config.models_endpoint){
       const err_msg = `${this.model.adapter_name} models endpoint required to retrieve models`;
@@ -79,10 +96,11 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     }
     return true;
   }
+
   /**
-   * Get the available models from the platform.
-   * @param {boolean} [refresh=false] - Whether to refresh the cached models.
-   * @returns {Promise<Object>} An object of model objects.
+   * Get available models from the API.
+   * @param {boolean} [refresh=false] - Whether to refresh cached models
+   * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh=false) {
     if(!refresh
@@ -110,7 +128,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @param {Object} model_data - The raw model data received from OpenAI API.
    * @returns {Array<Object>} An array of parsed model objects with the following properties:
    *   @property {string} model_name - The name/ID of the model as returned by the API.
-   *   @property {string} key - The key used to identify the model (usually same as model_name).
+   *   @property {string} id - The id used to identify the model (usually same as model_name).
    *   @property {boolean} multimodal - Indicates if the model supports multimodal inputs.
    *   @property {number} [max_input_tokens] - The maximum number of input tokens the model can process.
    *   @property {string} [description] - A description of the model's context and output capabilities.
@@ -120,9 +138,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
-   * Completes a chat request.
-   * @param {Object} req - The request object.
-   * @returns {Promise<Object>} The completed chat response in OpenAI format.
+   * Complete a chat request.
+   * @param {Object} req - Request parameters
+   * @returns {Promise<Object>} Completion response in OpenAI format
    */
   async complete(req) {
     const _req = new this.req_adapter(this, {
@@ -145,6 +163,15 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   // STREAMING
+  /**
+   * Stream chat responses.
+   * @param {Object} req - Request parameters
+   * @param {Object} handlers - Event handlers for streaming
+   * @param {Function} handlers.chunk - Handler for text chunks
+   * @param {Function} handlers.error - Handler for errors
+   * @param {Function} handlers.done - Handler for completion
+   * @returns {Promise<string>} Complete response text
+   */
   async stream(req, handlers={}) {
     const _req = new this.req_adapter(this, req);
     const request_params = _req.to_openai();
@@ -184,9 +211,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
-   * Check if the event indicates the end of the stream.
-   * @param {Event} event - The event object.
-   * @returns {boolean} True if the event indicates the end of the stream, false otherwise.
+   * Check if a stream event indicates end of stream.
+   * @param {Event} event - Stream event
+   * @returns {boolean} True if end of stream
    */
   is_end_of_stream(event) {
     if(typeof this.adapter?.is_end_of_stream === 'function') return this.adapter.is_end_of_stream(event);
@@ -194,7 +221,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
-   * Stop the active stream.
+   * Stop active stream.
    */
   stop_stream() {
     if (this.active_stream) {
@@ -204,9 +231,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
-   * Get the text chunk from the stream event.
-   * @param {Event} event - The stream event.
-   * @returns {string} The text chunk.
+   * Extract text chunk from stream event.
+   * @param {Event} event - Stream event
+   * @returns {string} Text chunk
    */
   get_text_chunk_from_stream(event) {
     let resp = null;
@@ -304,12 +331,16 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
 
 /**
  * Base class for request adapters to handle various input schemas and convert them to OpenAI schema.
+ * @class SmartChatModelRequestAdapter
+ * 
+ * @property {SmartChatModelAdapter} adapter - The parent adapter instance
+ * @property {Object} _req - The original request object
  */
 export class SmartChatModelRequestAdapter {
   /**
    * @constructor
-   * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance.
-   * @param {Object} req - The incoming request object.
+   * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance
+   * @param {Object} req - The incoming request object
    */
   constructor(adapter, req = {}) {
     this.adapter = adapter;
@@ -317,60 +348,64 @@ export class SmartChatModelRequestAdapter {
   }
 
   /**
-   * @getter
-   * @returns {Array} An array of message objects.
+   * Get the messages array from the request
+   * @returns {Array<Object>} Array of message objects
    */
   get messages() {
     return this._req.messages || [];
   }
 
   /**
-   * @getter
-   * @returns {string} The model identifier.
+   * Get the model identifier
+   * @returns {string} Model ID
    */
   get model() {
     return this._req.model;
   }
 
   /**
-   * @getter
-   * @returns {number} The temperature setting for response generation.
+   * Get the temperature setting
+   * @returns {number} Temperature value
    */
   get temperature() {
     return this._req.temperature;
   }
 
   /**
-   * @getter
-   * @returns {number} The maximum number of tokens to generate.
+   * Get the maximum tokens setting
+   * @returns {number} Max tokens value
    */
   get max_tokens() {
     return this._req.max_tokens;
   }
 
   /**
-   * @getter
-   * @returns {boolean} Whether to stream the response.
+   * Get the streaming flag
+   * @returns {boolean} Whether to stream responses
    */
   get stream() {
     return this._req.stream;
   }
 
   /**
-   * @getter
-   * @returns {Array} An array of tool objects.
+   * Get the tools array
+   * @returns {Array<Object>|null} Array of tool objects or null
    */
   get tools() {
     return this._req.tools || null;
   }
 
+  /**
+   * Get the tool choice setting
+   * @returns {string|Object|null} Tool choice configuration
+   */
   get tool_choice() {
     return this._req.tool_choice || null;
   }
 
   /**
-   * Get the headers for the request.
-   * @returns {Object} Headers object.
+   * Get request headers
+   * @returns {Object} Headers object
    */
   get_headers() {
     const headers = {
@@ -389,11 +424,15 @@ export class SmartChatModelRequestAdapter {
     return headers;
   }
 
+  /**
+   * Convert request to platform-specific format
+   * @returns {Object} Platform-specific request parameters
+   */
   to_platform() { return this.to_openai(); }
 
   /**
-   * Convert the request to OpenAI schema and include full request parameters.
-   * @returns {Object} Request parameters object in OpenAI schema.
+   * Convert request to OpenAI format
+   * @returns {Object} Request parameters in OpenAI format
    */
   to_openai() {
     const body = {
@@ -410,13 +449,13 @@ export class SmartChatModelRequestAdapter {
       url: this.adapter.endpoint,
       method: 'POST',
       headers: this.get_headers(),
-      body: JSON.stringify(body),
+      body: JSON.stringify(body)
     };
   }
 
   /**
-   * Transform messages to OpenAI format.
-   * @returns {Array} Transformed messages array.
+   * Transform messages to OpenAI format
+   * @returns {Array<Object>} Transformed messages array
    * @private
    */
   _transform_messages_to_openai() {
@@ -424,9 +463,9 @@ export class SmartChatModelRequestAdapter {
   }
 
   /**
-   * Transform a single message to OpenAI format.
-   * @param {Object} message - The message object to transform.
-   * @returns {Object} Transformed message object.
+   * Transform a single message to OpenAI format
+   * @param {Object} message - Message object to transform
+   * @returns {Object} Transformed message object
    * @private
    */
   _transform_single_message_to_openai(message) {
@@ -496,52 +535,89 @@ export class SmartChatModelRequestAdapter {
 
 /**
  * Base class for response adapters to handle various output schemas and convert them to OpenAI schema.
+ * @class SmartChatModelResponseAdapter
+ * 
+ * @property {SmartChatModelAdapter} adapter - The parent adapter instance
+ * @property {Object} _res - The original response object
  */
 export class SmartChatModelResponseAdapter {
   /**
    * @constructor
-   * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance.
-   * @param {Object} res - The response object.
+   * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance
+   * @param {Object} res - The response object
    */
   constructor(adapter, res = {}) {
     this.adapter = adapter;
     this._res = res;
   }
 
+  /**
+   * Get response ID
+   * @returns {string|null} Response ID
+   */
   get id() {
     return this._res.id || null;
   }
 
+  /**
+   * Get response object type
+   * @returns {string|null} Object type
+   */
   get object() {
     return this._res.object || null;
   }
 
+  /**
+   * Get creation timestamp
+   * @returns {number|null} Creation timestamp
+   */
   get created() {
     return this._res.created || null;
   }
 
+  /**
+   * Get response choices
+   * @returns {Array<Object>} Array of choice objects
+   */
   get choices() {
     return this._res.choices || [];
   }
 
+  /**
+   * Get first tool call if present
+   * @returns {Object|null} Tool call object
+   */
   get tool_call() {
     return this.message.tool_calls?.[0] || null;
   }
 
+  /**
+   * Get tool name from first tool call
+   * @returns {string|null} Tool name
+   */
   get tool_name() {
     return this.tool_call?.tool_name || null;
   }
+
+  /**
+   * Get tool call parameters
+   * @returns {Object|null} Tool parameters
+   */
   get tool_call_content() {
     return this.tool_call?.parameters || null;
   }
 
+  /**
+   * Get token usage statistics
+   * @returns {Object|null} Usage statistics
+   */
   get usage() {
     return this._res.usage || null;
   }
 
   /**
-   * Convert the response to OpenAI schema.
-   * @returns {Object} Response object in OpenAI schema.
+   * Convert response to OpenAI format
+   * @returns {Object} Response in OpenAI format
    */
   to_openai() {
     return {

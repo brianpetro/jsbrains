@@ -1,5 +1,10 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
+/**
+ * Adapter for Google's Gemini API.
+ * Handles API communication with Gemini models, including token counting and multimodal inputs.
+ * @extends SmartChatModelApiAdapter
+ */
 export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
 
   static defaults = {
@@ -16,9 +21,21 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     signup_url: "https://ai.google.dev/"
   };
 
+  /**
+   * Get request adapter class
+   * @returns {typeof SmartChatModelGeminiRequestAdapter} Request adapter class
+   */
   get req_adapter() { return SmartChatModelGeminiRequestAdapter; }
+
+  /**
+   * Get response adapter class
+   * @returns {typeof SmartChatModelGeminiResponseAdapter} Response adapter class
+   */
   get res_adapter() { return SmartChatModelGeminiResponseAdapter; }
 
+  /**
+   * Uses Gemini's dedicated token counting endpoint
+   */
   async count_tokens(input) {
     const req = {
       url: `https://generativelanguage.googleapis.com/v1beta/models/${this.model_key}:countTokens?key=${this.api_key}`,
@@ -30,6 +47,10 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     return resp.json.totalTokens;
   }
 
+  /**
+   * Formats input for token counting based on type
+   * @private
+   */
   prepare_token_count_body(input) {
     if (typeof input === 'string') {
       return { contents: [{ parts: [{ text: input }] }] };
@@ -41,6 +62,10 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     throw new Error("Invalid input for count_tokens");
   }
 
+  /**
+   * Transforms message for token counting, handling text and images
+   * @private
+   */
   transform_message_for_token_count(message) {
     return {
       role: message.role === 'assistant' ? 'model' : message.role,
@@ -59,6 +84,9 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     };
   }
 
+  /**
+   * Builds endpoint URLs with model and API key
+   */
   get endpoint() {
     return `https://generativelanguage.googleapis.com/v1beta/models/${this.model_key}:generateContent?key=${this.api_key}`;
   }
@@ -67,18 +95,30 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     return `https://generativelanguage.googleapis.com/v1beta/models/${this.model_key}:streamGenerateContent?key=${this.api_key}`;
   }
 
-  is_end_of_stream(event) {
-    return event.data === '[DONE]';
+  get models_endpoint() {
+    return `${this.constructor.defaults.models_endpoint}?key=${this.api_key}`;
   }
 
+  /**
+   * Extracts text from Gemini's streaming format
+   */
   get_text_chunk_from_stream(event) {
     const data = JSON.parse(event.data);
     return data.candidates[0]?.content?.parts[0]?.text || '';
   }
   
+  /**
+   * Get models endpoint URL with API key
+   * @returns {string} Complete models endpoint URL
+   */
   get models_endpoint() {
     return `${this.constructor.defaults.models_endpoint}?key=${this.api_key}`;
   }
+
+  /**
+   * Get HTTP method for models endpoint
+   * @returns {string} HTTP method ("GET")
+   */
   get models_endpoint_method() { return 'GET'; }
   get models_request_params() {
     return {
@@ -86,6 +126,11 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
       method: this.models_endpoint_method,
     };
   }
+  /**
+   * Parse model data from Gemini API response
+   * @param {Object} model_data - Raw model data from API
+   * @returns {Object} Map of model objects with capabilities and limits
+   */
   parse_model_data(model_data) {
     return model_data.models
       .filter(model => model.name.startsWith('models/gemini'))

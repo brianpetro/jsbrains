@@ -2,6 +2,7 @@ import { SmartModelAdapter } from "smart-model/adapters/_adapter.js";
 
 /**
  * Base adapter class for SmartChatModel implementations.
+ * Provides core functionality for chat model adapters.
  * @abstract
  * @class SmartChatModelAdapter
  * @extends SmartModelAdapter
@@ -9,7 +10,15 @@ import { SmartModelAdapter } from "smart-model/adapters/_adapter.js";
 export class SmartChatModelAdapter extends SmartModelAdapter {
   /**
    * @override in sub-class with adapter-specific default configurations
-   * @param {string} id - The adapter identifier
+   * @property {string} id - The adapter identifier
+   * @property {string} description - Human-readable description
+   * @property {string} type - Adapter type ("API")
+   * @property {string} endpoint - API endpoint
+   * @property {boolean} streaming - Whether streaming is supported
+   * @property {string} adapter - Adapter identifier
+   * @property {string} models_endpoint - Endpoint for retrieving models
+   * @property {string} default_model - Default model to use
+   * @property {string} signup_url - URL for API key signup
    */
   static defaults = {};
   /**
@@ -30,7 +39,7 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
 
   /**
    * Get the models.
-   * @returns {Array} An array of model objects.
+   * @returns {Object} Map of model objects
    */
   get models() {
     if(
@@ -53,20 +62,20 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
   }
 
   /**
-   * Count tokens in input.
+   * Count tokens in input text.
    * @abstract
-   * @param {string} input - Text to tokenize
-   * @returns {Promise<Object>} Token count result
+   * @param {string|Object} input - Text to count tokens for
+   * @returns {Promise<number>} Token count
    */
   async count_tokens(input) {
     throw new Error("count_tokens not implemented");
   }
 
   /**
-   * Get available models.
+   * Get available models from the API.
    * @abstract
-   * @param {boolean} [refresh=false] - Whether to refresh the model list
-   * @returns {Promise<Array<Object>>} Available models
+   * @param {boolean} [refresh=false] - Whether to refresh cached models
+   * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh = false) {
     throw new Error("get_models not implemented");
@@ -76,15 +85,15 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
    * Stream chat responses.
    * @abstract
    * @param {Object} req - Request parameters
-   * @param {Object} handlers - Handlers for streaming events
-   * @returns {Promise<Object>} Streaming result
+   * @param {Object} handlers - Event handlers for streaming
+   * @returns {Promise<string>} Complete response text
    */
   async stream(req, handlers = {}) {
     throw new Error("stream not implemented");
   }
 
   /**
-   * Test the API key.
+   * Test if API key is valid.
    * @abstract
    * @returns {Promise<boolean>} True if API key is valid
    */
@@ -115,13 +124,16 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
     return Object.values(models).map(model => ({ value: model.id, name: model.name || model.id })).sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  /**
+   * Refresh available models.
+   */
   refresh_models() {
     console.log('refresh_models');
     this.get_models(true);
   }
 
   /**
-   * Get the settings configuration.
+   * Get settings configuration.
    * @returns {Object} Settings configuration object
    */
   get settings_config() {

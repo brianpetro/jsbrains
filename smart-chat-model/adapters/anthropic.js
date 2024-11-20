@@ -1,5 +1,23 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
 
+/**
+ * Adapter for Anthropic's Claude API.
+ * Handles API communication and message formatting for Claude models.
+ * @class SmartChatModelAnthropicAdapter
+ * @extends SmartChatModelApiAdapter
+ * 
+ * @property {Object} static defaults - Default configuration for Anthropic adapter
+ * @property {string} defaults.description - Human-readable description
+ * @property {string} defaults.type - Adapter type ("API")
+ * @property {string} defaults.endpoint - Anthropic API endpoint
+ * @property {boolean} defaults.streaming - Whether streaming is supported
+ * @property {string} defaults.api_key_header - Custom header for API key
+ * @property {Object} defaults.headers - Additional required headers
+ * @property {boolean} defaults.actions - Whether function calling is supported
+ * @property {boolean} defaults.models_endpoint - Whether models endpoint is available
+ * @property {string} defaults.default_model - Default model to use
+ * @property {string} defaults.signup_url - URL for API key signup
+ */
 export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
   static defaults = {
     description: "Anthropic Claude",
@@ -17,15 +35,39 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
     default_model: "claude-3-5-sonnet-latest",
     signup_url: "https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys"
   };
-  get res_adapter() { return SmartChatModelAnthropicResponseAdapter; }
+
+  /**
+   * Get request adapter class
+   * @returns {typeof SmartChatModelAnthropicRequestAdapter} Request adapter class
+   */
   get req_adapter() { return SmartChatModelAnthropicRequestAdapter; }
-  // Implement Anthropic-specific methods here
+
+  /**
+   * Get response adapter class
+   * @returns {typeof SmartChatModelAnthropicResponseAdapter} Response adapter class
+   */
+  get res_adapter() { return SmartChatModelAnthropicResponseAdapter; }
+
+  /**
+   * Validate parameters for getting models
+   * @returns {boolean} Always true since models are hardcoded
+   */
   validate_get_models_params() {
     return true;
   }
+
+  /**
+   * Get available models (hardcoded list)
+   * @returns {Promise<Object>} Map of model objects
+   */
   get_models() {
     return Promise.resolve(this.models);
   }
+
+  /**
+   * Get hardcoded list of available models
+   * @returns {Object} Map of model objects with capabilities and limits
+   */
   get models() {
     return {
       "claude-3-5-sonnet-latest": {
@@ -78,21 +120,37 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
       },
     };
   }
-
 }
 
+/**
+ * Request adapter for Anthropic API
+ * @class SmartChatModelAnthropicRequestAdapter
+ * @extends SmartChatModelRequestAdapter
+ */
 export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequestAdapter {
-
+  /**
+   * Convert request to Anthropic format
+   * @returns {Object} Request parameters in Anthropic format
+   */
   to_platform() { return this.to_anthropic(); }
 
+  /**
+   * Convert request to Anthropic format
+   * @returns {Object} Request parameters in Anthropic format
+   */
   to_anthropic() {
-    this.anthropic_body = {};
-    this.anthropic_body.model = this.model;
-    this.anthropic_body.messages = this._transform_messages_to_anthropic();
-    this.anthropic_body.max_tokens = this.max_tokens;
-    this.anthropic_body.temperature = this.temperature;
-    this.anthropic_body.stream = this.stream;
-    if (this.tools) this.anthropic_body.tools = this._transform_tools_to_anthropic();
+    this.anthropic_body = {
+      model: this.model,
+      messages: this._transform_messages_to_anthropic(),
+      max_tokens: this.max_tokens,
+      temperature: this.temperature,
+      stream: this.stream
+    };
+
+    if (this.tools) {
+      this.anthropic_body.tools = this._transform_tools_to_anthropic();
+    }
+
     if (this.tool_choice) {
       if (this.tool_choice === 'auto') {
         this.anthropic_body.tool_choice = { type: 'auto' };
@@ -109,6 +167,11 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
     };
   }
 
+  /**
+   * Transform messages to Anthropic format
+   * @returns {Array<Object>} Messages in Anthropic format
+   * @private
+   */
   _transform_messages_to_anthropic() {
     let anthropic_messages = [];
 
@@ -125,10 +188,15 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
       }
     }
 
-
     return anthropic_messages;
   }
 
+  /**
+   * Transform role to Anthropic format
+   * @param {string} role - Original role
+   * @returns {string} Role in Anthropic format
+   * @private
+   */
   _get_anthropic_role(role) {
     const role_map = {
       function: 'assistant' // Anthropic doesn't have a function role, so we'll treat it as assistant
@@ -136,6 +204,12 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
     return role_map[role] || role;
   }
 
+  /**
+   * Transform content to Anthropic format
+   * @param {string|Array} content - Original content
+   * @returns {string|Array} Content in Anthropic format
+   * @private
+   */
   _get_anthropic_content(content) {
     if (Array.isArray(content)) {
       return content.map(item => {
@@ -156,6 +230,11 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
     return content;
   }
 
+  /**
+   * Transform tools to Anthropic format
+   * @returns {Array<Object>} Tools in Anthropic format
+   * @private
+   */
   _transform_tools_to_anthropic() {
     if (!this.tools) return undefined;
     return this.tools.map(tool => ({
@@ -166,7 +245,16 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
   }
 }
 
+/**
+ * Response adapter for Anthropic API
+ * @class SmartChatModelAnthropicResponseAdapter
+ * @extends SmartChatModelResponseAdapter
+ */
 export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelResponseAdapter {
+  /**
+   * Convert response to OpenAI format
+   * @returns {Object} Response in OpenAI format
+   */
   to_openai() {
     return {
       id: this._res.id,
@@ -183,6 +271,11 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
     };
   }
 
+  /**
+   * Transform message to OpenAI format
+   * @returns {Object} Message in OpenAI format
+   * @private
+   */
   _transform_message_to_openai() {
     const message = {
       role: 'assistant',
@@ -216,6 +309,12 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
     return message;
   }
 
+  /**
+   * Transform finish reason to OpenAI format
+   * @param {string} stop_reason - Original finish reason
+   * @returns {string} Finish reason in OpenAI format
+   * @private
+   */
   _get_openai_finish_reason(stop_reason) {
     const reason_map = {
       'end_turn': 'stop',
@@ -225,6 +324,11 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
     return reason_map[stop_reason] || stop_reason;
   }
 
+  /**
+   * Transform usage statistics to OpenAI format
+   * @returns {Object} Usage statistics in OpenAI format
+   * @private
+   */
   _transform_usage_to_openai() {
     if (!this._res.usage) {
       return {

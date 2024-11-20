@@ -5,6 +5,16 @@ import { SmartChatModelApiAdapter } from "./_api.js";
  * Handles token counting and API communication for OpenAI chat models.
  * @class SmartChatModelOpenaiAdapter
  * @extends SmartChatModelApiAdapter
+ * 
+ * @property {Object} static defaults - Default configuration for OpenAI adapter
+ * @property {string} defaults.description - Human-readable description
+ * @property {string} defaults.type - Adapter type ("API")
+ * @property {string} defaults.endpoint - OpenAI API endpoint
+ * @property {boolean} defaults.streaming - Whether streaming is supported
+ * @property {boolean} defaults.actions - Whether function calling is supported
+ * @property {string} defaults.models_endpoint - Endpoint for retrieving models
+ * @property {string} defaults.default_model - Default model to use
+ * @property {string} defaults.signup_url - URL for API key signup
  */
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   static defaults = {
@@ -20,8 +30,9 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   
   /**
    * Parse model data from OpenAI API response.
+   * Filters for GPT models and adds context window information.
    * @param {Object} model_data - Raw model data from OpenAI
-   * @returns {Array<Object>} Parsed models
+   * @returns {Object} Map of model objects with capabilities and limits
    */
   parse_model_data(model_data) {
     return model_data.data
@@ -45,13 +56,11 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
 
   /**
    * Override the HTTP method for fetching models.
-   * @returns {string} HTTP method
    */
-  get models_endpoint_method() { return 'GET'; }
+  models_endpoint_method = 'GET';
 
   /**
-   * Test the API key by fetching models.
-   * @async
+   * Test the API key by attempting to fetch models.
    * @returns {Promise<boolean>} True if API key is valid
    */
   async test_api_key() {
@@ -60,7 +69,8 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   }
 
   /**
-   * Get the settings configuration for OpenAI adapter.
+   * Get settings configuration for OpenAI adapter.
+   * Adds image resolution setting for multimodal models.
    * @returns {Object} Settings configuration object
    */
   get settings_config() {

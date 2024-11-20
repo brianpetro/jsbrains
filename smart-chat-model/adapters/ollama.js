@@ -1,5 +1,11 @@
 import { SmartChatModelApiAdapter } from "./_api.js";
 
+/**
+ * Adapter for Ollama's local API.
+ * Handles communication with locally running Ollama instance.
+ * @class SmartChatModelOllamaAdapter
+ * @extends SmartChatModelApiAdapter
+ */
 export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
   static defaults = {
     description: "Ollama (Local)",
@@ -8,11 +14,22 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     endpoint: "http://localhost:11434/api/chat",
     api_key: 'na',
   }
+
+  /**
+   * Get parameters for models request - no auth needed for local instance
+   * @returns {Object} Request parameters
+   */
   get models_request_params() {
     return {
       url: this.adapter_config.models_endpoint,
     };
   }
+
+  /**
+   * Get available models from local Ollama instance
+   * @param {boolean} [refresh=false] - Whether to refresh cached models
+   * @returns {Promise<Object>} Map of model objects
+   */
   async get_models(refresh=false) {
     console.log('get_models', refresh);
     if(!refresh
@@ -43,15 +60,17 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       this.adapter_settings.models = model_data; // set to adapter_settings to persist
       this.model.render_settings(); // re-render settings to update models dropdown
       return model_data;
+
     } catch (error) {
       console.error('Failed to fetch model data:', error);
       return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
     }
   }
+
   /**
-   * Parse model data from OpenAI API response.
-   * @param {Object} model_data - Raw model data from OpenAI
-   * @returns {Array<Object>} Parsed models
+   * Parse model data from Ollama API response
+   * @param {Object[]} model_data - Raw model data from Ollama
+   * @returns {Object} Map of model objects with capabilities and limits
    */
   parse_model_data(model_data) {
     return model_data
@@ -67,6 +86,11 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       }, {})
     ;
   }
+
+  /**
+   * Override settings config to remove API key setting since not needed for local instance
+   * @returns {Object} Settings configuration object
+   */
   get settings_config() {
     const config = super.settings_config;
     delete config['[CHAT_ADAPTER].api_key'];
