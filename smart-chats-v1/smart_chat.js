@@ -217,7 +217,7 @@ class SmartChat {
     ;
     console.log({resp});
     // retrofitting
-    this.done_handler(resp.choices[0].message.content);
+    if(!this.env.chat_model.can_stream) this.done_handler(resp.choices[0].message.content);
   }
   chunk_handler(text_chunk){
     this.env.chat_ui.new_message(text_chunk, "assistant", true);

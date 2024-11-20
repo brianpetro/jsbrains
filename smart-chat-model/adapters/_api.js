@@ -174,7 +174,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   async stream(req, handlers={}) {
     const _req = new this.req_adapter(this, req);
-    const request_params = _req.to_openai();
+    const request_params = _req.to_openai(true);
+    console.log('request_params', request_params);
     const full_text = await new Promise((resolve, reject) => {
       try {
         this.active_stream = new SmartStreamer(this.endpoint_streaming, request_params);
@@ -253,6 +254,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     }
     return text_chunk;
   }
+
 
   /**
    * Get the API key.
@@ -362,13 +364,13 @@ export class SmartChatModelRequestAdapter {
     return this._req.max_tokens;
   }
 
-  /**
-   * Get the streaming flag
-   * @returns {boolean} Whether to stream responses
-   */
-  get stream() {
-    return this._req.stream;
-  }
+  // /**
+  //  * Get the streaming flag
+  //  * @returns {boolean} Whether to stream responses
+  //  */
+  // get stream() {
+  //   return this._req.stream;
+  // }
 
   /**
    * Get the tools array
@@ -417,13 +419,13 @@ export class SmartChatModelRequestAdapter {
    * Convert request to OpenAI format
    * @returns {Object} Request parameters in OpenAI format
    */
-  to_openai() {
+  to_openai(streaming = false) {
     const body = {
       messages: this._transform_messages_to_openai(),
       model: this.model,
       temperature: this.temperature,
       max_tokens: this.max_tokens,
-      stream: this.stream,
+      stream: streaming,
       ...(this.tools && { tools: this._transform_tools_to_openai() }),
       ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
     };
