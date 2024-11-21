@@ -27,6 +27,7 @@ export class SmartMessage extends SmartBlock {
         tool_call_id: null,
         image_url: null,
         msg_i: null,
+        id: null,
       }
     };
   }
@@ -35,7 +36,8 @@ export class SmartMessage extends SmartBlock {
    * Generates a unique key for the message
    * @returns {string} Unique message identifier
    */
-  get_key() { return `${this.data.thread_key}#${this.data.msg_i}`; }
+  // get_key() { return `${this.data.thread_key}#${this.data.msg_i}`; }
+  get_key() { return `${this.data.thread_key}#${this.data.id}`; }
 
   /**
    * Initializes the message and triggers processing if it's a user message
@@ -43,12 +45,7 @@ export class SmartMessage extends SmartBlock {
    */
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
-    this.thread.data.messages[this.key] = true;
-    await this.render();
-    if (this.data.role === 'user') {
-      await this.parse_user_message();
-      await this.thread.complete();
-    }
+    this.thread.data.messages[this.data.id] = this.data.msg_i;
   }
 
   /**
@@ -57,9 +54,8 @@ export class SmartMessage extends SmartBlock {
    * @param {HTMLElement} [container] - Container element to render into
    * @returns {DocumentFragment} Rendered message interface
    */
-  async render(container = this.thread.container) {
+  async render() {
     const frag = await message_template.call(this.smart_view, this);
-    if (container) container.appendChild(frag);
     return frag;
   }
 
@@ -79,8 +75,6 @@ export class SmartMessage extends SmartBlock {
     this.context = {};
     let content = this.data.content;
     const language = this.env.settings?.language || 'en'; // Default to English if not set
-
-
 
     // Handle system prompt references (@"system prompt")
     // FIRST because path may interfere with internal links or folder references detection

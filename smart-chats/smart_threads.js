@@ -1,6 +1,5 @@
 import { SmartSources } from "smart-sources";
 import { render as chat_template } from "./components/threads.js";
-import { render as settings_template } from "./components/settings.js";
 
 /**
  * @class SmartThreads
@@ -35,8 +34,8 @@ export class SmartThreads extends SmartSources {
   }
 
   get chat_model_settings() {
-    if(!this.env.settings.chat_model) this.env.settings.chat_model = {};
-    return this.env.settings.chat_model;
+    if(!this.settings.chat_model) this.settings.chat_model = {};
+    return this.settings.chat_model;
   }
   /**
    * @property {Object} chat_model - The AI chat model instance
@@ -112,15 +111,14 @@ export class SmartThreads extends SmartSources {
     return this._fs;
   }
 
-  // /**
-  //  * @property {Function} render_settings_component - Template for settings UI
-  //  * @readonly
-  //  */
-  // get render_settings_component() {
-  //   return settings_template.bind(this.smart_view);
-  // }
   async render_settings(container=this.settings_container) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
+    // Future: render settings for threads
+    // const thread_settings_frag = this.render_settings_component(this);
+    // this.settings_container.innerHTML = '';
+    // this.settings_container.appendChild(thread_settings_frag);
+
+    // append chat model settings to thread settings
     await this.chat_model.render_settings(this.settings_container);
   }
 
@@ -129,8 +127,6 @@ export class SmartThreads extends SmartSources {
    * @readonly
    */
   get settings_config() {
-    // return this.process_settings_config(this.chat_model.settings_config, `chat_model`);
-    // return this.chat_model.settings_config;
     return {};
   }
 }

@@ -163,52 +163,61 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   // STREAMING
-  /**
+
+    /**
    * Stream chat responses.
    * @param {Object} req - Request parameters
    * @param {Object} handlers - Event handlers for streaming
-   * @param {Function} handlers.chunk - Handler for text chunks
+   * @param {Function} handlers.chunk - Handler for response objects
    * @param {Function} handlers.error - Handler for errors
    * @param {Function} handlers.done - Handler for completion
-   * @returns {Promise<string>} Complete response text
+   * @returns {Promise<Object>} Complete response object
    */
-  async stream(req, handlers={}) {
+  async stream(req, handlers = {}) {
     const _req = new this.req_adapter(this, req);
     const request_params = _req.to_openai(true);
     console.log('request_params', request_params);
-    const full_text = await new Promise((resolve, reject) => {
+    
+    return await new Promise((resolve, reject) => {
       try {
         this.active_stream = new SmartStreamer(this.endpoint_streaming, request_params);
-        let curr_text = "";
-        this.active_stream.addEventListener("message", (e) => {
-          if(this.is_end_of_stream(e)) {
+        
+        const resp_adapter = new SmartChatModelResponseAdapter(this, {});
+        this.active_stream.addEventListener("message", async (e) => {
+          // console.log('message', e);
+          if (this.is_end_of_stream(e)) {
             this.stop_stream();
-            return resolve(curr_text);
+            handlers.done && handlers.done(resp_adapter.to_openai());
+            resolve(null); // or resolve with the final aggregated response if needed
+            return;
           }
-          let text_chunk = this.get_text_chunk_from_stream(e);
-          if(!text_chunk) return;
-          curr_text += text_chunk;
-          handlers.chunk(text_chunk); // call the chunk handler if it exists
+          
+          try {
+            resp_adapter.handle_chunk(e.data);
+            handlers.chunk && handlers.chunk(resp_adapter.to_openai());
+          } catch (error) {
+            console.error('Error processing stream chunk:', error);
+            handlers.error && handlers.error("*API Error. See console logs for details.*");
+            this.stop_stream();
+            reject(error);
+          }
         });
-        // unnecessary?
-        this.active_stream.addEventListener("readystatechange", (e) => {
-          if (e.readyState >= 2) console.log("ReadyState: " + e.readyState);
-        });
+        
         this.active_stream.addEventListener("error", (e) => {
-          console.error(e);
-          handlers.error("*API Error. See console logs for details.*");
+          console.error('Stream error:', e);
+          handlers.error && handlers.error("*API Error. See console logs for details.*");
           this.stop_stream();
           reject(e);
         });
+        
         this.active_stream.stream();
       } catch (err) {
-        console.error(err);
+        console.error('Failed to start stream:', err);
+        handlers.error && handlers.error("*API Error. See console logs for details.*");
         this.stop_stream();
         reject(err);
       }
     });
-    handlers.done(full_text); // handled in complete()
-    return full_text;
   }
 
   /**
@@ -230,31 +239,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       this.active_stream = null;
     }
   }
-
-  /**
-   * Extract text chunk from stream event.
-   * @param {Event} event - Stream event
-   * @returns {string} Text chunk
-   */
-  get_text_chunk_from_stream(event) {
-    let resp = null;
-    let text_chunk = '';
-    // DO: is this try/catch still necessary?
-    try {
-      resp = JSON.parse(event.data);
-      text_chunk = resp.choices[0].delta.content;
-    } catch (err) {
-      console.log(err);
-      console.log(event.data);
-      if (event.data.indexOf('}{') > -1) event.data = event.data.replace(/}{/g, '},{');
-      resp = JSON.parse(`[${event.data}]`);
-      resp.forEach((r) => {
-        if (r.choices) text_chunk += r.choices[0].delta.content;
-      });
-    }
-    return text_chunk;
-  }
-
 
   /**
    * Get the API key.
@@ -606,6 +590,30 @@ export class SmartChatModelResponseAdapter {
   }
 
   /**
+   * Parse chunk adds delta to content as expected output format
+   */
+  handle_chunk(chunk) {
+    chunk = JSON.parse(chunk);
+    if(!this._res.choices){
+      this._res = this.to_openai();
+    }
+    if(!this._res.choices[0]){
+      this._res.choices.push({
+        message: {
+          role: 'assistant',
+          content: '',
+        },
+      });
+    }
+    if(!this._res.id){
+      this._res.id = chunk.id;
+    }
+    if(chunk.choices?.[0]?.delta?.content){
+      this._res.choices[0].message.content += chunk.choices[0].delta.content;
+    }
+  }
+
+  /**
    * Transform choices to OpenAI format.
    * @returns {Array} Transformed choices array.
    * @private
@@ -624,7 +632,7 @@ export class SmartChatModelResponseAdapter {
    * @returns {Object} Transformed message object.
    * @private
    */
-  _transform_message_to_openai(message) {
+  _transform_message_to_openai(message={}) {
     const transformed = {
       role: this._get_openai_role(message.role),
       content: this._get_openai_content(message.content),

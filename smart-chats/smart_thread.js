@@ -91,14 +91,20 @@ export class SmartThread extends SmartSource {
   async new_user_message(content) {
     this.collection.current = this;
     try {
+      const msg_i = Object.keys(this.data.messages || {}).length + 1;
       const new_msg_data = {
         thread_key: this.key,
         content: content,
         role: 'user',
-        msg_i: Object.keys(this.data.messages || {}).length + 1,
+        msg_i,
+        id: `user-${msg_i}`,
       };
       // Create a new SmartMessage for the user's message
-      await this.env.smart_messages.create_or_update(new_msg_data);
+      const msg_item = await this.env.smart_messages.create_or_update(new_msg_data);
+      const frag = await msg_item.render();
+      this.messages_container.appendChild(frag);
+      await msg_item.parse_user_message();
+      await this.complete();
     } catch (error) {
       console.error("Error in new_user_message:", error);
     }
@@ -109,15 +115,25 @@ export class SmartThread extends SmartSource {
    * @async
    * @param {Object} response - Raw response from the AI model
    */
-  async new_response(response) {
-    const { messages } = await this.parse_response(response);
-    const msg_i = Object.keys(this.data.messages || {}).length + 1;
+  async new_response(response, opts = {}) {
+    const { chunk = false } = opts;
+    const { messages, id } = await this.parse_response(response);
+    const msg_i = Object.keys(this.data.messages || {}).length + 1; // +1 accounts for initial message (also 1 indexes messages)
     const msg_items = await Promise.all(messages.map(message => this.env.smart_messages.create_or_update({
       ...message,
       thread_key: this.key,
       msg_i,
+      id,
     })));
     this.container.scrollTop = this.container.scrollHeight;
+    const frag = await msg_items[0].render();
+    const msg_elm = this.messages_container.querySelector(`#${msg_items[0].data.id}`);
+    if (chunk && msg_elm) msg_elm.replaceWith(frag);
+    else {
+      this.messages_container.appendChild(frag);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return frag;
   }
 
   /**
@@ -145,8 +161,29 @@ export class SmartThread extends SmartSource {
    */
   async complete() {
     const request = await this.to_request();
-    const response = await this.chat_model.complete(request);
-    await this.new_response(response);
+    if(this.chat_model.can_stream) {
+      await this.chat_model.stream(
+        request,
+        {
+          chunk: this.chunk_handler.bind(this),
+          done: this.done_handler.bind(this),
+          error: this.error_handler.bind(this),
+        }
+      );
+    } else {
+      const response = await this.chat_model.complete(request);
+      await this.new_response(response);
+    }
+  }
+  async chunk_handler(response) {
+    await this.new_response(response, { chunk: true });
+  }
+  async done_handler(response) {
+    console.log('done_handler', response);
+    await this.chunk_handler(response);
+  }
+  error_handler(error) {
+    console.error('error_handler', error);
   }
 
   /**
@@ -172,11 +209,12 @@ export class SmartThread extends SmartSource {
   get container() { return this._container; }
   set container(container) { this._container = container; }
 
+  get messages_container() { return this.container.querySelector('.sc-message-container'); }
   /**
    * @property {Array<SmartMessage>} messages - All messages in the thread
    * @readonly
    */
-  get messages() { return Object.keys(this.data.messages || {}).map(key => this.env.smart_messages.get(key)); }
+  get messages() { return Object.keys(this.data.messages || {}).map(key => this.env.smart_messages.get(this.key + '#' + key)); }
 
   /**
    * @property {string} path - Path identifier for the thread

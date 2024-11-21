@@ -23,7 +23,7 @@ export async function render(message, opts = {}) {
   };
   const create_participant_message_frag = (message) => {
     const frag = this.create_doc_fragment(`
-      <div class="sc-message ${message.data.role}">
+      <div class="sc-message ${message.data.role}" id="${message.data.id}">
         <div class="sc-message-content" data-content="${message.content}">
           <span>${message.content}</span>
           <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>

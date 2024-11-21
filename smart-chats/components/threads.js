@@ -33,7 +33,7 @@ export async function render(threads_collection, opts = {}) {
         <input class="sc-chat-name-input" type="text" value="${name}" placeholder="Chat Name">
         ${top_bar_buttons}
       </div>
-      <div id="settings" class="sc-overlay"></div>
+      <div id="settings" class="sc-overlay" style="display: none;"></div>
       <div class="sc-chat-box">
         <!-- Thread messages will be inserted here -->
       </div>
@@ -141,8 +141,13 @@ export async function post_process(threads_collection, frag, opts) {
   // settings button
   const settings_button = frag.querySelector('button[title="Chat Settings"]');
   const overlay_container = frag.querySelector(".sc-overlay");
-  settings_button.addEventListener('click', () => {
-    threads_collection.render_settings(overlay_container);
+  settings_button.addEventListener('click', (e) => {
+    if(overlay_container.style.display === 'none') {
+      threads_collection.render_settings(overlay_container);
+      overlay_container.style.display = 'block';
+    } else {
+      overlay_container.style.display = 'none';
+    }
   });
 
   // new chat button

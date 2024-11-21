@@ -62,7 +62,7 @@ function parse_openai_chat_completion(response) {
       messages.push(message);
     });
   }
-  return { messages };
+  return { messages, id: response.id };
 }
 
 /**
