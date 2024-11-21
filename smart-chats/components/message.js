@@ -10,7 +10,7 @@
  * @returns {string} HTML string for the message
  */
 export function build_html(message, opts = {}) {
-  if (message.data.role === 'system') {
+  if (message.role === 'system') {
     return `
       <div class="sc-message system" data-content="${message.content}">
         <span>${message.content}</span>
@@ -19,7 +19,7 @@ export function build_html(message, opts = {}) {
   }
   
   return `
-    <div class="sc-message ${message.data.role}" id="${message.data.id}">
+    <div class="sc-message ${message.role}" id="${message.data.id}">
       <div class="sc-message-content" data-content="${message.content}">
         <span>${message.content}</span>
         <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>

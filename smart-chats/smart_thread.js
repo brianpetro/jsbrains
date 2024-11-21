@@ -80,10 +80,12 @@ export class SmartThread extends SmartSource {
    * @param {Object} response - Raw response from the AI model
    */
   async handle_message_from_chat_model(response, opts = {}) {
-    const { messages, id } = await this.parse_response(response);
+    console.log('handle_message_from_chat_model', response);
+    const choices = response.choices;
+    const id = response.id;
     const msg_i = Object.keys(this.data.messages || {}).length + 1; // +1 accounts for initial message (also 1 indexes messages)
-    const msg_items = await Promise.all(messages.map(message => this.env.smart_messages.create_or_update({
-      ...message,
+    const msg_items = await Promise.all(choices.map(choice => this.env.smart_messages.create_or_update({
+      ...(choice?.message || choice), // fallback on full choice to handle non-message choices
       thread_key: this.key,
       msg_i,
       id,
@@ -92,22 +94,29 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * Parses an AI response using the thread's data adapter
-   * @async
-   * @param {Object} response - Raw response from the AI model
-   * @returns {Object} Parsed response data
-   */
-  async parse_response(response) {
-    return await this.chat_data_adapter.parse_response(response);
-  }
-
-  /**
    * Prepares the request payload for the AI model
    * @async
    * @returns {Object} Formatted request payload
    */
   async to_request() {
-    return await this.chat_data_adapter.to_request();
+    const request = { messages: [] };
+    for(const msg of this.messages){
+      if(msg.role === 'user') {
+        request.messages.push(
+          ...(await msg.get_message_with_context()) // returns array of messages
+        );
+        continue;
+      }
+      const _msg = {
+        role: msg.role,
+      };
+      if (msg.data.content) _msg.content = msg.content;
+      if (msg.data.tool_calls) _msg.tool_calls = msg.data.tool_calls;
+      if (msg.data.tool_call_id) _msg.tool_call_id = msg.data.tool_call_id;
+      if (msg.data.image_url) _msg.image_url = msg.data.image_url;
+      request.messages.push(_msg);
+    }
+    return request;
   }
 
   /**
@@ -127,6 +136,7 @@ export class SmartThread extends SmartSource {
       );
     } else {
       const response = await this.chat_model.complete(request);
+      this.data.responses[response.id] = response;
       await this.handle_message_from_chat_model(response);
     }
   }
@@ -145,6 +155,7 @@ export class SmartThread extends SmartSource {
    */
   async done_handler(response) {
     const msg_items = await this.handle_message_from_chat_model(response);
+    this.data.responses[response.id] = response;
     await msg_items[0].init(); // runs init() to trigger tool_call handlers
   }
   error_handler(error) {
