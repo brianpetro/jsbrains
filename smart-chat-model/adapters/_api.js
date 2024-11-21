@@ -187,8 +187,10 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
           // console.log('message', e);
           if (this.is_end_of_stream(e)) {
             this.stop_stream();
-            handlers.done && handlers.done(resp_adapter.to_openai());
-            resolve(null); // or resolve with the final aggregated response if needed
+            const final_resp = resp_adapter.to_openai();
+            handlers.done && handlers.done(final_resp);
+            // should return the final aggregated response if needed
+            resolve(final_resp);
             return;
           }
           
