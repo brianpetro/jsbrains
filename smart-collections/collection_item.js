@@ -275,7 +275,10 @@ export class CollectionItem {
   get data_path() { return this.collection.data_dir + (this.data_fs?.sep || "/") + this.multi_ajson_file_name + '.ajson'; }
 
   // settings convenience methods
-  get settings() { return this.env.settings[this.collection_key]; }
+  get settings() {
+    if(!this.env.settings[this.collection_key]) this.env.settings[this.collection_key] = {};
+    return this.env.settings[this.collection_key];
+  }
   set settings(settings) {
     this.env.settings[this.collection_key] = settings;
     this.env.smart_settings.save();

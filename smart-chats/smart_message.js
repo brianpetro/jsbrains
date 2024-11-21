@@ -46,6 +46,18 @@ export class SmartMessage extends SmartBlock {
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
     this.thread.data.messages[this.data.id] = this.data.msg_i;
+    if(this.role === 'user') {
+      this.parse_user_message();
+      await this.render();
+      await this.retrieve_context();
+      if(this.settings.review_context){
+        // render review context UI
+      }else{
+        await this.thread.complete();
+      }
+    }else{
+      await this.render();
+    }
   }
 
   /**
@@ -54,14 +66,19 @@ export class SmartMessage extends SmartBlock {
    * @param {HTMLElement} [container] - Container element to render into
    * @returns {DocumentFragment} Rendered message interface
    */
-  async render() {
+  async render(container=this.thread.messages_container) {
     const frag = await message_template.call(this.smart_view, this);
+    this.elm = container.querySelector(`#${this.data.id}`);
+    if (this.elm) this.elm.replaceWith(frag);
+    else {
+      container.appendChild(frag);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
     return frag;
   }
 
   /**
    * Parses a user message instance using OLD parsing utilities.
-   * @async
    * @param {Object} message_instance - The message instance to parse
    * @returns {Object} context - Parsed context object containing:
    * @returns {Array<string>} [context.system_prompt_refs] - Referenced system prompts
@@ -71,7 +88,7 @@ export class SmartMessage extends SmartBlock {
    * @returns {Array<string>} [context.hypotheticals] - Generated hypothetical notes
    * @returns {Array<Object>} [context.lookup_results] - Semantic search results
    */
-  async parse_user_message() {
+  parse_user_message() {
     this.context = {};
     let content = this.data.content;
     const language = this.env.settings?.language || 'en'; // Default to English if not set
@@ -100,8 +117,13 @@ export class SmartMessage extends SmartBlock {
     // Handle self-referential keywords
     // triggers HyDE Lookup (likely to be replaced by peristent lookup tool in the future)
     this.context.has_self_ref = contains_self_referential_keywords(content, language);
+    
+    this.data.content = content.trim();
+  }
+  
+  async retrieve_context(){
     if (this.context.has_self_ref || this.context.folder_refs) {
-      this.context.hypotheticals = await this.get_hypotheticals(this.data.content);
+      this.context.hypotheticals = await this.get_hypotheticals();
       const lookup_params = { hypotheticals: this.context.hypotheticals };
       if (this.context.folder_refs) {
         lookup_params.filter = {
@@ -113,11 +135,9 @@ export class SmartMessage extends SmartBlock {
         .map(result => ({
           key: result.item.key,
           score: result.score,
-        }));
+        }))
+      ;
     }
-
-    this.data.content = content.trim();
-    return this.context;
   }
 
   /**
@@ -244,12 +264,12 @@ export class SmartMessage extends SmartBlock {
    * @returns {Array<string>} hypotheticals - Array of generated hypothetical notes
    * @returns {string} hypotheticals[] - Each hypothetical in format: "FOLDER > FILE > HEADING: CONTENT"
    */
-  async get_hypotheticals(content) {
+  async get_hypotheticals() {
     try {
       // Prepare the function call for HyDE Lookup
       const hyde_fx_call = {
         role: "user",
-        content,
+        content: this.content,
       };
 
       // Define the function definitions
@@ -312,21 +332,21 @@ export class SmartMessage extends SmartBlock {
 
   /**
    * @property {string} content - Message content
-   * @readonly
    */
   get content() { return this.data.content; }
+  set content(value) { this.data.content = value; }
+
+  /**
+   * @property {string} role - Message sender role ('user' or 'assistant')
+   */
+  get role() { return this.data.role; }
+  set role(value) { this.data.role = value; }
 
   /**
    * @property {Object} context - Message context data
    */
   get context() { return this.data.context; }
-  set context(context) { this.data.context = context; }
-
-  /**
-   * @property {string} role - Message sender role ('user' or 'assistant')
-   * @readonly
-   */
-  get role() { return this.data.role; }
+  set context(value) { this.data.context = value; }
 
   /**
    * @property {SmartThread} thread - Parent thread reference

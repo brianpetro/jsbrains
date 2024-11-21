@@ -100,11 +100,7 @@ export class SmartThread extends SmartSource {
         id: `user-${msg_i}`,
       };
       // Create a new SmartMessage for the user's message
-      const msg_item = await this.env.smart_messages.create_or_update(new_msg_data);
-      const frag = await msg_item.render();
-      this.messages_container.appendChild(frag);
-      await msg_item.parse_user_message();
-      await this.complete();
+      await this.env.smart_messages.create_or_update(new_msg_data);
     } catch (error) {
       console.error("Error in new_user_message:", error);
     }
@@ -116,7 +112,6 @@ export class SmartThread extends SmartSource {
    * @param {Object} response - Raw response from the AI model
    */
   async new_response(response, opts = {}) {
-    const { chunk = false } = opts;
     const { messages, id } = await this.parse_response(response);
     const msg_i = Object.keys(this.data.messages || {}).length + 1; // +1 accounts for initial message (also 1 indexes messages)
     const msg_items = await Promise.all(messages.map(message => this.env.smart_messages.create_or_update({
@@ -125,15 +120,7 @@ export class SmartThread extends SmartSource {
       msg_i,
       id,
     })));
-    this.container.scrollTop = this.container.scrollHeight;
-    const frag = await msg_items[0].render();
-    const msg_elm = this.messages_container.querySelector(`#${msg_items[0].data.id}`);
-    if (chunk && msg_elm) msg_elm.replaceWith(frag);
-    else {
-      this.messages_container.appendChild(frag);
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return frag;
+    return msg_items;
   }
 
   /**
@@ -176,7 +163,9 @@ export class SmartThread extends SmartSource {
     }
   }
   async chunk_handler(response) {
-    await this.new_response(response, { chunk: true });
+    const msg_items = await this.new_response(response);
+    console.log('chunk_handler', msg_items);
+    await msg_items[0].render();
   }
   async done_handler(response) {
     console.log('done_handler', response);
