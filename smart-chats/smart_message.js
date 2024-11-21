@@ -161,6 +161,9 @@ export class SmartMessage extends SmartBlock {
     let user_content = "";
     let system_content = "";
 
+    /**
+     * Build system message
+     */
     // Combine all context into a single system message
     if (this.context.system_prompt_refs && this.context.system_prompt_refs.length > 0) {
       const system_prompts = await this.fetch_content(this.context.system_prompt_refs);
@@ -172,14 +175,13 @@ export class SmartMessage extends SmartBlock {
         }
       }
     }
-    // Add system message if there's any content
-    if (system_content) {
-      messages.push({
-        role: "system",
-        content: system_content.trim()
-      });
+    if (this.context.lookup_results && this.context.lookup_results.length > 0) {
+      system_content += `\n- Answer based on the context from lookup.`;
     }
 
+    /**
+     * Build user message
+     */
     if (this.context.internal_links && this.context.internal_links.length > 0) {
       const internal_links_content = await this.fetch_content(this.context.internal_links);
       if (internal_links_content) {
@@ -214,12 +216,19 @@ export class SmartMessage extends SmartBlock {
         } // should images be added here?
       });
     }
-
-
     if (user_content) {
       user_content += "Message from user:\n";
     }
     user_content += this.data.content;
+
+
+    // Add system message if there's any content
+    if (system_content) {
+      messages.push({
+        role: "system",
+        content: system_content.trim()
+      });
+    }
     // Add the user's message
     messages.push({
       role: this.role,
