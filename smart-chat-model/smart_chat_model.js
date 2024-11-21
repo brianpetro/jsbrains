@@ -185,13 +185,22 @@ export class SmartChatModel extends SmartModel {
    */
   async render_settings(container=this.settings_container, opts = {}) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-    if(!container) throw new Error("Container is required");
-    container.innerHTML = '';
-    container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
+    let chat_model_settings_container;
+    if(this.settings_container) {
+      chat_model_settings_container = this.settings_container.querySelector('#chat-model-settings-container');
+      if(!chat_model_settings_container) {
+        chat_model_settings_container = document.createElement('div');
+        chat_model_settings_container.id = 'chat-model-settings-container';
+        this.settings_container.appendChild(chat_model_settings_container);
+      }
+      chat_model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
+    }
     const frag = await this.render_settings_component(this, opts);
-    container.innerHTML = '';
-    container.appendChild(frag);
-    this.smart_view.on_open_overlay(container);
-    return container;
+    if(chat_model_settings_container) {
+      chat_model_settings_container.innerHTML = '';
+      chat_model_settings_container.appendChild(frag);
+      this.smart_view.on_open_overlay(chat_model_settings_container);
+    }
+    return frag;
   }
 }

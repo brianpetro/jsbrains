@@ -421,14 +421,23 @@ export class Collection {
    */
   async render_settings(container=this.settings_container, opts = {}) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-    if(!container) throw new Error("Container is required");
-    container.innerHTML = '';
-    container.innerHTML = '<div class="sc-loading">Loading ' + this.collection_key + ' settings...</div>';
+    let collection_settings_container;
+    if(this.settings_container){
+      collection_settings_container = this.settings_container.querySelector('#collection-settings-container');
+      if(!collection_settings_container) {
+        collection_settings_container = document.createElement('div');
+        collection_settings_container.id = `collection-settings-container-${this.collection_key}`;
+        this.settings_container.appendChild(collection_settings_container);
+      }
+      collection_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.collection_key + ' settings...</div>';
+    }
     const frag = await this.render_settings_component(this, opts);
-    container.innerHTML = '';
-    container.appendChild(frag);
-    this.smart_view.on_open_overlay(container);
-    return container;
+    if(collection_settings_container){
+      collection_settings_container.innerHTML = '';
+      collection_settings_container.appendChild(frag);
+      this.smart_view.on_open_overlay(collection_settings_container);
+    }
+    return frag;
   }
 
   unload() {

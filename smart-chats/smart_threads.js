@@ -112,14 +112,8 @@ export class SmartThreads extends SmartSources {
   }
 
   async render_settings(container=this.settings_container) {
-    if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-    // Future: render settings for threads
-    // const thread_settings_frag = this.render_settings_component(this);
-    // this.settings_container.innerHTML = '';
-    // this.settings_container.appendChild(thread_settings_frag);
-
-    // append chat model settings to thread settings
-    await this.chat_model.render_settings(this.settings_container);
+    await super.render_settings(container);
+    await this.chat_model.render_settings(container);
   }
 
   /**
@@ -127,6 +121,13 @@ export class SmartThreads extends SmartSources {
    * @readonly
    */
   get settings_config() {
-    return {};
+    return {
+      "review_context": {
+        name: "Review Context",
+        type: "toggle",
+        default: false,
+        description: "Whether to review the retrieved context before the AI completes the message.",
+      }
+    };
   }
 }

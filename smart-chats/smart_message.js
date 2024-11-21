@@ -4,7 +4,7 @@ import { contains_folder_reference, extract_folder_references } from "./utils/fo
 import { contains_internal_link, extract_internal_links } from "./utils/internal_links";
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
-
+import { render as context_template } from "./components/context";
 /**
  * @class SmartMessage
  * @extends SmartBlock
@@ -76,6 +76,12 @@ export class SmartMessage extends SmartBlock {
     }
     return frag;
   }
+  async render_context(container=this.thread.messages_container) {
+    const frag = await context_template.call(this.smart_view, this);
+    const context_container = container.querySelector(`#context-container-${this.data.id}`);
+    if (context_container) context_container.replaceWith(frag);
+    else container.appendChild(frag);
+  }
 
   /**
    * Parses a user message instance using OLD parsing utilities.
@@ -138,6 +144,7 @@ export class SmartMessage extends SmartBlock {
         }))
       ;
     }
+    await this.render_context();
   }
 
   /**
@@ -371,4 +378,6 @@ export class SmartMessage extends SmartBlock {
    * @readonly
    */
   get path() { return this.data.thread_key; }
+
+  get settings() { return this.thread.settings; }
 }
