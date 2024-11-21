@@ -63,12 +63,6 @@ export class SmartThreads extends SmartSources {
   set container(container) { this._container = container; }
 
   /**
-   * @property {SmartThread} current - The currently active chat thread
-   */
-  get current() { return this._current; }
-  set current(thread) { this._current = thread; }
-
-  /**
    * @property {string} data_folder - Path to chat history storage
    * @readonly
    */
@@ -129,5 +123,19 @@ export class SmartThreads extends SmartSources {
         description: "Whether to review the retrieved context before the AI completes the message.",
       }
     };
+  }
+
+  /**
+   * Gets the currently active thread based on the chat box data-thread-key
+   * @returns {SmartThread} The active thread
+   */
+  get_active_thread() {
+    const chat_box = this.container?.querySelector('.sc-thread');
+    if (!chat_box) return null;
+    
+    const thread_key = chat_box.getAttribute('data-thread-key');
+    if (!thread_key) return null;
+    
+    return this.get(thread_key);
   }
 }

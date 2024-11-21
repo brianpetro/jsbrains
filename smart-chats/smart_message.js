@@ -50,8 +50,9 @@ export class SmartMessage extends SmartBlock {
       this.parse_user_message();
       await this.render();
       await this.retrieve_context();
-      if(this.settings.review_context){
-        // render review context UI
+      // FUTURE: may replace lookup-specific conditional with `Object.keys(this.context).length > 0` for reviewing additional extracted context
+      if(this.settings.review_context && this.context.lookup_results?.length > 0){
+        // skip completion to await user submission in context review UI
       }else{
         await this.thread.complete();
       }

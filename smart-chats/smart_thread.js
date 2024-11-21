@@ -1,6 +1,6 @@
 import { SmartSource } from "smart-sources";
 import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json";
-import { render as thread_template } from "./components/thread";
+import { render as thread_template } from "./components/thread.js";
 
 /**
  * @class SmartThread
@@ -39,48 +39,17 @@ export class SmartThread extends SmartSource {
    * @returns {DocumentFragment} Rendered thread interface
    */
   async render(container = this.container) {
-    if (!container) {
-      container = this.collection.container.querySelector('.sc-chat-box');
-    }
-    if (!container) return console.warn("No container found for SmartThread");
-    if (!this.container) this.container = container;
     const frag = await thread_template.call(this.smart_view, this);
     if (container) {
       container.empty();
-      container.appendChild(frag);
+      // if container is sc-thread, replace it with the frag
+      if (container.classList.contains('sc-thread')) {
+        container.replaceWith(frag);
+      } else {
+        container.appendChild(frag);
+      }
     }
     return frag;
-  }
-
-  /**
-   * Handles sending a user message from the UI
-   * @async
-   */
-  async handle_send() {
-    try {
-      // Access the chat input textarea from the UI
-      const input_field = this.container.querySelector('.sc-chat-input');
-      const message_content = input_field.value.trim();
-
-      // Validate input
-      if (!message_content) {
-        // Optionally, provide user feedback for empty input
-        console.warn("Cannot send empty message.");
-        return;
-      }
-
-      // Create and add the user message
-      await this.new_user_message(message_content);
-
-      // Clear the input field
-      input_field.value = '';
-
-      // Scroll to the latest message
-      this.container.scrollTop = this.container.scrollHeight;
-
-    } catch (error) {
-      console.error("Error in handle_send:", error);
-    }
   }
 
   /**
@@ -88,8 +57,7 @@ export class SmartThread extends SmartSource {
    * @async
    * @param {string} content - The content of the user's message
    */
-  async new_user_message(content) {
-    this.collection.current = this;
+  async handle_message_from_user(content) {
     try {
       const msg_i = Object.keys(this.data.messages || {}).length + 1;
       const new_msg_data = {
@@ -111,7 +79,7 @@ export class SmartThread extends SmartSource {
    * @async
    * @param {Object} response - Raw response from the AI model
    */
-  async new_response(response, opts = {}) {
+  async handle_message_from_chat_model(response, opts = {}) {
     const { messages, id } = await this.parse_response(response);
     const msg_i = Object.keys(this.data.messages || {}).length + 1; // +1 accounts for initial message (also 1 indexes messages)
     const msg_items = await Promise.all(messages.map(message => this.env.smart_messages.create_or_update({
@@ -159,17 +127,25 @@ export class SmartThread extends SmartSource {
       );
     } else {
       const response = await this.chat_model.complete(request);
-      await this.new_response(response);
+      await this.handle_message_from_chat_model(response);
     }
   }
+  /**
+   * @description
+   *  - renders the message
+   */
   async chunk_handler(response) {
-    const msg_items = await this.new_response(response);
-    console.log('chunk_handler', msg_items);
+    const msg_items = await this.handle_message_from_chat_model(response);
     await msg_items[0].render();
   }
+  /**
+   * @description
+   *  - different from chunk_handler in that it calls init() instead of render()
+   * 	- allows handling tool-calls in `message.init()`
+   */
   async done_handler(response) {
-    console.log('done_handler', response);
-    await this.chunk_handler(response);
+    const msg_items = await this.handle_message_from_chat_model(response);
+    await msg_items[0].init(); // runs init() to trigger tool_call handlers
   }
   error_handler(error) {
     console.error('error_handler', error);
@@ -195,8 +171,9 @@ export class SmartThread extends SmartSource {
   /**
    * @property {HTMLElement} container - Container element for the thread UI
    */
-  get container() { return this._container; }
-  set container(container) { this._container = container; }
+  get container() {
+    return this.collection.container.querySelector('.sc-thread');
+  }
 
   get messages_container() { return this.container.querySelector('.sc-message-container'); }
   /**
