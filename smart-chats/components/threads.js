@@ -100,6 +100,7 @@ function setup_button_handlers(frag, threads_collection) {
   // New chat button
   const new_chat_button = frag.querySelector('button[title="New Chat"]');
   new_chat_button.addEventListener('click', async () => {
+    threads_collection.container.innerHTML = '';
     threads_collection.render();
   });
 }

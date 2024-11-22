@@ -12,7 +12,7 @@
  * @returns {string} HTML string for the context component.
  */
 export function build_html(message, opts = {}) {
-  const lookup_results = message.context?.lookup_results || [];
+  const lookup_results = message.tool_call_output || [];
 
   if (lookup_results.length === 0) {
     return ''; // No context to display
@@ -101,7 +101,7 @@ export async function post_process(message, frag, opts) {
         const index = parseInt(item.getAttribute('data-index'), 10);
 
         // Remove the context item from message.context.lookup_results
-        message.context.lookup_results.splice(index, 1);
+        message.tool_call_output.splice(index, 1);
 
         // Re-render the context component
         message.render_context();

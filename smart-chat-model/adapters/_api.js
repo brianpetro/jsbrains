@@ -438,6 +438,7 @@ export class SmartChatModelRequestAdapter {
     if (message.name) transformed.name = message.name;
     if (message.tool_calls) transformed.tool_calls = this._transform_tool_calls_to_openai(message.tool_calls);
     if (message.image_url) transformed.image_url = message.image_url;
+    if (message.tool_call_id) transformed.tool_call_id = message.tool_call_id;
 
     return transformed;
   }
@@ -472,8 +473,12 @@ export class SmartChatModelRequestAdapter {
    */
   _transform_tool_calls_to_openai(tool_calls) {
     return tool_calls.map(tool_call => ({
-      tool_name: tool_call.tool_name,
-      parameters: tool_call.parameters
+      id: tool_call.id,
+      type: tool_call.type,
+      function: {
+        name: tool_call.function.name,
+        arguments: tool_call.function.arguments,
+      },
     }));
   }
 
@@ -612,6 +617,27 @@ export class SmartChatModelResponseAdapter {
     }
     if(chunk.choices?.[0]?.delta?.content){
       this._res.choices[0].message.content += chunk.choices[0].delta.content;
+    }
+    if(chunk.choices?.[0]?.delta?.tool_calls){
+      if(!this._res.choices[0].message.tool_calls){
+        this._res.choices[0].message.tool_calls = [{
+          id: '',
+          type: 'function',
+          function: {
+            name: '',
+            arguments: '',
+          },
+        }];
+      }
+      if(chunk.choices[0].delta.tool_calls[0].id){
+        this._res.choices[0].message.tool_calls[0].id += chunk.choices[0].delta.tool_calls[0].id;
+      }
+      if(chunk.choices[0].delta.tool_calls[0].function.name){
+        this._res.choices[0].message.tool_calls[0].function.name += chunk.choices[0].delta.tool_calls[0].function.name;
+      }
+      if(chunk.choices[0].delta.tool_calls[0].function.arguments){
+        this._res.choices[0].message.tool_calls[0].function.arguments += chunk.choices[0].delta.tool_calls[0].function.arguments;
+      }
     }
   }
 

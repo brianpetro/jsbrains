@@ -23,6 +23,29 @@ export class SmartThread extends SmartSource {
       }
     };
   }
+  // Define the tools
+  tools = {
+    lookup: {
+      type: "function",
+      function: {
+        name: "lookup",
+        description: "Performs a semantic search of the user's data. Use this function to respond to queries like 'Based on my notes...' or any other request that requires surfacing relevant content.",
+        parameters: {
+          type: "object",
+          properties: {
+            hypotheticals: {
+              type: "array",
+              description: "Short hypothetical notes predicted to be semantically similar to the notes necessary to fulfill the user's request. Provide at least three hypotheticals per request. The hypothetical notes may contain paragraphs, lists, or checklists in markdown format. Each hypothetical note should begin with breadcrumbs indicating the anticipated folder(s), file name, and relevant headings separated by ' > ' (no slashes). Example: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.",
+              items: {
+                type: "string"
+              }
+            }
+          },
+          required: ["hypotheticals"]
+        }
+      }
+    }
+  };
 
   /**
    * Generates a unique key for the thread based on creation timestamp
@@ -80,7 +103,6 @@ export class SmartThread extends SmartSource {
    * @param {Object} response - Raw response from the AI model
    */
   async handle_message_from_chat_model(response, opts = {}) {
-    console.log('handle_message_from_chat_model', response);
     const choices = response.choices;
     const id = response.id;
     const msg_i = Object.keys(this.data.messages || {}).length + 1; // +1 accounts for initial message (also 1 indexes messages)
@@ -101,23 +123,16 @@ export class SmartThread extends SmartSource {
   async to_request() {
     const request = { messages: [] };
     for(const msg of this.messages){
-      if(msg.role === 'user') {
-        request.messages.push(
-          ...(await msg.get_message_with_context()) // returns array of messages
-        );
-        continue;
-      }
-      const _msg = {
-        role: msg.role,
-      };
-      if (msg.data.content) _msg.content = msg.content;
-      if (msg.data.tool_calls) _msg.tool_calls = msg.data.tool_calls;
-      if (msg.data.tool_call_id) _msg.tool_call_id = msg.data.tool_call_id;
-      if (msg.data.image_url) _msg.image_url = msg.data.image_url;
-      request.messages.push(_msg);
+      request.messages.push(...(await msg.to_request()));
+    }
+    const last_msg = this.messages[this.messages.length - 1];
+    if(last_msg?.context?.has_self_ref || last_msg?.context?.folder_refs){
+      request.tools = [this.tools['lookup']];
+      request.tool_choice = { type: "function", function: { name: "lookup" } };
     }
     return request;
   }
+
 
   /**
    * Sends the current thread state to the AI model and processes the response
@@ -125,7 +140,9 @@ export class SmartThread extends SmartSource {
    */
   async complete() {
     const request = await this.to_request();
-    if (this.chat_model.can_stream) {
+    // if streaming and no tool_choice, then stream (may implement streaming for tool calls in the future)
+    // if (this.chat_model.can_stream){ // && !request.tool_choice) {
+    if (this.chat_model.can_stream && !request.tool_choice) {
       await this.chat_model.stream(request, {
         chunk: this.chunk_handler.bind(this),
         done: this.done_handler.bind(this),

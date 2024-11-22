@@ -29,6 +29,8 @@ export class SmartMessage extends SmartBlock {
         image_url: null,
         msg_i: null,
         id: null,
+        context: {},
+        tool_call_output: null,
       }
     };
   }
@@ -50,13 +52,15 @@ export class SmartMessage extends SmartBlock {
     if(this.role === 'user') {
       this.parse_user_message();
       await this.render();
-      await this.retrieve_context();
-      // FUTURE: may replace lookup-specific conditional with `Object.keys(this.context).length > 0` for reviewing additional extracted context
-      if(this.settings.review_context && this.context.lookup_results?.length > 0){
-        // skip completion to await user submission in context review UI
-      }else{
-        await this.thread.complete();
-      }
+      // // FUTURE: may replace lookup-specific conditional with `Object.keys(this.context).length > 0` for reviewing additional extracted context
+      // if(this.settings.review_context && this.context.lookup_results?.length > 0){
+      //   // skip completion to await user submission in context review UI
+      // }else{
+      //   await this.thread.complete();
+      // }
+      await this.thread.complete();
+    }else if(this.tool_calls?.length > 0){
+      await this.handle_tool_calls();
     }else{
       await this.render();
     }
@@ -148,163 +152,30 @@ export class SmartMessage extends SmartBlock {
     this.data.content = content.trim();
   }
   
-  async retrieve_context(){
-    if (this.context.has_self_ref || this.context.folder_refs) {
-      this.context.hypotheticals = await this.get_hypotheticals();
-      const lookup_params = this.build_lookup_params();
-      const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
-      this.context.lookup_results = (await lookup_collection.lookup(lookup_params))
-        .map(result => ({
-          key: result.item.key,
-          score: result.score,
-        }))
-      ;
-    }
-    await this.render_context();
-  }
+  // async retrieve_context(){
+  //   if (this.context.has_self_ref || this.context.folder_refs) {
+  //     this.context.hypotheticals = await this.get_hypotheticals();
+  //     const lookup_params = this.build_lookup_params();
+  //     const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
+  //     this.context.lookup_results = (await lookup_collection.lookup(lookup_params))
+  //       .map(result => ({
+  //         key: result.item.key,
+  //         score: result.score,
+  //       }))
+  //     ;
+  //   }
+  //   await this.render_context();
+  // }
 
-  build_lookup_params() {
-    const lookup_params = { hypotheticals: this.context.hypotheticals };
-    if (this.context.folder_refs) {
-      lookup_params.filter = {
-        key_starts_with_any: this.context.folder_refs
-      };
-    }
-    return lookup_params;
-  }
-
-  /**
-   * Constructs a message with its associated context based on the parsed user input.
-   * @async
-   * @returns {Array<Object>} messages - Array of message objects containing:
-   * @returns {Object} [messages[].role] - Message role ('system' or 'user')
-   * @returns {string} [messages[].content] - Text content including context
-   * @returns {string} [messages[].image_url] - Base64 encoded image URL if present
-   */
-  async get_message_with_context() {
-    const messages = [];
-    let user_content = "";
-    let system_content = "";
-
-    /**
-     * Build system message
-     */
-    // Combine all context into a single system message
-    if (this.context.system_prompt_refs && this.context.system_prompt_refs.length > 0) {
-      const system_prompts = await this.fetch_content(this.context.system_prompt_refs);
-      if (system_prompts) {
-        for (const system_prompt of system_prompts) {
-          if (system_prompt.type === 'text') {
-            system_content += `${system_prompt.content}\n\n`;
-          }
-        }
-      }
-    }
-    if (this.context.lookup_results && this.context.lookup_results.length > 0) {
-      system_content += `\n- Answer based on the context from lookup.`;
-    }
-
-    /**
-     * Build user message
-     */
-    if (this.context.internal_links && this.context.internal_links.length > 0) {
-      const internal_links_content = await this.fetch_content(this.context.internal_links);
-      if (internal_links_content) {
-        user_content += `Context specified in message:\n`;
-        this.context.internal_links.forEach((link, index) => {
-          if (internal_links_content[index].type === 'text') {
-            user_content += `-----------------------\n`;
-            user_content += `/${link.path}\n`;
-            user_content += `---\n`;
-            user_content += `${internal_links_content[index].content}\n`;
-            user_content += `-----------------------\n\n`;
-          } else if (internal_links_content[index].type === 'image') {
-            messages.push({
-              role: 'user',
-              image_url: internal_links_content[index].image_url,
-            });
-          }
-        });
-      }
-    }
-
-    if (this.context.lookup_results && this.context.lookup_results.length > 0) {
-      const lookup_content = await this.fetch_content(this.context.lookup_results.map(result => result.key));
-      user_content += `Context from lookup:\n`;
-      this.context.lookup_results.forEach((result, index) => {
-        if (lookup_content[index].type === 'text') {
-          user_content += `-----------------------\n`;
-          user_content += `/${result.key} (relevance score: ${result.score})\n`;
-          user_content += `---\n`;
-          user_content += `${lookup_content[index].content}\n`;
-          user_content += `-----------------------\n\n`;
-        } // should images be added here?
-      });
-    }
-
-    if (user_content) {
-      user_content += "Message from user:\n";
-    }
-    user_content += this.data.content;
-    
-    // Handle multimodal content
-    if (this.context.images?.length) {
-      const content = [];
-      // For multimodal messages, we need to process each content part
-      const images = this.context.images
-        // sort by occurrence in content (should be in order of appearance)
-        .sort((a, b) => this.data.content.indexOf(a.full_match) - this.data.content.indexOf(b.full_match))
-      ;
-      for(const image of images){
-        const file = this.env.smart_connections_plugin?.app.vault.getFileByPath(image.img_path);
-        // Convert file path to base64 if needed
-        if (file) {
-          // split user_content at image.full_match
-          const [text, remaining_text] = user_content.split(image.full_match);
-          if(text.trim().length > 0){
-            content.push({
-              type: "text",
-              text: text,
-            });
-          }
-          user_content = remaining_text;
-          const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
-          content.push({
-            type: "image_url",
-            image_url: {
-              url: `data:image/${file.extension};base64,${base64}`
-            }
-          });
-        }
-      }
-      if(user_content.trim().length > 0){
-        content.push({
-          type: "text",
-          text: user_content,
-        });
-      }
-      messages.push({
-        role: this.role,
-        content,
-      });
-    } else {
-      // Handle regular text content
-      messages.push({
-        role: this.role,
-        content: user_content
-      });
-    }
-
-    // Add system message if there's any content
-    if (system_content) {
-      messages.push({
-        role: "system",
-        content: system_content.trim()
-      });
-    }
-
-    return messages;
-  }
+  // build_lookup_params() {
+  //   const lookup_params = { hypotheticals: this.context.hypotheticals };
+  //   if (this.context.folder_refs) {
+  //     lookup_params.filter = {
+  //       key_starts_with_any: this.context.folder_refs
+  //     };
+  //   }
+  //   return lookup_params;
+  // }
 
   /**
    * Fetches and processes internal links, embedding images as Base64 data URLs.
@@ -342,78 +213,221 @@ export class SmartMessage extends SmartBlock {
     }
   }
 
-  /**
-   * Generates hypothetical notes for semantic search context
-   * @async
-   * @param {string} content - User message content to generate hypotheticals from
-   * @returns {Array<string>} hypotheticals - Array of generated hypothetical notes
-   * @returns {string} hypotheticals[] - Each hypothetical in format: "FOLDER > FILE > HEADING: CONTENT"
-   */
-  async get_hypotheticals() {
-    try {
-      // Prepare the function call for HyDE Lookup
-      const hyde_fx_call = {
-        role: "user",
-        content: this.content,
-      };
+  // /**
+  //  * Generates hypothetical notes for semantic search context
+  //  * @async
+  //  * @param {string} content - User message content to generate hypotheticals from
+  //  * @returns {Array<string>} hypotheticals - Array of generated hypothetical notes
+  //  * @returns {string} hypotheticals[] - Each hypothetical in format: "FOLDER > FILE > HEADING: CONTENT"
+  // */
+  // async get_hypotheticals() {
+  //   try {
+  //     // Prepare the function call for HyDE Lookup
+  //     const hyde_fx_call = {
+  //       role: "user",
+  //       content: this.content,
+  //     };
 
-      // Define the function definitions
-      const tools = [
-        {
-          type: "function",
-          function: {
-            name: "lookup",
-            description: "Performs a semantic search of the user's data. Use this function to respond to queries like 'Based on my notes...' or any other request that requires surfacing relevant content.",
-            parameters: {
-              type: "object",
-              properties: {
-                hypotheticals: {
-                  type: "array",
-                  description: "Short hypothetical notes predicted to be semantically similar to the notes necessary to fulfill the user's request. Provide at least three hypotheticals per request. The hypothetical notes may contain paragraphs, lists, or checklists in markdown format. Each hypothetical note should begin with breadcrumbs indicating the anticipated folder(s), file name, and relevant headings separated by ' > ' (no slashes). Example: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.",
-                  items: {
-                    type: "string"
-                  }
-                }
-              },
-              required: ["hypotheticals"]
-            }
-          }
-        }
-      ];
 
-      // Prepare the request payload
-      const request = {
-        messages: [
-          {
-            role: "system",
-            content: `Anticipate what the user is seeking. Respond in the form of a hypothetical note written by the user. The note may contain statements as paragraphs, lists, or checklists in markdown format with no headings. Please respond with one hypothetical note and abstain from any other commentary. Use the format: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.`
-          },
-          hyde_fx_call
-        ],
-        tools: tools,
-        tool_choice: { type: "function", function: { name: "lookup" } }
-      };
+  //     // Prepare the request payload
+  //     const request = {
+  //       messages: [
+  //         {
+  //           role: "system",
+  //           content: `Anticipate what the user is seeking. Respond in the form of a hypothetical note written by the user. The note may contain statements as paragraphs, lists, or checklists in markdown format with no headings. Please respond with one hypothetical note and abstain from any other commentary. Use the format: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.`
+  //         },
+  //         hyde_fx_call
+  //       ],
+  //       tools: [this.thread.tools['lookup']],
+  //       tool_choice: { type: "function", function: { name: "lookup" } }
+  //     };
 
-      // **Invoke the Chat Model to Complete the Request**
-      const response = await this.thread.chat_model.complete(request);
+  //     // **Invoke the Chat Model to Complete the Request**
+  //     const response = await this.thread.chat_model.complete(request);
 
-      console.log("HyDE Lookup Response:", response);
+  //     console.log("HyDE Lookup Response:", response);
 
-      return this.parse_hypotheticals(response);
+  //     return this.parse_hypotheticals(response);
 
-    } catch (error) {
-      console.error("HyDE Lookup Error:", error);
+  //   } catch (error) {
+  //     console.error("HyDE Lookup Error:", error);
+  //   }
+  // }
+
+  async handle_tool_calls(){
+    for(const tool_call of this.tool_calls){
+      if(tool_call.function.name === 'lookup'){
+        await this.handle_lookup_tool_call(tool_call);
+      }
+    }
+  }
+
+  build_lookup_params(args){
+    const params = JSON.parse(args);
+    if(this.previous_message.context.folder_refs) params.filter = {
+      key_starts_with_any: this.previous_message.context.folder_refs
+    };
+    return params;
+  }
+  async handle_lookup_tool_call(tool_call){
+    const params = this.build_lookup_params(tool_call.function.arguments);
+    const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
+    const lookup_results = (await lookup_collection.lookup(params))
+      .map(result => ({
+        key: result.item.key,
+        score: result.score,
+      }))
+    ;
+    const msg = await this.env.smart_messages.create_or_update({
+      thread_key: this.thread.key,
+      tool_call_id: tool_call.id,
+      tool_name: tool_call.function.name,
+      tool_call_output: lookup_results,
+      role: 'tool',
+    });
+    msg.render_context();
+    if(!this.settings.review_context){
+      this.thread.complete();
     }
   }
 
   /**
-   * Parses AI response to extract hypotheticals
-   * @param {Object} response - AI response object
-   * @returns {Array<string>} Extracted hypotheticals
+   * Converts the message to a request payload
+   * @returns {Array<Object>} Request payload
    */
-  parse_hypotheticals(response) {
-    return JSON.parse(response.choices[0].message.tool_calls[0].function.arguments || '{}').hypotheticals;
+  async to_request() {
+    const messages = [];
+    // let user_message.content = "";
+    // let system_message.content = "";
+    const this_message = { role: this.role, content: "" };
+    const system_message = { role: "system", content: "" };
+
+    /**
+     * Build system message
+     */
+    // Combine all context into a single system message
+    if (this.context.system_prompt_refs && this.context.system_prompt_refs.length > 0) {
+      const system_prompts = await this.fetch_content(this.context.system_prompt_refs);
+      if (system_prompts) {
+        for (const system_prompt of system_prompts) {
+          if (system_prompt.type === 'text') {
+            system_message.content += `${system_prompt.content}\n\n`;
+          }
+        }
+      }
+    }
+    if(this.context?.has_self_ref || this.context?.folder_refs){
+      if(system_message.content) system_message.content += `\n`;
+      system_message.content += `- Answer based on the context from lookup!`;
+      system_message.content += `\n- The context may be referred to as notes.`;
+    }
+
+    /**
+     * Build user message
+     */
+    if (this.context.internal_links && this.context.internal_links.length > 0) {
+      const internal_links_content = await this.fetch_content(this.context.internal_links);
+      if (internal_links_content) {
+        this_message.content += `Context specified in message:\n`;
+        this.context.internal_links.forEach((link, index) => {
+          if (internal_links_content[index].type === 'text') {
+            this_message.content += `-----------------------\n`;
+            this_message.content += `/${link.path}\n`;
+            this_message.content += `---\n`;
+            this_message.content += `${internal_links_content[index].content}\n`;
+            this_message.content += `-----------------------\n\n`;
+          } else if (internal_links_content[index].type === 'image') {
+            messages.push({
+              role: 'user',
+              image_url: internal_links_content[index].image_url,
+            });
+          }
+        });
+      }
+    }
+
+    // if (this.context.lookup_results && this.context.lookup_results.length > 0) {
+    //   const lookup_content = await this.fetch_content(this.context.lookup_results.map(result => result.key));
+    //   user_content += `Context from lookup:\n`;
+    //   this.context.lookup_results.forEach((result, index) => {
+    //     if (lookup_content[index].type === 'text') {
+    //       user_content += `-----------------------\n`;
+    //       user_content += `/${result.key} (relevance score: ${result.score})\n`;
+    //       user_content += `---\n`;
+    //       user_content += `${lookup_content[index].content}\n`;
+    //       user_content += `-----------------------\n\n`;
+    //     } // should images be added here?
+    //   });
+    // }
+
+    if (this_message.content) {
+      this_message.content += "Message from user:\n";
+    }
+    this_message.content += this.data.content;
+    
+    // Handle multimodal content
+    if (this.context.images?.length) {
+      const content = [];
+      // For multimodal messages, we need to process each content part
+      const images = this.context.images
+        // sort by occurrence in content (should be in order of appearance)
+        .sort((a, b) => this.data.content.indexOf(a.full_match) - this.data.content.indexOf(b.full_match))
+      ;
+      for(const image of images){
+        const file = this.env.smart_connections_plugin?.app.vault.getFileByPath(image.img_path);
+        // Convert file path to base64 if needed
+        if (file) {
+          // split user_content at image.full_match
+          const [text, remaining_text] = this_message.content.split(image.full_match);
+          if(text.trim().length > 0){
+            content.push({
+              type: "text",
+              text: text,
+            });
+          }
+          this_message.content = remaining_text;
+          const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
+          content.push({
+            type: "image_url",
+            image_url: {
+              url: `data:image/${file.extension};base64,${base64}`
+            }
+          });
+        }
+      }
+      if(this_message.content.trim().length > 0){
+        content.push({
+          type: "text",
+          text: this_message.content,
+        });
+      }
+    }
+    if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
+    if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
+    if (this.tool_call_output?.length) this_message.content = await this.tool_call_output_to_request();
+    // Add system message if there's any content
+    if (system_message.content) {
+      messages.push(system_message);
+    }
+    messages.push(this_message);
+    console.log('messages', messages);
+    return messages;
   }
+
+  async tool_call_output_to_request() {
+    const lookup_collection = this.tool_call_output[0]?.key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
+    const tool_call_output = await Promise.all(this.tool_call_output.map(async (result) => ({ ...result, content: (await lookup_collection.get(result.key).read()) })));
+    return JSON.stringify(tool_call_output);
+  }
+
+  // /**
+  //  * Parses AI response to extract hypotheticals
+  //  * @param {Object} response - AI response object
+  //  * @returns {Array<string>} Extracted hypotheticals
+  //  */
+  // parse_hypotheticals(response) {
+  //   return JSON.parse(response.choices[0].message.tool_calls[0].function.arguments || '{}').hypotheticals;
+  // }
 
   /**
    * @property {string} content - Message content
@@ -428,16 +442,53 @@ export class SmartMessage extends SmartBlock {
   set role(value) { this.data.role = value; }
 
   /**
+   * @property {Object} tool_calls - Tool calls
+   */
+  get tool_calls() { return this.data.tool_calls; }
+  set tool_calls(value) { this.data.tool_calls = value; }
+
+  /**
+   * @property {string} tool_call_id - Tool call ID
+   */
+  get tool_call_id() { return this.data.tool_call_id; }
+  set tool_call_id(value) { this.data.tool_call_id = value; }
+
+  /**
+   * @property {Array<Object>} tool_call_output - Tool call output
+   */
+  get tool_call_output() { return this.data.tool_call_output; }
+  set tool_call_output(value) { this.data.tool_call_output = value; }
+
+  /**
+   * @property {string} tool_name - Tool name
+   */
+  get tool_name() { return this.data.tool_name; }
+  set tool_name(value) { this.data.tool_name = value; }
+
+  /**
    * @property {Object} context - Message context data
    */
   get context() { return this.data.context; }
   set context(value) { this.data.context = value; }
+
 
   /**
    * @property {SmartThread} thread - Parent thread reference
    * @readonly
    */
   get thread() { return this.source; }
+
+  /**
+   * @property {number} msg_i - Message index (1-indexed)
+   * @readonly
+   */
+  get msg_i() { return this.data.msg_i; }
+
+  /**
+   * @property {SmartMessage} previous_message - Previous message reference
+   * @readonly
+   */
+  get previous_message() { return this.thread.messages[this.msg_i - 2]; }
 
   /**
    * @property {string} source_key - Key for source reference
