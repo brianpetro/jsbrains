@@ -273,6 +273,10 @@ export class SmartMessage extends SmartBlock {
     if(this.previous_message.context.folder_refs) params.filter = {
       key_starts_with_any: this.previous_message.context.folder_refs
     };
+    params.filter = {
+      ...(params.filter || {}),
+      limit: this.settings.lookup_limit || 10,
+    };
     return params;
   }
   async handle_lookup_tool_call(tool_call){

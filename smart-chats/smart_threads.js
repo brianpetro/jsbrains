@@ -122,6 +122,12 @@ export class SmartThreads extends SmartSources {
         default: false,
         description: "Whether to review the retrieved context before the AI completes the message.",
       },
+      "lookup_limit": {
+        name: "Lookup Limit",
+        type: "number",
+        default: 10,
+        description: "The maximum number of context items to retrieve via lookup.",
+      },
       "send_tool_output_in_user_message": {
         name: "Send Tool Output in User Message",
         type: "toggle",
