@@ -151,12 +151,7 @@ export class SmartMessage extends SmartBlock {
   async retrieve_context(){
     if (this.context.has_self_ref || this.context.folder_refs) {
       this.context.hypotheticals = await this.get_hypotheticals();
-      const lookup_params = { hypotheticals: this.context.hypotheticals };
-      if (this.context.folder_refs) {
-        lookup_params.filter = {
-          key_starts_with_any: this.context.folder_refs
-        };
-      }
+      const lookup_params = this.build_lookup_params();
       const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
       this.context.lookup_results = (await lookup_collection.lookup(lookup_params))
         .map(result => ({
@@ -166,6 +161,16 @@ export class SmartMessage extends SmartBlock {
       ;
     }
     await this.render_context();
+  }
+
+  build_lookup_params() {
+    const lookup_params = { hypotheticals: this.context.hypotheticals };
+    if (this.context.folder_refs) {
+      lookup_params.filter = {
+        key_starts_with_any: this.context.folder_refs
+      };
+    }
+    return lookup_params;
   }
 
   /**
