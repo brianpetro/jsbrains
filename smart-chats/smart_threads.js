@@ -106,6 +106,7 @@ export class SmartThreads extends SmartSources {
   }
 
   async render_settings(container=this.settings_container) {
+    container.innerHTML = '';
     await super.render_settings(container);
     await this.chat_model.render_settings(container);
   }
