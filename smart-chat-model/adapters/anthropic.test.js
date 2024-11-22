@@ -75,7 +75,7 @@ test('SmartChatModelAnthropicRequestAdapter converts OpenAI request to Anthropic
     {
       name: 'weather_api',
       description: 'Get weather information for a location',
-      parameters: openai_request.tools[0].function.parameters
+      input_schema: openai_request.tools[0].function.parameters
     }
   ]);
   t.deepEqual(body.tool_choice, { type: 'auto' });

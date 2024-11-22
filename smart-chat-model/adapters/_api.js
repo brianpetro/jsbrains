@@ -175,14 +175,14 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   async stream(req, handlers = {}) {
     const _req = new this.req_adapter(this, req);
-    const request_params = _req.to_openai(true);
+    const request_params = _req.to_platform(true);
     console.log('request_params', request_params);
     
     return await new Promise((resolve, reject) => {
       try {
         this.active_stream = new SmartStreamer(this.endpoint_streaming, request_params);
         
-        const resp_adapter = new SmartChatModelResponseAdapter(this, {});
+        const resp_adapter = new this.res_adapter(this, {});
         this.active_stream.addEventListener("message", async (e) => {
           // console.log('message', e);
           if (this.is_end_of_stream(e)) {
@@ -337,7 +337,7 @@ export class SmartChatModelRequestAdapter {
    * @returns {number} Max tokens value
    */
   get max_tokens() {
-    return this._req.max_tokens;
+    return this._req.max_tokens || this.adapter.model_config.max_output_tokens;
   }
 
   // /**
@@ -389,7 +389,7 @@ export class SmartChatModelRequestAdapter {
    * Convert request to platform-specific format
    * @returns {Object} Platform-specific request parameters
    */
-  to_platform() { return this.to_openai(); }
+  to_platform(streaming = false) { return this.to_openai(streaming); }
 
   /**
    * Convert request to OpenAI format

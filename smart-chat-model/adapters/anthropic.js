@@ -23,11 +23,13 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
     description: "Anthropic Claude",
     type: "API",
     endpoint: "https://api.anthropic.com/v1/messages",
-    streaming: false,
+    // streaming: false,
+    streaming: true,
     api_key_header: "x-api-key",
     headers: {
       "anthropic-version": "2023-06-01",
-      "anthropic-beta": "tools-2024-04-04"
+      "anthropic-beta": "tools-2024-04-04",
+      "anthropic-dangerous-direct-browser-access": true
     },
     adapter: "Anthropic",
     models_endpoint: false,
@@ -46,7 +48,7 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
    * Get response adapter class
    * @returns {typeof SmartChatModelAnthropicResponseAdapter} Response adapter class
    */
-  get res_adapter() { return SmartChatModelAnthropicResponseAdapter; }
+  res_adapter = SmartChatModelAnthropicResponseAdapter;
 
   /**
    * Validate parameters for getting models
@@ -132,20 +134,20 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
    * Convert request to Anthropic format
    * @returns {Object} Request parameters in Anthropic format
    */
-  to_platform() { return this.to_anthropic(); }
+  to_platform(streaming = false) { return this.to_anthropic(streaming); }
 
   /**
    * Convert request to Anthropic format
    * @returns {Object} Request parameters in Anthropic format
    */
-  to_anthropic() {
+  to_anthropic(streaming = false) {
     this.anthropic_body = {
       model: this.model,
-      messages: this._transform_messages_to_anthropic(),
       max_tokens: this.max_tokens,
       temperature: this.temperature,
-      stream: this.stream
+      stream: streaming,
     };
+    this.anthropic_body.messages = this._transform_messages_to_anthropic();
 
     if (this.tools) {
       this.anthropic_body.tools = this._transform_tools_to_anthropic();
@@ -180,16 +182,46 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
         if(!this.anthropic_body.system) this.anthropic_body.system = '';
         else this.anthropic_body.system += '\n\n';
         this.anthropic_body.system += message.content;
+      } else if (message.role === 'tool') {
+        const msg = {
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: message.tool_call_id,
+              content: message.content
+            }
+          ]
+        };
+        anthropic_messages.push(msg);
       } else {
-        anthropic_messages.push({
+        const msg = {
           role: this._get_anthropic_role(message.role),
           content: this._get_anthropic_content(message.content)
-        });
+        };
+        if(message.tool_calls?.length > 0) msg.content = this._transform_tool_calls_to_content(message.tool_calls);
+        anthropic_messages.push(msg);
       }
     }
 
     return anthropic_messages;
   }
+
+  /**
+   * Transform tool calls to Anthropic format
+   * @param {Array<Object>} tool_calls - Tool calls
+   * @returns {Array<Object>} Tool calls in Anthropic format
+   * @private
+   */
+  _transform_tool_calls_to_content(tool_calls) {
+    return tool_calls.map(tool_call => ({
+      type: 'tool_use',
+      id: tool_call.id,
+      name: tool_call.function.name,
+      input: JSON.parse(tool_call.function.arguments)
+    }));
+  }
+
 
   /**
    * Transform role to Anthropic format
@@ -199,7 +231,8 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
    */
   _get_anthropic_role(role) {
     const role_map = {
-      function: 'assistant' // Anthropic doesn't have a function role, so we'll treat it as assistant
+      function: 'assistant', // Anthropic doesn't have a function role, so we'll treat it as assistant
+      tool: 'user'
     };
     return role_map[role] || role;
   }
@@ -240,7 +273,7 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
     return this.tools.map(tool => ({
       name: tool.function.name,
       description: tool.function.description,
-      parameters: tool.function.parameters
+      input_schema: tool.function.parameters
     }));
   }
 }
@@ -289,11 +322,11 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
           message.content += (message.content ? '\n\n' : '') + content.text;
         } else if (content.type === 'tool_use') {
           message.tool_calls.push({
-            id: content.tool_use.id,
+            id: content.id,
             type: 'function',
             function: {
-              name: content.tool_use.name,
-              arguments: JSON.stringify(content.tool_use.input)
+              name: content.name,
+              arguments: JSON.stringify(content.input)
             }
           });
         }
@@ -343,6 +376,109 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
       total_tokens: (this._res.usage.input_tokens || 0) + (this._res.usage.output_tokens || 0)
     };
   }
+
+
+  handle_chunk(chunk) {
+    console.log('handle_chunk', chunk);
+    const is_type = [
+      'message_delta',
+      'message_start',
+      'message_stop',
+      'content_block_start',
+      'content_block_delta',
+      'content_block_stop',
+      'ping',
+      'error'
+    ].includes(chunk);
+    // Parse the chunk if it's a string
+    const event = typeof chunk === 'string' && !is_type
+      ? JSON.parse(chunk) 
+      : chunk
+    ;
+    
+    // Initialize response structure if needed
+    if (!this._res.content) {
+      this._res.content = [];
+    }
+
+    switch (event.type) {
+      case 'message_start':
+        // Initialize message with data from message_start event
+        this._res = {
+          ...this._res,
+          ...event.message,
+        };
+        break;
+
+      case 'content_block_start':
+        // Add new content block at specified index
+        this._res.content[event.index] = {
+          type: event.content_block.type,
+          text: event.content_block.type === 'text' ? '' : undefined,
+          tool_use: event.content_block.type === 'tool_use' ? {
+            id: event.content_block.id,
+            name: event.content_block.name,
+            input: {}
+          } : undefined
+        };
+        break;
+
+      case 'content_block_delta':
+        // Handle delta updates to content blocks
+        if (event.delta.type === 'text_delta') {
+          // Append text to the content block
+          if (!this._res.content[event.index].text) {
+            this._res.content[event.index].text = '';
+          }
+          this._res.content[event.index].text += event.delta.text;
+        } else if (event.delta.type === 'input_json_delta') {
+          // Accumulate JSON for tool use input
+          if (!this._res.content[event.index].tool_use._partial_json) {
+            this._res.content[event.index].tool_use._partial_json = '';
+          }
+          this._res.content[event.index].tool_use._partial_json += event.delta.partial_json;
+        }
+        break;
+
+      case 'content_block_stop':
+        // Finalize content block
+        if (this._res.content[event.index].tool_use?._partial_json) {
+          try {
+            // Parse accumulated JSON for tool use
+            this._res.content[event.index].tool_use.input = 
+              JSON.parse(this._res.content[event.index].tool_use._partial_json);
+            // Clean up partial JSON
+            delete this._res.content[event.index].tool_use._partial_json;
+          } catch (e) {
+            console.error('Error parsing tool use JSON:', e);
+          }
+        }
+        break;
+
+      case 'message_delta':
+        // Update message metadata
+        if (event.delta.stop_reason) {
+          this._res.stop_reason = event.delta.stop_reason;
+        }
+        if (event.delta.stop_sequence) {
+          this._res.stop_sequence = event.delta.stop_sequence;
+        }
+        if (event.usage) {
+          this._res.usage = {
+            ...this._res.usage,
+            ...event.usage
+          };
+        }
+        break;
+
+      case 'error':
+        // Handle error events
+        console.error('Anthropic stream error:', event.error);
+        throw new Error(event.error.message);
+    }
+  }
+
+
 }
 
 

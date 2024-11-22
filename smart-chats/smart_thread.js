@@ -121,12 +121,16 @@ export class SmartThread extends SmartSource {
     const request = { messages: [] };
     for(const msg of this.messages){
       request.messages.push(...(await msg.to_request()));
+      if(msg.context?.has_self_ref || msg.context?.folder_refs){
+        request.tools = [this.tools['lookup']];
+        if(msg.is_last_message) request.tool_choice = { type: "function", function: { name: "lookup" } };
+      }
     }
-    const last_msg = this.messages[this.messages.length - 1];
-    if(last_msg?.context?.has_self_ref || last_msg?.context?.folder_refs){
-      request.tools = [this.tools['lookup']];
-      request.tool_choice = { type: "function", function: { name: "lookup" } };
-    }
+    // const last_msg = this.messages[this.messages.length - 1];
+    // if(last_msg?.context?.has_self_ref || last_msg?.context?.folder_refs){
+    //   request.tools = [this.tools['lookup']];
+    //   request.tool_choice = { type: "function", function: { name: "lookup" } };
+    // }
     // DO: review these configurations (inherited from v1)
     request.temperature = 0.3;
     request.top_p = 1;
