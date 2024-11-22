@@ -5,6 +5,7 @@ import { contains_internal_link, extract_internal_links } from "./utils/internal
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
 import { render as context_template } from "./components/context";
+import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
 /**
  * @class SmartMessage
  * @extends SmartBlock
@@ -98,10 +99,15 @@ export class SmartMessage extends SmartBlock {
   parse_user_message() {
     this.context = {};
     let content = this.data.content;
-    const language = this.env.settings?.language || 'en'; // Default to English if not set
+    
+    // Return early if content is already parsed (not a string)
+    if (typeof content !== "string") {
+      return;
+    }
 
-    // Handle system prompt references (@"system prompt")
-    // FIRST because path may interfere with internal links or folder references detection
+    const language = this.env.settings?.language || 'en';
+
+    // Handle system prompt references (@"system prompt") FIRST
     if (contains_system_prompt_ref(content)) {
       const { mentions, content: content_after_refs } = extract_system_prompt_ref(content);
       this.context.system_prompt_refs = mentions;
@@ -122,9 +128,23 @@ export class SmartMessage extends SmartBlock {
     }
 
     // Handle self-referential keywords
-    // triggers HyDE Lookup (likely to be replaced by peristent lookup tool in the future)
     this.context.has_self_ref = contains_self_referential_keywords(content, language);
     
+    // Handle markdown images LAST to preserve all processed text content
+    if (contains_markdown_image(content)) {
+      console.log('contains_markdown_image', content);
+      if (!this.thread.chat_model.model_config.multimodal) {
+        console.warn("Current model does not support multimodal (image) content");
+        throw new Error("⚠️ Current model does not support multimodal (image) content");
+      }
+
+      const images = extract_markdown_images(content);
+      if (images.length > 0) {
+        this.context.images = images;
+      }
+    }
+
+    // If we reach here, content is plain text
     this.data.content = content.trim();
   }
   
@@ -216,11 +236,59 @@ export class SmartMessage extends SmartBlock {
         } // should images be added here?
       });
     }
+
     if (user_content) {
       user_content += "Message from user:\n";
     }
     user_content += this.data.content;
-
+    
+    // Handle multimodal content
+    if (this.context.images?.length) {
+      const content = [];
+      // For multimodal messages, we need to process each content part
+      const images = this.context.images
+        // sort by occurrence in content (should be in order of appearance)
+        .sort((a, b) => this.data.content.indexOf(a.full_match) - this.data.content.indexOf(b.full_match))
+      ;
+      for(const image of images){
+        const file = this.env.smart_connections_plugin?.app.vault.getFileByPath(image.img_path);
+        // Convert file path to base64 if needed
+        if (file) {
+          // split user_content at image.full_match
+          const [text, remaining_text] = user_content.split(image.full_match);
+          if(text.trim().length > 0){
+            content.push({
+              type: "text",
+              text: text,
+            });
+          }
+          user_content = remaining_text;
+          const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
+          content.push({
+            type: "image_url",
+            image_url: {
+              url: `data:image/${file.extension};base64,${base64}`
+            }
+          });
+        }
+      }
+      if(user_content.trim().length > 0){
+        content.push({
+          type: "text",
+          text: user_content,
+        });
+      }
+      messages.push({
+        role: this.role,
+        content,
+      });
+    } else {
+      // Handle regular text content
+      messages.push({
+        role: this.role,
+        content: user_content
+      });
+    }
 
     // Add system message if there's any content
     if (system_content) {
@@ -229,11 +297,6 @@ export class SmartMessage extends SmartBlock {
         content: system_content.trim()
       });
     }
-    // Add the user's message
-    messages.push({
-      role: this.role,
-      content: user_content
-    });
 
     return messages;
   }

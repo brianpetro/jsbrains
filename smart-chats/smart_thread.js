@@ -38,8 +38,8 @@ export class SmartThread extends SmartSource {
    * @param {HTMLElement} [container] - Container element to render into
    * @returns {DocumentFragment} Rendered thread interface
    */
-  async render(container = this.container) {
-    const frag = await thread_template.call(this.smart_view, this);
+  async render(container = this.container, opts = {}) {
+    const frag = await thread_template.call(this.smart_view, this, opts);
     if (container) {
       container.empty();
       // if container is sc-thread, replace it with the frag
@@ -125,15 +125,12 @@ export class SmartThread extends SmartSource {
    */
   async complete() {
     const request = await this.to_request();
-    if(this.chat_model.can_stream) {
-      await this.chat_model.stream(
-        request,
-        {
-          chunk: this.chunk_handler.bind(this),
-          done: this.done_handler.bind(this),
-          error: this.error_handler.bind(this),
-        }
-      );
+    if (this.chat_model.can_stream) {
+      await this.chat_model.stream(request, {
+        chunk: this.chunk_handler.bind(this),
+        done: this.done_handler.bind(this),
+        error: this.error_handler.bind(this),
+      });
     } else {
       const response = await this.chat_model.complete(request);
       this.data.responses[response.id] = response;
@@ -198,4 +195,18 @@ export class SmartThread extends SmartSource {
    * @readonly
    */
   get path() { return this.data.created_at; }
+
+  /**
+   * Processes base64 encoding for image files
+   * @async
+   * @param {string} file_path - Path to the image file
+   * @returns {string} Base64 encoded image data URL
+   */
+  async process_image_to_base64(file_path) {
+    const file = this.env.smart_connections_plugin?.app.vault.getFileByPath(file_path);
+    if (!file) return null;
+    
+    const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
+    return `data:image/${file.extension};base64,${base64}`;
+  }
 }

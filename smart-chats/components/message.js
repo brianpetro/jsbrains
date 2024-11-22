@@ -18,10 +18,19 @@ export function build_html(message, opts = {}) {
     `;
   }
   
+  const content = Array.isArray(message.content) 
+    ? message.content.map(part => {
+        if (part.type === "image_url") {
+          return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
+        }
+        return part.text;
+      }).join('\n')
+    : message.content;
+
   return `
     <div class="sc-message ${message.role}" id="${message.data.id}">
-      <div class="sc-message-content" data-content="${message.content}">
-        <span>${message.content}</span>
+      <div class="sc-message-content" data-content="${encodeURIComponent(content)}">
+        <span>${content}</span>
         <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>
       </div>
     </div>
@@ -66,20 +75,19 @@ export async function post_process(message, frag, opts) {
     });
   }
 
-  const msg_span = frag.querySelector('span');
-  const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
-  msg_span.innerHTML = '';
-  msg_span.appendChild(markdown_rendered_frag);
+  const msg_span = frag.querySelector('.sc-message-content > span:first-child');
+  if (Array.isArray(message.content)) {
+    msg_span.innerHTML = message.content.map(part => {
+      if (part.type === "image_url") {
+        return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
+      }
+      return this.render_markdown(part.text);
+    }).join('\n');
+  } else {
+    const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
+    msg_span.innerHTML = '';
+    msg_span.appendChild(markdown_rendered_frag);
+  }
   
   return frag;
-}
-
-/**
- * Processes markdown content in messages
- * @private
- * @param {string} content - Raw markdown content
- * @returns {string} Processed HTML content
- */
-function process_markdown(content) {
-  // ... implementation
 }

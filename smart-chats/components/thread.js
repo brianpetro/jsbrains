@@ -115,7 +115,7 @@ function handle_chat_input_keydown(e, thread, chat_input, opts) {
     return;
   }
 
-  if (!["/", "@", "["].includes(e.key)) return;
+  if (!["/", "@", "[", "!"].includes(e.key)) return;
   
   const pos = chat_input.selectionStart;
   if (e.key === "[" && chat_input.value[pos - 1] === "[" && opts.open_file_suggestion_modal) {
@@ -130,6 +130,10 @@ function handle_chat_input_keydown(e, thread, chat_input, opts) {
   
   if (e.key === "@" && (!pos || [" ", "\n"].includes(chat_input.value[pos - 1])) && opts.open_system_prompt_modal) {
     setTimeout(() => opts.open_system_prompt_modal(), 10);
+  }
+
+  if (e.key === "!" && (!pos || [" ", "\n"].includes(chat_input.value[pos - 1])) && opts.open_image_suggestion_modal) {
+    setTimeout(() => opts.open_image_suggestion_modal(), 10);
   }
 }
 
