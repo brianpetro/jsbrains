@@ -5,6 +5,7 @@ import { contains_internal_link, extract_internal_links } from "./utils/internal
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
 import { render as context_template } from "./components/context";
+import { render as tool_calls_template } from "./components/tool_calls";
 import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
 /**
  * @class SmartMessage
@@ -61,6 +62,7 @@ export class SmartMessage extends SmartBlock {
       // }
       await this.thread.complete();
     }else if(this.tool_calls?.length > 0){
+      this.render_tool_calls();
       await this.handle_tool_calls();
     }else if(this.role === 'tool'){
       this.render_context();
@@ -92,6 +94,12 @@ export class SmartMessage extends SmartBlock {
     const frag = await context_template.call(this.smart_view, this);
     const context_container = container.querySelector(`#context-container-${this.data.id}`);
     if (context_container) context_container.replaceWith(frag);
+    else container.appendChild(frag);
+  }
+  async render_tool_calls(container=this.thread.messages_container) {
+    const frag = await tool_calls_template.call(this.smart_view, this);
+    const tool_calls_container = container.querySelector(`#tool-calls-container-${this.data.id}`);
+    if (tool_calls_container) tool_calls_container.replaceWith(frag);
     else container.appendChild(frag);
   }
 
