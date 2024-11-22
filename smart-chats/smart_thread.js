@@ -87,7 +87,6 @@ export class SmartThread extends SmartSource {
         thread_key: this.key,
         content: content,
         role: 'user',
-        msg_i,
         id: `user-${msg_i}`,
       };
       // Create a new SmartMessage for the user's message
@@ -105,11 +104,9 @@ export class SmartThread extends SmartSource {
   async handle_message_from_chat_model(response, opts = {}) {
     const choices = response.choices;
     const id = response.id;
-    const msg_i = Object.keys(this.data.messages || {}).length + 1; // +1 accounts for initial message (also 1 indexes messages)
     const msg_items = await Promise.all(choices.map(choice => this.env.smart_messages.create_or_update({
       ...(choice?.message || choice), // fallback on full choice to handle non-message choices
       thread_key: this.key,
-      msg_i,
       id,
     })));
     return msg_items;
@@ -130,6 +127,11 @@ export class SmartThread extends SmartSource {
       request.tools = [this.tools['lookup']];
       request.tool_choice = { type: "function", function: { name: "lookup" } };
     }
+    // DO: review these configurations (inherited from v1)
+    request.temperature = 0.3;
+    request.top_p = 1;
+    request.presence_penalty = 0;
+    request.frequency_penalty = 0;
     return request;
   }
 

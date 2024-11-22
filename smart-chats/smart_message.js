@@ -48,6 +48,7 @@ export class SmartMessage extends SmartBlock {
    */
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
+    if(!this.data.msg_i) this.data.msg_i = this.thread.messages.length + 1;
     this.thread.data.messages[this.data.id] = this.data.msg_i;
     if(this.role === 'user') {
       this.parse_user_message();
@@ -61,6 +62,11 @@ export class SmartMessage extends SmartBlock {
       await this.thread.complete();
     }else if(this.tool_calls?.length > 0){
       await this.handle_tool_calls();
+    }else if(this.role === 'tool'){
+      this.render_context();
+      if(!this.settings.review_context){
+        this.thread.complete();
+      }
     }else{
       await this.render();
     }
@@ -278,17 +284,13 @@ export class SmartMessage extends SmartBlock {
         score: result.score,
       }))
     ;
-    const msg = await this.env.smart_messages.create_or_update({
+    await this.env.smart_messages.create_or_update({
       thread_key: this.thread.key,
       tool_call_id: tool_call.id,
       tool_name: tool_call.function.name,
       tool_call_output: lookup_results,
       role: 'tool',
     });
-    msg.render_context();
-    if(!this.settings.review_context){
-      this.thread.complete();
-    }
   }
 
   /**
@@ -346,22 +348,23 @@ export class SmartMessage extends SmartBlock {
       }
     }
 
-    // if (this.context.lookup_results && this.context.lookup_results.length > 0) {
-    //   const lookup_content = await this.fetch_content(this.context.lookup_results.map(result => result.key));
-    //   user_content += `Context from lookup:\n`;
-    //   this.context.lookup_results.forEach((result, index) => {
-    //     if (lookup_content[index].type === 'text') {
-    //       user_content += `-----------------------\n`;
-    //       user_content += `/${result.key} (relevance score: ${result.score})\n`;
-    //       user_content += `---\n`;
-    //       user_content += `${lookup_content[index].content}\n`;
-    //       user_content += `-----------------------\n\n`;
-    //     } // should images be added here?
-    //   });
-    // }
+    // skip tool_call and tool_call_output when sending tool output in user message
+    if(this.settings.send_tool_output_in_user_message){
+      console.log('send_tool_output_in_user_message', this.settings.send_tool_output_in_user_message);
+      if(this.is_last_message && this.role === 'tool'){
+        return [];
+      }
+      if(this.tool_calls && !this.is_last_message){
+        return [];
+      }
+      if(this.role === 'user' && this.next_message?.tool_calls?.length && !this.next_message.is_last_message && this.next_message.next_message.role === 'tool'){
+        const tool_output = await this.next_message.next_message.tool_call_output_to_request();
+        this_message.content += tool_output;
+      }
+    }
 
     if (this_message.content) {
-      this_message.content += "Message from user:\n";
+      this_message.content += "\nMessage from user:\n";
     }
     this_message.content += this.data.content;
     
@@ -415,9 +418,28 @@ export class SmartMessage extends SmartBlock {
   }
 
   async tool_call_output_to_request() {
-    const lookup_collection = this.tool_call_output[0]?.key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
-    const tool_call_output = await Promise.all(this.tool_call_output.map(async (result) => ({ ...result, content: (await lookup_collection.get(result.key).read()) })));
-    return JSON.stringify(tool_call_output);
+    if(this.tool_name === 'lookup'){
+      // // RETURNS LOOKUP OUTPUT AS JSON
+      if(this.settings.tool_call_output_as_json){
+        const lookup_collection = this.tool_call_output[0]?.key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
+        const tool_call_output = await Promise.all(this.tool_call_output.map(async (result) => ({ ...result, content: (await lookup_collection.get(result.key).read()) })));
+        return JSON.stringify(tool_call_output);
+      }
+  
+      // RETURNS LOOKUP OUTPUT AS TEXT
+      const lookup_content = await this.fetch_content(this.tool_call_output.map(result => result.key));
+      let lookup_output = `Context from lookup:\n`;
+      this.tool_call_output.forEach((result, index) => {
+        if (lookup_content[index].type === 'text') {
+          lookup_output += `-----------------------\n`;
+          lookup_output += `/${result.key} (relevance score: ${result.score})\n`;
+          lookup_output += `---\n`;
+          lookup_output += `${lookup_content[index].content}\n`;
+          lookup_output += `-----------------------\n\n`;
+        } // should images be added here?
+      });
+      return lookup_output;
+    }
   }
 
   // /**
@@ -485,10 +507,22 @@ export class SmartMessage extends SmartBlock {
   get msg_i() { return this.data.msg_i; }
 
   /**
+   * @property {SmartMessage} next_message - Next message reference
+   * @readonly
+   */
+  get next_message() { return this.thread.messages[this.msg_i]; }
+
+  /**
    * @property {SmartMessage} previous_message - Previous message reference
    * @readonly
    */
   get previous_message() { return this.thread.messages[this.msg_i - 2]; }
+
+  /**
+   * @property {boolean} is_last_message - Whether the message is the last message in the thread
+   * @readonly
+   */
+  get is_last_message() { return this.msg_i === Object.keys(this.thread.messages).length; }
 
   /**
    * @property {string} source_key - Key for source reference

@@ -405,6 +405,9 @@ export class SmartChatModelRequestAdapter {
       ...(this.tools && { tools: this._transform_tools_to_openai() }),
       ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
     };
+    if(typeof this._req.top_p === 'number') body.top_p = this._req.top_p;
+    if(typeof this._req.presence_penalty === 'number') body.presence_penalty = this._req.presence_penalty;
+    if(typeof this._req.frequency_penalty === 'number') body.frequency_penalty = this._req.frequency_penalty;
 
     return {
       url: this.adapter.endpoint,

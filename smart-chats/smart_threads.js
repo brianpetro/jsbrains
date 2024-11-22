@@ -121,6 +121,12 @@ export class SmartThreads extends SmartSources {
         type: "toggle",
         default: false,
         description: "Whether to review the retrieved context before the AI completes the message.",
+      },
+      "send_tool_output_in_user_message": {
+        name: "Send Tool Output in User Message",
+        type: "toggle",
+        default: false,
+        description: "Whether to send tool output in the user message.",
       }
     };
   }
