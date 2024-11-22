@@ -93,13 +93,13 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     return `https://generativelanguage.googleapis.com/v1beta/models/${this.model_key}:streamGenerateContent?key=${this.api_key}`;
   }
 
-  /**
-   * Extracts text from Gemini's streaming format
-   */
-  get_text_chunk_from_stream(event) {
-    const data = JSON.parse(event.data);
-    return data.candidates[0]?.content?.parts[0]?.text || '';
-  }
+  // /**
+  //  * Extracts text from Gemini's streaming format
+  //  */
+  // get_text_chunk_from_stream(event) {
+  //   const data = JSON.parse(event.data);
+  //   return data.candidates[0]?.content?.parts[0]?.text || '';
+  // }
   
   /**
    * Get models endpoint URL with API key
@@ -142,11 +142,16 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
         return acc;
       }, {});
   }
+
+  is_end_of_stream(event) {
+    return event.data.includes('"finishReason"');
+    return false
+  }
 }
 
 export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAdapter {
-  to_platform() { return this.to_gemini(); }
-  to_gemini() {
+  to_platform(streaming = false) { return this.to_gemini(streaming); }
+  to_gemini(streaming = false) {
     const gemini_body = {
       contents: this._transform_messages_to_gemini(),
       generationConfig: {
@@ -179,7 +184,7 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
     };
 
     return {
-      url: this.adapter.endpoint,
+      url: streaming ? this.adapter.endpoint_streaming : this.adapter.endpoint,
       method: 'POST',
       headers: this.get_headers(),
       body: JSON.stringify(gemini_body)
@@ -250,9 +255,26 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
 }
 
 export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseAdapter {
+  static platform_res = {
+    candidates: [{
+      content: {
+        parts: [
+          {
+            text: ''
+          }
+        ],
+        role: ''
+      },
+      finishReason: ''
+    }],
+    promptFeedback: {},
+    usageMetadata: {}
+  }
   to_openai() {
     const first_candidate = this._res.candidates[0];
+    if(!this._res.id) this._res.id = 'gemini-' + Date.now().toString();
     return {
+      id: this._res.id,
       object: 'chat.completion',
       created: Date.now(),
       model: this.adapter.model_key,
@@ -310,4 +332,43 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
       total_tokens: this._res.usageMetadata.totalTokenCount || null
     };
   }
+
+  handle_chunk(chunk) {
+    console.log('platform_res', this._res);
+    console.log('handle_chunk', chunk);
+    let chunk_trimmed = chunk.trim();
+    if(['[',','].includes(chunk_trimmed[0])) chunk_trimmed = chunk_trimmed.slice(1);
+    if([']',','].includes(chunk_trimmed[chunk_trimmed.length - 1])) chunk_trimmed = chunk_trimmed.slice(0, -1);
+    console.log('chunk_trimmed', chunk_trimmed);
+    const data = JSON.parse(chunk_trimmed);
+    console.log('handle_chunk data', data);
+
+    // Merge candidates content parts text
+    if (data.candidates?.[0]?.content?.parts?.[0]?.text?.length) {
+      this._res.candidates[0].content.parts[0].text += data.candidates[0].content.parts[0].text;
+    }
+    if(data.candidates?.[0]?.content?.role?.length){
+      this._res.candidates[0].content.role = data.candidates[0].content.role;
+    }
+    if(data.candidates?.[0]?.finishReason?.length){
+      this._res.candidates[0].finishReason += data.candidates[0].finishReason;
+    }
+    // Merge prompt feedback
+    if (data.promptFeedback) {
+      this._res.promptFeedback = {
+        ...(this._res.promptFeedback || {}),
+        ...data.promptFeedback
+      };
+    }
+
+    // Merge usage metadata
+    if (data.usageMetadata) {
+      this._res.usageMetadata = {
+        ...(this._res.usageMetadata || {}),
+        ...data.usageMetadata
+      };
+    }
+    console.log('handle_chunk this._res', this._res);
+  }
+
 }

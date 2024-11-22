@@ -23,6 +23,8 @@ export class SmartStreamer {
     this.CONNECTING = 0;
     this.OPEN = 1;
     this.CLOSED = 2;
+
+    this.chunk_accumulator = '';
   }
 
   /**
@@ -129,14 +131,25 @@ export class SmartStreamer {
       this.#setReadyState(this.OPEN);
     }
     const data = this.xhr.responseText.substring(this.progress);
+    console.log('data', data);
     this.progress += data.length;
-    // data.split(/(\r\n|\r|\n){2}/g).forEach((part) => {
-    data.split(/(\r\n|\r|\n)/g).forEach((part) => {
+    
+    // Split the data and handle the parts
+    const parts = data.split(/(\r\n|\n|\r){2}/g);
+    parts.forEach((part, index) => {
       if (part.trim().length === 0) {
-        this.dispatchEvent(this.#parseEventChunk(this.chunk.trim()));
-        this.chunk = '';
+        // If we have accumulated chunk, dispatch it
+        if (this.chunk) {
+          this.dispatchEvent(this.#parseEventChunk(this.chunk.trim()));
+          this.chunk = '';
+        }
       } else {
         this.chunk += part;
+        // If this is the last part and we're in onStreamLoaded, dispatch it
+        if (index === parts.length - 1 && this.xhr.readyState === XMLHttpRequest.DONE) {
+          this.dispatchEvent(this.#parseEventChunk(this.chunk.trim()));
+          this.chunk = '';
+        }
       }
     });
   }
@@ -146,28 +159,10 @@ export class SmartStreamer {
     this.chunk = '';
   }
   #parseEventChunk(chunk) {
-    if (!chunk || chunk.length === 0) return null;
-    const e = { id: null, retry: null, data: '', event: 'message', text: '' };
-    chunk.split(/(\r\n|\r|\n)/).forEach((line) => {
-      // line = line.trimRight();
-      line = line.trim();
-      const index = line.indexOf(this.FIELD_SEPARATOR);
-      if (index <= 0) return;
-      // const field = line.substring(0, index);
-      // also remove quotes
-      const field = line.substring(0, index).replace(/^"|"$/g, '');
-      if(!['id', 'retry', 'data', 'event', 'text'].includes(field)) return;
-      // if (!(field in e)) return;
-      // const value = line.substring(index + 1).trimLeft();
-      const value = line.substring(index + 1).trim().replace(/^"|"$/g, '');
-      // if (field === 'data') e[field] += value;
-      // else e[field] = value;
-      e.data += value;
-    });
-    if (e.id) this.last_event_id = e.id;
-    const event = new CustomEvent(e.event || 'message');
-    event.id = e.id;
-    event.data = e.data || '';
+    console.log('parseEventChunk', chunk);
+    if(!chunk) return console.log('no chunk');
+    const event = new CustomEvent('message');
+    event.data = chunk;
     event.last_event_id = this.last_event_id;
     return event;
   }

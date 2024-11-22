@@ -380,21 +380,39 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
 
   handle_chunk(chunk) {
     console.log('handle_chunk', chunk);
-    const is_type = [
-      'message_delta',
-      'message_start',
-      'message_stop',
-      'content_block_start',
-      'content_block_delta',
-      'content_block_stop',
-      'ping',
-      'error'
-    ].includes(chunk);
-    // Parse the chunk if it's a string
-    const event = typeof chunk === 'string' && !is_type
-      ? JSON.parse(chunk) 
-      : chunk
-    ;
+    const [event_line, data_line] = chunk.split('\n');
+    // const is_type = [
+    //   'message_delta',
+    //   'message_start',
+    //   'message_stop',
+    //   'content_block_start',
+    //   'content_block_delta',
+    //   'content_block_stop',
+    //   'ping',
+    //   'error'
+    // ].includes(chunk);
+    // // Parse the chunk if it's a string
+    // const event = typeof chunk === 'string' && !is_type
+    //   ? JSON.parse(chunk) 
+    //   : chunk
+    // ;
+    let data;
+    try {
+      data = data_line.slice(6);
+      console.log('data', data);
+      data = JSON.parse(data);
+    } catch (e) {
+      console.error('Error parsing data:', e);
+      data = {};
+    }
+    const event_type = event_line.slice(7);
+    console.log({event: event_type, data: data});
+    let event = {
+      type: event_type.trim(),
+      ...data
+    };
+
+    console.log('event', event);
     
     // Initialize response structure if needed
     if (!this._res.content) {

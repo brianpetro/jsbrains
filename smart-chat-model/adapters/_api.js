@@ -182,13 +182,15 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       try {
         this.active_stream = new SmartStreamer(this.endpoint_streaming, request_params);
         
-        const resp_adapter = new this.res_adapter(this, {});
+        const resp_adapter = new this.res_adapter(this);
         this.active_stream.addEventListener("message", async (e) => {
           // console.log('message', e);
           if (this.is_end_of_stream(e)) {
+            console.log('end of stream');
+            await resp_adapter.handle_chunk(e.data);
             this.stop_stream();
             const final_resp = resp_adapter.to_openai();
-            handlers.done && handlers.done(final_resp);
+            handlers.done && await handlers.done(final_resp);
             // should return the final aggregated response if needed
             resolve(final_resp);
             return;
@@ -196,7 +198,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
           
           try {
             resp_adapter.handle_chunk(e.data);
-            handlers.chunk && handlers.chunk(resp_adapter.to_openai());
+            handlers.chunk && await handlers.chunk(resp_adapter.to_openai());
           } catch (error) {
             console.error('Error processing stream chunk:', error);
             handlers.error && handlers.error("*API Error. See console logs for details.*");
@@ -228,8 +230,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {boolean} True if end of stream
    */
   is_end_of_stream(event) {
-    if(typeof this.adapter?.is_end_of_stream === 'function') return this.adapter.is_end_of_stream(event);
-    return event.data === "[DONE]"; // use default OpenAI format
+    return event.data === "data: [DONE]"; // use default OpenAI format
   }
 
   /**
@@ -510,14 +511,15 @@ export class SmartChatModelRequestAdapter {
  * @property {Object} _res - The original response object
  */
 export class SmartChatModelResponseAdapter {
+  static platform_res = {};
   /**
    * @constructor
    * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance
    * @param {Object} res - The response object
    */
-  constructor(adapter, res = {}) {
+  constructor(adapter, res) {
     this.adapter = adapter;
-    this._res = res;
+    this._res = res || this.constructor.platform_res;
   }
 
   /**
@@ -603,7 +605,9 @@ export class SmartChatModelResponseAdapter {
    * Parse chunk adds delta to content as expected output format
    */
   handle_chunk(chunk) {
-    chunk = JSON.parse(chunk);
+    console.log('handle_chunk', chunk);
+    if(chunk === 'data: [DONE]') return;
+    chunk = JSON.parse(chunk.split('data: ')[1] || '{}');
     if(!this._res.choices){
       this._res = this.to_openai();
     }
