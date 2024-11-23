@@ -23,7 +23,7 @@ export class SmartDirectory extends SmartEntity {
 
   async init() {
     this.data.path = this.data.path.replace(/\\/g, "/");
-    await this.create(this.data.path);
+    // await this.create(this.data.path);
     this.queue_save();
   }
 
@@ -147,7 +147,7 @@ export class SmartDirectory extends SmartEntity {
     }
 
     this.data.median_vec = median_vec;
-    this.queue_save();
+    // this.queue_save();
     return median_vec;
   }
 
@@ -176,7 +176,7 @@ export class SmartDirectory extends SmartEntity {
     }
 
     this.data.median_block_vec = median_vec;
-    this.queue_save();
+    // this.queue_save();
     return median_vec;
   }
 
