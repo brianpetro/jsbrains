@@ -1,3 +1,7 @@
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
 // ../smart-model/smart_model.js
 var SmartModel = class {
   /**
@@ -32,15 +36,15 @@ var SmartModel = class {
   validate_opts(opts) {
     if (!opts.adapters) throw new Error("opts.adapters is required");
     if (!opts.settings) throw new Error("opts.settings is required");
-    if (!this.model_config.adapter) {
-      throw new Error("model_config.adapter is required");
-    }
   }
   /**
    * Get the current settings
    * @returns {Object} Current settings
    */
   get settings() {
+    if (!this.opts.settings) this.opts.settings = {
+      ...this.constructor.defaults
+    };
     return this.opts.settings;
   }
   /**
@@ -48,7 +52,9 @@ var SmartModel = class {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    return this.model_config.adapter;
+    const adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
+    if (!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
+    return adapter_key;
   }
   /**
    * Get adapter-specific settings.
@@ -59,8 +65,7 @@ var SmartModel = class {
     return this.settings[this.adapter_name];
   }
   get adapter_config() {
-    const base_config = this.adapters[this.adapter_name]?.config;
-    if (!base_config) throw new Error(`Adapter "${this.adapter_name}" not found`);
+    const base_config = this.adapters[this.adapter_name]?.defaults || {};
     return {
       ...base_config,
       ...this.adapter_settings,
@@ -85,7 +90,7 @@ var SmartModel = class {
    * @returns {string} Current model key
    */
   get model_key() {
-    return this.opts.model_key || this.settings.model_key || this.default_model_key;
+    return this.opts.model_key || this.settings.model_key || this.adapter_config.model_key || this.default_model_key;
   }
   /**
    * Get the current model configuration
@@ -93,10 +98,10 @@ var SmartModel = class {
    */
   get model_config() {
     const model_key = this.model_key;
-    const base_config = this.models[model_key] || {};
+    const base_model_config = this.models[model_key] || {};
     return {
-      ...base_config,
-      ...this.settings,
+      ...this.adapter_config,
+      ...base_model_config,
       ...this.opts.model_config
     };
   }
@@ -201,7 +206,7 @@ var SmartModel = class {
    * @throws {Error} If adapter not found
    */
   get adapter() {
-    const adapter_name = this.model_config.adapter;
+    const adapter_name = this.adapter_name;
     if (!adapter_name) {
       throw new Error(`Adapter not set for model.`);
     }
@@ -272,6 +277,9 @@ var SmartModel = class {
   }
   // override in sub-class if needed for prefixes and variable replacements
 };
+__publicField(SmartModel, "defaults", {
+  // override in sub-class if needed
+});
 
 // models.json
 var models_default = {
@@ -537,6 +545,9 @@ var SmartEmbedModel = class extends SmartModel {
     return options;
   }
 };
+__publicField(SmartEmbedModel, "defaults", {
+  model_key: "TaylorAI/bge-micro-v2"
+});
 
 // ../smart-model/adapters/_adapter.js
 var SmartModelAdapter = class {

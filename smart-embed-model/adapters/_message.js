@@ -105,12 +105,12 @@ export class SmartEmbedMessageAdapter extends SmartEmbedAdapter {
      * @returns {Promise<Array<Object>>} Processed inputs with embeddings
      */
     async embed_batch(inputs) {
-        const filtered_inputs = inputs.filter(item => item.embed_input?.length > 0);
-        if (!filtered_inputs.length) return [];
-        const embed_inputs = filtered_inputs.map(item => ({ embed_input: item.embed_input }));
+        inputs = inputs.filter(item => item.embed_input?.length > 0);
+        if (!inputs.length) return [];
+        const embed_inputs = inputs.map(item => ({ embed_input: item.embed_input }));
         const result = await this._send_message('embed_batch', { inputs: embed_inputs });
 
-        return filtered_inputs.map((item, i) => {
+        return inputs.map((item, i) => {
             item.vec = result[i].vec;
             item.tokens = result[i].tokens;
             return item;
