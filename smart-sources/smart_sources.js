@@ -316,7 +316,26 @@ export class SmartSources extends SmartEntities {
    * @readonly
    * @returns {Object} An object mapping file extensions to adapter constructors.
    */
-  get source_adapters() { return this.env.opts.collections?.[this.collection_key]?.source_adapters || {}; }
+  get source_adapters() {
+    if(!this._source_adapters){
+      this._source_adapters = {
+        ...(this.env.opts.collections?.[this.collection_key]?.source_adapters || {}),
+      };
+      if(!this.settings?.enable_image_adapter){
+        delete this._source_adapters.png;
+        delete this._source_adapters.jpg;
+        delete this._source_adapters.jpeg;
+      }
+      if(!this.settings?.enable_pdf_adapter){
+        delete this._source_adapters.pdf;
+      }
+    }
+    return this._source_adapters;
+  }
+  reset_source_adapters(){
+    this._source_adapters = null;
+    this.render_settings();
+  }
 
   /**
    * Retrieves the notices system from the environment.
@@ -354,8 +373,22 @@ export class SmartSources extends SmartEntities {
    * @returns {Object} The settings configuration object.
    */
   get settings_config(){
-    return {
+    const _settings_config = {
       ...super.settings_config,
+      "enable_image_adapter": {
+        "name": "Image Adapter",
+        "description": "Enable image processing.",
+        "type": "toggle",
+        "default": false,
+        "callback": "reset_source_adapters",
+      },
+      "enable_pdf_adapter": {
+        "name": "PDF Adapter",
+        "description": "Enable PDF processing.",
+        "type": "toggle",
+        "default": false,
+        "callback": "reset_source_adapters",
+      },
       ...this.process_settings_config(settings_config),
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
         if(acc[adapter_constructor]) return acc; // Skip if already added same adapter_constructor
@@ -370,8 +403,10 @@ export class SmartSources extends SmartEntities {
         }
         return acc;
       }, {}),
-      // ... existing settings ...
     };
+    if(!['png', 'jpg', 'jpeg'].some(ext => this.env.opts.collections?.[this.collection_key]?.source_adapters?.[ext])) delete _settings_config.enable_image_adapter;
+    if(!this.env.opts.collections?.[this.collection_key]?.source_adapters?.['pdf']) delete _settings_config.enable_pdf_adapter;
+    return _settings_config;
   }
 
   /**
@@ -556,26 +591,6 @@ export class SmartSources extends SmartEntities {
     return this.env.fs.file_paths
       .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
       .length;
-  }
-
-  /**
-   * Renders the settings UI components.
-   * @async
-   * @param {HTMLElement} [container=this.settings_container] - The container element for settings.
-   * @param {Object} [opts={}] - Additional options.
-   * @returns {Promise<void>}
-   */
-  async render_settings(container=this.settings_container, opts = {}){
-    // Prepare settings (THIS IS A PATCH: async render_setting_component fails to load)
-    const settings_config = this.settings_config; // Trigger loading adapter modules
-    if(this.pdf_adapter?.chat_model){
-      await this.pdf_adapter.chat_model.get_models();
-    }
-    if(this.image_adapter?.chat_model){
-      await this.image_adapter.chat_model.get_models();
-    }
-    // END PATCH
-    await super.render_settings(container, opts);
   }
 
 }
