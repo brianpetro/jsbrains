@@ -131,7 +131,6 @@ export class SmartStreamer {
       this.#setReadyState(this.OPEN);
     }
     const data = this.xhr.responseText.substring(this.progress);
-    console.log('data', data);
     this.progress += data.length;
     
     // Split the data and handle the parts
@@ -159,7 +158,6 @@ export class SmartStreamer {
     this.chunk = '';
   }
   #parseEventChunk(chunk) {
-    console.log('parseEventChunk', chunk);
     if(!chunk) return console.log('no chunk');
     const event = new CustomEvent('message');
     event.data = chunk;

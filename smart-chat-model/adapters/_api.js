@@ -605,7 +605,6 @@ export class SmartChatModelResponseAdapter {
    * Parse chunk adds delta to content as expected output format
    */
   handle_chunk(chunk) {
-    console.log('handle_chunk', chunk);
     if(chunk === 'data: [DONE]') return;
     chunk = JSON.parse(chunk.split('data: ')[1] || '{}');
     if(!this._res.choices){

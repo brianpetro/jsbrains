@@ -217,17 +217,22 @@ export class SmartMessage extends SmartBlock {
       const image_extensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'heic', 'heif', 'ico'];
       const contents = await Promise.all(paths.map(async (path) => {
         if (path) {
-          const item = this.env.smart_blocks.get(path) || this.env.smart_sources.get(path);
-          // Check if the link is an image
-          const file_extension = path.split('.').pop().toLowerCase();
-          if (image_extensions.includes(file_extension)) {
-            // DO (future): may return already extracted text if exists in item.data.content
-            const image_data = await this.env.smart_sources.fs.read(path, 'base64');
-            const base64_image = `data:image/${file_extension};base64,${image_data}`;
-            return { type: 'image', image_url: base64_image };
-          } else {
-            // If not an image, return the text content
-            return { type: 'text', content: await item.read() };
+          try{
+            const item = this.env.smart_blocks.get(path) || this.env.smart_sources.get(path);
+            // Check if the link is an image
+            const file_extension = path.split('.').pop().toLowerCase();
+            if (image_extensions.includes(file_extension)) {
+              // DO (future): may return already extracted text if exists in item.data.content
+              const image_data = await this.env.smart_sources.fs.read(path, 'base64');
+              const base64_image = `data:image/${file_extension};base64,${image_data}`;
+              return { type: 'image', image_url: base64_image };
+            } else {
+              // If not an image, return the text content
+              return { type: 'text', content: await item.read() };
+            }
+          }catch(e){
+            console.error(`Error fetching content for ${path}:`, e);
+            return { type: 'error', content: 'Failed to fetch content' };
           }
         }
       }));
@@ -456,7 +461,7 @@ export class SmartMessage extends SmartBlock {
       const lookup_content = await this.fetch_content(this.tool_call_output.map(result => result.key));
       let lookup_output = `Context from lookup:\n`;
       this.tool_call_output.forEach((result, index) => {
-        if (lookup_content[index].type === 'text') {
+        if (lookup_content[index]?.type === 'text') {
           lookup_output += `-----------------------\n`;
           lookup_output += `/${result.key} (relevance score: ${result.score})\n`;
           lookup_output += `---\n`;
