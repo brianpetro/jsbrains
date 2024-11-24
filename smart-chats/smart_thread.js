@@ -1,5 +1,4 @@
 import { SmartSource } from "smart-sources";
-import { SmartThreadDataOpenaiJsonAdapter } from "./adapters/openai_json";
 import { render as thread_template } from "./components/thread.js";
 
 /**
@@ -20,6 +19,7 @@ export class SmartThread extends SmartSource {
         created_at: null,
         responses: {},
         messages: {},
+        path: null,
       }
     };
   }
@@ -47,12 +47,23 @@ export class SmartThread extends SmartSource {
     }
   };
 
+  get_key(){
+    if(!this.data.key) this.data.key = this.path.replace(this.source_dir + '/', '');
+    return this.data.key;
+  }
   /**
-   * Generates a unique key for the thread based on creation timestamp
-   * @returns {string} Unique thread identifier
+   * Imports the SmartSource by checking for updates and parsing content.
+   * @async
+   * @returns {Promise<void>}
    */
-  get_key() {
-    return this.data.created_at ? this.data.created_at : this.data.created_at = Date.now().toString();
+  async import(){
+    this._queue_import = false;
+    try{
+      await this.source_adapter.import();
+    }catch(err){
+      this.queue_import();
+      console.error(err, err.stack);
+    }
   }
 
   /**
@@ -126,11 +137,6 @@ export class SmartThread extends SmartSource {
         if(msg.is_last_message) request.tool_choice = { type: "function", function: { name: "lookup" } };
       }
     }
-    // const last_msg = this.messages[this.messages.length - 1];
-    // if(last_msg?.context?.has_self_ref || last_msg?.context?.folder_refs){
-    //   request.tools = [this.tools['lookup']];
-    //   request.tool_choice = { type: "function", function: { name: "lookup" } };
-    // }
     // DO: review these configurations (inherited from v1)
     request.temperature = 0.3;
     request.top_p = 1;
@@ -183,17 +189,6 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * @property {SmartChatDataAdapter} chat_data_adapter - Adapter for data format conversions
-   * @readonly
-   */
-  get chat_data_adapter() {
-    if (!this._chat_data_adapter) {
-      this._chat_data_adapter = new SmartThreadDataOpenaiJsonAdapter(this);
-    }
-    return this._chat_data_adapter;
-  }
-
-  /**
    * @property {Object} chat_model - The AI chat model instance
    * @readonly
    */
@@ -203,21 +198,28 @@ export class SmartThread extends SmartSource {
    * @property {HTMLElement} container - Container element for the thread UI
    */
   get container() {
-    return this.collection.container.querySelector('.sc-thread');
+    return this.collection.container?.querySelector('.sc-thread');
   }
 
-  get messages_container() { return this.container.querySelector('.sc-message-container'); }
+  get messages_container() { return this.container?.querySelector('.sc-message-container'); }
   /**
    * @property {Array<SmartMessage>} messages - All messages in the thread
    * @readonly
    */
   get messages() { return Object.keys(this.data.messages || {}).map(key => this.env.smart_messages.get(this.key + '#' + key)); }
+  /**
+   * @alias {Array<SmartMessage>} messages
+   * @readonly
+   */
+  get blocks() { return this.messages; }
 
   /**
    * @property {string} path - Path identifier for the thread
    * @readonly
    */
-  get path() { return this.data.created_at; }
+  get path() {
+    return this.source_adapter.file_path;
+  }
 
   /**
    * Processes base64 encoding for image files
@@ -231,5 +233,17 @@ export class SmartThread extends SmartSource {
     
     const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
     return `data:image/${file.extension};base64,${base64}`;
+  }
+  /**
+   * Queues the thread for saving via the collection.
+   * @returns {void}
+   */
+  queue_save() {
+    if(this.messages.length === 0) return;
+    this._queue_save = true;
+    this.collection?.queue_save();
+  }
+  async save() {
+    await this.source_adapter.save();
   }
 }

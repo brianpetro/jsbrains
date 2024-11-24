@@ -65,12 +65,15 @@ export async function post_process(thread, frag, opts) {
   const container = frag.querySelector('.sc-message-container');
   // If we have messages, render them
   if (thread.messages.length) {
-    const message_frags = await Promise.all(
-      thread.messages.map(msg => msg.render())
-    );
-    message_frags.forEach(message_frag => {
-      container.appendChild(message_frag);
+    // append empty elms for each message
+    thread.messages.forEach(msg => {
+      const msg_elm = document.createElement('div');
+      msg_elm.id = msg.data.id;
+      container.appendChild(msg_elm);
     });
+    await Promise.all(
+      thread.messages.map(msg => msg.render(container))
+    );
   }
   
   // Setup chat input handlers

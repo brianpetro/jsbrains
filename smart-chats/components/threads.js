@@ -66,15 +66,17 @@ export async function post_process(threads_collection, frag, opts) {
   const chat_box = frag.querySelector('.sc-thread');
   
   // Initialize thread if needed
-  let thread = threads_collection.get_active_thread();
+  let thread;
+  if (opts.thread_key) thread = threads_collection.get(opts.thread_key);
+  if (!thread) thread = threads_collection.get_active_thread();
   if (!thread) {
     thread = await threads_collection.create_or_update({});
-    chat_box.setAttribute('data-thread-key', thread.key);
   }
+  chat_box.setAttribute('data-thread-key', thread.key);
   await thread.render(chat_box, opts);
 
   // Setup button handlers
-  setup_button_handlers.call(this, frag, threads_collection);
+  setup_button_handlers.call(this, frag, threads_collection, opts);
   
   return frag;
 }
@@ -83,7 +85,7 @@ export async function post_process(threads_collection, frag, opts) {
  * Sets up button click handlers
  * @private
  */
-function setup_button_handlers(frag, threads_collection) {
+function setup_button_handlers(frag, threads_collection, opts) {
 
   // Settings button
   const settings_button = frag.querySelector('button[title="Chat Settings"]');
@@ -101,6 +103,13 @@ function setup_button_handlers(frag, threads_collection) {
   const new_chat_button = frag.querySelector('button[title="New Chat"]');
   new_chat_button.addEventListener('click', async () => {
     threads_collection.container.innerHTML = '';
+    opts.thread_key = null; // clear thread key saved to `this.render_opts{}`
     threads_collection.render();
+  });
+
+  // open chat history button
+  const chat_history_button = frag.querySelector('button[title="Chat History"]');
+  chat_history_button.addEventListener('click', () => {
+    opts.open_chat_history();
   });
 }

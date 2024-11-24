@@ -9,12 +9,31 @@ import { render as chat_template } from "./components/threads.js";
  * control for all chat-related operations.
  */
 export class SmartThreads extends SmartSources {
+  // /**
+  //  * Initializes the file system and preloads chat models
+  //  * @async
+  //  */
+  // async init() {
+  //   await this.fs.init();
+  // }
+
   /**
-   * Initializes the file system and preloads chat models
+   * Initializes items by setting up the file system and loading sources.
    * @async
+   * @returns {Promise<void>}
    */
-  async init() {
-    await this.fs.init();
+  async init_items() {
+    this.fs.excluded_patterns = []; // Clear exclusions to prevent using them
+    // no fs.init to prevent using exclusions
+
+    // ensure source_dir exists
+    if(!(await this.fs.exists(this.source_dir))) await this.fs.mkdir(this.source_dir);
+    (await this.fs.list(this.source_dir))
+      .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
+      .forEach(file => this.init_file_path(file.path))
+    ;
+    this.notices?.remove('initial scan');
+    this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
   }
 
   /**
@@ -62,11 +81,6 @@ export class SmartThreads extends SmartSources {
   get container() { return this._container; }
   set container(container) { this._container = container; }
 
-  /**
-   * @property {string} data_folder - Path to chat history storage
-   * @readonly
-   */
-  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + ".smart-env/chats"; }
 
   /**
    * @property {Object} default_settings - Default configuration for models
@@ -89,20 +103,6 @@ export class SmartThreads extends SmartSources {
         model_key: 'None',
       },
     };
-  }
-
-  /**
-   * @property {Object} fs - File system interface for chat data
-   * @readonly
-   */
-  get fs() {
-    if(!this._fs){
-      this._fs = new this.env.opts.modules.smart_fs.class(this.env, {
-        adapter: this.env.opts.modules.smart_fs.adapter,
-        fs_path: this.data_folder,
-      });
-    }
-    return this._fs;
   }
 
   async render_settings(container=this.settings_container) {
@@ -151,4 +151,23 @@ export class SmartThreads extends SmartSources {
     
     return this.get(thread_key);
   }
+
+
+  queue_save() {
+    if(this._queue_process_save) {
+      clearTimeout(this._queue_process_save);
+      this._queue_process_save = null;
+    }
+    this._queue_process_save = setTimeout(async () => {
+      await this.process_save_queue();
+      this._queue_process_save = null;
+    }, 3000);
+  }
+  /**
+   * @property {string} data_folder - Path to chat history storage
+   * @readonly
+   */
+  get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + ".smart-env"; }
+  get source_dir() { return this.data_folder + "/" + this.collection_key; }
+
 }

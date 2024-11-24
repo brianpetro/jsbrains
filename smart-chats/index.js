@@ -22,8 +22,6 @@
 import {
   SmartThreads,
   SmartThread,
-  SmartTurns,
-  SmartTurn,
   SmartMessages,
   SmartMessage,
 } from "./smart_threads.js";
@@ -31,8 +29,6 @@ import {
 export {
   SmartThreads,
   SmartThread,
-  SmartTurns,
-  SmartTurn,
   SmartMessages,
   SmartMessage,
 }

@@ -185,7 +185,7 @@ export class SmartBlock extends SmartEntity {
    * @readonly
    * @returns {string} The file path.
    */
-  get file_path() { return this.source.file_path; }
+  get file_path() { return this.source?.file_path; }
 
   /**
    * Retrieves the file type of the SmartSource associated with the block.

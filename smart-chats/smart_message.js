@@ -72,6 +72,15 @@ export class SmartMessage extends SmartBlock {
     }else{
       await this.render();
     }
+    this.queue_save();
+  }
+  /**
+   * Queues the message for saving via the thread.
+   * @returns {void}
+   */
+  queue_save() {
+    this._queue_save = true;
+    this.thread?.queue_save();
   }
 
   /**
@@ -82,11 +91,13 @@ export class SmartMessage extends SmartBlock {
    */
   async render(container=this.thread.messages_container) {
     const frag = await message_template.call(this.smart_view, this);
-    this.elm = container.querySelector(`#${this.data.id}`);
-    if (this.elm) this.elm.replaceWith(frag);
-    else {
-      container.appendChild(frag);
-      await new Promise(resolve => setTimeout(resolve, 30));
+    if(container) {
+      this.elm = container.querySelector(`#${this.data.id}`);
+      if (this.elm) this.elm.replaceWith(frag);
+      else {
+        container.appendChild(frag);
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
     }
     return frag;
   }
