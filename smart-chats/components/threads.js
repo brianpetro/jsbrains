@@ -22,12 +22,10 @@ export function build_html(threads_collection, opts = {}) {
     </button>
   `).join('');
 
-  const name = threads_collection.current?.name || 'Untitled';
-
   return `
     <div class="sc-chat-container">
       <div class="sc-top-bar-container">
-        <input class="sc-chat-name-input" type="text" value="${name}" placeholder="Chat Name">
+        <input class="sc-chat-name-input" type="text" value="Untitled" placeholder="Chat Name">
         ${top_bar_buttons}
       </div>
       <div id="settings" class="sc-overlay" style="display: none;"></div>
@@ -78,6 +76,9 @@ export async function post_process(threads_collection, frag, opts) {
   // Setup button handlers
   setup_button_handlers.call(this, frag, threads_collection, opts);
   
+  // Setup chat name input handler
+  setup_chat_name_input_handler.call(this, frag, thread);
+  
   return frag;
 }
 
@@ -111,5 +112,38 @@ function setup_button_handlers(frag, threads_collection, opts) {
   const chat_history_button = frag.querySelector('button[title="Chat History"]');
   chat_history_button.addEventListener('click', () => {
     opts.open_chat_history();
+  });
+}
+/**
+ * Sets up the chat name input change handler
+ * @private
+ */
+function setup_chat_name_input_handler(frag, thread) {
+  const name_input = frag.querySelector('.sc-chat-name-input');
+  if (!name_input) return;
+
+  name_input.value = thread.key;
+
+  // Handle renaming on blur
+  name_input.addEventListener('blur', async () => {
+    const new_name = name_input.value.trim();
+    if (new_name && new_name !== thread.key) {
+      try {
+        await thread.rename(new_name);
+        console.log(`Thread renamed to "${new_name}"`);
+      } catch (error) {
+        console.error("Error renaming thread:", error);
+        // revert the name in the input field
+        name_input.value = thread.key;
+      }
+    }
+  });
+
+  // handle renaming on Enter key
+  name_input.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      name_input.blur(); // Trigger the blur event
+    }
   });
 }

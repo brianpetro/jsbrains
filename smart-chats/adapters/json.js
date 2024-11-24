@@ -8,13 +8,6 @@ import { SmartThreadDataAdapter } from "./_adapter.js";
 export class SmartThreadJsonDataAdapter extends SmartThreadDataAdapter {
   static extension = 'json';
   extension = 'json';
-  get file_path() {
-    if(!this.data.path){
-      if(!this.data.created_at) this.data.created_at = Date.now();
-      this.data.path = this.item.collection.source_dir + '/' + this.data.created_at + '.' + this.extension;
-    }
-    return this.data.path;
-  }
   to_source_data(){
     return JSON.stringify({
       ...this.item.data,

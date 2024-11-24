@@ -187,7 +187,8 @@ export class SmartFsObsidianAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async rename(old_path, new_path) {
-    if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
+    if (!old_path.startsWith(this.fs_path)) old_path = this.fs_path + '/' + old_path;
+    if (!new_path.startsWith(this.fs_path)) new_path = this.fs_path + '/' + new_path;
     return await this.obsidian_adapter.rename(old_path, new_path);
   }
 

@@ -18,8 +18,8 @@ export class SmartThreadDataAdapter {
    */
   get data() { return this.item.data; }
   get fs() { return this.item.collection.fs; }
-
-  get file_path() { throw new Error('get file_path() not implemented'); }
+  get created_at() { return this.item.created_at; }
+  get file_path() { return this.item.path; }
 
   /**
    * @property {Object} env - The environment configuration
@@ -52,6 +52,26 @@ export class SmartThreadDataAdapter {
   }
   async save(){
     this.fs.write(this.file_path, this.to_source_data());
+  }
+  async rename(new_name) {
+    const old_key = this.item.key;
+    const old_file_path = this.file_path;
+    // update message keys
+    this.item.messages.forEach(msg => {
+      msg.data.key = msg.key.replace(old_key, new_name);
+      msg.data.thread_key = new_name;
+      this.item.env.smart_messages.items[msg.key] = msg;
+    });
+    // update item data after messages are updated
+    this.data.path = null;
+    this.data.key = new_name;
+    this.item.collection.items[new_name] = this.item;
+    delete this.item.collection.items[old_key];
+    // save and remove old file
+    await this.save();
+    await this.fs.remove(old_file_path);
+    // re-render item
+    this.item.render();
   }
 
 }

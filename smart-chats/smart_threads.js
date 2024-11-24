@@ -23,14 +23,14 @@ export class SmartThreads extends SmartSources {
    * @returns {Promise<void>}
    */
   async init_items() {
-    this.fs.excluded_patterns = []; // Clear exclusions to prevent using them
-    // no fs.init to prevent using exclusions
-
     // ensure source_dir exists
     if(!(await this.fs.exists(this.source_dir))) await this.fs.mkdir(this.source_dir);
     (await this.fs.list(this.source_dir))
       .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
-      .forEach(file => this.init_file_path(file.path))
+      .forEach(file => {
+        const key = file.path.replace(this.source_dir + '/', '').replace('.' + file.extension, '');
+        this.items[key] = new this.item_type(this.env, { path: file.path, key });
+      })
     ;
     this.notices?.remove('initial scan');
     this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
@@ -170,4 +170,11 @@ export class SmartThreads extends SmartSources {
   get data_folder() { return this.env.opts.env_path + (this.env.opts.env_path ? "/" : "") + ".smart-env"; }
   get source_dir() { return this.data_folder + "/" + this.collection_key; }
 
+  get fs(){
+    if(!this._fs){
+      this._fs = super.fs;
+      this._fs.excluded_patterns = []; // Clear exclusions to prevent using them
+    }
+    return this._fs;
+  }
 }

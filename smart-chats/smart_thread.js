@@ -47,10 +47,6 @@ export class SmartThread extends SmartSource {
     }
   };
 
-  get_key(){
-    if(!this.data.key) this.data.key = this.path.replace(this.source_dir + '/', '');
-    return this.data.key;
-  }
   /**
    * Imports the SmartSource by checking for updates and parsing content.
    * @async
@@ -194,6 +190,11 @@ export class SmartThread extends SmartSource {
    */
   get chat_model() { return this.collection.chat_model; }
 
+  get created_at() { 
+    if(!this.data.created_at) this.data.created_at = Date.now();
+    return this.data.created_at;
+  }
+
   /**
    * @property {HTMLElement} container - Container element for the thread UI
    */
@@ -213,12 +214,19 @@ export class SmartThread extends SmartSource {
    */
   get blocks() { return this.messages; }
 
+  get_key(){
+    if(!this.data.key) this.data.key = 'Untitled ' + this.created_at;
+    return this.data.key;
+  }
   /**
    * @property {string} path - Path identifier for the thread
    * @readonly
    */
   get path() {
-    return this.source_adapter.file_path;
+    if(!this.data.path){
+      this.data.path = this.collection.source_dir + '/' + this.key + '.' + this.source_adapter.extension;
+    }
+    return this.data.path;
   }
 
   /**
@@ -245,5 +253,9 @@ export class SmartThread extends SmartSource {
   }
   async save() {
     await this.source_adapter.save();
+  }
+
+  async rename(new_name) {
+    await this.source_adapter.rename(new_name);
   }
 }
