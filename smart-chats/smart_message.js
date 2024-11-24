@@ -419,6 +419,8 @@ export class SmartMessage extends SmartBlock {
               url: `data:image/${file.extension};base64,${base64}`
             }
           });
+        }else{
+          console.warn(`Image file not found: ${image.img_path}`);
         }
       }
       if(this_message.content.trim().length > 0){
@@ -427,6 +429,7 @@ export class SmartMessage extends SmartBlock {
           text: this_message.content,
         });
       }
+      this_message.content = content;
     }
     if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
     if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
