@@ -40,7 +40,6 @@ export class SmartMessage extends SmartBlock {
    * Generates a unique key for the message
    * @returns {string} Unique message identifier
    */
-  // get_key() { return `${this.data.thread_key}#${this.data.msg_i}`; }
   get_key() { return `${this.data.thread_key}#${this.data.id}`; }
 
   /**
@@ -54,12 +53,6 @@ export class SmartMessage extends SmartBlock {
     if(this.role === 'user') {
       this.parse_user_message();
       await this.render();
-      // // FUTURE: may replace lookup-specific conditional with `Object.keys(this.context).length > 0` for reviewing additional extracted context
-      // if(this.settings.review_context && this.context.lookup_results?.length > 0){
-      //   // skip completion to await user submission in context review UI
-      // }else{
-      //   await this.thread.complete();
-      // }
       await this.thread.complete();
     }else if(this.tool_calls?.length > 0){
       this.render_tool_calls();
@@ -176,31 +169,6 @@ export class SmartMessage extends SmartBlock {
     // If we reach here, content is plain text
     this.data.content = content.trim();
   }
-  
-  // async retrieve_context(){
-  //   if (this.context.has_self_ref || this.context.folder_refs) {
-  //     this.context.hypotheticals = await this.get_hypotheticals();
-  //     const lookup_params = this.build_lookup_params();
-  //     const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
-  //     this.context.lookup_results = (await lookup_collection.lookup(lookup_params))
-  //       .map(result => ({
-  //         key: result.item.key,
-  //         score: result.score,
-  //       }))
-  //     ;
-  //   }
-  //   await this.render_context();
-  // }
-
-  // build_lookup_params() {
-  //   const lookup_params = { hypotheticals: this.context.hypotheticals };
-  //   if (this.context.folder_refs) {
-  //     lookup_params.filter = {
-  //       key_starts_with_any: this.context.folder_refs
-  //     };
-  //   }
-  //   return lookup_params;
-  // }
 
   /**
    * Fetches and processes internal links, embedding images as Base64 data URLs.
@@ -242,47 +210,6 @@ export class SmartMessage extends SmartBlock {
       return [];
     }
   }
-
-  // /**
-  //  * Generates hypothetical notes for semantic search context
-  //  * @async
-  //  * @param {string} content - User message content to generate hypotheticals from
-  //  * @returns {Array<string>} hypotheticals - Array of generated hypothetical notes
-  //  * @returns {string} hypotheticals[] - Each hypothetical in format: "FOLDER > FILE > HEADING: CONTENT"
-  // */
-  // async get_hypotheticals() {
-  //   try {
-  //     // Prepare the function call for HyDE Lookup
-  //     const hyde_fx_call = {
-  //       role: "user",
-  //       content: this.content,
-  //     };
-
-
-  //     // Prepare the request payload
-  //     const request = {
-  //       messages: [
-  //         {
-  //           role: "system",
-  //           content: `Anticipate what the user is seeking. Respond in the form of a hypothetical note written by the user. The note may contain statements as paragraphs, lists, or checklists in markdown format with no headings. Please respond with one hypothetical note and abstain from any other commentary. Use the format: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.`
-  //         },
-  //         hyde_fx_call
-  //       ],
-  //       tools: [this.thread.tools['lookup']],
-  //       tool_choice: { type: "function", function: { name: "lookup" } }
-  //     };
-
-  //     // **Invoke the Chat Model to Complete the Request**
-  //     const response = await this.thread.chat_model.complete(request);
-
-  //     console.log("HyDE Lookup Response:", response);
-
-  //     return this.parse_hypotheticals(response);
-
-  //   } catch (error) {
-  //     console.error("HyDE Lookup Error:", error);
-  //   }
-  // }
 
   async handle_tool_calls(){
     for(const tool_call of this.tool_calls){
@@ -472,15 +399,6 @@ export class SmartMessage extends SmartBlock {
       return lookup_output;
     }
   }
-
-  // /**
-  //  * Parses AI response to extract hypotheticals
-  //  * @param {Object} response - AI response object
-  //  * @returns {Array<string>} Extracted hypotheticals
-  //  */
-  // parse_hypotheticals(response) {
-  //   return JSON.parse(response.choices[0].message.tool_calls[0].function.arguments || '{}').hypotheticals;
-  // }
 
   /**
    * @property {string} content - Message content

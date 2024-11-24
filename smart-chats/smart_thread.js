@@ -138,6 +138,17 @@ export class SmartThread extends SmartSource {
     request.top_p = 1;
     request.presence_penalty = 0;
     request.frequency_penalty = 0;
+    // if last message is tool_call_output then should move the most recent user message to the end of the request
+    if(request.messages[request.messages.length - 1]?.tool_call_id){
+      const last_user_msg = request.messages.findLast(msg => msg.role === 'user');
+      if(last_user_msg){
+        request.messages = [
+          ...(request.messages.filter(msg => msg !== last_user_msg)),
+          last_user_msg,
+        ];
+        console.log('moved last user message to the end of the request', request.messages);
+      }
+    }
     return request;
   }
 
