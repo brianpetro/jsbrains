@@ -246,10 +246,12 @@ export class SmartMessage extends SmartBlock {
       }
     }
 
-    if (this_message.content) {
-      this_message.content += "\nMessage from user:\n";
+    if(typeof this_message.content === 'string' && typeof this.data.content === 'string'){
+      if (this_message.content) {
+        this_message.content += "\nMessage from user:\n";
+      }
+      this_message.content += this.data.content;
     }
-    this_message.content += this.data.content;
     
     // Handle multimodal content
     if (this.context.images?.length) {
@@ -294,16 +296,17 @@ export class SmartMessage extends SmartBlock {
     if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
     if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
     if (this.tool_call_output?.length) this_message.content = await this.tool_call_output_to_request();
-    if(Array.isArray(this_message.content)){
-      await Promise.all(this_message.content.map(async (content) => {
+    if(Array.isArray(this.content)){
+      const content = await Promise.all(this.content.map(async (content) => {
         if(content.type === 'text' && content.key){
           content.text = await this.env.smart_blocks.get(content.key)?.read() || '';
           content.key = undefined;
         }
+        return content;
       }));
+      this_message.content = content;
     }
     messages.push(this_message);
-    console.log('to_request messages', JSON.stringify(messages, null, 2));
     return messages;
   }
 
