@@ -51,7 +51,9 @@ export class SmartThreadDataAdapter {
     return await this.fs.read(this.file_path);
   }
   async save(){
-    this.fs.write(this.file_path, this.to_source_data());
+    if(Object.keys(this.data.messages).length){
+      this.fs.write(this.file_path, this.to_source_data());
+    }
   }
   async rename(new_name) {
     const old_key = this.item.key;

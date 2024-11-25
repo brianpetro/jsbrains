@@ -19,11 +19,23 @@ export function build_html(message, opts = {}) {
       }).join('\n')
     : message.content;
 
+  // Get branches for this message
+  const branches = message.thread.get_branches(message.msg_i);
+  const has_branches = branches && branches.length > 0;
+
   return `
     <div class="sc-message ${message.role}" id="${message.data.id}">
       <div class="sc-message-content" data-content="${encodeURIComponent(content)}">
         <span>${content}</span>
-        <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>
+        <div class="sc-msg-buttons">
+          <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>
+          ${message.role === 'assistant' ? `
+            <span class="sc-msg-button regenerate" title="Regenerate response">${this.get_icon_html('refresh-cw')}</span>
+            ${has_branches ? `
+              <span class="sc-msg-button cycle-branch" title="Cycle through response variations">${message.branch_i}/${branches.length + 1} ${this.get_icon_html('chevron-right')}</span>
+            ` : ''}
+          ` : ''}
+        </div>
       </div>
     </div>
   `;
@@ -53,17 +65,50 @@ export async function render(message, opts = {}) {
  * @returns {Promise<DocumentFragment>} Post-processed fragment
  */
 export async function post_process(message, frag, opts) {
-  const copy_button = frag.querySelector('.sc-msg-button');
+  const copy_button = frag.querySelector('.sc-msg-button:not(.regenerate)');
   if (copy_button) {
     copy_button.addEventListener('click', () => {
       navigator.clipboard.writeText(message.content)
         .then(() => {
-          // Optionally, provide user feedback for successful copy
           console.log('Message copied to clipboard');
         })
         .catch(err => {
           console.error('Failed to copy message: ', err);
         });
+    });
+  }
+
+  const regenerate_button = frag.querySelector('.sc-msg-button.regenerate');
+  if (regenerate_button) {
+    regenerate_button.addEventListener('click', async () => {
+      const thread = message.thread;
+      const msg_i = thread.data.messages[message.data.id];
+      
+      // Move current message and subsequent messages to branches
+      if (!thread.data.branches) thread.data.branches = {};
+      if (!thread.data.branches[msg_i]) thread.data.branches[msg_i] = [];
+      
+      const branch_messages = {};
+      Object.entries(thread.data.messages)
+        .filter(([_, i]) => i >= msg_i)
+        .forEach(([key, i]) => {
+          branch_messages[key] = i;
+          delete thread.data.messages[key];
+        });
+      
+      thread.data.branches[msg_i].push(branch_messages);
+
+      await thread.render();
+      
+      // Trigger regeneration
+      await thread.complete();
+    });
+  }
+
+  const cycle_branch_button = frag.querySelector('.sc-msg-button.cycle-branch');
+  if (cycle_branch_button) {
+    cycle_branch_button.addEventListener('click', async () => {
+      await message.thread.cycle_branch(message.msg_i);
     });
   }
 

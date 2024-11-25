@@ -24,6 +24,7 @@ export class SmartThread extends SmartSource {
         created_at: null,
         responses: {},
         messages: {},
+        branches: {},
         path: null,
       }
     };
@@ -364,4 +365,70 @@ export class SmartThread extends SmartSource {
   async rename(new_name) {
     await this.source_adapter.rename(new_name);
   }
+
+  /**
+   * Get all branches for a specific message index
+   * @param {number} msg_i - Message index to get branches for
+   * @returns {Array<Object>} Array of branch message objects
+   */
+  get_branches(msg_i) {
+    return this.data.branches?.[msg_i] || [];
+  }
+
+  /**
+   * Get the latest branch for a specific message index
+   * @param {number} msg_i - Message index to get latest branch for
+   * @returns {Object|null} Latest branch message object or null if no branches exist
+   */
+  get_latest_branch(msg_i) {
+    const branches = this.get_branches(msg_i);
+    return branches.length > 0 ? branches[branches.length - 1] : null;
+  }
+
+  /**
+   * Create a new branch from a specific message index
+   * @param {number} msg_i - Message index to branch from
+   * @param {Object} branch_messages - Messages to store in the branch
+   */
+  create_branch(msg_i, branch_messages) {
+    if (!this.data.branches) this.data.branches = {};
+    if (!this.data.branches[msg_i]) this.data.branches[msg_i] = [];
+    this.data.branches[msg_i].push(branch_messages);
+    this.queue_save();
+  }
+  move_to_branch(msg_i, branch_messages){
+    this.create_branch(msg_i, branch_messages);
+    Object.keys(branch_messages).forEach(id => delete this.data.messages[id]);
+    this.queue_save();
+  }
+
+  /**
+   * Cycles to the next branch for a given message index
+   * @param {number} msg_i - Message index to cycle branches for
+   * @returns {Promise<void>}
+   */
+  async cycle_branch(msg_i) {
+    if (!this.data.branches) this.data.branches = {};
+    if (!this.data.branches[msg_i]) this.data.branches[msg_i] = [];
+    
+    // Get current branch index (1 is main branch)
+    const current_msg = this.messages.find(msg => this.data.messages[msg.id] === msg_i);
+    if (!current_msg) return console.warn('no current message found for msg_i', msg_i);
+
+    // Get current messages state including the message at msg_i
+    const current_messages = Object.entries(this.data.messages)
+      .filter(([_, _msg_i]) => _msg_i >= msg_i)
+      .reduce((acc, [id, _msg_i]) => ({ ...acc, [id]: _msg_i }), {})
+    ;
+
+    this.move_to_branch(msg_i, current_messages);
+    const branch = this.data.branches?.[msg_i]?.shift();
+    this.data.messages = {
+      ...this.data.messages,
+      ...branch,
+    };
+    await this.render();
+    this.queue_save();
+  }
+
 }
