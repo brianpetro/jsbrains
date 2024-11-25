@@ -218,17 +218,44 @@ export class SmartThread extends SmartSource {
   async to_request() {
     const request = { messages: [] };
     for(const msg of this.messages){
-      request.messages.push(...(await msg.to_request()));
+      // Handle send_tool_output_in_user_message setting
+      if(this.settings.send_tool_output_in_user_message) {
+        // Skip tool messages if they're the last message
+        if(msg.is_last_message && msg.role === 'tool') {
+          continue;
+        }
+        // Skip tool calls if not the last message
+        if(msg.tool_calls && !msg.is_last_message) {
+          continue; 
+        }
+        // For user messages, append tool output if available
+        if(msg.role === 'user' && 
+           msg.next_message?.tool_calls?.length && 
+           !msg.next_message.is_last_message && 
+           msg.next_message.next_message?.role === 'tool') {
+          const message = { role: 'user', content: [] };
+          const tool_output = await msg.next_message.next_message.tool_call_output_to_request();
+          console.log('tool_output', tool_output);
+          message.content.push({type: 'text', text: tool_output});
+          message.content.push(...(await msg.to_request()).content);
+          request.messages.push(message);
+          continue;
+        }
+      }
+
+      request.messages.push(await msg.to_request());
       if(msg.context?.has_self_ref || msg.context?.folder_refs){
         request.tools = [this.tools['lookup']];
         if(msg.is_last_message) request.tool_choice = { type: "function", function: { name: "lookup" } };
       }
     }
+
     // DO: review these configurations (inherited from v1)
     request.temperature = 0.3;
     request.top_p = 1;
     request.presence_penalty = 0;
     request.frequency_penalty = 0;
+
     // if last message is tool_call_output then should move the most recent user message to the end of the request
     if(request.messages[request.messages.length - 1]?.tool_call_id){
       const last_user_msg = request.messages.findLast(msg => msg.role === 'user');

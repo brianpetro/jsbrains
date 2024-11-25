@@ -129,12 +129,12 @@ export class SmartThreads extends SmartSources {
         default: 10,
         description: "The maximum number of context items to retrieve via lookup.",
       },
-      // "send_tool_output_in_user_message": {
-      //   name: "Send Tool Output in User Message",
-      //   type: "toggle",
-      //   default: false,
-      //   description: "Whether to send tool output in the user message.",
-      // }
+      "send_tool_output_in_user_message": {
+        name: "Send Tool Output in User Message",
+        type: "toggle",
+        default: false,
+        description: "Whether to send tool output in the user message.",
+      }
     };
   }
 

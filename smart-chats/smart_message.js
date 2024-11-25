@@ -206,8 +206,7 @@ export class SmartMessage extends SmartBlock {
    * @returns {Array<Object>} Request payload
    */
   async to_request() {
-    const messages = [];
-    const this_message = { role: this.role, content: "" };
+    const this_message = { role: this.role, content: [] };
 
     /**
      * Build user message
@@ -215,45 +214,30 @@ export class SmartMessage extends SmartBlock {
     if (this.context.internal_links && this.context.internal_links.length > 0) {
       const internal_links_content = await this.fetch_content(this.context.internal_links);
       if (internal_links_content) {
-        this_message.content += `Context specified in message:\n`;
+        let context_content = '';
         this.context.internal_links.forEach((link, index) => {
           if (internal_links_content[index].type === 'text') {
-            this_message.content += `-----------------------\n`;
-            this_message.content += `/${link.path}\n`;
-            this_message.content += `---\n`;
-            this_message.content += `${internal_links_content[index].content}\n`;
-            this_message.content += `-----------------------\n\n`;
+            if(!context_content.length) context_content += `Context specified in message:`;
+            context_content += `\n-----------------------\n`;
+            context_content += `/${link.path}\n`;
+            context_content += `---\n`;
+            context_content += `${internal_links_content[index].content}\n`;
+            context_content += `-----------------------\n`;
           } else if (internal_links_content[index].type === 'image') {
-            messages.push({
-              role: 'user',
+            this_message.content.push({
+              type: 'image_url',
               image_url: internal_links_content[index].image_url,
             });
           }
         });
+        if(context_content.length > 0) this_message.content.push({
+          type: 'text',
+          text: context_content,
+        });
       }
     }
 
-    // // skip tool_call and tool_call_output when sending tool output in user message
-    // if(this.settings.send_tool_output_in_user_message){
-    //   console.log('send_tool_output_in_user_message', this.settings.send_tool_output_in_user_message);
-    //   if(this.is_last_message && this.role === 'tool'){
-    //     return [];
-    //   }
-    //   if(this.tool_calls && !this.is_last_message){
-    //     return [];
-    //   }
-    //   if(this.role === 'user' && this.next_message?.tool_calls?.length && !this.next_message.is_last_message && this.next_message.next_message.role === 'tool'){
-    //     const tool_output = await this.next_message.next_message.tool_call_output_to_request();
-    //     this_message.content += tool_output;
-    //   }
-    // }
 
-    if(typeof this_message.content === 'string' && typeof this.data.content === 'string'){
-      if (this_message.content) {
-        this_message.content += "\nMessage from user:\n";
-      }
-      this_message.content += this.data.content;
-    }
     
     // Handle multimodal content
     if (this.context.images?.length) {
@@ -287,13 +271,13 @@ export class SmartMessage extends SmartBlock {
           console.warn(`Image file not found: ${image.img_path}`);
         }
       }
-      if(this_message.content.trim().length > 0){
-        content.push({
-          type: "text",
-          text: this_message.content,
-        });
-      }
-      this_message.content = content;
+      if(content.length > 0) this_message.content.push(...content);
+    }
+    if(typeof this.content === 'string' && this.content.trim().length > 0){
+      this_message.content.push({
+        type: "text",
+        text: this.content.trim(),
+      });
     }
     if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
     if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
@@ -306,10 +290,9 @@ export class SmartMessage extends SmartBlock {
         }
         return content;
       }));
-      this_message.content = content;
+      this_message.content.push(...content);
     }
-    messages.push(this_message);
-    return messages;
+    return this_message;
   }
 
   async tool_call_output_to_request() {
