@@ -29,14 +29,17 @@ export function build_html(message, opts = {}) {
         <span>${content}</span>
         <div class="sc-msg-buttons">
           <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>
+          ${has_branches ? `
+            <span class="sc-msg-button cycle-branch" title="Cycle through message variations">${message.branch_i.split('-').pop()} / ${branches.length + 1} ${this.get_icon_html('chevron-right')}</span>
+          ` : ''}
           ${message.role === 'assistant' ? `
             <span class="sc-msg-button regenerate" title="Regenerate response">${this.get_icon_html('refresh-cw')}</span>
-            ${has_branches ? `
-              <span class="sc-msg-button cycle-branch" title="Cycle through response variations">${message.branch_i}/${branches.length + 1} ${this.get_icon_html('chevron-right')}</span>
-            ` : ''}
-          ` : ''}
+          ` : `
+            <span class="sc-msg-button edit" title="Edit message">${this.get_icon_html('edit')}</span>
+          `}
         </div>
       </div>
+      ${message.role === 'user' ? `<textarea class="sc-message-edit" style="display: none;">${content}</textarea>` : ''}
     </div>
   `;
 }
@@ -109,6 +112,68 @@ export async function post_process(message, frag, opts) {
   if (cycle_branch_button) {
     cycle_branch_button.addEventListener('click', async () => {
       await message.thread.cycle_branch(message.msg_i);
+    });
+  }
+
+  const edit_button = frag.querySelector('.sc-msg-button.edit');
+  if (edit_button) {
+    const msg_content = frag.querySelector('.sc-message-content');
+    const edit_textarea = frag.querySelector('.sc-message-edit');
+    
+    edit_button.addEventListener('click', async () => {
+      const is_editing = edit_textarea.style.display === 'block';
+      
+      if (is_editing) {
+        // Save changes and resubmit
+        const new_content = edit_textarea.value.trim();
+        if (new_content !== message.content) {
+          // Store current messages as a branch
+          const thread = message.thread;
+          const msg_i = thread.data.messages[message.data.id];
+          
+          // Create a branch with current messages
+          const current_messages = Object.entries(thread.data.messages)
+            .filter(([_, i]) => i >= msg_i)
+            .reduce((acc, [id, i]) => ({ ...acc, [id]: i }), {});
+          
+          // Move current messages to branch BEFORE updating content
+          thread.move_to_branch(msg_i, current_messages);
+          
+          msg_content.querySelector('span').textContent = new_content;
+          msg_content.setAttribute('data-content', encodeURIComponent(new_content));
+          
+          // Hide edit interface
+          edit_textarea.style.display = 'none';
+          msg_content.style.display = 'block';
+          edit_button.innerHTML = this.get_icon_html('edit');
+          edit_button.title = 'Edit message';
+          
+          // Use existing thread method to handle the edited message (creates a new branch)
+          await thread.handle_message_from_user(new_content);
+          await thread.render();
+        } else {
+          // Just hide textarea if no changes
+          edit_textarea.style.display = 'none';
+          msg_content.style.display = 'block';
+          edit_button.innerHTML = this.get_icon_html('edit');
+          edit_button.title = 'Edit message';
+        }
+      } else {
+        // Show textarea for editing
+        edit_textarea.style.display = 'block';
+        // msg_content.style.display = 'none';
+        edit_button.innerHTML = this.get_icon_html('check');
+        edit_button.title = 'Save changes';
+        edit_textarea.focus();
+      }
+    });
+    
+    // Handle Ctrl+Enter to save
+    edit_textarea.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        edit_button.click();
+      }
     });
   }
 

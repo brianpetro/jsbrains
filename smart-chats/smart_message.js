@@ -47,7 +47,7 @@ export class SmartMessage extends SmartBlock {
   }
   get branch_i() {
     if(!this.data.branch_i){
-      const branch_i = (this.thread.data.branches?.[this.msg_i] || []).length + 1;
+      const branch_i =  Date.now() + '-' + ((this.thread.data.branches?.[this.msg_i] || []).length + 1);
       this.data.branch_i = branch_i;
     }
     return this.data.branch_i;
