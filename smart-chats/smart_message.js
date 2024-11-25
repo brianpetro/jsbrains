@@ -50,21 +50,15 @@ export class SmartMessage extends SmartBlock {
       this.update_subsequent_msg_indices();
     }
     this.thread.data.messages[this.data.id] = this.data.msg_i;
+    await this.render();
     if(this.role === 'user') {
-      await this.render();
       await this.thread.complete();
     }else if(this.tool_calls?.length > 0){
-      this.render_tool_calls();
       await this.handle_tool_calls();
     }else if(this.role === 'tool'){
-      this.render_context();
       if(!this.settings.review_context){
         this.thread.complete();
       }
-    }else if(this.role === 'system'){
-      this.render_system_message();
-    }else{
-      await this.render();
     }
     this.queue_save();
   }
@@ -99,7 +93,16 @@ export class SmartMessage extends SmartBlock {
    * @returns {DocumentFragment} Rendered message interface
    */
   async render(container=this.thread.messages_container) {
-    const frag = await message_template.call(this.smart_view, this);
+    let frag;
+    if(this.role === 'system'){
+      frag = await system_message_template.call(this.smart_view, this);
+    }else if(this.tool_calls?.length > 0){
+      frag = await tool_calls_template.call(this.smart_view, this);
+    }else if(this.role === 'tool'){
+      frag = await context_template.call(this.smart_view, this);
+    }else{
+      frag = await message_template.call(this.smart_view, this);
+    }
     if(container) {
       this.elm = container.querySelector(`#${this.data.id}`);
       if (this.elm) this.elm.replaceWith(frag);
@@ -110,25 +113,6 @@ export class SmartMessage extends SmartBlock {
     }
     return frag;
   }
-  async render_context(container=this.thread.messages_container) {
-    const frag = await context_template.call(this.smart_view, this);
-    const context_container = container.querySelector(`#context-container-${this.data.id}`);
-    if (context_container) context_container.replaceWith(frag);
-    else container.appendChild(frag);
-  }
-  async render_tool_calls(container=this.thread.messages_container) {
-    const frag = await tool_calls_template.call(this.smart_view, this);
-    const tool_calls_container = container.querySelector(`#tool-calls-container-${this.data.id}`);
-    if (tool_calls_container) tool_calls_container.replaceWith(frag);
-    else container.appendChild(frag);
-  }
-  async render_system_message(container=this.thread.messages_container) {
-    const frag = await system_message_template.call(this.smart_view, this);
-    const system_message_container = container.querySelector(`#system-message-container-${this.data.id}`);
-    if (system_message_container) system_message_container.replaceWith(frag);
-    else container.appendChild(frag);
-  }
-
 
   /**
    * Fetches and processes internal links, embedding images as Base64 data URLs.

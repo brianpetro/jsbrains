@@ -11,12 +11,12 @@
  */
 export function build_html(message, opts = {}) {
   return `
-    <div class="sc-system-message-container" id="system-message-container-${message.data.id}">
-      <div class="sc-system-message-header" tabindex="0" role="button" aria-expanded="false" aria-controls="system-message-content-${message.data.id}">
+    <div class="sc-system-message-container" id="${message.data.id}">
+      <div class="sc-system-message-header" tabindex="0" role="button" aria-expanded="false" aria-controls="${message.data.id}-content">
         <span>${this.get_icon_html('settings')} System Message</span>
         <span class="sc-system-message-toggle-icon">${this.get_icon_html('chevron-down')}</span>
       </div>
-      <div class="sc-system-message-content" id="system-message-content-${message.data.id}" hidden>
+      <div class="sc-system-message-content" id="${message.data.id}-content" hidden>
         <div class="sc-system-message-text">
           <pre>${typeof message.content === 'string' ? message.content : message.content.map(part => part.text || part.key).join('\n')}</pre>
         </div>

@@ -17,14 +17,14 @@ export function build_html(message, opts = {}) {
   }
 
   return `
-    <div class="sc-tool-calls-container" id="tool-calls-container-${message.data.id}">
+    <div class="sc-tool-calls-container" id="${message.data.id}">
       ${tool_calls.map((tool_call, index) => `
         <div class="sc-tool-call">
-          <div class="sc-tool-call-header" tabindex="0" role="button" aria-expanded="false" aria-controls="tool-call-content-${message.data.id}-${index}">
+          <div class="sc-tool-call-header" tabindex="0" role="button" aria-expanded="false" aria-controls="${message.data.id}-content">
             <span>${tool_call.function.name}</span>
             <span class="sc-tool-call-toggle-icon">${this.get_icon_html('chevron-down')}</span>
           </div>
-          <div class="sc-tool-call-content" id="tool-call-content-${message.data.id}-${index}" hidden>
+          <div class="sc-tool-call-content" id="${message.data.id}-content" hidden>
             <pre><code class="language-json">${JSON.stringify(JSON.parse(tool_call.function.arguments), null, 2)}</code></pre>
           </div>
         </div>

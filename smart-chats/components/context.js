@@ -21,7 +21,7 @@ export function build_html(message, opts = {}) {
   const review_context = message.settings?.review_context === true;
 
   return `
-    <div class="sc-context-container" id="context-container-${message.data.id}">
+    <div class="sc-context-container" id="${message.data.id}">
       <div class="sc-context-header" tabindex="0" role="button" aria-expanded="false" aria-controls="context-list-${message.data.id}">
         <span>${this.get_icon_html('info')} Context (${lookup_results.length})</span>
         <span class="sc-context-toggle-icon">${this.get_icon_html('chevron-down')}</span>
@@ -102,7 +102,7 @@ export async function post_process(message, frag, opts) {
         message.tool_call_output.splice(index, 1);
 
         // Re-render the context component
-        message.render_context();
+        message.render();
       });
     });
 
