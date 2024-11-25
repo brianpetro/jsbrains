@@ -25,11 +25,15 @@ export class SmartThreadJsonDataAdapter extends SmartThreadDataAdapter {
     const blocks = all_block_keys.map(sub_key => {
       const block_key = this.item.key + '#' + sub_key;
       const block = this.item.env.smart_messages.get(block_key);
+      if(!block) {
+        console.warn('block not found', block_key);
+        return null;
+      }
       return {
         ...block.data,
         key: block_key,
       };
-    });
+    }).filter(block => block);
     return JSON.stringify({
       ...this.item.data,
       blocks,
