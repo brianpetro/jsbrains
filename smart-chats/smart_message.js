@@ -1,12 +1,7 @@
 import { SmartBlock } from "smart-sources";
 import { render as message_template } from "./components/message";
-import { contains_folder_reference, extract_folder_references } from "./utils/folder_references";
-import { contains_internal_link, extract_internal_links } from "./utils/internal_links";
-import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
-import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
 import { render as context_template } from "./components/context";
 import { render as tool_calls_template } from "./components/tool_calls";
-import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
 /**
  * @class SmartMessage
  * @extends SmartBlock
@@ -49,9 +44,12 @@ export class SmartMessage extends SmartBlock {
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
     if(!this.data.msg_i) this.data.msg_i = this.thread.messages.length + 1;
+    // if thread.data.messages[msg_i] already exists, update msg_i of all subsequent messages
+    if(this.thread.messages[this.data.msg_i] && this.thread.messages[this.data.msg_i].id !== this.data.id){
+      this.update_subsequent_msg_indices();
+    }
     this.thread.data.messages[this.data.id] = this.data.msg_i;
     if(this.role === 'user') {
-      this.parse_user_message();
       await this.render();
       await this.thread.complete();
     }else if(this.tool_calls?.length > 0){
@@ -67,6 +65,21 @@ export class SmartMessage extends SmartBlock {
     }
     this.queue_save();
   }
+
+  // update msg_i of current and all subsequent messages
+  update_subsequent_msg_indices() {
+    console.log('update_subsequent_msg_indices', this.data.msg_i);
+    const zero_index_length = this.thread.messages.length - 1;
+    const current_msg_zero_index = this.data.msg_i - 1;
+    for (let i = zero_index_length; i > current_msg_zero_index; i--) {
+      const current_msg = this.thread.messages[i];
+      current_msg.data.msg_i = i + 1;
+      this.thread.data.messages[current_msg.id] = i + 1;
+    }
+    this.thread.data.messages[this.id] = this.data.msg_i + 1;
+    this.data.msg_i = this.data.msg_i + 1;
+  }
+
   /**
    * Queues the message for saving via the thread.
    * @returns {void}
@@ -105,69 +118,6 @@ export class SmartMessage extends SmartBlock {
     const tool_calls_container = container.querySelector(`#tool-calls-container-${this.data.id}`);
     if (tool_calls_container) tool_calls_container.replaceWith(frag);
     else container.appendChild(frag);
-  }
-
-  /**
-   * Parses a user message instance using OLD parsing utilities.
-   * @param {Object} message_instance - The message instance to parse
-   * @returns {Object} context - Parsed context object containing:
-   * @returns {Array<string>} [context.system_prompt_refs] - Referenced system prompts
-   * @returns {Array<Object>} [context.internal_links] - Extracted internal links
-   * @returns {Array<string>} [context.folder_refs] - Referenced folders
-   * @returns {boolean} [context.has_self_ref] - Whether message contains self-references
-   * @returns {Array<string>} [context.hypotheticals] - Generated hypothetical notes
-   * @returns {Array<Object>} [context.lookup_results] - Semantic search results
-   */
-  parse_user_message() {
-    this.context = {};
-    let content = this.data.content;
-    
-    // Return early if content is already parsed (not a string)
-    if (typeof content !== "string") {
-      return;
-    }
-
-    const language = this.env.settings?.language || 'en';
-
-    // Handle system prompt references (@"system prompt") FIRST
-    if (contains_system_prompt_ref(content)) {
-      const { mentions, content: content_after_refs } = extract_system_prompt_ref(content);
-      this.context.system_prompt_refs = mentions;
-      content = content_after_refs; // remove system prompt references from content
-    }
-
-    // Handle internal links ([[link]])
-    if (contains_internal_link(content)) {
-      const internal_links = extract_internal_links(this.env, content);
-      this.context.internal_links = internal_links;
-    }
-
-    // Handle folder references (/folder/ or /folder/subfolder/)
-    if (contains_folder_reference(content)) {
-      const folders = Object.keys(this.env.smart_sources.fs.folders);
-      const folder_refs = extract_folder_references(folders, content);
-      this.context.folder_refs = folder_refs;
-    }
-
-    // Handle self-referential keywords
-    this.context.has_self_ref = contains_self_referential_keywords(content, language);
-    
-    // Handle markdown images LAST to preserve all processed text content
-    if (contains_markdown_image(content)) {
-      console.log('contains_markdown_image', content);
-      if (!this.thread.chat_model.model_config.multimodal) {
-        console.warn("Current model does not support multimodal (image) content");
-        throw new Error("⚠️ Current model does not support multimodal (image) content");
-      }
-
-      const images = extract_markdown_images(content);
-      if (images.length > 0) {
-        this.context.images = images;
-      }
-    }
-
-    // If we reach here, content is plain text
-    this.data.content = content.trim();
   }
 
   /**
@@ -245,6 +195,7 @@ export class SmartMessage extends SmartBlock {
       tool_name: tool_call.function.name,
       tool_call_output: lookup_results,
       role: 'tool',
+      id: tool_call.id,
     });
   }
 
@@ -254,30 +205,7 @@ export class SmartMessage extends SmartBlock {
    */
   async to_request() {
     const messages = [];
-    // let user_message.content = "";
-    // let system_message.content = "";
     const this_message = { role: this.role, content: "" };
-    const system_message = { role: "system", content: "" };
-
-    /**
-     * Build system message
-     */
-    // Combine all context into a single system message
-    if (this.context.system_prompt_refs && this.context.system_prompt_refs.length > 0) {
-      const system_prompts = await this.fetch_content(this.context.system_prompt_refs);
-      if (system_prompts) {
-        for (const system_prompt of system_prompts) {
-          if (system_prompt.type === 'text') {
-            system_message.content += `${system_prompt.content}\n\n`;
-          }
-        }
-      }
-    }
-    if(this.context?.has_self_ref || this.context?.folder_refs){
-      if(system_message.content) system_message.content += `\n`;
-      system_message.content += `- Answer based on the context from lookup!`;
-      system_message.content += `\n- The context may be referred to as notes.`;
-    }
 
     /**
      * Build user message
@@ -366,12 +294,16 @@ export class SmartMessage extends SmartBlock {
     if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
     if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
     if (this.tool_call_output?.length) this_message.content = await this.tool_call_output_to_request();
-    // Add system message if there's any content
-    if (system_message.content) {
-      messages.push(system_message);
+    if(Array.isArray(this_message.content)){
+      await Promise.all(this_message.content.map(async (content) => {
+        if(content.type === 'text' && content.key){
+          content.text = await this.env.smart_blocks.get(content.key)?.read() || '';
+          content.key = undefined;
+        }
+      }));
     }
     messages.push(this_message);
-    console.log('messages', messages);
+    console.log('to_request messages', JSON.stringify(messages, null, 2));
     return messages;
   }
 

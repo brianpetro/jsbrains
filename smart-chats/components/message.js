@@ -13,7 +13,10 @@ export function build_html(message, opts = {}) {
   if (message.role === 'system') {
     return `
       <div class="sc-message system" data-content="${message.content}">
-        <span>${message.content}</span>
+        <div class="sc-message-content" data-content="${encodeURIComponent(message.content)}">
+          <span>${typeof message.content === 'string' ? message.content : JSON.stringify(message.content, null, 2)}</span>
+          <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>
+        </div>
       </div>
     `;
   }
@@ -23,7 +26,7 @@ export function build_html(message, opts = {}) {
         if (part.type === "image_url") {
           return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
         }
-        return part.text;
+        if(part.type === 'text' && part.text?.length) return part.text;
       }).join('\n')
     : message.content;
 
@@ -81,7 +84,7 @@ export async function post_process(message, frag, opts) {
       if (part.type === "image_url") {
         return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
       }
-      return this.render_markdown(part.text);
+      if(part.type === 'text' && part.text?.length) return this.render_markdown(part.text);
     }).join('\n');
   } else {
     const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
@@ -90,4 +93,11 @@ export async function post_process(message, frag, opts) {
   }
   
   return frag;
+}
+
+// for testing
+function get_html_from_fragment(fragment) {
+    const temp_container = document.createElement('div');
+    temp_container.appendChild(fragment.cloneNode(true));
+    return temp_container.innerHTML;
 }

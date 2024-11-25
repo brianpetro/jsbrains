@@ -1,5 +1,10 @@
 import { SmartSource } from "smart-sources";
 import { render as thread_template } from "./components/thread.js";
+import { contains_folder_reference, extract_folder_references } from "./utils/folder_references";
+import { contains_internal_link, extract_internal_links } from "./utils/internal_links";
+import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
+import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
+import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
 
 /**
  * @class SmartThread
@@ -92,15 +97,94 @@ export class SmartThread extends SmartSource {
       const msg_i = Object.keys(this.data.messages || {}).length + 1;
       const new_msg_data = {
         thread_key: this.key,
-        content: content,
         role: 'user',
         id: `user-${msg_i}`,
       };
+      const context = {};
+      const language = this.env.settings?.language || 'en';
+      // Handle system prompt references (@"system prompt") FIRST
+      if (contains_system_prompt_ref(content)) {
+        const { mentions, content: content_after_refs } = extract_system_prompt_ref(content);
+        context.system_prompt_refs = mentions;
+        content = content_after_refs; // remove system prompt references from content
+      }
+  
+      // Handle internal links ([[link]])
+      if (contains_internal_link(content)) {
+        const internal_links = extract_internal_links(this.env, content);
+        context.internal_links = internal_links;
+      }
+  
+      // Handle folder references (/folder/ or /folder/subfolder/)
+      if (contains_folder_reference(content)) {
+        const folders = Object.keys(this.env.smart_sources.fs.folders);
+        const folder_refs = extract_folder_references(folders, content);
+        context.folder_refs = folder_refs;
+      }
+  
+      // Handle self-referential keywords
+      context.has_self_ref = contains_self_referential_keywords(content, language);
+      
+      // Handle markdown images LAST to preserve all processed text content
+      if (contains_markdown_image(content)) {
+        console.log('contains_markdown_image', content);
+        if (!this.thread.chat_model.model_config.multimodal) {
+          console.warn("Current model does not support multimodal (image) content");
+          throw new Error("⚠️ Current model does not support multimodal (image) content");
+        }
+  
+        const images = extract_markdown_images(content);
+        if (images.length > 0) {
+          context.images = images;
+        }
+      }
+  
+      if(typeof content === 'string') new_msg_data.content = content.trim();
+      else new_msg_data.content = content;
+
+      if(Object.keys(context).length > 0){
+        new_msg_data.context = context;
+        await this.create_system_message(context);
+      }
       // Create a new SmartMessage for the user's message
       await this.env.smart_messages.create_or_update(new_msg_data);
     } catch (error) {
       console.error("Error in new_user_message:", error);
     }
+  }
+  // handle creating system message
+  async create_system_message(context) {
+    const msg_i = Object.keys(this.data.messages || {}).length + 1;
+    const system_message = {
+      role: "system",
+      content: [],
+      id: `system-${msg_i}`,
+      msg_i: msg_i,
+      thread_key: this.key,
+    };
+    /**
+     * Build system message
+     */
+    // Combine all context into a single system message
+    if (Array.isArray(context.system_prompt_refs) && context.system_prompt_refs.length > 0) {
+      context.system_prompt_refs.forEach(key => {
+        const system_prompt = {
+          type: 'text',
+          key,
+        };
+        system_message.content.push(system_prompt);
+      });
+      // remove system_prompt_refs from context
+      context.system_prompt_refs = `added to system message ${system_message.id}`;
+    }
+    if (context?.has_self_ref || context?.folder_refs) {
+      const system_prompt = {
+        type: 'text',
+        content: `- Answer based on the context from lookup!\n- The context may be referred to as notes.`,
+      };
+      system_message.content.push(system_prompt);
+    }
+    await this.env.smart_messages.create_or_update(system_message);
   }
 
   /**
@@ -218,7 +302,12 @@ export class SmartThread extends SmartSource {
    * @property {Array<SmartMessage>} messages - All messages in the thread
    * @readonly
    */
-  get messages() { return Object.keys(this.data.messages || {}).map(key => this.env.smart_messages.get(this.key + '#' + key)); }
+  get messages() {
+    return Object.entries(this.data.messages || {})
+      .sort((a, b) => a[1] - b[1])
+      .map(([key, msg_i]) => this.env.smart_messages.get(this.key + '#' + key))
+    ;
+  }
   /**
    * @alias {Array<SmartMessage>} messages
    * @readonly
