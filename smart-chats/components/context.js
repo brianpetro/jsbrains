@@ -87,9 +87,7 @@ export async function post_process(message, frag, opts) {
         header.setAttribute('aria-expanded', 'true');
       }
     });
-
   }
-
 
   if (review_context) {
     // Handle "x" button clicks to remove context items
@@ -111,13 +109,21 @@ export async function post_process(message, frag, opts) {
     // Handle submit button click
     const submit_button = frag.querySelector('.sc-context-submit-btn');
     if (submit_button) {
-      submit_button.addEventListener('click', async () => {
-        // remove the submit button
-        submit_button.remove();
-        // hide the remove buttons
-        frag.querySelectorAll('.sc-context-remove-btn').forEach(btn => btn.style.display = 'none');
-        // hide the list
+      submit_button.addEventListener('click', async (e) => {
+        e.stopPropagation(); // Prevent collapsing the list
+        const container = e.target.closest('.sc-context-container');
+        // Remove all remove buttons
+        container.querySelectorAll('.sc-context-remove-btn').forEach(btn => btn.remove());
+        
+        // Remove the submit button and its container
+        const submit_container = submit_button.closest('.sc-context-submit');
+        if (submit_container) {
+          submit_container.remove();
+        }
+        
+        // Collapse the list
         header.setAttribute('aria-expanded', 'false');
+        
         // Proceed with processing the message after context review
         await message.thread.complete();
       });

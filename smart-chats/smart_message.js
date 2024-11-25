@@ -241,20 +241,20 @@ export class SmartMessage extends SmartBlock {
       }
     }
 
-    // skip tool_call and tool_call_output when sending tool output in user message
-    if(this.settings.send_tool_output_in_user_message){
-      console.log('send_tool_output_in_user_message', this.settings.send_tool_output_in_user_message);
-      if(this.is_last_message && this.role === 'tool'){
-        return [];
-      }
-      if(this.tool_calls && !this.is_last_message){
-        return [];
-      }
-      if(this.role === 'user' && this.next_message?.tool_calls?.length && !this.next_message.is_last_message && this.next_message.next_message.role === 'tool'){
-        const tool_output = await this.next_message.next_message.tool_call_output_to_request();
-        this_message.content += tool_output;
-      }
-    }
+    // // skip tool_call and tool_call_output when sending tool output in user message
+    // if(this.settings.send_tool_output_in_user_message){
+    //   console.log('send_tool_output_in_user_message', this.settings.send_tool_output_in_user_message);
+    //   if(this.is_last_message && this.role === 'tool'){
+    //     return [];
+    //   }
+    //   if(this.tool_calls && !this.is_last_message){
+    //     return [];
+    //   }
+    //   if(this.role === 'user' && this.next_message?.tool_calls?.length && !this.next_message.is_last_message && this.next_message.next_message.role === 'tool'){
+    //     const tool_output = await this.next_message.next_message.tool_call_output_to_request();
+    //     this_message.content += tool_output;
+    //   }
+    // }
 
     if(typeof this_message.content === 'string' && typeof this.data.content === 'string'){
       if (this_message.content) {
