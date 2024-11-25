@@ -94,11 +94,9 @@ export class SmartThread extends SmartSource {
    */
   async handle_message_from_user(content) {
     try {
-      const msg_i = Object.keys(this.data.messages || {}).length + 1;
       const new_msg_data = {
         thread_key: this.key,
         role: 'user',
-        id: `user-${msg_i}`,
       };
       const context = {};
       const language = this.env.settings?.language || 'en';
@@ -123,7 +121,9 @@ export class SmartThread extends SmartSource {
       }
   
       // Handle self-referential keywords
-      context.has_self_ref = contains_self_referential_keywords(content, language);
+      if(contains_self_referential_keywords(content, language)){
+        context.has_self_ref = true;
+      }
       
       // Handle markdown images LAST to preserve all processed text content
       if (contains_markdown_image(content)) {
@@ -143,6 +143,7 @@ export class SmartThread extends SmartSource {
       else new_msg_data.content = content;
 
       if(Object.keys(context).length > 0){
+        console.log('creating system message with context', context);
         new_msg_data.context = context;
         await this.create_system_message(context);
       }
@@ -154,12 +155,9 @@ export class SmartThread extends SmartSource {
   }
   // handle creating system message
   async create_system_message(context) {
-    const msg_i = Object.keys(this.data.messages || {}).length + 1;
     const system_message = {
       role: "system",
       content: [],
-      id: `system-${msg_i}`,
-      msg_i: msg_i,
       thread_key: this.key,
     };
     /**
@@ -195,12 +193,19 @@ export class SmartThread extends SmartSource {
    */
   async handle_message_from_chat_model(response, opts = {}) {
     const choices = response.choices;
-    const id = response.id;
-    const msg_items = await Promise.all(choices.map(choice => this.env.smart_messages.create_or_update({
-      ...(choice?.message || choice), // fallback on full choice to handle non-message choices
-      thread_key: this.key,
-      id,
-    })));
+    const response_id = response.id;
+    const msg_items = await Promise.all(choices.map(async (choice, index) => {
+      const msg_data = {
+        ...(choice?.message || choice), // fallback on full choice to handle non-message choices
+        thread_key: this.key,
+        response_id,
+      };
+      const msg = this.messages.find(msg => msg.data.response_id === response_id);
+      if(msg){
+        msg_data.key = msg.key;
+      }
+      return this.env.smart_messages.create_or_update(msg_data);
+    }));
     return msg_items;
   }
 

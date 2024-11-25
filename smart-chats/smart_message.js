@@ -36,7 +36,28 @@ export class SmartMessage extends SmartBlock {
    * Generates a unique key for the message
    * @returns {string} Unique message identifier
    */
-  get_key() { return `${this.data.thread_key}#${this.data.id}`; }
+  get_key() { return `${this.data.thread_key}#${this.id}`; }
+
+  get msg_i() {
+    if(!this.data.msg_i) {
+      const msg_i = Object.keys(this.thread.data.messages || {}).length + 1;
+      this.data.msg_i = msg_i;
+    }
+    return this.data.msg_i;
+  }
+  get branch_i() {
+    if(!this.data.branch_i){
+      const branch_i = (this.thread.data.branches?.[this.msg_i] || []).length + 1;
+      this.data.branch_i = branch_i;
+    }
+    return this.data.branch_i;
+  }
+  get id() {
+    if(!this.data.id){
+      this.data.id = `${this.role}-${this.msg_i}-${this.branch_i}`;
+    }
+    return this.data.id;
+  }
 
   /**
    * Initializes the message and triggers processing if it's a user message
@@ -44,12 +65,10 @@ export class SmartMessage extends SmartBlock {
    */
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
-    if(!this.data.msg_i) this.data.msg_i = this.thread.messages.length + 1;
-    // if thread.data.messages[msg_i] already exists, update msg_i of all subsequent messages
-    if(this.thread.messages[this.data.msg_i] && this.thread.messages[this.data.msg_i].id !== this.data.id){
-      this.update_subsequent_msg_indices();
+    if(!this.thread.data.messages[this.id]){
+      this.thread.data.messages[this.id] = this.msg_i;
+      await new Promise(resolve => setTimeout(resolve, 30));
     }
-    this.thread.data.messages[this.data.id] = this.data.msg_i;
     await this.render();
     if(this.role === 'user') {
       await this.thread.complete();
@@ -61,20 +80,6 @@ export class SmartMessage extends SmartBlock {
       }
     }
     this.queue_save();
-  }
-
-  // update msg_i of current and all subsequent messages
-  update_subsequent_msg_indices() {
-    console.log('update_subsequent_msg_indices', this.data.msg_i);
-    const zero_index_length = this.thread.messages.length - 1;
-    const current_msg_zero_index = this.data.msg_i - 1;
-    for (let i = zero_index_length; i > current_msg_zero_index; i--) {
-      const current_msg = this.thread.messages[i];
-      current_msg.data.msg_i = i + 1;
-      this.thread.data.messages[current_msg.id] = i + 1;
-    }
-    this.thread.data.messages[this.id] = this.data.msg_i + 1;
-    this.data.msg_i = this.data.msg_i + 1;
   }
 
   /**
@@ -183,13 +188,16 @@ export class SmartMessage extends SmartBlock {
         score: result.score,
       }))
     ;
+    const msg_i = Object.keys(this.thread.data.messages || {}).length + 1;
+    const branch_i = (this.thread.data.branches?.[msg_i] || []).length + 1;
     await this.env.smart_messages.create_or_update({
       thread_key: this.thread.key,
       tool_call_id: tool_call.id,
       tool_name: tool_call.function.name,
       tool_call_output: lookup_results,
       role: 'tool',
-      id: tool_call.id,
+      response_id: tool_call.id,
+      id: `tool-${msg_i}-${branch_i}`,
     });
   }
 
@@ -378,11 +386,6 @@ export class SmartMessage extends SmartBlock {
    */
   get thread() { return this.source; }
 
-  /**
-   * @property {number} msg_i - Message index (1-indexed)
-   * @readonly
-   */
-  get msg_i() { return this.data.msg_i; }
 
   /**
    * @property {SmartMessage} next_message - Next message reference
