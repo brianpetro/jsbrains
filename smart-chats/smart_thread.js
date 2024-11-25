@@ -180,7 +180,8 @@ export class SmartThread extends SmartSource {
     if (context?.has_self_ref || context?.folder_refs) {
       const system_prompt = {
         type: 'text',
-        content: `- Answer based on the context from lookup!\n- The context may be referred to as notes.`,
+        // replace this text with `key` to default system message for lookup
+        text: `- Answer based on the context from lookup!\n- The context may be referred to as notes.`,
       };
       system_message.content.push(system_prompt);
     }

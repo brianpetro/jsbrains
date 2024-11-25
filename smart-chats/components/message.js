@@ -10,17 +10,6 @@
  * @returns {string} HTML string for the message
  */
 export function build_html(message, opts = {}) {
-  if (message.role === 'system') {
-    return `
-      <div class="sc-message system" data-content="${message.content}">
-        <div class="sc-message-content" data-content="${encodeURIComponent(message.content)}">
-          <span>${typeof message.content === 'string' ? message.content : JSON.stringify(message.content, null, 2)}</span>
-          <span class="sc-msg-button" title="Copy message to clipboard">${this.get_icon_html('copy')}</span>
-        </div>
-      </div>
-    `;
-  }
-  
   const content = Array.isArray(message.content) 
     ? message.content.map(part => {
         if (part.type === "image_url") {

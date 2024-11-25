@@ -2,6 +2,7 @@ import { SmartBlock } from "smart-sources";
 import { render as message_template } from "./components/message";
 import { render as context_template } from "./components/context";
 import { render as tool_calls_template } from "./components/tool_calls";
+import { render as system_message_template } from "./components/system_message";
 /**
  * @class SmartMessage
  * @extends SmartBlock
@@ -60,6 +61,8 @@ export class SmartMessage extends SmartBlock {
       if(!this.settings.review_context){
         this.thread.complete();
       }
+    }else if(this.role === 'system'){
+      this.render_system_message();
     }else{
       await this.render();
     }
@@ -119,6 +122,13 @@ export class SmartMessage extends SmartBlock {
     if (tool_calls_container) tool_calls_container.replaceWith(frag);
     else container.appendChild(frag);
   }
+  async render_system_message(container=this.thread.messages_container) {
+    const frag = await system_message_template.call(this.smart_view, this);
+    const system_message_container = container.querySelector(`#system-message-container-${this.data.id}`);
+    if (system_message_container) system_message_container.replaceWith(frag);
+    else container.appendChild(frag);
+  }
+
 
   /**
    * Fetches and processes internal links, embedding images as Base64 data URLs.
