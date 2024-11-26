@@ -54,9 +54,10 @@ export class SmartEntities extends Collection {
   async load_smart_embed() {
     if (this.embed_model_key === 'None') return;
     if (!this.embed_model) return;
-    if (this.embed_model.loading) return console.log(`SmartEmbedModel already loading for ${this.embed_model_key}`);
-    if (this.embed_model.loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
+    if (this.embed_model.is_loading) return console.log(`SmartEmbedModel already loading for ${this.embed_model_key}`);
+    if (this.embed_model.is_loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
     try {
+      console.log(`Loading SmartEmbedModel in ${this.collection_key}, current state: ${this.embed_model.state}`);
       await this.embed_model.load();
     } catch (e) {
       // catch error to ensure collection settings still load
