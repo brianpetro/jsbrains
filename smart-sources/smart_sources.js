@@ -423,6 +423,14 @@ export class SmartSources extends SmartEntities {
    */
   get blocks(){ return this.env.smart_blocks; }
 
+  get embed_model() {
+    if (this.embed_model_key === "None") return null;
+    if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
+      settings: this.env.settings.smart_sources.embed_model,
+      adapters: this.env.opts.modules.smart_embed_model?.adapters,
+    });
+    return this.env._embed_model;
+  }
   /**
    * Retrieves the embed queue containing items and their blocks to be embedded.
    * @readonly
