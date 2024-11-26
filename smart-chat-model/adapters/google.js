@@ -334,14 +334,10 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
   }
 
   handle_chunk(chunk) {
-    console.log('platform_res', this._res);
-    console.log('handle_chunk', chunk);
     let chunk_trimmed = chunk.trim();
     if(['[',','].includes(chunk_trimmed[0])) chunk_trimmed = chunk_trimmed.slice(1);
     if([']',','].includes(chunk_trimmed[chunk_trimmed.length - 1])) chunk_trimmed = chunk_trimmed.slice(0, -1);
-    console.log('chunk_trimmed', chunk_trimmed);
     const data = JSON.parse(chunk_trimmed);
-    console.log('handle_chunk data', data);
 
     // Merge candidates content parts text
     if (data.candidates?.[0]?.content?.parts?.[0]?.text?.length) {
@@ -368,7 +364,6 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
         ...data.usageMetadata
       };
     }
-    console.log('handle_chunk this._res', this._res);
   }
 
 }

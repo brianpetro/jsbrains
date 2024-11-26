@@ -25,7 +25,7 @@ export function build_html(message, opts = {}) {
             <span class="sc-tool-call-toggle-icon">${this.get_icon_html('chevron-down')}</span>
           </div>
           <div class="sc-tool-call-content" id="${message.data.id}-content" hidden>
-            <pre><code class="language-json">${JSON.stringify(JSON.parse(tool_call.function.arguments), null, 2)}</code></pre>
+            <pre><code class="language-json">${JSON.stringify((typeof tool_call.function.arguments === 'string') ? JSON.parse(tool_call.function.arguments) : tool_call.function.arguments, null, 2)}</code></pre>
           </div>
         </div>
       `).join('')}

@@ -1,4 +1,4 @@
-import { SmartChatModelApiAdapter, SmartChatModelResponseAdapter } from "./_api.js";
+import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from "./_api.js";
 
 /**
  * Adapter for Ollama's local API.
@@ -13,9 +13,11 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     models_endpoint: "http://localhost:11434/api/tags",
     endpoint: "http://localhost:11434/api/chat",
     api_key: 'na',
-    streaming: false, // TODO: Implement streaming
+    // streaming: false, // TODO: Implement streaming
+    streaming: true,
   }
 
+  req_adapter = SmartChatModelOllamaRequestAdapter;
   res_adapter = SmartChatModelOllamaResponseAdapter;
 
   /**
@@ -99,6 +101,116 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     delete config['[CHAT_ADAPTER].api_key'];
     return config;
   }
+  is_end_of_stream(event) {
+    return event.data.includes('"done_reason"');
+  }
+}
+
+export class SmartChatModelOllamaRequestAdapter extends SmartChatModelRequestAdapter {
+  /**
+   * Convert request to Ollama format
+   * @returns {Object} Request parameters in Ollama format
+   */
+  to_platform(streaming = false) {
+    const ollama_body = {
+      model: this.model,
+      messages: this._transform_messages_to_ollama(),
+      options: this._transform_parameters_to_ollama(),
+      stream: streaming || this.stream,
+      // format: 'json', // only used for tool calls since returns JSON in content body
+    };
+
+    if (this.tools) {
+      ollama_body.tools = this._transform_functions_to_tools();
+      if(this.tool_choice?.function?.name){
+        ollama_body.messages[ollama_body.messages.length - 1].content += `\n\nUse the "${this.tool_choice.function.name}" tool.`;
+        ollama_body.format = 'json';
+      }
+    }
+
+    return {
+      url: this.adapter.endpoint,
+      method: 'POST',
+      body: JSON.stringify(ollama_body)
+    };
+  }
+
+  /**
+   * Transform messages to Ollama format
+   * @returns {Array} Messages in Ollama format
+   * @private
+   */
+  _transform_messages_to_ollama() {
+    return this.messages.map(message => {
+      const ollama_message = {
+        role: message.role,
+        content: this._transform_content_to_ollama(message.content)
+      };
+
+      // Extract images if present
+      const images = this._extract_images_from_content(message.content);
+      if (images.length > 0) {
+        ollama_message.images = images;
+      }
+
+      return ollama_message;
+    });
+  }
+
+  /**
+   * Transform content to Ollama format
+   * @param {string|Array} content - Message content
+   * @returns {string} Content in Ollama format
+   * @private
+   */
+  _transform_content_to_ollama(content) {
+    if (Array.isArray(content)) {
+      return content
+        .filter(item => item.type === 'text')
+        .map(item => item.text)
+        .join('\n');
+    }
+    return content;
+  }
+
+  /**
+   * Extract images from content
+   * @param {string|Array} content - Message content
+   * @returns {Array} Array of image URLs
+   * @private
+   */
+  _extract_images_from_content(content) {
+    if (!Array.isArray(content)) return [];
+    return content
+      .filter(item => item.type === 'image_url')
+      .map(item => item.image_url.url);
+  }
+
+  /**
+   * Transform functions to tools format
+   * @returns {Array} Tools array in Ollama format
+   * @private
+   */
+  _transform_functions_to_tools() {
+    return this.tools;
+  }
+
+  /**
+   * Transform parameters to Ollama options format
+   * @returns {Object} Options in Ollama format
+   * @private
+   */
+  _transform_parameters_to_ollama() {
+    const options = {};
+    
+    if (this.max_tokens) options.num_predict = this.max_tokens;
+    if (this.temperature) options.temperature = this.temperature;
+    if (this.top_p) options.top_p = this.top_p;
+    if (this.frequency_penalty) options.frequency_penalty = this.frequency_penalty;
+    if (this.presence_penalty) options.presence_penalty = this.presence_penalty;
+    
+    return options;
+  }
 }
 
 /**
@@ -107,15 +219,32 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
  * @extends SmartChatModelResponseAdapter
  */
 export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseAdapter {
+  static get platform_res() {
+    return {
+      model: '',
+      created_at: null,
+      message: {
+        role: '',
+        content: ''
+      },
+      total_duration: 0,
+      load_duration: 0,
+      prompt_eval_count: 0,
+      prompt_eval_duration: 0,
+      eval_count: 0,
+      eval_duration: 0
+    };
+  }
   /**
    * Convert response to OpenAI format
    * @returns {Object} Response in OpenAI format
    */
   to_openai() {
     return {
-      id: this._res.id,
+      id: this._res.created_at,
       object: 'chat.completion',
       created: Date.now(),
+      model: this._res.model,
       choices: [
         {
           index: 0,
@@ -135,7 +264,8 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
   _transform_message_to_openai() {
     return {
       role: this._res.message.role,
-      content: this._res.message.content
+      content: this._res.message.content,
+      tool_calls: this._res.message.tool_calls
     };
   }
 
@@ -150,6 +280,45 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
       completion_tokens: this._res.eval_count || 0,
       total_tokens: (this._res.prompt_eval_count || 0) + (this._res.eval_count || 0)
     };
+  }
+  /**
+   * Parse chunk adds delta to content as expected output format
+   */
+  handle_chunk(chunk) {
+    chunk = JSON.parse(chunk || '{}');
+    if(chunk.created_at && !this._res.created_at){
+      this._res.created_at = chunk.created_at;
+    }
+    if(chunk.message?.content){
+      this._res.message.content += chunk.message.content;
+    }
+    if(chunk.message?.role){
+      this._res.message.role = chunk.message.role;
+    }
+    if(chunk.model){
+      this._res.model = chunk.model;
+    }
+    if(chunk.message?.tool_calls){
+      if(!this._res.message.tool_calls){
+        this._res.message.tool_calls = [{
+          id: '',
+          type: 'function',
+          function: {
+            name: '',
+            arguments: '',
+          },
+        }];
+      }
+      if(chunk.message.tool_calls[0].id){
+        this._res.message.tool_calls[0].id += chunk.message.tool_calls[0].id;
+      }
+      if(chunk.message.tool_calls[0].function.name){
+        this._res.message.tool_calls[0].function.name += chunk.message.tool_calls[0].function.name;
+      }
+      if(chunk.message.tool_calls[0].function.arguments){
+        this._res.message.tool_calls[0].function.arguments += chunk.message.tool_calls[0].function.arguments;
+      }
+    }
   }
 }
 

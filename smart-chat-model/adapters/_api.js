@@ -181,8 +181,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     return await new Promise((resolve, reject) => {
       try {
         this.active_stream = new SmartStreamer(this.endpoint_streaming, request_params);
-        
         const resp_adapter = new this.res_adapter(this);
+        
         this.active_stream.addEventListener("message", async (e) => {
           // console.log('message', e);
           if (this.is_end_of_stream(e)) {
@@ -341,13 +341,13 @@ export class SmartChatModelRequestAdapter {
     return this._req.max_tokens || this.adapter.model_config.max_output_tokens;
   }
 
-  // /**
-  //  * Get the streaming flag
-  //  * @returns {boolean} Whether to stream responses
-  //  */
-  // get stream() {
-  //   return this._req.stream;
-  // }
+  /**
+   * Get the streaming flag
+   * @returns {boolean} Whether to stream responses
+   */
+  get stream() {
+    return this._req.stream;
+  }
 
   /**
    * Get the tools array
@@ -363,6 +363,18 @@ export class SmartChatModelRequestAdapter {
    */
   get tool_choice() {
     return this._req.tool_choice || null;
+  }
+
+  get frequency_penalty() {
+    return this._req.frequency_penalty;
+  }
+
+  get presence_penalty() {
+    return this._req.presence_penalty;
+  }
+
+  get top_p() {
+    return this._req.top_p;
   }
 
   /**
@@ -511,7 +523,9 @@ export class SmartChatModelRequestAdapter {
  * @property {Object} _res - The original response object
  */
 export class SmartChatModelResponseAdapter {
-  static platform_res = {};
+  static get platform_res() {
+    return {}; // must be getter to prevent erroneous assignment
+  }
   /**
    * @constructor
    * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance

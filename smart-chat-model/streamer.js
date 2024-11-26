@@ -134,7 +134,7 @@ export class SmartStreamer {
     this.progress += data.length;
     
     // Split the data and handle the parts
-    const parts = data.split(/(\r\n|\n|\r){2}/g);
+    const parts = data.split(/(\r\n|\n|\r)/g);
     parts.forEach((part, index) => {
       if (part.trim().length === 0) {
         // If we have accumulated chunk, dispatch it
