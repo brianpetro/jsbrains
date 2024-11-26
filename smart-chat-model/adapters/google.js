@@ -21,6 +21,8 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
     can_use_tools: true,
   };
 
+  streaming_chunk_splitting_regex = /(\r\n|\n|\r){2}/g; // handle Google's BS (split on double newlines only)
+
   /**
    * Get request adapter class
    */
@@ -161,8 +163,6 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
         topP: this._req.topP || 1,
         stopSequences: this._req.stop || [],
       },
-      ...(this.tools && { tools: this._transform_tools_to_gemini() }),
-      ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
       safetySettings: [
         {
           category: "HARM_CATEGORY_HARASSMENT",
@@ -182,6 +182,8 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
         }
       ]
     };
+    if(this.tools) gemini_body.tools = this._transform_tools_to_gemini();
+    if(this._req.tool_choice) gemini_body.tool_config = this._transform_tool_choice_to_gemini();
 
     return {
       url: streaming ? this.adapter.endpoint_streaming : this.adapter.endpoint,
@@ -252,23 +254,34 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
       }))
     }];
   }
+
+  _transform_tool_choice_to_gemini() {
+    return {
+      function_calling_config: {
+        mode: "ANY",
+        allowed_function_names: this.tools.map(tool => tool.function.name)
+      },
+    };
+  }
 }
 
 export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseAdapter {
-  static platform_res = {
-    candidates: [{
-      content: {
-        parts: [
-          {
-            text: ''
-          }
-        ],
-        role: ''
-      },
-      finishReason: ''
-    }],
-    promptFeedback: {},
-    usageMetadata: {}
+  static get platform_res() {
+    return {
+      candidates: [{
+        content: {
+          parts: [
+            {
+              text: ''
+            }
+          ],
+          role: '',
+        },
+        finishReason: ''
+      }],
+      promptFeedback: {},
+      usageMetadata: {}
+    };
   }
   to_openai() {
     const first_candidate = this._res.candidates[0];
@@ -334,6 +347,7 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
   }
 
   handle_chunk(chunk) {
+    console.log('handle_chunk', chunk);
     let chunk_trimmed = chunk.trim();
     if(['[',','].includes(chunk_trimmed[0])) chunk_trimmed = chunk_trimmed.slice(1);
     if([']',','].includes(chunk_trimmed[chunk_trimmed.length - 1])) chunk_trimmed = chunk_trimmed.slice(0, -1);

@@ -204,7 +204,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
             handlers.chunk && await handlers.chunk(resp_adapter.to_openai());
           } catch (error) {
             console.error('Error processing stream chunk:', error);
-            handlers.error && handlers.error("*API Error. See console logs for details.*");
+            handlers.error && handlers.error(e.data);
             this.stop_stream();
             reject(error);
           }
