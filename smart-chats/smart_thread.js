@@ -5,7 +5,7 @@ import { contains_internal_link, extract_internal_links } from "./utils/internal
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
 import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
-
+import { render as error_template } from "./components/error.js";
 /**
  * @class SmartThread
  * @extends SmartSource
@@ -287,6 +287,9 @@ export class SmartThread extends SmartSource {
       });
     } else {
       const response = await this.chat_model.complete(request);
+      if(response.error){
+        return this.error_handler(response);
+      }
       this.data.responses[response.id] = response;
       await this.handle_message_from_chat_model(response);
     }
@@ -297,7 +300,7 @@ export class SmartThread extends SmartSource {
    */
   async chunk_handler(response) {
     const msg_items = await this.handle_message_from_chat_model(response);
-    await msg_items[0].render();
+    if(msg_items?.length > 0) await msg_items[0].render();
   }
   /**
    * @description
@@ -309,8 +312,14 @@ export class SmartThread extends SmartSource {
     this.data.responses[response.id] = response;
     await msg_items[0].init(); // runs init() to trigger tool_call handlers
   }
-  error_handler(error) {
-    console.error('error_handler', error);
+  error_handler(response) {
+    this.render_error(response);
+    console.error('error_handler', response);
+  }
+  async render_error(response, container=this.messages_container) {
+    const frag = await error_template.call(this.smart_view, response);
+    if(container) container.appendChild(frag);
+    return frag;
   }
 
   /**

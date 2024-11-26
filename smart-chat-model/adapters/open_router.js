@@ -93,7 +93,32 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
  * @extends SmartChatModelRequestAdapter
  */
 export class SmartChatModelOpenRouterRequestAdapter extends SmartChatModelRequestAdapter {
-  to_platform() { return this.to_openai(); }
+  to_platform(stream = false) {
+    const req = this.to_openai(stream);
+    // const body = JSON.parse(req.body);
+    // if(typeof body.tool_choice === 'object'){
+    //   const tool_name = body.tool_choice.function.name;
+    //   const last_message = body.messages[body.messages.length - 1];
+    //   if(typeof last_message.content === 'string'){
+    //     last_message.content += `\n\nUse the "${tool_name}" tool.`;
+    //   }else if(Array.isArray(last_message.content)){
+    //     const text_part = last_message.content.find(part => part.type === 'text');
+    //     if(text_part){
+    //       text_part.text += `\n\nUse the "${tool_name}" tool.`;
+    //     }else{
+    //       const text = {
+    //         type: 'text',
+    //         text: `Use the "${tool_name}" tool.`,
+    //       };
+    //       last_message.content.push(text);
+    //     }
+    //   }
+    //   // delete body.tool_choice;
+    //   body.tool_choice = 'auto';
+    // }
+    // req.body = JSON.stringify(body);
+    return req;
+  }
 }
 
 /**
@@ -102,6 +127,29 @@ export class SmartChatModelOpenRouterRequestAdapter extends SmartChatModelReques
  * @extends SmartChatModelResponseAdapter
  */
 export class SmartChatModelOpenRouterResponseAdapter extends SmartChatModelResponseAdapter {
+  static get platform_res() {
+    return {
+      id: '',
+      object: 'chat.completion',
+      created: 0,
+      model: '',
+      choices: [],
+      usage: {},
+    };
+  }
   to_platform() { return this.to_openai(); }
   get object() { return 'chat.completion'; }
+  get error() {
+    if(!this._res.error) return null;
+    const error = this._res.error;
+    if(!error.message) error.message = '';
+    if(this._res.error.metadata?.raw){
+      if(typeof this._res.error.metadata.raw === 'string'){
+        error.message += `\n\n${this._res.error.metadata.raw}`;
+      }else{
+        error.message += `\n\n${JSON.stringify(this._res.error.metadata.raw, null, 2)}`;
+      }
+    }
+    return error;
+  }
 }

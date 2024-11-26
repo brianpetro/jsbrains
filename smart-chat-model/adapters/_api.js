@@ -523,8 +523,16 @@ export class SmartChatModelRequestAdapter {
  * @property {Object} _res - The original response object
  */
 export class SmartChatModelResponseAdapter {
+  // must be getter to prevent erroneous assignment
   static get platform_res() {
-    return {}; // must be getter to prevent erroneous assignment
+    return {
+      id: '',
+      object: 'chat.completion',
+      created: 0,
+      model: '',
+      choices: [],
+      usage: {},
+    };
   }
   /**
    * @constructor
@@ -600,12 +608,16 @@ export class SmartChatModelResponseAdapter {
     return this._res.usage || null;
   }
 
+  get error() {
+    return this._res.error || null;
+  }
+
   /**
    * Convert response to OpenAI format
    * @returns {Object} Response in OpenAI format
    */
   to_openai() {
-    return {
+    const res = {
       id: this.id,
       object: this.object,
       created: this.created,
@@ -613,6 +625,8 @@ export class SmartChatModelResponseAdapter {
       usage: this._transform_usage_to_openai(),
       raw: this._res,
     };
+    if(this.error) res.error = this.error;
+    return res;
   }
 
   /**
@@ -621,12 +635,11 @@ export class SmartChatModelResponseAdapter {
   handle_chunk(chunk) {
     if(chunk === 'data: [DONE]') return;
     chunk = JSON.parse(chunk.split('data: ')[1] || '{}');
-    if(!this._res.choices){
-      this._res = this.to_openai();
-    }
+    if(Object.keys(chunk).length === 0) return;
     if(!this._res.choices[0]){
       this._res.choices.push({
         message: {
+          index: 0,
           role: 'assistant',
           content: '',
         },

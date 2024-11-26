@@ -1,4 +1,4 @@
-import { SmartChatModelApiAdapter } from "./_api.js";
+import { SmartChatModelApiAdapter, SmartChatModelResponseAdapter } from "./_api.js";
 
 /**
  * Adapter for OpenAI's chat API.
@@ -27,6 +27,8 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     signup_url: "https://platform.openai.com/api-keys",
     can_use_tools: true,
   };
+
+  res_adapter = SmartChatModelOpenaiResponseAdapter;
   
   /**
    * Parse model data from OpenAI API response.
@@ -88,6 +90,16 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     };
   }
 }
+
+
+/**
+ * Response adapter for OpenAI API
+ * @class SmartChatModelOpenaiResponseAdapter
+ * @extends SmartChatModelResponseAdapter
+ */
+class SmartChatModelOpenaiResponseAdapter extends SmartChatModelResponseAdapter {
+}
+
 
 // Manual model context for now since OpenAI doesn't provide this info in the API response
 // may require updating when new models are released
