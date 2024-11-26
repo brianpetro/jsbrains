@@ -48,6 +48,19 @@ export class SmartChatModel extends SmartModel {
   get can_use_tools() {
     return this.adapter.constructor.defaults.can_use_tools;
   }
+  /**
+   * Get the current adapter name
+   * @returns {string} Current adapter name
+   */
+  get adapter_name() {
+    const adapter_key = this.opts.model_config?.adapter
+      || this.opts.adapter
+      || this.settings.adapter
+      || Object.keys(this.adapters)[0]
+    ;
+    if(!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
+    return adapter_key;
+  }
 
   /**
    * Complete a chat request.
