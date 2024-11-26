@@ -176,6 +176,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   async stream(req, handlers = {}) {
     const _req = new this.req_adapter(this, req);
     const request_params = _req.to_platform(true);
+    if(this.streaming_chunk_splitting_regex) request_params.chunk_splitting_regex = this.streaming_chunk_splitting_regex; // handle Google's BS
     console.log('request_params', request_params);
     
     return await new Promise((resolve, reject) => {
@@ -193,6 +194,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
             handlers.done && await handlers.done(final_resp);
             // should return the final aggregated response if needed
             resolve(final_resp);
+            console.log('final_resp', final_resp);
+            console.log(resp_adapter);
             return;
           }
           

@@ -25,6 +25,7 @@ export class SmartStreamer {
     this.CLOSED = 2;
 
     this.chunk_accumulator = '';
+    this.chunk_splitting_regex = options.chunk_splitting_regex || /(\r\n|\n|\r)/g;
   }
 
   /**
@@ -134,7 +135,7 @@ export class SmartStreamer {
     this.progress += data.length;
     
     // Split the data and handle the parts
-    const parts = data.split(/(\r\n|\n|\r)/g);
+    const parts = data.split(this.chunk_splitting_regex);
     parts.forEach((part, index) => {
       if (part.trim().length === 0) {
         // If we have accumulated chunk, dispatch it

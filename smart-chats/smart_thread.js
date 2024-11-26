@@ -151,7 +151,7 @@ export class SmartThread extends SmartSource {
       // Create a new SmartMessage for the user's message
       await this.env.smart_messages.create_or_update(new_msg_data);
     } catch (error) {
-      console.error("Error in new_user_message:", error);
+      console.error("Error in handle_message_from_user:", error);
     }
   }
   // handle creating system message

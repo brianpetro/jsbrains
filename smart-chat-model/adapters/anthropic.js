@@ -66,6 +66,10 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
     return Promise.resolve(this.models);
   }
 
+  is_end_of_stream(event) {
+    return event.data.includes('message_stop');
+  }
+
   /**
    * Get hardcoded list of available models
    * @returns {Object} Map of model objects with capabilities and limits
@@ -284,6 +288,21 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
  * @extends SmartChatModelResponseAdapter
  */
 export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelResponseAdapter {
+  static get platform_res() {
+    return {
+      content: [],
+      id: "",
+      model: "",
+      role: "assistant",
+      stop_reason: null,
+      stop_sequence: null,
+      type: "message",
+      usage: {
+        input_tokens: 0,
+        output_tokens: 0
+      }
+    };
+  }
   /**
    * Convert response to OpenAI format
    * @returns {Object} Response in OpenAI format
@@ -379,121 +398,40 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
 
 
   handle_chunk(chunk) {
-    console.log('handle_chunk', chunk);
-    const [event_line, data_line] = chunk.split('\n');
-    // const is_type = [
-    //   'message_delta',
-    //   'message_start',
-    //   'message_stop',
-    //   'content_block_start',
-    //   'content_block_delta',
-    //   'content_block_stop',
-    //   'ping',
-    //   'error'
-    // ].includes(chunk);
-    // // Parse the chunk if it's a string
-    // const event = typeof chunk === 'string' && !is_type
-    //   ? JSON.parse(chunk) 
-    //   : chunk
-    // ;
-    let data;
-    try {
-      data = data_line.slice(6);
-      console.log('data', data);
-      data = JSON.parse(data);
-    } catch (e) {
-      console.error('Error parsing data:', e);
-      data = {};
-    }
-    const event_type = event_line.slice(7);
-    console.log({event: event_type, data: data});
-    let event = {
-      type: event_type.trim(),
-      ...data
-    };
-
-    console.log('event', event);
-    
+    if(!chunk.startsWith('data: ')) return;
+    chunk = JSON.parse(chunk.slice(6));
     // Initialize response structure if needed
-    if (!this._res.content) {
-      this._res.content = [];
+    if (!this._res.content.length) {
+      this._res.content = [
+        {
+          type: 'text',
+          text: ''
+        }
+      ];
     }
 
-    switch (event.type) {
-      case 'message_start':
-        // Initialize message with data from message_start event
-        this._res = {
-          ...this._res,
-          ...event.message,
-        };
-        break;
-
-      case 'content_block_start':
-        // Add new content block at specified index
-        this._res.content[event.index] = {
-          type: event.content_block.type,
-          text: event.content_block.type === 'text' ? '' : undefined,
-          tool_use: event.content_block.type === 'tool_use' ? {
-            id: event.content_block.id,
-            name: event.content_block.name,
-            input: {}
-          } : undefined
-        };
-        break;
-
-      case 'content_block_delta':
-        // Handle delta updates to content blocks
-        if (event.delta.type === 'text_delta') {
-          // Append text to the content block
-          if (!this._res.content[event.index].text) {
-            this._res.content[event.index].text = '';
-          }
-          this._res.content[event.index].text += event.delta.text;
-        } else if (event.delta.type === 'input_json_delta') {
-          // Accumulate JSON for tool use input
-          if (!this._res.content[event.index].tool_use._partial_json) {
-            this._res.content[event.index].tool_use._partial_json = '';
-          }
-          this._res.content[event.index].tool_use._partial_json += event.delta.partial_json;
-        }
-        break;
-
-      case 'content_block_stop':
-        // Finalize content block
-        if (this._res.content[event.index].tool_use?._partial_json) {
-          try {
-            // Parse accumulated JSON for tool use
-            this._res.content[event.index].tool_use.input = 
-              JSON.parse(this._res.content[event.index].tool_use._partial_json);
-            // Clean up partial JSON
-            delete this._res.content[event.index].tool_use._partial_json;
-          } catch (e) {
-            console.error('Error parsing tool use JSON:', e);
-          }
-        }
-        break;
-
-      case 'message_delta':
-        // Update message metadata
-        if (event.delta.stop_reason) {
-          this._res.stop_reason = event.delta.stop_reason;
-        }
-        if (event.delta.stop_sequence) {
-          this._res.stop_sequence = event.delta.stop_sequence;
-        }
-        if (event.usage) {
-          this._res.usage = {
-            ...this._res.usage,
-            ...event.usage
-          };
-        }
-        break;
-
-      case 'error':
-        // Handle error events
-        console.error('Anthropic stream error:', event.error);
-        throw new Error(event.error.message);
+    if(chunk.message?.id) {
+      this._res.id = chunk.message.id;
     }
+    if(chunk.message?.model) {
+      this._res.model = chunk.message.model;
+    }
+    if(chunk.message?.role) {
+      this._res.role = chunk.message.role;
+    }
+    if(chunk.delta?.type === 'text_delta') {
+      this._res.content[0].text += chunk.delta.text;
+    }
+    if(chunk.delta?.stop_reason) {
+      this._res.stop_reason = chunk.delta.stop_reason;
+    }
+    if(chunk.usage) {
+      this._res.usage = {
+        ...this._res.usage,
+        ...chunk.usage
+      };
+    }
+
   }
 
 
