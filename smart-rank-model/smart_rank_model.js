@@ -19,50 +19,132 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import { SmartModel } from 'smart-model';
 import rank_models from './models.json' assert { type: 'json' };
 
-export class SmartRankModel {
+/**
+ * SmartRankModel - A versatile class for handling document ranking using various model backends
+ * @extends SmartModel
+ * 
+ * @example
+ * ```javascript
+ * const rankModel = await SmartRankModel.load(env, {
+ *   model_key: 'cohere',
+ *   adapter: 'cohere',
+ *   settings: {
+ *     cohere_api_key: 'your-cohere-api-key',
+ *   },
+ * });
+ * 
+ * const rankings = await rankModel.rank("Your query here", ["Doc 1", "Doc 2"]);
+ * console.log(rankings);
+ * ```
+ */
+export class SmartRankModel extends SmartModel {
+  static defaults = {
+    model_key: 'cohere', // Default to Cohere adapter
+  };
+
   /**
-   * Create a SmartRank instance.
-   * @param {string} env - The environment to use.
-   * @param {object} opts - Full model configuration object or at least a model_key and adapter
+   * Create a SmartRankModel instance
+   * @param {Object} opts - Configuration options
+   * @param {Object} [opts.adapters] - Map of available adapter implementations
+   * @param {Object} [opts.settings] - User settings
+   * @param {string} [opts.model_key] - Model key to select the adapter
    */
-  constructor(env, opts={}) {
-    this.env = env;
-    this.opts = {
-      ...(rank_models[opts.model_key] || {}),
-      ...opts,
-    };
-    // if(!this.opts.adapter) throw new Error('SmartRankModel adapter not set');
-    if(!this.opts.adapter) return console.warn('SmartRankModel adapter not set');
-    // if(!this.env.opts.smart_rank_adapters[this.opts.adapter]) throw new Error(`SmartRankModel adapter ${this.opts.adapter} not found`);
-    if(!this.env.opts.smart_rank_adapters[this.opts.adapter]) return console.warn(`SmartRankModel adapter ${this.opts.adapter} not found`);
-    // prepare opts for GPU (likely better handled in future)
-    if(typeof navigator !== 'undefined') this.opts.use_gpu = !!navigator?.gpu && this.opts.gpu_batch_size !== 0;
-    this.opts.use_gpu = false; // DISABLED for now
-    // init adapter
-    this.adapter = new this.env.opts.smart_rank_adapters[this.opts.adapter](this);
+  constructor(opts = {}) {
+    super(opts);
   }
+
   /**
-   * Used to load a model with a given configuration.
-   * @param {*} env 
-   * @param {*} opts 
+   * Load the SmartRankModel with the specified configuration.
+   * @param {Object} env - Environment configurations
+   * @param {Object} opts - Configuration options
+   * @returns {Promise<SmartRankModel>} Loaded SmartRankModel instance
    */
   static async load(env, opts = {}) {
-    if(env.smart_rank_active_models?.[opts.model_key]) return env.smart_rank_active_models[opts.model_key];
+    if (env.smart_rank_active_models?.[opts.model_key]) {
+      return env.smart_rank_active_models[opts.model_key];
+    }
     try {
-      const model = new SmartRankModel(env, opts);
+      const model = new SmartRankModel(opts);
       await model.adapter.load();
-      if(!env.smart_rank_active_models) env.smart_rank_active_models = {};
+      if (!env.smart_rank_active_models) env.smart_rank_active_models = {};
       env.smart_rank_active_models[opts.model_key] = model;
       return model;
     } catch (error) {
       console.error(`Error loading rank model ${opts.model_key}:`, error);
-      // this.unload(env, opts); // TODO: unload model if error
       return null;
     }
   }
+
+  /**
+   * Rank documents based on a query.
+   * @param {string} query - The query string
+   * @param {Array<string>} documents - Array of document strings
+   * @returns {Promise<Array<Object>>} Ranked documents
+   */
   async rank(query, documents) {
-    return this.adapter.rank(query, documents);
+    return await this.invoke_adapter_method('rank', query, documents);
+  }
+
+  /**
+   * Get available ranking models.
+   * @returns {Object} Map of ranking models
+   */
+  get models() { 
+    return rank_models; 
+  }
+
+  /** @override */
+  get default_model_key() {
+    return 'cohere'; // Ensure consistency with adapters
+  }
+
+  /**
+   * Get settings configuration schema.
+   * @returns {Object} Settings configuration object
+   */
+  get settings_config() {
+    const _settings_config = {
+      model_key: {
+        name: 'Ranking Model',
+        type: "dropdown",
+        description: "Select a ranking model to use.",
+        options_callback: 'get_ranking_model_options',
+        callback: 'reload_model',
+        default: this.default_model_key,
+      },
+      "[RANKING_ADAPTER].cohere_api_key": {
+        name: 'Cohere API Key',
+        type: "password",
+        description: "Enter your Cohere API key for ranking.",
+        placeholder: "Enter Cohere API Key",
+      },
+      // Add adapter-specific settings here
+      ...(this.adapter.settings_config || {}),
+    };
+    return this.process_settings_config(_settings_config, 'ranking_adapter');
+  }
+
+  process_setting_key(key) {
+    return key.replace(/\[RANKING_ADAPTER\]/g, this.adapter_name);
+  }
+
+  /**
+   * Get available ranking model options.
+   * @returns {Array<Object>} Array of model options with value and name
+   */
+  get_ranking_model_options() {
+    return Object.keys(this.adapters).map(key => ({ value: key, name: key }));
+  }
+
+  /**
+   * Reload ranking model.
+   */
+  reload_model() {
+    if (this.adapter && typeof this.adapter.load === 'function') {
+      this.adapter.load();
+    }
   }
 }

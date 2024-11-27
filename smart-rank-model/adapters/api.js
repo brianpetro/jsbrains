@@ -1,52 +1,202 @@
-import { SmartRankAdapter } from "./_adapter.js";
+import { SmartHttpRequest } from "smart-http-request";
+import { SmartRankModelAdapter } from "./_adapter.js";
+import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
 
 /**
- * ApiAdapter is the base class for all API adapters.
- * It provides the basic functionality for making requests to the API.
- * Implements OpenAI API.
- * @extends SmartRankAdapter
- * Requires model_config.request_adapter to be set.
+ * Base API adapter class for SmartRankModel.
+ * Handles HTTP requests and response processing for remote ranking services.
+ * @abstract
+ * @class SmartRankModelApiAdapter
+ * @extends SmartRankModelAdapter
  */
-export class SmartRankApiAdapter extends SmartRankAdapter {
-  get endpoint() { return this.smart_rank.opts.endpoint; }
+export class SmartRankModelApiAdapter extends SmartRankModelAdapter {
+  
   /**
-   * Checks if the response JSON indicates an error.
-   * @param {object} resp_json - The response JSON to check.
-   * @returns {boolean} True if there is an error, false otherwise.
+   * Get the request adapter class.
+   * @returns {SmartRankModelRequestAdapter} The request adapter class
    */
-  is_error(resp_json) { return resp_json.error || resp_json.errors; }
+  get req_adapter() {
+    return SmartRankModelRequestAdapter;
+  }
 
   /**
-   * Retrieves the JSON from the response.
-   * @param {Response} resp - The response object.
-   * @returns {Promise<object>} The response JSON.
+   * Get the response adapter class.
+   * @returns {SmartRankModelResponseAdapter} The response adapter class
    */
-  async get_resp_json(resp) { return (typeof resp.json === 'function') ? await resp.json() : await resp.json; }
+  get res_adapter() {
+    return SmartRankModelResponseAdapter;
+  }
+
+  /** @returns {string} API endpoint URL */
+  get endpoint() {
+    return this.model_config.endpoint;
+  }
 
   /**
-   * Handles the request, including retries for specific errors.
-   * @param {object} req - The request object.
-   * @param {number} retries - The current retry count.
-   * @returns {Promise<object|null>} The response JSON or null if an error occurs.
+   * Get HTTP request adapter instance
+   * @returns {SmartHttpRequest} HTTP request handler
    */
-  async request(req, retries = 0){
+  get http_adapter() {
+    if (!this._http_adapter) {
+      if (this.model.opts.http_adapter)
+        this._http_adapter = this.model.opts.http_adapter;
+      else
+        this._http_adapter = new SmartHttpRequest({
+          adapter: SmartHttpRequestFetchAdapter,
+        });
+    }
+    return this._http_adapter;
+  }
+
+  /**
+   * Get API key for authentication
+   * @returns {string} API key
+   */
+  get api_key() {
+    return this.settings.api_key || this.model_config.api_key;
+  }
+
+  /**
+   * Make an API request with retry logic
+   * @param {Object} req - Request configuration
+   * @param {number} [retries=0] - Number of retries attempted
+   * @returns {Promise<Object>} API response
+   */
+  async request(req, retries = 0) {
     try {
       req.throw = false;
-      // handle fallback to fetch (allows for overwriting in child classes)
-      const resp = this.request_adapter ? await this.request_adapter({url: this.endpoint, ...req}) : await fetch(this.endpoint, req);
+      const resp = await this.http_adapter.request({
+        url: this.endpoint,
+        ...req,
+      });
       const resp_json = await this.get_resp_json(resp);
-      // console.log(resp_json);
-      if(this.is_error(resp_json)) return await this.handle_request_err(resp_json, req, retries);
+      if (this.is_error(resp_json)) {
+        return await this.handle_request_err(resp_json, req, retries);
+      }
       return resp_json;
     } catch (error) {
       return await this.handle_request_err(error, req, retries);
     }
   }
-  handle_request_err(error, req, retries){
-    console.log(error);
+
+  /**
+   * Handle API request errors with retry logic
+   * @param {Error|Object} error - Error object
+   * @param {Object} req - Original request
+   * @param {number} retries - Number of retries attempted
+   * @returns {Promise<Object|null>} Retry response or null
+   */
+  async handle_request_err(error, req, retries) {
+    if (error.status === 429 && retries < 3) {
+      const backoff = Math.pow(retries + 1, 2);
+      console.log(`Retrying request (429) in ${backoff} seconds...`);
+      await new Promise((r) => setTimeout(r, 1000 * backoff));
+      return await this.request(req, retries + 1);
+    }
+    console.error(error);
     return null;
   }
-  async rank(query, documents){ /* OVERRIDE */ }
+
+  /**
+   * Parse response body as JSON
+   * @param {Response} resp - Response object
+   * @returns {Promise<Object>} Parsed JSON
+   */
+  async get_resp_json(resp) {
+    return typeof resp.json === "function" ? await resp.json() : await resp.json;
+  }
+
+  /**
+   * Validate API key by making a test request
+   * @returns {Promise<boolean>} True if API key is valid
+   */
+  async validate_api_key() {
+    const resp = await this.rank("test query", ["Test document 1", "Test document 2"]);
+    return Array.isArray(resp) && resp.length > 0 && resp[0].score !== null;
+  }
 }
-exports.ApiAdapter = SmartRankApiAdapter;
+
+/**
+ * Base class for request adapters to handle various input schemas and convert them to platform-specific schema.
+ * @class SmartRankModelRequestAdapter
+ */
+export class SmartRankModelRequestAdapter {
+  /**
+   * @constructor
+   * @param {SmartRankModelApiAdapter} adapter - The SmartRankModelApiAdapter instance
+   * @param {string} query - The query string
+   * @param {Array<string>} documents - Array of document strings
+   */
+  constructor(adapter, query, documents) {
+    this.adapter = adapter;
+    this.query = query;
+    this.documents = documents;
+  }
+
+  /**
+   * Get request headers
+   * @returns {Object} Headers object
+   */
+  get_headers() {
+    return {
+      "Content-Type": "application/json",
+      ...(this.adapter.adapter_config.headers || {}),
+      "Authorization": `Bearer ${this.adapter.api_key}`,
+    };
+  }
+
+  /**
+   * Convert request to platform-specific format
+   * @returns {Object} Platform-specific request parameters
+   */
+  to_platform() {
+    return {
+      method: "POST",
+      headers: this.get_headers(),
+      body: JSON.stringify(this.prepare_request_body()),
+    };
+  }
+
+  /**
+   * Prepare request body for API call
+   * @abstract
+   * @returns {Object} Request body object
+   */
+  prepare_request_body() {
+    throw new Error("prepare_request_body not implemented");
+  }
+}
+
+/**
+ * Base class for response adapters to handle various output schemas and convert them to standard schema.
+ * @class SmartRankModelResponseAdapter
+ */
+export class SmartRankModelResponseAdapter {
+  /**
+   * @constructor
+   * @param {SmartRankModelApiAdapter} adapter - The SmartRankModelApiAdapter instance
+   * @param {Object} response - The response object
+   */
+  constructor(adapter, response) {
+    this.adapter = adapter;
+    this.response = response;
+  }
+
+  /**
+   * Convert response to standard format
+   * @returns {Array<Object>} Array of ranking results
+   */
+  to_standard() {
+    return this.parse_response();
+  }
+
+  /**
+   * Parse API response
+   * @abstract
+   * @returns {Array<Object>} Parsed ranking results
+   */
+  parse_response() {
+    throw new Error("parse_response not implemented");
+  }
+}
 

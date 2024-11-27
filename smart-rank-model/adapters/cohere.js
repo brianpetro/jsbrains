@@ -1,46 +1,107 @@
-// curl --request POST \
-//   --url https://api.cohere.ai/v1/rerank \
-//   --header 'accept: application/json' \
-//   --header 'content-type: application/json' \
-//   --header "Authorization: bearer $CO_API_KEY" \
-//   --data '{
-//     "model": "rerank-english-v2.0",
-//     "query": "What is the capital of the United States?",
-//     "top_n": 3,
-//     "documents": ["Carson City is the capital city of the American state of Nevada.",
-//                   "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.",
-//                   "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
-//                   "Capital punishment (the death penalty) has existed in the United States since beforethe United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states."]
-//   }'
-import { SmartRankApiAdapter } from './api.js';
+import { SmartRankModelApiAdapter, SmartRankModelRequestAdapter, SmartRankModelResponseAdapter } from './api.js';
 
-export class SmartRankCohereAdapter extends SmartRankApiAdapter{
-  get api_key() {
-    return this.smart_rank.env.settings?.smart_view_filter?.cohere_api_key; // TODO: handle this better
+/**
+ * Adapter for Cohere's ranking API.
+ * Handles API communication and response processing for Cohere models.
+ * @class SmartRankCohereAdapter
+ * @extends SmartRankModelApiAdapter
+ */
+export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
+  /**
+   * Get the request adapter class.
+   * @returns {SmartRankCohereRequestAdapter} The request adapter class
+   */
+  get req_adapter() {
+    return SmartRankCohereRequestAdapter;
   }
-  async load() { return true; }
+
+  /**
+   * Get the response adapter class.
+   * @returns {SmartRankCohereResponseAdapter} The response adapter class
+   */
+  get res_adapter() {
+    return SmartRankCohereResponseAdapter;
+  }
+
+  /** @override */
+  async load() { 
+    // Implement any initialization if necessary
+    return true; 
+  }
+
+  /** @override */
   async rank(query, documents) {
-    const json = await this.request({
-      url: this.endpoint,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `bearer ${this.api_key}`,
-      },
-      body: JSON.stringify({
-        model: this.model_name,
-        query: query,
-        documents: documents,
-        // top_n: 3,
-      }),
-    });
-    if(!json.results) return {
-      message: json.message,
-      resp: json,
+    const request_adapter = new this.req_adapter(this, query, documents);
+    const request_params = request_adapter.to_platform();
+    const resp_json = await this.request(request_params);
+    if (!resp_json || !resp_json.results) {
+      return {
+        message: resp_json?.message || "Invalid response from Cohere API",
+        resp: resp_json,
+      };
     }
-    return json.results.map((r, i) => ({
-      index: r.index,
-      score: r.relevance_score,
+    const response_adapter = new this.res_adapter(this, resp_json);
+    return response_adapter.to_standard();
+  }
+
+  /**
+   * Override the handle_request_err method for Cohere-specific error handling.
+   * @param {Error|Object} error - Error object
+   * @param {Object} req - Original request
+   * @param {number} retries - Number of retries attempted
+   * @returns {Promise<Object|null>} Retry response or null
+   */
+  async handle_request_err(error, req, retries) {
+    if (error && error.status === 429 && retries < 3) {
+      const backoff = Math.pow(retries + 1, 2);
+      console.log(`Cohere API rate limit exceeded. Retrying in ${backoff} seconds...`);
+      await new Promise((resolve) => setTimeout(resolve, 1000 * backoff));
+      return await this.request(req, retries + 1);
+    }
+    console.error("Cohere API Error:", error);
+    return null;
+  }
+}
+
+/**
+ * Request adapter for Cohere ranking API.
+ * @class SmartRankCohereRequestAdapter
+ * @extends SmartRankModelRequestAdapter
+ */
+class SmartRankCohereRequestAdapter extends SmartRankModelRequestAdapter {
+  /**
+   * Prepare request body for Cohere API
+   * @returns {Object} Request body for API
+   */
+  prepare_request_body() {
+    return {
+      model: "rerank-english-v2.0",
+      query: this.query,
+      documents: this.documents,
+      // top_n: 3, // Optional: specify if needed
+    };
+  }
+}
+
+/**
+ * Response adapter for Cohere ranking API.
+ * @class SmartRankCohereResponseAdapter
+ * @extends SmartRankModelResponseAdapter
+ */
+class SmartRankCohereResponseAdapter extends SmartRankModelResponseAdapter {
+  /**
+   * Parse Cohere API response into standard ranking results.
+   * @returns {Array<Object>} Parsed ranking results
+   */
+  parse_response() {
+    if (!this.response.results) {
+      console.error("Invalid response format from Cohere API:", this.response);
+      return [];
+    }
+    return this.response.results.map((result, index) => ({
+      index: result.document_index,
+      score: result.score,
+      // Add additional fields if necessary
     }));
   }
 }
