@@ -1,6 +1,6 @@
 import { SmartEntities } from "smart-entities";
 import { SmartDirectory } from "./smart_directory.js";
-import { render as render_list_component } from "./components/list.js";
+import { render as render_directories_component } from "./components/directories.js";
 
 export class SmartDirectories extends SmartEntities {
   static get defaults() {
@@ -22,6 +22,9 @@ export class SmartDirectories extends SmartEntities {
       dir = await this.create_or_update({ path });
       await dir.init();
     }
+
+    // Set initial expanded/collapsed state based on settings
+    dir.data.env_settings_expanded_view = this.env.settings.expanded_view;
     return dir;
   }
 
@@ -62,13 +65,11 @@ export class SmartDirectories extends SmartEntities {
     dir.queue_save();
   }
 
-  get render_list_component() {
-    return render_list_component.bind(this.smart_view);
+  get directories_component() {
+    return render_directories_component.bind(this.smart_view);
   }
-  async render_list(container, opts = {}) {
-    const frag = await this.render_list_component(this, opts);
-    container.innerHTML = '';
-    container.appendChild(frag);
-    return container;
+  async render_directories(container, opts = {}) {
+    opts.expanded_view = this.env.settings.expanded_view; // Pass the current state
+    return await this.render_component('directories', container, opts);
   }
 }

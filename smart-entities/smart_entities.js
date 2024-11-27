@@ -1,5 +1,5 @@
 import { Collection } from "smart-collections";
-import { results_acc } from "./top_acc.js";
+import { results_acc, furthest_acc } from "./top_acc.js";
 import { cos_sim } from "./cos_sim.js";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 
@@ -175,6 +175,21 @@ export class SmartEntities extends Collection {
         return acc;
       }, { min: 0, results: new Set() });
     return Array.from(nearest.results);
+  }
+
+  furthest(vec, filter = {}) {
+    if (!vec) return console.log("no vec");
+    const {
+      limit = 50, // TODO: default configured in settings
+    } = filter;
+    const furthest = this.filter(filter)
+      .reduce((acc, item) => {
+        if (!item.vec) return acc; // skip if no vec
+        const result = { item, score: cos_sim(vec, item.vec) };
+        furthest_acc(acc, result, limit); // update acc
+        return acc;
+      }, { max: 0, results: new Set() });
+    return Array.from(furthest.results);
   }
 
   /**

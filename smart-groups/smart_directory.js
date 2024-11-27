@@ -1,5 +1,7 @@
 import { SmartEntity } from "smart-entities";
 import { render as directory_component } from "./components/directory.js";
+import { sort_by_score_ascending, sort_by_score_descending } from "smart-entities/utils/sort_by_score.js";
+
 export class SmartDirectory extends SmartEntity {
   static get defaults() {
     return {
@@ -93,6 +95,21 @@ export class SmartDirectory extends SmartEntity {
     );
   }
 
+  get nearest_sources_results() {
+    const filter = {
+      key_starts_with: this.data.path
+    }
+    const results = this.env.smart_sources.nearest(this.median_vec, filter);
+    return results.sort(sort_by_score_descending);
+  }
+  get furthest_sources_results() {
+    const filter = {
+      key_starts_with: this.data.path
+    }
+    const results = this.env.smart_sources.furthest(this.median_vec, filter);
+    return results.sort(sort_by_score_ascending);
+  }
+
   /**
    * Gets only direct child sources (excludes sources in subdirectories)
    */
@@ -107,10 +124,9 @@ export class SmartDirectory extends SmartEntity {
    * Gets all subdirectories
    */
   get subdirectories() {
-    return this.env.smart_directories.filter(dir => 
-      dir.data.path.startsWith(this.data.path) && 
-      dir.data.path !== this.data.path
-    );
+    return this.env.smart_directories.filter({
+      key_starts_with: this.data.path,
+    });
   }
 
   /**
@@ -119,7 +135,7 @@ export class SmartDirectory extends SmartEntity {
   get direct_subdirectories() {
     return this.subdirectories.filter(dir => {
       const relative_path = dir.data.path.slice(this.data.path.length);
-      return !relative_path.slice(1).includes('/');
+      return !relative_path.slice(0, -1).includes('/');
     });
   }
 
@@ -150,6 +166,8 @@ export class SmartDirectory extends SmartEntity {
     // this.queue_save();
     return median_vec;
   }
+  get vec() { return this.median_vec; }
+
 
   /**
    * Gets the median vector of all contained blocks

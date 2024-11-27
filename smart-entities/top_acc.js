@@ -19,3 +19,14 @@ export function results_acc(_acc, result, ct = 10) {
     _acc.min = _acc.minResult.score;
   }
 }
+
+export function furthest_acc(_acc, result, ct = 10) {
+  if (_acc.results.size < ct) {
+    _acc.results.add(result);
+  } else if (result.score < _acc.max) {
+    _acc.results.add(result);
+    _acc.results.delete(_acc.maxResult);
+    _acc.maxResult = Array.from(_acc.results).reduce((max, curr) => (curr.score > max.score ? curr : max));
+    _acc.max = _acc.maxResult.score;
+  }
+}

@@ -6,7 +6,7 @@ import { render as render_results } from "./results.js";
  * @returns {Promise<string>} A promise that resolves to the HTML string.
  */
 export async function build_html(collection, opts = {}) {
-  return `<div id="sc-search-view">
+  return `<div id="sc-lookup-view">
     <div class="sc-top-bar">
       <button class="sc-fold-toggle">${this.get_icon_html(collection.settings.expanded_view ? 'fold-vertical' : 'unfold-vertical')}</button>
       <button class="sc-search">${this.get_icon_html('search')}</button>
@@ -67,7 +67,7 @@ export async function post_process(collection, frag, opts = {}) {
   
   const search_button = frag.querySelector('#search');
   search_button.addEventListener('click', async (event) => {
-    const container = event.target.closest('#sc-search-view');
+    const container = event.target.closest('#sc-lookup-view');
     const search_text = query_input.value.trim();
     if (search_text) {
       await render_search(search_text, results_container);
@@ -77,7 +77,7 @@ export async function post_process(collection, frag, opts = {}) {
   // Fold toggle functionality
   const fold_toggle = frag.querySelector('.sc-fold-toggle');
   fold_toggle.addEventListener('click', (event) => {
-    const container = event.target.closest('#sc-search-view');
+    const container = event.target.closest('#sc-lookup-view');
     const expanded = collection.settings.expanded_view;
     container.querySelectorAll(".sc-result").forEach((elm) => {
       if (expanded) {
