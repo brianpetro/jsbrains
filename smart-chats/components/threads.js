@@ -28,7 +28,14 @@ export function build_html(threads_collection, opts = {}) {
         <input class="sc-chat-name-input" type="text" value="Untitled" placeholder="Chat Name">
         ${top_bar_buttons}
       </div>
-      <div id="settings" class="sc-overlay" style="display: none;"></div>
+      <div id="settings" class="smart-chat-overlay" style="display: none;">
+        <div class="smart-chat-overlay-header">
+          <button class="smart-chat-overlay-close">
+            ${this.get_icon_html('x')}
+          </button>
+        </div>
+        <div class="settings-container"></div>
+      </div>
       <div class="sc-thread">
         <!-- Thread messages will be inserted here -->
       </div>
@@ -87,13 +94,22 @@ export async function post_process(threads_collection, frag, opts) {
  * @private
  */
 function setup_button_handlers(frag, threads_collection, opts) {
-
   // Settings button
   const settings_button = frag.querySelector('button[title="Chat Settings"]');
-  const overlay_container = frag.querySelector(".sc-overlay");
+  const overlay_container = frag.querySelector(".smart-chat-overlay");
+  const settings_container = overlay_container.querySelector(".settings-container");
+  
+  // Add close button handler
+  const close_button = overlay_container.querySelector(".smart-chat-overlay-close");
+  if (close_button) {
+    close_button.addEventListener('click', () => {
+      overlay_container.style.display = 'none';
+    });
+  }
+
   settings_button.addEventListener('click', () => {
     if (overlay_container.style.display === 'none') {
-      threads_collection.render_settings(overlay_container);
+      threads_collection.render_settings(settings_container);
       overlay_container.style.display = 'block';
     } else {
       overlay_container.style.display = 'none';

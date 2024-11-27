@@ -24,6 +24,9 @@
   "bugs": {
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
+  "dependencies": {
+    "smart-model": "file:../smart-model"
+  },
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "ava": "^6.0.1",

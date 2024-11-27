@@ -1,3 +1,5 @@
+import { SmartModelAdapter } from "smart-model/adapters/_adapter.js";
+
 export class SmartRankModelAdapter extends SmartModelAdapter {
   constructor(model) {
     super(model);

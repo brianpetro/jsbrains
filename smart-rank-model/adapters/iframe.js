@@ -1,6 +1,6 @@
-import { SmartRankAdapter } from "./_adapter.js";
+import { SmartRankModelAdapter } from "./_adapter.js";
 
-export class SmartRankIframeAdapter extends SmartRankAdapter {
+export class SmartRankIframeAdapter extends SmartRankModelAdapter {
   constructor(smart_rank) {
     super(smart_rank);
     this.iframe = null;

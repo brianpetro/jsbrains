@@ -8,7 +8,7 @@
     "headers": {
       "Content-Type": "application/json"
     },
-    "api_key_header": "Authorization",
+    "api_key_header": "Authorization"
   },
   "jinaai/jina-reranker-v1-tiny-en": {
     "adapter": "transformers",
