@@ -69,6 +69,9 @@ export async function render(threads_collection, opts = {}) {
  */
 export async function post_process(threads_collection, frag, opts) {
   const chat_box = frag.querySelector('.sc-thread');
+  const settings_button = frag.querySelector('button[title="Chat Settings"]');
+  const overlay_container = frag.querySelector(".smart-chat-overlay");
+  const settings_container = overlay_container.querySelector(".settings-container");
   
   // Initialize thread if needed
   let thread;
@@ -80,25 +83,6 @@ export async function post_process(threads_collection, frag, opts) {
   chat_box.setAttribute('data-thread-key', thread.key);
   await thread.render(chat_box, opts);
 
-  // Setup button handlers
-  setup_button_handlers.call(this, frag, threads_collection, opts);
-  
-  // Setup chat name input handler
-  setup_chat_name_input_handler.call(this, frag, thread);
-  
-  return frag;
-}
-
-/**
- * Sets up button click handlers
- * @private
- */
-function setup_button_handlers(frag, threads_collection, opts) {
-  // Settings button
-  const settings_button = frag.querySelector('button[title="Chat Settings"]');
-  const overlay_container = frag.querySelector(".smart-chat-overlay");
-  const settings_container = overlay_container.querySelector(".settings-container");
-  
   // Add close button handler
   const close_button = overlay_container.querySelector(".smart-chat-overlay-close");
   if (close_button) {
@@ -129,7 +113,13 @@ function setup_button_handlers(frag, threads_collection, opts) {
   chat_history_button.addEventListener('click', () => {
     opts.open_chat_history();
   });
+  
+  // Setup chat name input handler
+  setup_chat_name_input_handler.call(this, frag, thread);
+  
+  return frag;
 }
+
 /**
  * Sets up the chat name input change handler
  * @private

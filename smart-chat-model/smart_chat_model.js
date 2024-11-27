@@ -216,4 +216,12 @@ export class SmartChatModel extends SmartModel {
     }
     return frag;
   }
+
+  /**
+   * Validate the adapter configuration.
+   * @returns {Object} Validation result with 'valid' and 'message'.
+   */
+  validate_config() {
+    return this.adapter.validate_config();
+  }
 }

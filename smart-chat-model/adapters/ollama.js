@@ -85,6 +85,7 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
           id: model.name,
           multimodal: false,
           max_input_tokens: Object.entries(model.model_info).find(m => m[0].includes('.context_length'))[1],
+          can_use_tools: true, // TODO: CHECK MODELFILE FOR TOOLS SUPPORT
         };
         acc[model.name] = out;
         return acc;

@@ -78,7 +78,7 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
         id: model.id,
         max_input_tokens: model.context_length,
         description: model.name,
-        actions: model.description.includes('tool use') || model.description.includes('function call'),
+        can_use_tools: model.description.includes('tool use') || model.description.includes('function call'),
         multimodal: model.architecture.modality === 'multimodal',
         raw: model
       };

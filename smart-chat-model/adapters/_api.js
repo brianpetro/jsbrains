@@ -247,6 +247,23 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
+   * Validate Anthropic adapter configuration.
+   * @returns {Object} { valid: boolean, message: string }
+   */
+  validate_config() {
+    if(!this.adapter_config.model_key || this.adapter_config.model_key === 'undefined') return { valid: false, message: "No model selected." };
+    if (!this.api_key) {
+      return { valid: false, message: "API key is missing." };
+    }
+    // check if model supports tool calls
+    if(!this.can_use_tools) {
+      return { valid: false, message: "Selected model does not support tools." };
+    }
+    // Add more adapter-specific validations here
+    return { valid: true, message: "Configuration is valid." };
+  }
+
+  /**
    * Get the API key.
    * @returns {string} The API key.
    */

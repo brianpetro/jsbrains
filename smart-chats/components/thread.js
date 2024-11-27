@@ -21,6 +21,7 @@ export function build_html(thread, opts = {}) {
           </div>
         ` : ''}
       </div>
+      <div class="sc-config-error-notice" style="display: none;"></div>
       <div class="sc-chat-form">
         <textarea class="sc-chat-input" placeholder="Try &quot;Based on my notes&quot; or &quot;Summarize [[this note]]&quot; or &quot;Important tasks in /folder/&quot;"></textarea>
         <div class="sc-btn-container">
@@ -101,6 +102,34 @@ export async function post_process(thread, frag, opts) {
     thread.chat_model.abort_current_response();
     thread.clear_streaming_ux();
   });
+
+  // Insert notice if configuration is invalid
+  const validation_result = thread.chat_model.validate_config();
+  console.log('validation_result', validation_result);
+  if (!validation_result.valid) {
+    const notice = frag.querySelector('.sc-config-error-notice');
+    const message = document.createElement('span');
+    message.textContent = validation_result.message;
+    notice.appendChild(message);
+    notice.style.display = '';
+    // // Replace close button with open settings button
+    // const open_settings_button = document.createElement('button');
+    // open_settings_button.textContent = 'Open Settings';
+    // notice.appendChild(open_settings_button);
+    
+    // // Add click handler to open settings
+    // open_settings_button.addEventListener('click', () => {
+    //   settings_button.click();
+    // });
+
+    // add hide button
+    const hide_button = document.createElement('button');
+    hide_button.textContent = 'Hide';
+    notice.appendChild(hide_button);
+    hide_button.addEventListener('click', () => {
+      notice.style.display = 'none';
+    });
+  }
   
   return frag;
 }
