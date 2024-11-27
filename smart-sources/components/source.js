@@ -1,6 +1,8 @@
 export async function render(scope, opts = {}) {
   const markdown = await get_markdown(scope);
-  const frag = await this.render_markdown(markdown, scope);
+  let frag;
+  if(scope.env.settings.smart_view_filter.render_markdown) frag = await this.render_markdown(markdown, scope);
+  else frag = this.create_doc_fragment(`<span>${markdown}</span>`);
   return await post_process.call(this, scope, frag, opts);
 }
 

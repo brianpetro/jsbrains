@@ -167,7 +167,7 @@ export class SmartEntity extends CollectionItem {
    * @readonly
    * @returns {boolean} True if the full path should be shown, false otherwise.
    */
-  get should_show_full_path() { return this.env.settings.show_full_path; }
+  get should_show_full_path() { return this.env.settings.smart_view_filter?.show_full_path; }
 
   /**
    * @deprecated Use embed_model instead.
@@ -270,4 +270,13 @@ export class SmartEntity extends CollectionItem {
    * @returns {Function} The render function for the entity component.
    */
   get component() { return render_entity_component; }
+
+  // COMPONENTS 2024-11-27
+  get connections_component() {
+    if(!this._connections_component) this._connections_component = this.components?.connections?.bind(this.smart_view);
+    return this._connections_component;
+  }
+  async render_connections(container, opts={}) {
+    return await this.render_component('connections', container, opts);
+  }
 }

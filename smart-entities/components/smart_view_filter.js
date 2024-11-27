@@ -28,7 +28,14 @@ export async function render(scope) {
       data-name="Show Full Path"
       data-description="Show full path in view."
       data-type="toggle"
-      data-setting="show_full_path"
+      data-setting="smart_view_filter.show_full_path"
+      data-callback="refresh_smart_view"
+    ></div>
+    <div class="setting-component"
+      data-name="Render Markdown"
+      data-description="Render markdown in results."
+      data-type="toggle"
+      data-setting="smart_view_filter.render_markdown"
       data-callback="refresh_smart_view"
     ></div>
     <div class="setting-component"

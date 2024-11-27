@@ -300,4 +300,24 @@ export class CollectionItem {
    * @returns {Function} The render function for this component
    */
   get component() { return item_component; }
+
+
+  // COMPONENTS 2024-11-27
+  get components() {
+    return this.env.opts.components?.[this.collection_key];
+  }
+  async render_component(component_key, container, opts={}) {
+    if(!this[`${component_key}_component`]){
+      if(container) container.innerHTML = `No ${component_key} component found.`;
+      return this.smart_view.create_doc_fragment(`No ${component_key} component found.`);
+    }
+    if(container) container.innerHTML = `Loading ${component_key} component...`;
+    const frag = await this[`${component_key}_component`](this, opts);
+    if(container){
+      container.innerHTML = '';
+      container.appendChild(frag);
+    }
+    return frag;
+  }
+
 }

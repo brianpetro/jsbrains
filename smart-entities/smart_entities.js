@@ -506,6 +506,15 @@ export class SmartEntities extends Collection {
     this.render_settings();
     await this.process_load_queue();
   }
+
+  get lookup_component() {
+    if(!this._lookup_component) this._lookup_component = this.components?.lookup?.bind(this.smart_view);
+    return this._lookup_component;
+  }
+  async render_lookup(container, opts={}) {
+    return await this.render_component('lookup', container, opts);
+  }
+
 }
 
 /**

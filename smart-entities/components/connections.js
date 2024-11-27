@@ -38,7 +38,7 @@ export async function render(scope, opts = {}) {
   const results = scope.find_connections({ ...opts, exclude_source_connections: scope.env.smart_blocks.settings.embed_blocks });
   
   const sc_list = frag.querySelector('.sc-list');
-  const results_frag = await render_results.call(this, scope, { ...opts, results });
+  const results_frag = await render_results.call(this, results, opts);
   Array.from(results_frag.children).forEach((elm) => sc_list.appendChild(elm));
   return await post_process.call(this, scope, frag, opts);
 }
@@ -63,7 +63,7 @@ export async function post_process(scope, frag, opts = {}) {
   const toggle_button = frag.querySelector(".sc-fold-toggle");
   toggle_button.addEventListener("click", () => {
     const expanded = scope.env.settings.expanded_view;
-    container.querySelectorAll(".search-result").forEach((elm) => {
+    container.querySelectorAll(".sc-result").forEach((elm) => {
       if (expanded) {
         elm.classList.add("sc-collapsed");
       } else {
