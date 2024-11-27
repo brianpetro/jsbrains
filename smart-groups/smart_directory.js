@@ -1,5 +1,5 @@
 import { SmartEntity } from "smart-entities";
-
+import { render as directory_component } from "./components/directory.js";
 export class SmartDirectory extends SmartEntity {
   static get defaults() {
     return {
@@ -233,4 +233,6 @@ export class SmartDirectory extends SmartEntity {
     this.data.median_block_vec = null;
     this.queue_save();
   }
+
+  get component() { return directory_component; }
 }
