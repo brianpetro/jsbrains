@@ -5,13 +5,18 @@ export function contains_internal_link(user_input) {
   return true;
 }
 
-export function extract_internal_links(env, user_input) {
+export function extract_internal_links(user_input) {
+  const matches = [];
+  const regex = /\[\[(.*?)\]\]/g;
+  let match;
+  while ((match = regex.exec(user_input)) !== null) {
+    matches.push(match[1]);
+  }
+  return matches;
+}
+// slower
+export function extract_internal_links2(user_input) {
   const matches = user_input.match(/\[\[(.*?)\]\]/g);
-  // return array of TFile objects
-  if (matches && env.smart_connections_plugin) return matches.map(match => {
-    const tfile = env.smart_connections_plugin.app.metadataCache.getFirstLinkpathDest(match.replace("[[", "").replace("]]", ""), "/");
-    return tfile;
-  });
-  if (matches) return matches;
+  if (matches) return matches.map(match => match.replace("[[", "").replace("]]", ""));
   return [];
 }

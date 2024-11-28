@@ -119,8 +119,10 @@ export class SmartThread extends SmartSource {
   
       // Handle internal links ([[link]])
       if (contains_internal_link(content)) {
-        const internal_links = extract_internal_links(this.env, content);
-        context.internal_links = internal_links;
+        const internal_links = extract_internal_links(content);
+        context.internal_links = internal_links.map(link => {
+          return this.env.smart_sources?.fs?.get_link_target_path(link, '/') || link;
+        });
       }
   
       // Handle folder references (/folder/ or /folder/subfolder/)

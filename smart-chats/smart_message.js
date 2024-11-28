@@ -234,7 +234,7 @@ export class SmartMessage extends SmartBlock {
           if (internal_links_content[index].type === 'text') {
             if(!context_content.length) context_content += `Context specified in message:`;
             context_content += `\n-----------------------\n`;
-            context_content += `/${link.path}\n`;
+            context_content += `/${link}\n`;
             context_content += `---\n`;
             context_content += `${internal_links_content[index].content}\n`;
             context_content += `-----------------------\n`;
