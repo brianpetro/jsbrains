@@ -104,7 +104,6 @@ export class SmartThread extends SmartSource {
    */
   async handle_message_from_user(content) {
     try {
-      this.show_typing_indicator();
       const new_msg_data = {
         thread_key: this.key,
         role: 'user',
@@ -286,6 +285,7 @@ export class SmartThread extends SmartSource {
    * @async
    */
   async complete() {
+    this.show_typing_indicator();
     const request = await this.to_request();
     // if streaming and no tool_choice, then stream (may implement streaming for tool calls in the future)
     // if (this.chat_model.can_stream){ // && !request.tool_choice) {
@@ -303,13 +303,13 @@ export class SmartThread extends SmartSource {
       this.data.responses[response.id] = response;
       await this.handle_message_from_chat_model(response);
     }
+    this.hide_typing_indicator();
   }
   /**
    * @description
    *  - renders the message
    */
   async chunk_handler(response) {
-    this.hide_typing_indicator();
     const msg_items = await this.handle_message_from_chat_model(response);
     if(msg_items?.length > 0) await msg_items[0].render();
   }
