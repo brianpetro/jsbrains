@@ -104,6 +104,7 @@ export class SmartThread extends SmartSource {
    */
   async handle_message_from_user(content) {
     try {
+      this.show_typing_indicator();
       const new_msg_data = {
         thread_key: this.key,
         role: 'user',
@@ -308,6 +309,7 @@ export class SmartThread extends SmartSource {
    *  - renders the message
    */
   async chunk_handler(response) {
+    this.hide_typing_indicator();
     const msg_items = await this.handle_message_from_chat_model(response);
     if(msg_items?.length > 0) await msg_items[0].render();
   }
@@ -322,6 +324,7 @@ export class SmartThread extends SmartSource {
     await msg_items[0].init(); // runs init() to trigger tool_call handlers
   }
   error_handler(response) {
+    this.hide_typing_indicator();
     this.render_error(response);
     console.error('error_handler', response);
   }
@@ -474,6 +477,28 @@ export class SmartThread extends SmartSource {
     };
     await this.render();
     this.queue_save();
+  }
+
+  /**
+   * Shows the typing indicator
+   * @private
+   */
+  show_typing_indicator() {
+    const indicator = this.container?.querySelector('.sc-typing-indicator');
+    if (indicator) {
+      indicator.classList.add('visible');
+    }
+  }
+
+  /**
+   * Hides the typing indicator
+   * @private
+   */
+  hide_typing_indicator() {
+    const indicator = this.container?.querySelector('.sc-typing-indicator');
+    if (indicator) {
+      indicator.classList.remove('visible');
+    }
   }
 
 }

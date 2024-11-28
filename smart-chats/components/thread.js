@@ -21,6 +21,13 @@ export function build_html(thread, opts = {}) {
           </div>
         ` : ''}
       </div>
+      <div class="sc-typing-indicator">
+        <div class="sc-typing-dots">
+          <div class="sc-typing-dot"></div>
+          <div class="sc-typing-dot"></div>
+          <div class="sc-typing-dot"></div>
+        </div>
+      </div>
       <div class="sc-config-error-notice" style="display: none;"></div>
       <div class="sc-chat-form">
         <textarea class="sc-chat-input" placeholder="Try &quot;Based on my notes&quot; or &quot;Summarize [[this note]]&quot; or &quot;Important tasks in /folder/&quot;"></textarea>
@@ -131,6 +138,13 @@ export async function post_process(thread, frag, opts) {
     });
   }
   
+  // Style typing indicator based on theme
+  const typing_indicator = frag.querySelector('.sc-typing-indicator');
+  if (typing_indicator) {
+    const is_dark = document.body.classList.contains('theme-dark');
+    typing_indicator.style.setProperty('--text-muted', is_dark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)');
+  }
+
   return frag;
 }
 
