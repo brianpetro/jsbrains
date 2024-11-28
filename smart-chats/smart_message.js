@@ -169,7 +169,22 @@ export class SmartMessage extends SmartBlock {
   }
 
   build_lookup_params(args){
-    const params = typeof args === 'string' ? JSON.parse(args) : args;
+    const params = {};
+    args = typeof args === 'string' ? JSON.parse(args) : args;
+    if(Array.isArray(args.hypotheticals)){
+      params.hypotheticals = args.hypotheticals;
+    }else if(typeof args.hypotheticals === 'object' && args.hypotheticals !== null){
+      params.hypotheticals = Object.values(args.hypotheticals);
+    }else if(typeof args.hypotheticals === 'string'){
+      params.hypotheticals = [args.hypotheticals];
+    }else{
+      console.warn('Invalid hypotheticals provided for lookup tool call, using user message as lookup context, args:' + JSON.stringify(args));
+      params.hypotheticals = [this.content];
+    }
+    params.hypotheticals = params.hypotheticals.map(h => {
+      if(typeof h === 'string') return h;
+      else return JSON.stringify(h);
+    })
     if(this.previous_message.context.folder_refs) params.filter = {
       key_starts_with_any: this.previous_message.context.folder_refs
     };
@@ -177,10 +192,6 @@ export class SmartMessage extends SmartBlock {
       ...(params.filter || {}),
       limit: this.settings.lookup_limit || 10,
     };
-    params.hypotheticals = params.hypotheticals.map(h => {
-      if(typeof h === 'string') return h;
-      else return JSON.stringify(h);
-    })
     return params;
   }
   async handle_lookup_tool_call(tool_call){

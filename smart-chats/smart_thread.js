@@ -40,11 +40,20 @@ export class SmartThread extends SmartSource {
           type: "object",
           properties: {
             hypotheticals: {
-              type: "array",
+              type: "object",
               description: "Short hypothetical notes predicted to be semantically similar to the notes necessary to fulfill the user's request. Provide at least three hypotheticals per request. The hypothetical notes may contain paragraphs, lists, or checklists in markdown format. Each hypothetical note should begin with breadcrumbs indicating the anticipated folder(s), file name, and relevant headings separated by ' > ' (no slashes). Example: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.",
-              items: {
-                type: "string"
-              }
+              properties: {
+                "1": {
+                  type: "string",
+                },
+                "2": {
+                  type: "string",
+                },
+                "3": {
+                  type: "string",
+                },
+              },
+              required: ["1", "2", "3"]
             }
           },
           required: ["hypotheticals"]
