@@ -96,6 +96,10 @@ export class SmartDirectory extends SmartEntity {
   }
 
   get nearest_sources_results() {
+    if(!this.median_vec) {
+      console.log(`no median vec for directory: ${this.data.path}`);
+      return [];
+    }
     const filter = {
       key_starts_with: this.data.path
     }
@@ -103,6 +107,10 @@ export class SmartDirectory extends SmartEntity {
     return results.sort(sort_by_score_descending);
   }
   get furthest_sources_results() {
+    if(!this.median_vec) {
+      console.log(`no median vec for directory: ${this.data.path}`);
+      return [];
+    }
     const filter = {
       key_starts_with: this.data.path
     }
