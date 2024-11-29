@@ -52,7 +52,7 @@ var SmartModel = class {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    const adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
+    const adapter_key = this.models[this.model_key]?.adapter;
     if (!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
     return adapter_key;
   }

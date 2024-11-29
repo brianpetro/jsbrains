@@ -70,7 +70,8 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         await new Promise(resolve => this.iframe.onload = resolve);
 
         const load_opts = {
-            ...this.model.opts,
+            // ...this.model.opts,
+            model_key: this.model.model_key,
             adapters: null, // cannot clone classes
             settings: null,
             batch_size: this.batch_size,
