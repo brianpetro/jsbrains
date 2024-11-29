@@ -261,39 +261,49 @@ export class SmartMessage extends SmartBlock {
     }
 
     // Add remaining content and inline images
-    for(const part of this.content){
-      if(part.type === 'text'){
-        let text = part.text || '';
-        if(!text && part.input?.key){
-          text = await this.env.smart_blocks.get(part.input.key)?.read() || '';
-        }
-        this_message.content.push({
-          type: 'text',
-          text: text,
-        });
-      }else if(part.type === 'image_url'){
-        const base64_img = await this.env.smart_sources.fs.read(part.input.image_path, 'base64');
-        if(base64_img){
-          const extension = part.input.image_path.split('.').pop();
-          const base64_url = `data:image/${extension};base64,${base64_img}`;
-          this_message.content.push({
-            type: 'image_url',
-            image_url: {
-              url: base64_url,
-            },
-          });
-        }else{
-          console.warn(`Image not found: ${part.input.image_url}`);
+    if(typeof this.content === 'string'){
+      this_message.content.push({
+        type: 'text',
+        text: this.content,
+      });
+    }else if(Array.isArray(this.content)){
+      for(const part of this.content){
+        if(part.type === 'text'){
+          let text = part.text || '';
+          if(!text && part.input?.key){
+            text = await this.env.smart_blocks.get(part.input.key)?.read() || '';
+          }
           this_message.content.push({
             type: 'text',
-            text: `Image not found: ${part.input.image_url}`,
+            text: text,
           });
+        }else if(part.type === 'image_url'){
+          const base64_img = await this.env.smart_sources.fs.read(part.input.image_path, 'base64');
+          if(base64_img){
+            const extension = part.input.image_path.split('.').pop();
+            const base64_url = `data:image/${extension};base64,${base64_img}`;
+            this_message.content.push({
+              type: 'image_url',
+              image_url: {
+                url: base64_url,
+              },
+            });
+          }else{
+            console.warn(`Image not found: ${part.input.image_url}`);
+            this_message.content.push({
+              type: 'text',
+              text: `Image not found: ${part.input.image_url}`,
+            });
+          }
         }
       }
     }
 
     // Add tool calls and tool call output
-    if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
+    if (this.tool_calls?.length){
+      this_message.tool_calls = this.tool_calls;
+      delete this_message.content; // empty content causes issues in OpenRouter OpenAI endpoints
+    }
     if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
     if (this.tool_call_output?.length) this_message.content = await this.tool_call_output_to_request();
     return this_message;
