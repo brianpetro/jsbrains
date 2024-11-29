@@ -10,7 +10,7 @@ test('extract_markdown_images', t => {
   const images = extract_markdown_images('![test](test.png)');
   t.deepEqual(images, [{
     full_match: '![test](test.png)',
-    img_path: 'test.png',
+    image_path: 'test.png',
     caption: 'test',
   }]);
 });

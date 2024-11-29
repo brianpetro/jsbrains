@@ -18,7 +18,7 @@ export function build_html(message, opts = {}) {
       </div>
       <div class="sc-system-message-content" id="${message.data.id}-content" hidden>
         <div class="sc-system-message-text">
-          <pre>${typeof message.content === 'string' ? message.content : message.content.map(part => part.text || part.key).join('\n')}</pre>
+          <pre>${message.content.map(part => part.text || part.input?.key).join('\n')}</pre>
         </div>
         <button class="sc-system-message-copy" title="Copy system message">
           ${this.get_icon_html('copy')}

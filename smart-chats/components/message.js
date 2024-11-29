@@ -13,11 +13,13 @@ export function build_html(message, opts = {}) {
   const content = Array.isArray(message.content) 
     ? message.content.map(part => {
         if (part.type === "image_url") {
-          return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
+          // return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
+          return ' ![[' + part.input.image_path + ']] ';
         }
         if(part.type === 'text' && part.text?.length) return part.text;
       }).join('\n')
-    : message.content;
+    : message.content
+  ;
 
   // Get branches for this message
   const branches = message.thread.get_branches(message.msg_i);
@@ -178,18 +180,20 @@ export async function post_process(message, frag, opts) {
   }
 
   const msg_span = frag.querySelector('.sc-message-content > span:first-child');
-  if (Array.isArray(message.content)) {
-    msg_span.innerHTML = message.content.map(part => {
-      if (part.type === "image_url") {
-        return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
-      }
-      if(part.type === 'text' && part.text?.length) return this.render_markdown(part.text);
-    }).join('\n');
-  } else {
+  // if (Array.isArray(message.content)) {
+  //   const msg_content = await Promise.all(message.content.map(async (part) => {
+  //     if (part.type === "image_url") {
+  //       return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
+  //     }
+  //     if(part.type === 'text' && part.text?.length) return await this.render_markdown(part.text, message);
+  //   }));
+  //   console.log('msg_content', msg_content);
+  //   msg_span.innerHTML = msg_content.join('\n');
+  // } else {
     const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
     msg_span.innerHTML = '';
     msg_span.appendChild(markdown_rendered_frag);
-  }
+  // }
   
   return frag;
 }

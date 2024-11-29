@@ -13,10 +13,10 @@ export function contains_markdown_image(content) {
 /**
  * Extracts markdown images from content
  * @param {string} content - Content to parse
- * @returns {Array<Object>} Array of image objects containing full_match, caption, and img_path
+ * @returns {Array<Object>} Array of image objects containing full_match, caption, and image_path
  */
 export function extract_markdown_images(content) {
-  const regex = /!\[(?<caption>[^\]]*)\]\((?<img_path>[^\)]+)\)/g;
+  const regex = /!\[(?<caption>[^\]]*)\]\((?<image_path>[^\)]+)\)/g;
   const images = [];
   let match;
   
@@ -24,7 +24,7 @@ export function extract_markdown_images(content) {
     images.push({
       full_match: match[0],
       caption: match.groups.caption,
-      img_path: match.groups.img_path
+      image_path: match.groups.image_path
     });
   }
   

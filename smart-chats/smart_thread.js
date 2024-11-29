@@ -107,6 +107,7 @@ export class SmartThread extends SmartSource {
       const new_msg_data = {
         thread_key: this.key,
         role: 'user',
+        content: [],
       };
       const context = {};
       const language = this.env.settings?.language || 'en';
@@ -140,19 +141,36 @@ export class SmartThread extends SmartSource {
       // Handle markdown images LAST to preserve all processed text content
       if (contains_markdown_image(content)) {
         console.log('contains_markdown_image', content);
-        if (!this.thread.chat_model.model_config.multimodal) {
+        if (!this.chat_model.model_config.multimodal) {
           console.warn("Current model does not support multimodal (image) content");
           throw new Error("⚠️ Current model does not support multimodal (image) content");
         }
   
         const images = extract_markdown_images(content);
         if (images.length > 0) {
-          context.images = images;
+          images.forEach(image => {
+            image.image_path = this.env.smart_sources.fs.get_link_target_path(image.image_path, '/');
+            const [before, after] = content.split(image.full_match);
+            if(typeof before === 'string' && before.trim().length) new_msg_data.content.push({
+              type: 'text',
+              text: before,
+            });
+            new_msg_data.content.push({
+              type: 'image_url',
+              image_url: null,
+              input: image,
+            });
+            content = after;
+          });
         }
       }
   
-      if(typeof content === 'string') new_msg_data.content = content.trim();
-      else new_msg_data.content = content;
+      if (typeof content === 'string'){
+        new_msg_data.content.push({
+          type: 'text',
+          text: content.trim(),
+        });
+      } else new_msg_data.content = content;
 
       if(Object.keys(context).length > 0){
         console.log('creating system message with context', context);
@@ -180,7 +198,9 @@ export class SmartThread extends SmartSource {
       context.system_prompt_refs.forEach(key => {
         const system_prompt = {
           type: 'text',
-          key,
+          input: {
+            key,
+          },
         };
         system_message.content.push(system_prompt);
       });

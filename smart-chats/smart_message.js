@@ -13,7 +13,16 @@ import { render as system_message_template } from "./components/system_message";
 export class SmartMessage extends SmartBlock {
   /**
    * @static
-   * @property {Object} defaults - Default configuration for a new message
+   * @property {Object} defaults - Default data object for a new message
+   * @returns {Object}
+   * @property {string} thread_key - Key for the thread
+   * @property {string} role - Message role ('user' or 'assistant')
+   * @property {number} msg_i - Message index
+   * @property {string} id - Message ID
+   * @property {Array<Object>|null} content - Message content
+   * @property {Array<Object>|null} tool_calls - Tool calls
+   * @property {string|null} tool_call_id - Tool call ID
+   * @property {Object|null} context - Message context
    */
   static get defaults() {
     return {
@@ -23,7 +32,6 @@ export class SmartMessage extends SmartBlock {
         role: null,
         tool_calls: null,
         tool_call_id: null,
-        image_url: null,
         msg_i: null,
         id: null,
         context: {},
@@ -220,12 +228,10 @@ export class SmartMessage extends SmartBlock {
    * Converts the message to a request payload
    * @returns {Array<Object>} Request payload
    */
-  async to_request() {
+  async to_request(){
     const this_message = { role: this.role, content: [] };
 
-    /**
-     * Build user message
-     */
+    // Add context to first part(s) of content
     if (this.context.internal_links && this.context.internal_links.length > 0) {
       const internal_links_content = await this.fetch_content(this.context.internal_links);
       if (internal_links_content) {
@@ -241,7 +247,9 @@ export class SmartMessage extends SmartBlock {
           } else if (internal_links_content[index].type === 'image') {
             this_message.content.push({
               type: 'image_url',
-              image_url: internal_links_content[index].image_url,
+              image_url: {
+                url: internal_links_content[index].image_url,
+              },
             });
           }
         });
@@ -252,61 +260,42 @@ export class SmartMessage extends SmartBlock {
       }
     }
 
-
-    
-    // Handle multimodal content
-    if (this.context.images?.length) {
-      const content = [];
-      // For multimodal messages, we need to process each content part
-      const images = this.context.images
-        // sort by occurrence in content (should be in order of appearance)
-        .sort((a, b) => this.data.content.indexOf(a.full_match) - this.data.content.indexOf(b.full_match))
-      ;
-      for(const image of images){
-        const file = this.env.smart_connections_plugin?.app.vault.getFileByPath(image.img_path);
-        // Convert file path to base64 if needed
-        if (file) {
-          // split user_content at image.full_match
-          const [text, remaining_text] = this_message.content.split(image.full_match);
-          if(text.trim().length > 0){
-            content.push({
-              type: "text",
-              text: text,
-            });
-          }
-          this_message.content = remaining_text;
-          const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
-          content.push({
-            type: "image_url",
+    // Add remaining content and inline images
+    for(const part of this.content){
+      if(part.type === 'text'){
+        let text = part.text || '';
+        if(!text && part.input?.key){
+          text = await this.env.smart_blocks.get(part.input.key)?.read() || '';
+        }
+        this_message.content.push({
+          type: 'text',
+          text: text,
+        });
+      }else if(part.type === 'image_url'){
+        const base64_img = await this.env.smart_sources.fs.read(part.input.image_path, 'base64');
+        if(base64_img){
+          const extension = part.input.image_path.split('.').pop();
+          const base64_url = `data:image/${extension};base64,${base64_img}`;
+          this_message.content.push({
+            type: 'image_url',
             image_url: {
-              url: `data:image/${file.extension};base64,${base64}`
-            }
+              url: base64_url,
+            },
           });
         }else{
-          console.warn(`Image file not found: ${image.img_path}`);
+          console.warn(`Image not found: ${part.input.image_url}`);
+          this_message.content.push({
+            type: 'text',
+            text: `Image not found: ${part.input.image_url}`,
+          });
         }
       }
-      if(content.length > 0) this_message.content.push(...content);
     }
-    if(typeof this.content === 'string' && this.content.trim().length > 0){
-      this_message.content.push({
-        type: "text",
-        text: this.content.trim(),
-      });
-    }
+
+    // Add tool calls and tool call output
     if (this.tool_calls?.length) this_message.tool_calls = this.tool_calls;
     if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
     if (this.tool_call_output?.length) this_message.content = await this.tool_call_output_to_request();
-    if(Array.isArray(this.content)){
-      const content = await Promise.all(this.content.map(async (content) => {
-        if(content.type === 'text' && content.key){
-          content.text = await this.env.smart_blocks.get(content.key)?.read() || '';
-          content.key = undefined;
-        }
-        return content;
-      }));
-      this_message.content.push(...content);
-    }
     return this_message;
   }
 
@@ -422,4 +411,6 @@ export class SmartMessage extends SmartBlock {
   get path() { return this.data.thread_key; }
 
   get settings() { return this.thread.settings; }
+
+  get has_image() { return this.content.some(part => part.type === 'image_url'); }
 }
