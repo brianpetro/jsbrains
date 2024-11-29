@@ -6,7 +6,7 @@ export async function build_html(directories, opts = {}) {
       <div class="sg-actions">
         <button class="sg-refresh" aria-label="Refresh view">${this.get_icon_html('refresh-cw')}</button>
         <button class="sg-sort" aria-label="Sort directories">${this.get_icon_html('arrow-up-down')} ${directories.settings.sort_nearest ? 'nearest' : 'furthest'}</button>
-        <button class="sg-subdirectories" aria-label="Show subdirectories">${directories.settings.show_subdirectories ? this.get_icon_html('folder-plus') : this.get_icon_html('folder-minus')}</button>
+        <button class="sg-subdirectories" aria-label="Show subdirectories">${directories.settings.show_subdirectories ? this.get_icon_html('folder-minus') : this.get_icon_html('folder-plus')}</button>
         <button class="sg-help" aria-label="Open help documentation">${this.get_icon_html('help-circle')}</button>
       </div>
     </div>

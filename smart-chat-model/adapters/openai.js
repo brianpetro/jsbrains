@@ -38,12 +38,13 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
    */
   parse_model_data(model_data) {
     return model_data.data
-      .filter(model => model.id.startsWith('gpt-') && !model.id.includes('-instruct'))
+      .filter(model => ['gpt-', 'o1-'].some(m => model.id.startsWith(m)) && !model.id.includes('-instruct'))
       .reduce((acc, model) => {
         const out = {
           model_name: model.id,
           id: model.id,
-          multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo') || model.id.startsWith('gpt-4o')
+          multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo') || model.id.startsWith('gpt-4o'),
+          can_use_tools: model.id.startsWith('o1-') ? false : true,
         };
         const m = Object.entries(model_context).find(m => m[0] === model.id || model.id.startsWith(m[0] + '-'));
         if (m) {

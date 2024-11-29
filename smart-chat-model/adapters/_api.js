@@ -432,12 +432,17 @@ export class SmartChatModelRequestAdapter {
     const body = {
       messages: this._transform_messages_to_openai(),
       model: this.model,
-      temperature: this.temperature,
       max_tokens: this.max_tokens,
+      temperature: this.temperature,
       stream: streaming,
       ...(this.tools && { tools: this._transform_tools_to_openai() }),
       ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
     };
+    // special handling for o1 models
+    if(this.model.startsWith('o1-')){
+      body.messages = body.messages.filter(m => m.role !== 'system'); // remove system messages (not supported by o1 models)
+      delete body.temperature; // not supported by o1 models
+    }
     if(typeof this._req.top_p === 'number') body.top_p = this._req.top_p;
     if(typeof this._req.presence_penalty === 'number') body.presence_penalty = this._req.presence_penalty;
     if(typeof this._req.frequency_penalty === 'number') body.frequency_penalty = this._req.frequency_penalty;
