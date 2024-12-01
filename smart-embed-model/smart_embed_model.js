@@ -20,7 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartModel } from "smart-model";
-import embed_models from './models.json' assert { type: 'json' };
+import embed_models from "./models.json" with { type: 'json' };
 /**
  * SmartEmbedModel - A versatile class for handling text embeddings using various model backends
  * @extends SmartModel
