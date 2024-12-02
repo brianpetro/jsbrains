@@ -271,7 +271,10 @@ export class SmartMessage extends SmartBlock {
         if(part.type === 'text'){
           let text = part.text || '';
           if(!text && part.input?.key){
-            text = await this.env.smart_blocks.get(part.input.key)?.read() || '';
+            text = await this.env.smart_sources.get(part.input.key)?.read() || '';
+          }
+          if(!text && part.input?.key){
+            text = await this.env.smart_sources.fs.read(part.input.key) || '';
           }
           this_message.content.push({
             type: 'text',
