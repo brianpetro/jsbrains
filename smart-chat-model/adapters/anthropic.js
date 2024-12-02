@@ -185,7 +185,7 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
       if (message.role === 'system') {
         if(!this.anthropic_body.system) this.anthropic_body.system = '';
         else this.anthropic_body.system += '\n\n';
-        this.anthropic_body.system += message.content;
+        this.anthropic_body.system += Array.isArray(message.content) ? message.content.map(part => part.text).join('\n') : message.content;
       } else if (message.role === 'tool') {
         const msg = {
           role: 'user',
