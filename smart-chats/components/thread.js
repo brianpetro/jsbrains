@@ -30,7 +30,7 @@ export function build_html(thread, opts = {}) {
       </div>
       <div class="sc-config-error-notice" style="display: none;"></div>
       <div class="sc-chat-form">
-        <textarea class="sc-chat-input" placeholder="Try &quot;Based on my notes&quot; or &quot;Summarize [[this note]]&quot; or &quot;Important tasks in /folder/&quot;"></textarea>
+        <textarea class="sc-chat-input" placeholder="Use @ to add context. Try &quot;Based on my notes&quot; or &quot;Summarize [[this note]]&quot; or &quot;Important tasks in /folder/&quot;"></textarea>
         <div class="sc-btn-container">
           <span id="sc-abort-button" style="display: none;">${this.get_icon_html('square')}</span>
           <button class="send-button" id="sc-send-button">
@@ -160,27 +160,8 @@ function handle_chat_input_keydown(e, thread, chat_input, opts) {
     chat_input.value = '';
     return;
   }
+  opts.handle_chat_input_keydown(e, chat_input);
 
-  if (!["/", "@", "[", "!"].includes(e.key)) return;
-  
-  const pos = chat_input.selectionStart;
-  if (e.key === "[" && chat_input.value[pos - 1] === "[" && opts.open_file_suggestion_modal) {
-    setTimeout(() => opts.open_file_suggestion_modal(), 10);
-    return;
-  }
-  
-  if (e.key === "/" && (!pos || [" ", "\n"].includes(chat_input.value[pos - 1])) && opts.open_folder_suggestion_modal) {
-    setTimeout(() => opts.open_folder_suggestion_modal(), 10);
-    return;
-  }
-  
-  if (e.key === "@" && (!pos || [" ", "\n"].includes(chat_input.value[pos - 1])) && opts.open_system_prompt_modal) {
-    setTimeout(() => opts.open_system_prompt_modal(), 10);
-  }
-
-  if (e.key === "!" && (!pos || [" ", "\n"].includes(chat_input.value[pos - 1])) && opts.open_image_suggestion_modal) {
-    setTimeout(() => opts.open_image_suggestion_modal(), 10);
-  }
 }
 
 /**

@@ -16,6 +16,7 @@ export function build_html(message, opts = {}) {
           // return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
           return ' ![[' + part.input.image_path + ']] ';
         }
+        if(part.type === 'text' && part.input?.key?.length) return ' ![[' + part.input.key + ']] ';
         if(part.type === 'text' && part.text?.length) return part.text;
       }).join('\n')
     : message.content

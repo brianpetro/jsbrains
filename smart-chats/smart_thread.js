@@ -1,7 +1,12 @@
 import { SmartSource } from "smart-sources";
 import { render as thread_template } from "./components/thread.js";
 import { contains_folder_reference, extract_folder_references } from "./utils/folder_references";
-import { contains_internal_link, extract_internal_links } from "./utils/internal_links";
+import {
+  contains_internal_link,
+  extract_internal_links,
+  contains_internal_embedded_link,
+  extract_internal_embedded_links
+} from "./utils/internal_links";
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
 import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
@@ -107,115 +112,101 @@ export class SmartThread extends SmartSource {
       const new_msg_data = {
         thread_key: this.key,
         role: 'user',
-        content: [],
-      };
-      const context = {};
-      const language = this.env.settings?.language || 'en';
-      // Handle system prompt references (@"system prompt") FIRST
-      if (contains_system_prompt_ref(content)) {
-        const { mentions, content: content_after_refs } = extract_system_prompt_ref(content);
-        context.system_prompt_refs = mentions;
-        content = content_after_refs; // remove system prompt references from content
-      }
-  
-      // Handle internal links ([[link]])
-      if (contains_internal_link(content)) {
-        const internal_links = extract_internal_links(content);
-        context.internal_links = internal_links.map(link => {
-          return this.env.smart_sources?.fs?.get_link_target_path(link, '/') || link;
-        });
-      }
-  
-      // Handle folder references (/folder/ or /folder/subfolder/)
-      if (contains_folder_reference(content)) {
-        const folders = Object.keys(this.env.smart_sources.fs.folders);
-        const folder_refs = extract_folder_references(folders, content);
-        context.folder_refs = folder_refs;
-      }
-  
-      // Handle self-referential keywords
-      if(contains_self_referential_keywords(content, language)){
-        context.has_self_ref = true;
-      }
-      
-      // Handle markdown images LAST to preserve all processed text content
-      if (contains_markdown_image(content)) {
-        console.log('contains_markdown_image', content);
-        if (!this.chat_model.model_config.multimodal) {
-          console.warn("Current model does not support multimodal (image) content");
-          throw new Error("⚠️ Current model does not support multimodal (image) content");
-        }
-  
-        const images = extract_markdown_images(content);
-        if (images.length > 0) {
-          images.forEach(image => {
-            image.image_path = this.env.smart_sources.fs.get_link_target_path(image.image_path, '/');
-            const [before, after] = content.split(image.full_match);
-            if(typeof before === 'string' && before.trim().length) new_msg_data.content.push({
-              type: 'text',
-              text: before,
-            });
-            new_msg_data.content.push({
-              type: 'image_url',
-              image_url: null,
-              input: image,
-            });
-            content = after;
-          });
-        }
-      }
-  
-      if (typeof content === 'string'){
-        new_msg_data.content.push({
+        content: [{
           type: 'text',
           text: content.trim(),
-        });
-      } else new_msg_data.content = content;
+        }],
+        context: {},
+      };
+      const language = this.env.settings?.language || 'en';
 
-      if(Object.keys(context).length > 0){
-        console.log('creating system message with context', context);
-        new_msg_data.context = context;
-        await this.create_system_message(context);
+      // INLINE PROCESSING
+      // Handle internal embedded links (![[link]])
+      for(let i = 0; i < new_msg_data.content.length; i++){
+        const part = new_msg_data.content[i];
+        if(part.type !== 'text' || !part.text) continue;
+        if (contains_internal_embedded_link(part.text)) {
+          const internal_links = extract_internal_embedded_links(part.text);
+          for(const [full_match, link_path] of internal_links){
+            const [before, after] = part.text.split(full_match);
+            const embedded_part = {};
+            const is_image = ['png', 'jpg', 'jpeg'].some(ext => link_path.endsWith(ext));
+            if(is_image){
+              embedded_part.type = 'image_url';
+              embedded_part.input = {
+                image_path: link_path,
+              };
+            } else {
+              embedded_part.type = 'text';
+              embedded_part.input = {
+                key: this.env.smart_sources.fs.get_link_target_path(link_path, '/'),
+              };
+            }
+            part.text = after;
+            if(typeof before === 'string' && before.trim().length) new_msg_data.content.splice(
+              i, 
+              0, 
+              {
+                type: 'text',
+                text: before,
+              },
+              embedded_part
+            );
+          }
+        }
       }
+  
+      // CONTEXT PROCESSING
+      for(let i=0; i < new_msg_data.content.length; i++){
+        const part = new_msg_data.content[i];
+        if(part.type !== 'text' || !part.text) continue;
+        // Handle internal links ([[link]])
+        if (contains_internal_link(part.text)) {
+          const internal_links = extract_internal_links(part.text);
+          new_msg_data.context.internal_links = internal_links.map(link => {
+            console.log('link', link);
+            return this.env.smart_sources?.fs?.get_link_target_path(link, '/') || link;
+          });
+        }
+        // Handle folder references (/folder/ or /folder/subfolder/)
+        if (contains_folder_reference(part.text)) {
+          const folders = Object.keys(this.env.smart_sources.fs.folders);
+          const folder_refs = extract_folder_references(folders, part.text);
+          new_msg_data.context.folder_refs = folder_refs;
+        }
+    
+        // Handle self-referential keywords
+        if(contains_self_referential_keywords(part.text, language)){
+          new_msg_data.context.has_self_ref = true;
+        }
+      }
+  
       // Create a new SmartMessage for the user's message
       await this.env.smart_messages.create_or_update(new_msg_data);
     } catch (error) {
       console.error("Error in handle_message_from_user:", error);
     }
   }
-  // handle creating system message
-  async create_system_message(context) {
-    const system_message = {
-      role: "system",
-      content: [],
-      thread_key: this.key,
-    };
-    /**
-     * Build system message
-     */
-    // Combine all context into a single system message
-    if (Array.isArray(context.system_prompt_refs) && context.system_prompt_refs.length > 0) {
-      context.system_prompt_refs.forEach(key => {
-        const system_prompt = {
-          type: 'text',
-          input: {
-            key,
-          },
-        };
-        system_message.content.push(system_prompt);
-      });
-      // remove system_prompt_refs from context
-      context.system_prompt_refs = `added to system message ${system_message.id}`;
-    }
-    if (context?.has_self_ref || context?.folder_refs) {
-      const system_prompt = {
+  async add_system_message(system_message){
+    if(typeof system_message === 'string'){
+      system_message = {
         type: 'text',
-        // replace this text with `key` to default system message for lookup
-        text: `- Answer based on the context from lookup!\n- The context may be referred to as notes.`,
+        text: system_message,
       };
-      system_message.content.push(system_prompt);
     }
-    await this.env.smart_messages.create_or_update(system_message);
+    if(!system_message.type) system_message.type = 'text';
+    // if last message is a system message, update it
+    const last_msg = this.messages[this.messages.length - 1];
+    if(last_msg?.role === 'system'){
+      last_msg.content.push(system_message);
+      last_msg.render();
+    } else {
+      await this.env.smart_messages.create_or_update({
+        role: 'system',
+        content: [system_message],
+        thread_key: this.key,
+      });
+    }
   }
 
   /**
@@ -226,6 +217,7 @@ export class SmartThread extends SmartSource {
   async handle_message_from_chat_model(response, opts = {}) {
     const choices = response.choices;
     const response_id = response.id;
+    if(!response_id) return [];
     const msg_items = await Promise.all(choices.map(async (choice, index) => {
       const msg_data = {
         ...(choice?.message || choice), // fallback on full choice to handle non-message choices
