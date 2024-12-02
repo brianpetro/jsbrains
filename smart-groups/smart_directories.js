@@ -65,11 +65,14 @@ export class SmartDirectories extends SmartEntities {
     dir.queue_save();
   }
 
-  get directories_component() {
-    return render_directories_component.bind(this.smart_view);
-  }
   async render_directories(container, opts = {}) {
     opts.expanded_view = this.env.settings.expanded_view; // Pass the current state
-    return await this.render_component('directories', container, opts);
+    if(container) container.innerHTML = 'Loading directories...';
+    const frag = await this.env.render_component('directories', this, opts);
+    if(container) {
+      container.innerHTML = '';
+      container.appendChild(frag);
+    }
+    return frag;
   }
 }

@@ -53,7 +53,11 @@ export class SmartBlocks extends SmartEntities {
         description: "Embed blocks using the embedding model.",
         default: true,
       },
+      ...super.settings_config,
     });
+  }
+  render_settings(container, opts = {}) {
+    return this.render_collection_settings(container, opts);
   }
 
   /**

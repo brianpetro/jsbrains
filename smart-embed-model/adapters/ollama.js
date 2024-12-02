@@ -176,7 +176,7 @@ export class SmartEmbedModelOllamaAdapter extends SmartEmbedModelApiAdapter {
    */
   get settings_config() {
     const config = super.settings_config;
-    delete config['[EMBED_ADAPTER].api_key'];
+    delete config['[ADAPTER].api_key'];
     return config;
   }
 }

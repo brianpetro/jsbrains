@@ -140,8 +140,10 @@ export class SmartViewAdapter {
     const smart_setting = new this.setting_class(elm);
     let options;
     if (elm.dataset.optionsCallback) {
+      console.log(`getting options callback: ${elm.dataset.optionsCallback}`);
       const opts_callback = this.main.get_by_path(scope, elm.dataset.optionsCallback);
       if(typeof opts_callback === "function") options = opts_callback();
+      else console.warn(`optionsCallback is not a function: ${elm.dataset.optionsCallback}`, scope);
     }
   
     if (!options || !options.length) {

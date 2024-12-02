@@ -197,7 +197,7 @@ export class SmartEntity extends CollectionItem {
    */
   get is_unembedded() {
     if (this.vec) return false;
-    if (this.size < (this.collection.embed_model_settings?.min_chars || 300)) return false; // ignore small files
+    if (this.size < (this.settings?.min_chars || 300)) return false; // ignore small files
     return true;
   }
 
@@ -277,6 +277,12 @@ export class SmartEntity extends CollectionItem {
     return this._connections_component;
   }
   async render_connections(container, opts={}) {
-    return await this.render_component('connections', container, opts);
+    if(container) container.innerHTML = 'Loading connections...';
+    const frag = await this.env.render_component('connections', this, opts);
+    if(container) {
+      container.innerHTML = '';
+      container.appendChild(frag);
+    }
+    return frag;
   }
 }

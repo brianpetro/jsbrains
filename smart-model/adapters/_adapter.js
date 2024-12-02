@@ -69,6 +69,50 @@ export class SmartModelAdapter {
   get adapter_settings() { return this.model.adapter_settings; }
 
 
+  /**
+   * Get the models.
+   * @returns {Object} Map of model objects
+   */
+  get models() {
+    if(
+      typeof this.adapter_config.models === 'object'
+      && Object.keys(this.adapter_config.models || {}).length > 0
+    ) return this.adapter_config.models;
+    else {
+      return {};
+    }
+  }
+
+  /**
+   * Get available models from the API.
+   * @abstract
+   * @param {boolean} [refresh=false] - Whether to refresh cached models
+   * @returns {Promise<Object>} Map of model objects
+   */
+  async get_models(refresh = false) {
+    throw new Error("get_models not implemented");
+  }
+  /**
+   * Validate the parameters for get_models.
+   * @returns {boolean|Array<Object>} True if parameters are valid, otherwise an array of error objects
+   */
+  validate_get_models_params(){
+    return true;
+  }
+  /**
+   * Get available models as dropdown options synchronously.
+   * @returns {Array<Object>} Array of model options.
+   */
+  get_models_as_options_sync() {
+    const models = this.models;
+    const params_valid = this.validate_get_models_params();
+    if(params_valid !== true) return params_valid;
+    if(!Object.keys(models || {}).length){
+      this.get_models(true); // refresh models
+      return [{value: '', name: 'No models currently available'}];
+    }
+    return Object.values(models).map(model => ({ value: model.id, name: model.name || model.id })).sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   /**
    * Set the adapter's state.

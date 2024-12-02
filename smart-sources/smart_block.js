@@ -335,7 +335,7 @@ export class SmartBlock extends SmartEntity {
    */
   get should_embed() {
     try{
-      if(this.embed_model?.model_settings?.min_chars && this.size < this.embed_model.model_settings.min_chars) return false;
+      if(this.settings?.min_chars && this.size < this.settings.min_chars) return false;
       const match_line_start = this.line_start + 1;
       const match_line_end = this.line_end;
       const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})

@@ -1,5 +1,4 @@
 import { SmartModel } from "smart-model";
-import { render as render_settings_component } from "./components/settings.js";
 
 /**
  * SmartChatModel - A versatile class for handling chat operations using various platform adapters.
@@ -24,6 +23,7 @@ import { render as render_settings_component } from "./components/settings.js";
  * ```
  */
 export class SmartChatModel extends SmartModel {
+  scope_name = 'smart_chat_model';
   static defaults = {
     adapter: 'openai',
   };
@@ -47,19 +47,6 @@ export class SmartChatModel extends SmartModel {
   get can_stream() { return this.adapter.constructor.defaults.streaming; }
   get can_use_tools() {
     return this.adapter.constructor.defaults.can_use_tools;
-  }
-  /**
-   * Get the current adapter name
-   * @returns {string} Current adapter name
-   */
-  get adapter_name() {
-    const adapter_key = this.opts.model_config?.adapter
-      || this.opts.adapter
-      || this.settings.adapter
-      || Object.keys(this.adapters)[0]
-    ;
-    if(!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
-    return adapter_key;
   }
 
   /**
@@ -97,14 +84,6 @@ export class SmartChatModel extends SmartModel {
     return await this.invoke_adapter_method('count_tokens', input);
   }
 
-  /**
-   * Get platforms as dropdown options.
-   * @returns {Array<Object>} Array of {value, name} option objects
-   */
-  get_platforms_as_options() {
-    console.log('get_platforms_as_options', this.adapters);
-    return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
-  }
 
   /**
    * Test if API key is valid.
@@ -112,7 +91,7 @@ export class SmartChatModel extends SmartModel {
    */
   async test_api_key() {
     await this.invoke_adapter_method('test_api_key');
-    this.render_settings();
+    this.re_render_settings();
   }
 
   /**
@@ -131,13 +110,6 @@ export class SmartChatModel extends SmartModel {
     return this.opts.settings;
   }
 
-  /**
-   * Reload model.
-   */
-  reload_model() {
-    console.log('reload_model', this.opts);
-    if(this.opts.reload_model) this.opts.reload_model();
-  }
 
   /**
    * Get settings configuration.
@@ -151,7 +123,7 @@ export class SmartChatModel extends SmartModel {
         description: "Select a chat model platform to use with Smart Chat.",
         options_callback: 'get_platforms_as_options',
         is_scope: true, // trigger re-render of settings when changed
-        callback: 'reload_model',
+        callback: 'adapter_changed',
         default: 'open_router',
       },
       // Merge adapter-specific settings
@@ -168,53 +140,6 @@ export class SmartChatModel extends SmartModel {
    */
   process_setting_key(key) {
     return key.replace(/\[CHAT_ADAPTER\]/g, this.adapter_name);
-  }
-
-  /**
-   * Get settings component renderer.
-   * @returns {Function} Settings component renderer
-   */
-  get render_settings_component() {
-    return (typeof this.opts.components?.settings === 'function'
-      ? this.opts.components.settings
-      : render_settings_component
-    ).bind(this.smart_view);
-  }
-
-  /**
-   * Get smart view instance.
-   * @returns {SmartView} Smart view instance
-   */
-  get smart_view() {
-    if(!this._smart_view) this._smart_view = this.opts.env.init_module('smart_view'); // Decided: how to better handle this? Should still avoid direct dependency so can re-use platform-level adapters
-    return this._smart_view;
-  }
-
-  /**
-   * Render settings.
-   * @param {HTMLElement} [container] - Container element
-   * @param {Object} [opts] - Render options
-   * @returns {Promise<HTMLElement>} Container element
-   */
-  async render_settings(container=this.settings_container, opts = {}) {
-    if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-    let chat_model_settings_container;
-    if(this.settings_container) {
-      chat_model_settings_container = this.settings_container.querySelector('#chat-model-settings-container');
-      if(!chat_model_settings_container) {
-        chat_model_settings_container = document.createElement('div');
-        chat_model_settings_container.id = 'chat-model-settings-container';
-        this.settings_container.appendChild(chat_model_settings_container);
-      }
-      chat_model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
-    }
-    const frag = await this.render_settings_component(this, opts);
-    if(chat_model_settings_container) {
-      chat_model_settings_container.innerHTML = '';
-      chat_model_settings_container.appendChild(frag);
-      this.smart_view.on_open_overlay(chat_model_settings_container);
-    }
-    return frag;
   }
 
   /**

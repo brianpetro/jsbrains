@@ -20,7 +20,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartModel } from "smart-model";
-import embed_models from "./models.json" with { type: 'json' };
 /**
  * SmartEmbedModel - A versatile class for handling text embeddings using various model backends
  * @extends SmartModel
@@ -37,8 +36,9 @@ import embed_models from "./models.json" with { type: 'json' };
  * ```
  */
 export class SmartEmbedModel extends SmartModel {
+  scope_name = 'smart_embed_model';
   static defaults = {
-    model_key: 'TaylorAI/bge-micro-v2',
+    adapter: 'transformers',
   };
   /**
    * Create a SmartEmbedModel instance
@@ -117,11 +117,6 @@ export class SmartEmbedModel extends SmartModel {
    */
   get batch_size() { return this.adapter.batch_size || 1; }
 
-  /** @returns {Object} Map of available embedding models */
-  get models() { return embed_models; }
-  
-  /** @returns {string} Default model key if none specified */
-  get default_model_key() { return 'TaylorAI/bge-micro-v2'; }
 
   /**
    * Get settings configuration schema
@@ -129,27 +124,21 @@ export class SmartEmbedModel extends SmartModel {
    */
   get settings_config() {
     const _settings_config = {
-      model_key: {
-        name: 'Embedding Model',
+      adapter: {
+        name: 'Embedding Model Platform',
         type: "dropdown",
-        description: "Select an embedding model.",
-        options_callback: 'embed_model.get_embedding_model_options',
-        callback: 'embed_model_changed',
-        default: 'TaylorAI/bge-micro-v2',
-      },
-      "[EMBED_MODEL].min_chars": {
-        name: 'Minimum Embedding Length',
-        type: "number",
-        description: "Minimum length of note to embed.",
-        placeholder: "Enter number ex. 300",
+        description: "Select an embedding model platform.",
+        options_callback: 'get_platforms_as_options',
+        callback: 'adapter_changed',
+        default: this.constructor.defaults.adapter,
       },
       ...(this.adapter.settings_config || {}),
     };
-    return this.process_settings_config(_settings_config, 'embed_model');
+    return this.process_settings_config(_settings_config);
   }
 
   process_setting_key(key) {
-    return key.replace(/\[EMBED_MODEL\]/g, this.model_key);
+    return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
 
   /**

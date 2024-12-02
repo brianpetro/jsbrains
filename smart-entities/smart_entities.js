@@ -138,14 +138,23 @@ export class SmartEntities extends Collection {
   get embed_model() {
     if (this.embed_model_key === "None") return null;
     if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
-      // model_key: this.embed_model_key,
-      // ...(this.settings.embed_model?.[this.embed_model_key] || {}),
       settings: this.settings.embed_model,
       adapters: this.env.opts.modules.smart_embed_model?.adapters,
+      re_render_settings: this.re_render_settings.bind(this),
+      reload_model: this.reload_embed_model.bind(this),
     });
     return this.env._embed_model;
   }
   set embed_model(embed_model) { this.env._embed_model = embed_model; }
+  reload_embed_model() {
+    console.log("reload_embed_model");
+    this.embed_model.unload();
+    this.env._embed_model = null;
+  }
+  re_render_settings() {
+    this.settings_container.innerHTML = '';
+    this.render_settings();
+  }
 
   /**
    * Finds the nearest entities to a given entity.
@@ -332,11 +341,13 @@ export class SmartEntities extends Collection {
    * @returns {Object} The settings configuration.
    */
   get settings_config() {
-    return {
-      ...super.settings_config,
-      ...(this.embed_model?.settings_config || {}),
-      ...settings_config,
-    };
+    return settings_config;
+  }
+  async render_settings(container=this.settings_container, opts = {}) {
+    container = await this.render_collection_settings(container, opts);
+    const embed_model_settings_frag = await this.env.render_component('settings', this.embed_model, opts);
+    container.appendChild(embed_model_settings_frag);
+    return container;
   }
 
   /**
@@ -522,12 +533,14 @@ export class SmartEntities extends Collection {
     await this.process_load_queue();
   }
 
-  get lookup_component() {
-    if(!this._lookup_component) this._lookup_component = this.components?.lookup?.bind(this.smart_view);
-    return this._lookup_component;
-  }
   async render_lookup(container, opts={}) {
-    return await this.render_component('lookup', container, opts);
+    if(container) container.innerHTML = 'Loading lookup...';
+    const frag = await this.env.render_component('lookup', this, opts);
+    if(container) {
+      container.innerHTML = '';
+      container.appendChild(frag);
+    }
+    return frag;
   }
 
 }
@@ -538,7 +551,13 @@ export class SmartEntities extends Collection {
  * @description Configuration for settings.
  */
 export const settings_config = {
-  // TODO
+  "min_chars": {
+    name: 'Minimum length of entity to embed',
+    type: "number",
+    description: "Minimum length of entity to embed.",
+    placeholder: "Enter number ex. 300",
+    default: 300,
+  },
 };
 
 /**

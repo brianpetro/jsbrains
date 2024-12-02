@@ -1,5 +1,15 @@
 import { SmartEmbedAdapter } from "./_adapter.js";
-
+/**
+ * Default configurations for transformers adapter
+ * @property {string} adapter - Adapter identifier
+ * @property {string} description - Human-readable description
+ * @property {string} default_model - Default model to use
+ */
+export const transformers_defaults = {
+  adapter: 'transformers',
+  description: 'Transformers',
+  default_model: 'TaylorAI/bge-micro-v2',
+};
 /**
  * Adapter for local transformer-based embedding models
  * Uses @xenova/transformers for model loading and inference
@@ -16,6 +26,7 @@ import { SmartEmbedAdapter } from "./_adapter.js";
  * ```
  */
 export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
+  static defaults = transformers_defaults;
   /**
    * Create transformers adapter instance
    * @param {SmartEmbedModel} model - Parent model instance
@@ -168,14 +179,106 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   get settings_config() {
     return transformers_settings_config;
   }
+  /**
+   * Get available models (hardcoded list)
+   * @returns {Promise<Object>} Map of model objects
+   */
+  get_models() { return Promise.resolve(this.models); }
+  get models() {
+    return transformers_models;
+  }
 }
+
+export const transformers_models = {
+  "TaylorAI/bge-micro-v2": {
+    "id": "TaylorAI/bge-micro-v2",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "BGE-micro-v2",
+    "description": "Local, 512 tokens, 384 dim (recommended)",
+    "adapter": "transformers"
+  },
+  "TaylorAI/gte-tiny": {
+    "id": "TaylorAI/gte-tiny",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "GTE-tiny",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Mihaiii/Ivysaur": {
+    "id": "Mihaiii/Ivysaur",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Ivysaur",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "andersonbcdefg/bge-small-4096": {
+    "id": "andersonbcdefg/bge-small-4096",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 4096,
+    "name": "BGE-small-4K",
+    "description": "Local, 4,096 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Xenova/jina-embeddings-v2-base-zh": {
+    "id": "Xenova/jina-embeddings-v2-base-zh",
+    "batch_size": 1,
+    "dims": 512,
+    "max_tokens": 8192,
+    "name": "Jina-v2-base-zh-8K",
+    "description": "Local, 8,192 tokens, 512 dim, Chinese/English bilingual",
+    "adapter": "transformers"
+  },
+  "Xenova/jina-embeddings-v2-small-en": {
+    "id": "Xenova/jina-embeddings-v2-small-en",
+    "batch_size": 1,
+    "dims": 512,
+    "max_tokens": 8192,
+    "name": "Jina-v2-small-en",
+    "description": "Local, 8,192 tokens, 512 dim",
+    "adapter": "transformers"
+  },
+  "nomic-ai/nomic-embed-text-v1.5": {
+    "id": "nomic-ai/nomic-embed-text-v1.5",
+    "batch_size": 1,
+    "dims": 256,
+    "max_tokens": 8192,
+    "name": "Nomic-embed-text-v1.5",
+    "description": "Local, 8,192 tokens, 256 dim",
+    "adapter": "transformers"
+  },
+  "Xenova/bge-small-en-v1.5": {
+    "id": "Xenova/bge-small-en-v1.5",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "BGE-small",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "nomic-ai/nomic-embed-text-v1": {
+    "id": "nomic-ai/nomic-embed-text-v1",
+    "batch_size": 1,
+    "dims": 768,
+    "max_tokens": 2048,
+    "name": "Nomic-embed-text",
+    "description": "Local, 2,048 tokens, 768 dim",
+    "adapter": "transformers"
+  }
+};
 
 /**
  * Default settings configuration for transformers adapter
  * @type {Object}
  */
 export const transformers_settings_config = {
-  "[EMBED_MODEL].gpu_batch_size": {
+  "[ADAPTER].gpu_batch_size": {
     name: 'GPU Batch Size',
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",

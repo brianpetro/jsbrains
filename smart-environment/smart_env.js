@@ -22,6 +22,7 @@
 import { render as settings_template } from './components/settings.js';
 
 export class SmartEnv {
+  scope_name = 'smart_env';
   constructor(opts={}) {
     this.opts = opts;
     this.global_ref = this;
@@ -32,6 +33,7 @@ export class SmartEnv {
     this.collections = {}; // collection names to initialized classes
     this.is_init = true;
     this.mains = [];
+    this._components = {};
     /**
      * @deprecated use main_env_config instead
      */
@@ -185,15 +187,43 @@ export class SmartEnv {
     }
     return new module_config.class(opts);
   }
-  get settings_template() { return this.opts.components?.settings || settings_template; }
+  get settings_template() { return this.opts.components?.smart_env?.settings || settings_template; }
   async render_settings(container=this.settings_container) {
     if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
     if(!container) throw new Error("Container is required");
-    const frag = await this.settings_template.call(this.smart_view, this);
+    const frag = await this.render_component('settings', this, {});
     container.innerHTML = '';
     container.appendChild(frag);
     return frag;
   }
+
+
+  /**
+   * Render settings.
+   * @param {HTMLElement} [container] - Container element
+   * @param {Object} [opts] - Render options
+   * @returns {Promise<HTMLElement>} Container element
+   */
+  async render_component(component_key, scope, opts = {}) {
+    console.log('render_component', component_key, scope, opts);
+    const template = this.get_component(component_key, scope);
+    const frag = await template(scope, opts);
+    return frag;
+  }
+  get_component(component_key, scope) {
+    const scope_name = scope.collection_key ?? scope.scope_name;
+    if(!this._components[scope_name]?.[component_key]){
+      try{
+        if(!this._components[scope_name]) this._components[scope_name] = {};
+        this._components[scope_name][component_key] = this.opts.components[scope_name][component_key].bind(this.init_module('smart_view'));
+      }catch(e){
+        console.error('Error getting component', e);
+        console.log(`scope_name: ${scope_name}; component_key: ${component_key}; this.opts.components: ${Object.keys(this.opts.components || {}).join(', ')}; this.opts.components[scope_name]: ${Object.keys(this.opts.components[scope_name] || {}).join(', ')}`);
+      }
+    }
+    return this._components[scope_name][component_key];
+  }
+  
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.init_module('smart_view');
     return this._smart_view;

@@ -67,6 +67,7 @@ export class SmartThreads extends SmartSources {
         settings: this.chat_model_settings,
         env: this.env,
         reload_model: this.reload_chat_model.bind(this),
+        re_render_settings: this.re_render_settings.bind(this),
       });
     }
     return this._chat_model;
@@ -75,7 +76,6 @@ export class SmartThreads extends SmartSources {
     console.log("reload_chat_model");
     this.chat_model.unload();
     this._chat_model = null;
-    this.render_settings();
   }
 
   get container() { return this._container; }
@@ -105,10 +105,11 @@ export class SmartThreads extends SmartSources {
     };
   }
 
-  async render_settings(container=this.settings_container) {
-    container.innerHTML = '';
-    await super.render_settings(container);
-    await this.chat_model.render_settings(container);
+  async render_settings(container=this.settings_container, opts={}) {
+    container = await this.render_collection_settings(container, opts);
+    const chat_model_frag = await this.env.render_component('settings', this.chat_model, opts);
+    container.appendChild(chat_model_frag);
+    return container;
   }
 
   /**

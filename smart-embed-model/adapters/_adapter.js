@@ -6,6 +6,16 @@ import { SmartModelAdapter } from "smart-model/adapters/_adapter.js";
  */
 export class SmartEmbedAdapter extends SmartModelAdapter {
   /**
+   * @override in sub-class with adapter-specific default configurations
+   * @property {string} id - The adapter identifier
+   * @property {string} description - Human-readable description
+   * @property {string} type - Adapter type ("API")
+   * @property {string} endpoint - API endpoint
+   * @property {string} adapter - Adapter identifier
+   * @property {string} default_model - Default model to use
+   */
+  static defaults = {};
+  /**
    * Create adapter instance
    * @param {SmartEmbedModel} model - Parent model instance
    */
@@ -54,6 +64,19 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
    */
   async embed_batch(inputs) {
     throw new Error('embed_batch method not implemented');
+  }
+
+  get settings_config() {
+    return {
+      "[ADAPTER].model_key": {
+        name: 'Embedding Model',
+        type: "dropdown",
+        description: "Select an embedding model.",
+        options_callback: 'adapter.get_models_as_options_sync',
+        callback: 'model_changed',
+        default: this.constructor.defaults.default_model,
+      },
+    };
   }
 
   get dims() { return this.model_config.dims; }

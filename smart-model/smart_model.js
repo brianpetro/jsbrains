@@ -26,6 +26,7 @@
  * @class SmartModel
  */
 export class SmartModel {
+  scope_name = 'smart_model';
   static defaults = {
     // override in sub-class if needed
   };
@@ -81,7 +82,11 @@ export class SmartModel {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    const adapter_key = this.models[this.model_key]?.adapter;
+    const adapter_key = this.opts.model_config?.adapter
+      || this.opts.adapter
+      || this.settings.adapter
+      || Object.keys(this.adapters)[0]
+    ;
     if(!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
     return adapter_key;
   }
@@ -103,6 +108,11 @@ export class SmartModel {
       ...this.opts.adapter_config
     };
   }
+  /**
+   * Get available models.
+   * @returns {Object} Map of model objects
+   */
+  get models() { return this.adapter.models; }
 
   /**
    * Get the default model key to use
@@ -112,11 +122,6 @@ export class SmartModel {
     /* override in sub-class */
     throw new Error('default_model_key must be overridden in sub-class');
   }
-  /**
-   * Get available models configuration
-   * @returns {Object} Map of model configurations
-   */
-  get models() { /* override in sub-class (likely using a models.json file) */ }
 
   /**
    * Get the current model key
@@ -124,8 +129,8 @@ export class SmartModel {
    */
   get model_key() {
     return this.opts.model_key // directly passed opts take precedence
-      || this.settings.model_key // then settings
       || this.adapter_config.model_key // then adapter config
+      || this.settings.model_key // then settings
       || this.default_model_key // then default
     ;
   }
@@ -282,6 +287,14 @@ export class SmartModel {
 
 
 
+  /**
+   * Get platforms as dropdown options.
+   * @returns {Array<Object>} Array of {value, name} option objects
+   */
+  get_platforms_as_options() {
+    console.log('get_platforms_as_options', this.adapters);
+    return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
+  }
 
 
   // SETTINGS
@@ -291,7 +304,15 @@ export class SmartModel {
    */
   get settings_config() {
     return this.process_settings_config({
-      // SETTINGS GO HERE
+      adapter: {
+        name: 'Model Platform',
+        type: "dropdown",
+        description: "Select a model platform to use with Smart Model.",
+        options_callback: 'get_platforms_as_options',
+        is_scope: true, // trigger re-render of settings when changed
+        callback: 'adapter_changed',
+        default: 'default',
+      },
     });
   }
 
@@ -321,4 +342,54 @@ export class SmartModel {
    * @returns {string} Processed setting key
    */
   process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
+
+  re_render_settings() {
+    if(typeof this.opts.re_render_settings === 'function') this.opts.re_render_settings();
+    else console.warn('re_render_settings is not a function (must be passed in model opts)');
+  }
+  /**
+   * Reload model.
+   */
+  reload_model() {
+    console.log('reload_model', this.opts);
+    if(typeof this.opts.reload_model === 'function') this.opts.reload_model();
+    else console.warn('reload_model is not a function (must be passed in model opts)');
+  }
+  adapter_changed() {
+    this.reload_model();
+    this.re_render_settings();
+  }
+  model_changed() {
+    this.reload_model();
+    this.re_render_settings();
+  }
+
+  // /**
+  //  * Render settings.
+  //  * @param {HTMLElement} [container] - Container element
+  //  * @param {Object} [opts] - Render options
+  //  * @returns {Promise<HTMLElement>} Container element
+  //  */
+  // async render_settings(container=this.settings_container, opts = {}) {
+  //   if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
+  //   const model_type = this.constructor.name.toLowerCase().replace('smart', '').replace('model', '');
+  //   let model_settings_container;
+  //   if(this.settings_container) {
+  //     const container_id = `#${model_type}-model-settings-container`;
+  //     model_settings_container = this.settings_container.querySelector(container_id);
+  //     if(!model_settings_container) {
+  //       model_settings_container = document.createElement('div');
+  //       model_settings_container.id = container_id;
+  //       this.settings_container.appendChild(model_settings_container);
+  //     }
+  //     model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
+  //   }
+  //   const frag = await this.render_settings_component(this, opts);
+  //   if(model_settings_container) {
+  //     model_settings_container.innerHTML = '';
+  //     model_settings_container.appendChild(frag);
+  //     this.smart_view.on_open_overlay(model_settings_container);
+  //   }
+  //   return frag;
+  // }
 }

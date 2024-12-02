@@ -417,22 +417,6 @@ export class SmartSources extends SmartEntities {
   get block_collection() { return this.env.smart_blocks; }
 
   /**
-   * @deprecated Use `block_collection` instead.
-   * @readonly
-   * @returns {SmartBlocks} The block collection instance.
-   */
-  get blocks(){ return this.env.smart_blocks; }
-
-  get embed_model() {
-    if (this.embed_model_key === "None") return null;
-    if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
-      settings: this.env.settings.smart_sources.embed_model,
-      adapters: this.env.opts.modules.smart_embed_model?.adapters,
-    });
-    return this.env._embed_model;
-  }
-  set embed_model(embed_model) { this.env._embed_model = embed_model; }
-  /**
    * Retrieves the embed queue containing items and their blocks to be embedded.
    * @readonly
    * @returns {Array<Object>} The embed queue.
@@ -473,7 +457,7 @@ export class SmartSources extends SmartEntities {
    */
   async run_load() {
     await super.run_load();
-    this.blocks.render_settings();
+    this.block_collection.render_settings();
     this.render_settings(); // Re-render settings to update buttons
   }
 
@@ -492,7 +476,7 @@ export class SmartSources extends SmartEntities {
     const end_time = Date.now();
     console.log(`Time spent importing: ${end_time - start_time}ms`);
     this.render_settings();
-    this.blocks.render_settings();
+    this.block_collection.render_settings();
   }
 
   /**
@@ -504,7 +488,7 @@ export class SmartSources extends SmartEntities {
     await this.prune();
     await this.process_save_queue();
     this.render_settings();
-    this.blocks.render_settings();
+    this.block_collection.render_settings();
   }
 
   /**

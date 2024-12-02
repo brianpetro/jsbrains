@@ -394,19 +394,9 @@ export class Collection {
     return this.env.settings[this.collection_key];
   }
   /**
-   * Gets the settings component renderer function.
-   * Uses custom component if provided in opts, otherwise uses default.
-   * @returns {Function} The settings component renderer function
-   */
-  get render_settings_component() {
-    return (typeof this.opts.components?.settings === 'function'
-      ? this.opts.components.settings
-      : render_settings_component
-    ).bind(this.smart_view);
-  }
-  /**
    * Gets the smart view instance from the environment.
    * Lazily initializes if not already created.
+   * @deprecated use env.smart_view instead
    * @returns {SmartView} The smart view instance
    */
   get smart_view() {
@@ -420,24 +410,19 @@ export class Collection {
    * @param {Object} opts.settings_keys - An array of keys to render.
    */
   async render_settings(container=this.settings_container, opts = {}) {
-    if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-    let collection_settings_container;
-    if(this.settings_container){
-      collection_settings_container = this.settings_container.querySelector('#collection-settings-container');
-      if(!collection_settings_container) {
-        collection_settings_container = document.createElement('div');
-        collection_settings_container.id = `collection-settings-container-${this.collection_key}`;
-        this.settings_container.appendChild(collection_settings_container);
-      }
-      collection_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.collection_key + ' settings...</div>';
+    return await this.render_collection_settings(container, opts);
+  }
+  async render_collection_settings(container=this.settings_container, opts = {}) {
+    if(container && (!this.settings_container || this.settings_container !== container)) this.settings_container = container;
+    else if(!container){
+      console.log('no container, creating frag');
+      container = this.env.smart_view.create_doc_dragment('<div></div>') // if still no container input or store, create container frag
     }
-    const frag = await this.render_settings_component(this, opts);
-    if(collection_settings_container){
-      collection_settings_container.innerHTML = '';
-      collection_settings_container.appendChild(frag);
-      this.smart_view.on_open_overlay(collection_settings_container);
-    }
-    return frag;
+    container.innerHTML = `<div class="sc-loading">Loading ${this.collection_key} settings...</div>`;
+    const frag = await this.env.render_component('settings', this, opts);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    return container;
   }
 
   unload() {
@@ -452,25 +437,6 @@ export class Collection {
     this.notices?.remove(`loading ${this.collection_key}`);
     this.notices?.show('done loading', `${this.collection_key} loaded`, { timeout: 3000 });
     this.render_settings(); // re-render settings
-  }
-
-
-  // COMPONENTS 2024-11-27
-  get components() {
-    return this.env.opts.components?.[this.collection_key];
-  }
-  async render_component(component_key, container, opts={}) {
-    if(!this[`${component_key}_component`]){
-      if(container) container.innerHTML = 'No component found.';
-      return this.smart_view.create_doc_fragment(`No ${component_key} component found.`);
-    }
-    if(container) container.innerHTML = `Loading ${component_key} component...`;
-    const frag = await this[`${component_key}_component`](this, opts);
-    if(container){
-      container.innerHTML = '';
-      container.appendChild(frag);
-    }
-    return frag;
   }
 
 }

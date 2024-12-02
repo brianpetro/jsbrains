@@ -12,6 +12,12 @@ import cl100k_base from "../cl100k_base.json" assert { type: "json" };
  * @extends SmartEmbedModelApiAdapter
  */
 export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
+  static defaults = {
+    adapter: 'openai',
+    description: 'OpenAI',
+    default_model: 'text-embedding-3-small',
+    endpoint: 'https://api.openai.com/v1/embeddings',
+  };
   /**
    * Create OpenAI adapter instance
    * @param {SmartEmbedModel} smart_embed - Parent model instance
@@ -118,11 +124,73 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
   /** @returns {Object} Settings configuration for OpenAI adapter */
   get settings_config() {
     return {
-      openai_api_key: {
+      ...super.settings_config,
+      "[ADAPTER].api_key": {
         name: "OpenAI API Key for embeddings",
         type: "password",
         description: "Required for OpenAI embedding models",
         placeholder: "Enter OpenAI API Key",
+      },
+    };
+  }
+  /**
+   * Get available models (hardcoded list)
+   * @returns {Promise<Object>} Map of model objects
+   */
+  get_models() {
+    return Promise.resolve(this.models);
+  }
+  get models() {
+    return {
+      "text-embedding-3-small": {
+        "id": "text-embedding-3-small",
+        "batch_size": 50,
+        "dims": 1536,
+        "max_tokens": 8191,
+        "name": "OpenAI Text-3 Small",
+        "description": "API, 8,191 tokens, 1,536 dim",
+        "endpoint": "https://api.openai.com/v1/embeddings",
+        "adapter": "openai"
+      },
+      "text-embedding-3-large": {
+        "id": "text-embedding-3-large",
+        "batch_size": 50,
+        "dims": 3072,
+        "max_tokens": 8191,
+        "name": "OpenAI Text-3 Large",
+        "description": "API, 8,191 tokens, 3,072 dim",
+        "endpoint": "https://api.openai.com/v1/embeddings",
+        "adapter": "openai"
+      },
+      "text-embedding-3-small-512": {
+        "id": "text-embedding-3-small",
+        "batch_size": 50,
+        "dims": 512,
+        "max_tokens": 8191,
+        "name": "OpenAI Text-3 Small - 512",
+        "description": "API, 8,191 tokens, 512 dim",
+        "endpoint": "https://api.openai.com/v1/embeddings",
+        "adapter": "openai"
+      },
+      "text-embedding-3-large-256": {
+        "id": "text-embedding-3-large",
+        "batch_size": 50,
+        "dims": 256,
+        "max_tokens": 8191,
+        "name": "OpenAI Text-3 Large - 256",
+        "description": "API, 8,191 tokens, 256 dim",
+        "endpoint": "https://api.openai.com/v1/embeddings",
+        "adapter": "openai"
+      },
+      "text-embedding-ada-002": {
+        "id": "text-embedding-ada-002",
+        "batch_size": 50,
+        "dims": 1536,
+        "max_tokens": 8191,
+        "name": "OpenAI Ada",
+        "description": "API, 8,191 tokens, 1,536 dim",
+        "endpoint": "https://api.openai.com/v1/embeddings",
+        "adapter": "openai"
       },
     };
   }

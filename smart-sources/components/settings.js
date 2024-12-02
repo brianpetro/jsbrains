@@ -12,27 +12,27 @@ export async function render(scope, opts = {}) {
   return await post_process.call(this, scope, frag, opts);
 }
 
-export async function post_process(scope, frag, opts = {}) {
-  await this.render_setting_components(frag, {scope});
+export async function post_process(source_collection, frag, opts = {}) {
+  await this.render_setting_components(frag, {scope: source_collection});
   
   frag.querySelector('.sources-load-btn')?.addEventListener('click', () => {
-    scope.run_load();
+    source_collection.run_load();
   });
   
-  if (scope.loaded) {
+  if (source_collection.loaded) {
     frag.querySelector('.sources-import-btn')?.addEventListener('click', () => {
-      scope.run_import();
+      source_collection.run_import();
     });
     
     frag.querySelector('.sources-prune-btn')?.addEventListener('click', () => {
-      scope.run_prune();
+      source_collection.run_prune();
     });
     
     frag.querySelector('.sources-clear-all-btn')?.addEventListener('click', async () => {
       if (confirm('Are you sure you want to clear all data and re-import? This action cannot be undone.')) {
-        await scope.run_clear_all();
-        scope.render_settings();
-        scope.blocks.render_settings();
+        await source_collection.run_clear_all();
+        source_collection.render_settings();
+        source_collection.block_collection.render_settings();
       }
     });
   }
@@ -47,7 +47,7 @@ function settings_header_html(scope, opts = {}) {
     : get_block_heading_html(scope);
   const button_html = get_button_html(scope);
   return `<div class="group-header">
-    <h3>${heading_text}</h3>
+    <h2>${heading_text}</h2>
     ${heading_html}
     ${button_html}
   </div>`;

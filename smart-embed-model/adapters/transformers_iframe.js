@@ -1,7 +1,6 @@
 import { SmartEmbedIframeAdapter } from "./iframe.js";
 import { transformers_connector } from "../connectors/transformers_iframe.js";
-import { transformers_settings_config } from "./transformers.js";
-
+import { transformers_defaults, transformers_settings_config, transformers_models } from "./transformers.js";
 /**
  * Adapter for running transformer models in an iframe
  * Combines transformer model capabilities with iframe isolation
@@ -18,6 +17,7 @@ import { transformers_settings_config } from "./transformers.js";
  * ```
  */
 export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter {
+  static defaults = transformers_defaults;
   /**
    * Create transformers iframe adapter instance
    * @param {SmartEmbedModel} model - Parent model instance
@@ -39,6 +39,17 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
 
   /** @returns {Object} Settings configuration for transformers adapter */
   get settings_config() {
-    return transformers_settings_config;
+    return {
+      ...super.settings_config,
+      ...transformers_settings_config
+    };
+  }
+  /**
+   * Get available models (hardcoded list)
+   * @returns {Promise<Object>} Map of model objects
+   */
+  get_models() { return Promise.resolve(this.models); }
+  get models() {
+    return transformers_models;
   }
 }
