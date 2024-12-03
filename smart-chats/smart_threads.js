@@ -149,8 +149,9 @@ export class SmartThreads extends SmartSources {
     return get_language_options();
   }
   get initial_message() {
-    return get_initial_message(this.settings.language);
+    return get_initial_message(this.language);
   }
+  get language() { return this.settings.language || 'en'; }
 
   /**
    * Gets the currently active thread based on the chat box data-thread-key

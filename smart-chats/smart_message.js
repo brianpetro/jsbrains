@@ -324,7 +324,7 @@ export class SmartMessage extends SmartBlock {
   
       // RETURNS LOOKUP OUTPUT AS TEXT
       const lookup_content = await this.fetch_content(this.tool_call_output.map(result => result.key));
-      const prefix_prompt = get_translated_context_prefix_prompt(this.settings.language);
+      const prefix_prompt = get_translated_context_prefix_prompt(this.thread.language);
       let lookup_output = `${prefix_prompt}\n`;
       this.tool_call_output.forEach((result, index) => {
         if (lookup_content[index]?.type === 'text') {
@@ -335,7 +335,7 @@ export class SmartMessage extends SmartBlock {
           lookup_output += `-----------------------\n\n`;
         } // should images be added here?
       });
-      const suffix_prompt = get_translated_context_suffix_prompt(this.settings.language);
+      const suffix_prompt = get_translated_context_suffix_prompt(this.thread.language);
       return lookup_output + suffix_prompt;
     }
   }

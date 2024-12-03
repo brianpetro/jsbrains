@@ -118,8 +118,6 @@ export class SmartThread extends SmartSource {
         }],
         context: {},
       };
-      // const language = this.env.settings?.language || 'en';
-      const language = this.settings.language;
 
       // INLINE PROCESSING
       // Handle internal embedded links (![[link]])
@@ -177,7 +175,7 @@ export class SmartThread extends SmartSource {
         }
     
         // Handle self-referential keywords
-        if(contains_self_referential_keywords(part.text, language)){
+        if(contains_self_referential_keywords(part.text, this.language)){
           new_msg_data.context.has_self_ref = true;
         }
       }
@@ -398,6 +396,8 @@ export class SmartThread extends SmartSource {
     }
     return this.data.path;
   }
+
+  get language() { return this.settings.language || 'en'; }
 
   /**
    * Processes base64 encoding for image files
