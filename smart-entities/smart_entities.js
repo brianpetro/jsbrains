@@ -543,6 +543,8 @@ export class SmartEntities extends Collection {
     return frag;
   }
 
+  get connections_filter_config() { return connections_filter_config; }
+
 }
 
 /**
@@ -560,40 +562,48 @@ export const settings_config = {
   },
 };
 
-/**
- * @constant
- * @type {Object}
- * @description Configuration for filters.
- */
-export const filter_config = {
-  "exclude_inlinks": {
-    type: "toggle",
-    name: "Exclude Inlinks",
-    description: "Exclude inlinks",
+export const connections_filter_config = {
+  "smart_view_filter.show_full_path": {
+    "name": "Show Full Path",
+    "type": "toggle",
+    "description": "Show full path in view.",
+    "callback": "refresh_smart_view"
   },
-  "exclude_outlinks": {
-    type: "toggle",
-    name: "Exclude Outlinks",
-    description: "Exclude outlinks",
+  "smart_view_filter.render_markdown": {
+    "name": "Render Markdown",
+    "type": "toggle",
+    "description": "Render markdown in results.",
+    "callback": "refresh_smart_view"
   },
-  "include_exclude": {
-    type: "toggle",
-    name: "Toggle Using Include/Exclude",
-    description: "Toggle using include/exclude filters",
+  "smart_view_filter.results_limit": {
+    "name": "Results Limit",
+    "type": "number",
+    "description": "Limit the number of results.",
+    "default": 20,
+    "callback": "refresh_smart_view"
   },
-  "include_filter": {
-    type: "text",
-    name: "Include Filter",
-    description: "Require that results match this value.",
+  "smart_view_filter.exclude_inlinks": {
+    "name": "Exclude Inlinks",
+    "type": "toggle",
+    "description": "Exclude inlinks.",
+    "callback": "refresh_smart_view_filter"
   },
-  "exclude_filter": {
-    type: "text",
-    name: "Exclude Filter",
-    description: "Exclude results that match this value.",
+  "smart_view_filter.exclude_outlinks": {
+    "name": "Exclude Outlinks",
+    "type": "toggle",
+    "description": "Exclude outlinks.",
+    "callback": "refresh_smart_view_filter"
   },
-  // "re_rank": {
-  //   type: "toggle",
-  //   name: "Toggle Re-Ranker",
-  //   description: "Toggle the re-ranker",
-  // },
-};
+  "smart_view_filter.include_filter": {
+    "name": "Include Filter",
+    "type": "text",
+    "description": "Require that results match this value.",
+    "callback": "refresh_smart_view"
+  },
+  "smart_view_filter.exclude_filter": {
+    "name": "Exclude Filter",
+    "type": "text",
+    "description": "Exclude results that match this value.",
+    "callback": "refresh_smart_view"
+  }
+}

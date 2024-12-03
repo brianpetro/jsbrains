@@ -15,6 +15,7 @@ export class SmartView {
     for (const component of components) {
       await this.render_setting_component(component, opts);
     }
+    return container;
   }
 
   /**
@@ -148,6 +149,23 @@ export class SmartView {
     overlay_container.style.transition = "background-color 0.5s ease-in-out";
     overlay_container.style.backgroundColor = "var(--bold-color)";
     setTimeout(() => { overlay_container.style.backgroundColor = ""; }, 500);
+  }
+
+  /**
+   * Renders settings components based on the provided settings configuration.
+   * @param {Object} scope - The scope object.
+   * @param {Object} settings_config - The settings configuration object.
+   * @returns {Promise<DocumentFragment>} The rendered settings fragment.
+   */
+  async render_settings(settings_config, opts={}) {
+    const scope = opts.scope || {};
+    const html = Object.entries(settings_config).map(([setting_key, setting_config]) => {
+      if (!setting_config.setting) setting_config.setting = setting_key;
+      if(this.validate_setting(scope, opts, setting_key, setting_config)) return this.render_setting_html(setting_config);
+      return '';
+    }).join('\n');
+    const frag = this.create_doc_fragment(`<div>${html}</div>`);
+    return await this.render_setting_components(frag, opts);
   }
 }
 

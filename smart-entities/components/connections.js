@@ -1,5 +1,4 @@
 import { render as render_results } from "./results.js";
-import { render as filter_settings_component } from "./smart_view_filter.js";
 
 export async function build_html(scope, opts = {}) {
   const context_name = (scope.path).split('/').pop();
@@ -32,27 +31,29 @@ export async function build_html(scope, opts = {}) {
   return html;
 }
 
-export async function render(scope, opts = {}) {
-  let html = await build_html.call(this, scope, opts);
+export async function render(source, opts = {}) {
+  let html = await build_html.call(this, source, opts);
   const frag = this.create_doc_fragment(html);
-  const results = scope.find_connections({ ...opts, exclude_source_connections: scope.env.smart_blocks.settings.embed_blocks });
+  const results = source.find_connections({ ...opts, exclude_source_connections: source.env.smart_blocks.settings.embed_blocks });
   
   const sc_list = frag.querySelector('.sc-list');
   const results_frag = await render_results.call(this, results, opts);
   Array.from(results_frag.children).forEach((elm) => sc_list.appendChild(elm));
-  return await post_process.call(this, scope, frag, opts);
+  return await post_process.call(this, source, frag, opts);
 }
 
-export async function post_process(scope, frag, opts = {}) {
+export async function post_process(source, frag, opts = {}) {
   const container = frag.querySelector('.sc-list');
   const overlay_container = frag.querySelector(".sc-overlay");
   const render_filter_settings = async () => {
     if(!overlay_container) throw new Error("Container is required");
     overlay_container.innerHTML = '';
-    const filter_frag = await filter_settings_component.call(this, {
-      settings: scope.env.settings,
-      refresh_smart_view: opts.refresh_smart_view,
-      refresh_smart_view_filter: render_filter_settings.bind(this),
+    const filter_frag = await this.render_settings(source.collection.connections_filter_config, {
+      scope: {
+        settings: source.env.settings,
+        refresh_smart_view: opts.refresh_smart_view,
+        refresh_smart_view_filter: render_filter_settings.bind(this),
+      }
     });
     overlay_container.innerHTML = '';
     overlay_container.appendChild(filter_frag);
@@ -62,20 +63,20 @@ export async function post_process(scope, frag, opts = {}) {
   // Add fold/unfold all functionality
   const toggle_button = frag.querySelector(".sc-fold-toggle");
   toggle_button.addEventListener("click", () => {
-    const expanded = scope.env.settings.expanded_view;
+    const expanded = source.env.settings.expanded_view;
     container.querySelectorAll(".sc-result").forEach((elm) => {
       if (expanded) {
         elm.classList.add("sc-collapsed");
       } else {
         elm.classList.remove("sc-collapsed");
         const collection_key = elm.dataset.collection;
-        const entity = scope.env[collection_key].get(elm.dataset.path);
+        const entity = source.env[collection_key].get(elm.dataset.path);
         entity.render_item(elm.querySelector("li"));
       }
     });
-    scope.env.settings.expanded_view = !expanded;
-    toggle_button.innerHTML = this.get_icon_html(scope.env.settings.expanded_view ? 'fold-vertical' : 'unfold-vertical');
-    toggle_button.setAttribute('aria-label', scope.env.settings.expanded_view ? 'Fold all' : 'Unfold all');
+    source.env.settings.expanded_view = !expanded;
+    toggle_button.innerHTML = this.get_icon_html(source.env.settings.expanded_view ? 'fold-vertical' : 'unfold-vertical');
+    toggle_button.setAttribute('aria-label', source.env.settings.expanded_view ? 'Fold all' : 'Unfold all');
   });
 
   const filter_button = frag.querySelector(".sc-filter");
