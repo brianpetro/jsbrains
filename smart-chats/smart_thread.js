@@ -118,7 +118,8 @@ export class SmartThread extends SmartSource {
         }],
         context: {},
       };
-      const language = this.env.settings?.language || 'en';
+      // const language = this.env.settings?.language || 'en';
+      const language = this.settings.language;
 
       // INLINE PROCESSING
       // Handle internal embedded links (![[link]])

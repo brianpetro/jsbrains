@@ -8,3 +8,7 @@ export function contains_self_referential_keywords(user_input, language) {
   if (check_str.match(new RegExp(`\\b(${language_settings.pronouns.join("|")})\\b`, "gi"))) return true;
   return false;
 }
+
+export function get_language_options(){
+  return Object.entries(ScTranslations).map(([language, language_settings]) => ({ value: language, name: language_settings.name }));
+}

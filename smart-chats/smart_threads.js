@@ -1,6 +1,6 @@
 import { SmartSources } from "smart-sources";
 import { render as chat_template } from "./components/threads.js";
-
+import { get_language_options } from "./utils/self_referential_keywords.js";
 /**
  * @class SmartThreads
  * @extends SmartSources
@@ -118,6 +118,13 @@ export class SmartThreads extends SmartSources {
    */
   get settings_config() {
     return {
+      "language": {
+        name: "Language",
+        type: "dropdown",
+        options_callback: 'get_language_options',
+        description: "The language to use for the chat.",
+        default: 'en'
+      },
       "review_context": {
         name: "Review Context",
         type: "toggle",
@@ -137,6 +144,9 @@ export class SmartThreads extends SmartSources {
         description: "Whether to send tool output in the user message.",
       }
     };
+  }
+  get_language_options() {
+    return get_language_options();
   }
 
   /**
