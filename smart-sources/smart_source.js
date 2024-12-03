@@ -48,7 +48,9 @@ export class SmartSource extends SmartEntity {
   async import(){
     this._queue_import = false;
     try{
-      if(this.file_type === 'md' && this.file.stat.size > 1000000) {
+      const stat = this.file.stat;
+      if(stat.error) throw stat.error;
+      if(this.file_type === 'md' && stat.size > 1000000) {
         console.log(`Smart Connections: Skipping large file: ${this.path}`);
         return;
       }
@@ -63,15 +65,20 @@ export class SmartSource extends SmartEntity {
       if(this.meta_changed){
         this.data.blocks = null;
         await this.save(super.ajson);
-        this.data.mtime = this.file.stat.mtime;
-        this.data.size = this.file.stat.size;
+        this.data.mtime = stat.mtime;
+        this.data.size = stat.size;
         await this.source_adapter.import();
         this.loaded_at = Date.now(); // Reset loaded_at to now to prevent unneeded reloads
         this.queue_embed();
       } // else console.log(`Smart Connections: No changes to ${this.path}`);
     }catch(err){
-      this.queue_import();
-      console.error(err, err.stack);
+      if(err.code === "ENOENT"){
+        console.log(`Smart Connections: Deleting ${this.path} data because it no longer exists on disk`);
+        this.delete();
+      }else{
+        console.warn("Smart Connections: Error during import: re-queueing import", err);
+        this.queue_import();
+      }
     }
   }
 
