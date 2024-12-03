@@ -92,7 +92,7 @@ export async function post_process(scope, frag, opts = {}) {
   // search
   const search_button = frag.querySelector(".sc-search");
   search_button.addEventListener("click", () => {
-    opts.open_search_view();
+    opts.open_lookup_view();
   });
 
   // help documentation
