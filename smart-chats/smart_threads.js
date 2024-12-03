@@ -1,6 +1,6 @@
 import { SmartSources } from "smart-sources";
 import { render as chat_template } from "./components/threads.js";
-import { get_language_options } from "./utils/self_referential_keywords.js";
+import { get_language_options, get_initial_message } from "./utils/self_referential_keywords.js";
 /**
  * @class SmartThreads
  * @extends SmartSources
@@ -147,6 +147,9 @@ export class SmartThreads extends SmartSources {
   }
   get_language_options() {
     return get_language_options();
+  }
+  get initial_message() {
+    return get_initial_message(this.settings.language);
   }
 
   /**

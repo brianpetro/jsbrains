@@ -16,7 +16,7 @@ export function build_html(thread, opts = {}) {
         ${opts.show_welcome && !thread.messages.length ? `
           <div class="sc-message assistant">
             <div class="sc-message-content">
-              <span>Hi there, welcome to the Smart Chat. Ask me a question about your notes and I'll try to answer it.</span>
+              <span>${thread.collection.initial_message}</span>
             </div>
           </div>
         ` : ''}

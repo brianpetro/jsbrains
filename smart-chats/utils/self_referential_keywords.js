@@ -12,3 +12,17 @@ export function contains_self_referential_keywords(user_input, language) {
 export function get_language_options(){
   return Object.entries(ScTranslations).map(([language, language_settings]) => ({ value: language, name: language_settings.name }));
 }
+
+export function get_initial_message(language) {
+  const language_settings = ScTranslations[language];
+  return language_settings.initial_message;
+}
+
+export function get_translated_context_suffix_prompt(language) {
+  const language_settings = ScTranslations[language];
+  return language_settings.context_suffix_prompt;
+}
+export function get_translated_context_prefix_prompt(language) {
+  const language_settings = ScTranslations[language];
+  return language_settings.context_prefix_prompt;
+}

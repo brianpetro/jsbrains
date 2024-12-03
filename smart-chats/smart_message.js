@@ -3,6 +3,7 @@ import { render as message_template } from "./components/message";
 import { render as context_template } from "./components/context";
 import { render as tool_calls_template } from "./components/tool_calls";
 import { render as system_message_template } from "./components/system_message";
+import { get_translated_context_suffix_prompt, get_translated_context_prefix_prompt } from "./utils/self_referential_keywords";
 /**
  * @class SmartMessage
  * @extends SmartBlock
@@ -323,7 +324,8 @@ export class SmartMessage extends SmartBlock {
   
       // RETURNS LOOKUP OUTPUT AS TEXT
       const lookup_content = await this.fetch_content(this.tool_call_output.map(result => result.key));
-      let lookup_output = `Context from lookup:\n`;
+      const prefix_prompt = get_translated_context_prefix_prompt(this.settings.language);
+      let lookup_output = `${prefix_prompt}\n`;
       this.tool_call_output.forEach((result, index) => {
         if (lookup_content[index]?.type === 'text') {
           lookup_output += `-----------------------\n`;
@@ -333,7 +335,8 @@ export class SmartMessage extends SmartBlock {
           lookup_output += `-----------------------\n\n`;
         } // should images be added here?
       });
-      return lookup_output;
+      const suffix_prompt = get_translated_context_suffix_prompt(this.settings.language);
+      return lookup_output + suffix_prompt;
     }
   }
 
