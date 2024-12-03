@@ -205,7 +205,6 @@ export class SmartEnv {
    * @returns {Promise<HTMLElement>} Container element
    */
   async render_component(component_key, scope, opts = {}) {
-    console.log('render_component', component_key, scope, opts);
     const template = this.get_component(component_key, scope);
     const frag = await template(scope, opts);
     return frag;

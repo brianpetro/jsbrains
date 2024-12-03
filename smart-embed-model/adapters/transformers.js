@@ -284,7 +284,7 @@ export const transformers_settings_config = {
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter number ex. 10",
   },
-  "legacy_transformers": {
+  "[ADAPTER].legacy_transformers": {
     name: 'Legacy Transformers (no GPU)',
     type: "toggle",
     description: "Use legacy transformers (v2) instead of v3.",

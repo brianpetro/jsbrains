@@ -15,6 +15,7 @@ var SmartModel = class {
    * @throws {Error} If required options are missing
    */
   constructor(opts = {}) {
+    __publicField(this, "scope_name", "smart_model");
     this.opts = opts;
     this.validate_opts(opts);
     this.state = "unloaded";
@@ -52,7 +53,7 @@ var SmartModel = class {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    const adapter_key = this.models[this.model_key]?.adapter;
+    const adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
     if (!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
     return adapter_key;
   }
@@ -73,6 +74,13 @@ var SmartModel = class {
     };
   }
   /**
+   * Get available models.
+   * @returns {Object} Map of model objects
+   */
+  get models() {
+    return this.adapter.models;
+  }
+  /**
    * Get the default model key to use
    * @returns {string} Default model identifier
    */
@@ -80,17 +88,11 @@ var SmartModel = class {
     throw new Error("default_model_key must be overridden in sub-class");
   }
   /**
-   * Get available models configuration
-   * @returns {Object} Map of model configurations
-   */
-  get models() {
-  }
-  /**
    * Get the current model key
    * @returns {string} Current model key
    */
   get model_key() {
-    return this.opts.model_key || this.settings.model_key || this.adapter_config.model_key || this.default_model_key;
+    return this.opts.model_key || this.adapter_config.model_key || this.settings.model_key || this.default_model_key;
   }
   /**
    * Get the current model configuration
@@ -240,6 +242,14 @@ var SmartModel = class {
     this.ensure_adapter_ready(method);
     return await this.adapter[method](...args);
   }
+  /**
+   * Get platforms as dropdown options.
+   * @returns {Array<Object>} Array of {value, name} option objects
+   */
+  get_platforms_as_options() {
+    console.log("get_platforms_as_options", this.adapters);
+    return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
+  }
   // SETTINGS
   /**
    * Get the settings configuration schema
@@ -247,7 +257,16 @@ var SmartModel = class {
    */
   get settings_config() {
     return this.process_settings_config({
-      // SETTINGS GO HERE
+      adapter: {
+        name: "Model Platform",
+        type: "dropdown",
+        description: "Select a model platform to use with Smart Model.",
+        options_callback: "get_platforms_as_options",
+        is_scope: true,
+        // trigger re-render of settings when changed
+        callback: "adapter_changed",
+        default: "default"
+      }
     });
   }
   /**
@@ -276,145 +295,58 @@ var SmartModel = class {
     return key;
   }
   // override in sub-class if needed for prefixes and variable replacements
+  re_render_settings() {
+    if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
+    else console.warn("re_render_settings is not a function (must be passed in model opts)");
+  }
+  /**
+   * Reload model.
+   */
+  reload_model() {
+    console.log("reload_model", this.opts);
+    if (typeof this.opts.reload_model === "function") this.opts.reload_model();
+    else console.warn("reload_model is not a function (must be passed in model opts)");
+  }
+  adapter_changed() {
+    this.reload_model();
+    this.re_render_settings();
+  }
+  model_changed() {
+    this.reload_model();
+    this.re_render_settings();
+  }
+  // /**
+  //  * Render settings.
+  //  * @param {HTMLElement} [container] - Container element
+  //  * @param {Object} [opts] - Render options
+  //  * @returns {Promise<HTMLElement>} Container element
+  //  */
+  // async render_settings(container=this.settings_container, opts = {}) {
+  //   if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
+  //   const model_type = this.constructor.name.toLowerCase().replace('smart', '').replace('model', '');
+  //   let model_settings_container;
+  //   if(this.settings_container) {
+  //     const container_id = `#${model_type}-model-settings-container`;
+  //     model_settings_container = this.settings_container.querySelector(container_id);
+  //     if(!model_settings_container) {
+  //       model_settings_container = document.createElement('div');
+  //       model_settings_container.id = container_id;
+  //       this.settings_container.appendChild(model_settings_container);
+  //     }
+  //     model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
+  //   }
+  //   const frag = await this.render_settings_component(this, opts);
+  //   if(model_settings_container) {
+  //     model_settings_container.innerHTML = '';
+  //     model_settings_container.appendChild(frag);
+  //     this.smart_view.on_open_overlay(model_settings_container);
+  //   }
+  //   return frag;
+  // }
 };
 __publicField(SmartModel, "defaults", {
   // override in sub-class if needed
 });
-
-// models.json
-var models_default = {
-  "TaylorAI/bge-micro-v2": {
-    id: "TaylorAI/bge-micro-v2",
-    batch_size: 1,
-    dims: 384,
-    max_tokens: 512,
-    name: "BGE-micro-v2",
-    description: "Local, 512 tokens, 384 dim (recommended)",
-    adapter: "transformers"
-  },
-  "TaylorAI/gte-tiny": {
-    id: "TaylorAI/gte-tiny",
-    batch_size: 1,
-    dims: 384,
-    max_tokens: 512,
-    name: "GTE-tiny",
-    description: "Local, 512 tokens, 384 dim",
-    adapter: "transformers"
-  },
-  "Mihaiii/Ivysaur": {
-    id: "Mihaiii/Ivysaur",
-    batch_size: 1,
-    dims: 384,
-    max_tokens: 512,
-    name: "Ivysaur",
-    description: "Local, 512 tokens, 384 dim",
-    adapter: "transformers"
-  },
-  "andersonbcdefg/bge-small-4096": {
-    id: "andersonbcdefg/bge-small-4096",
-    batch_size: 1,
-    dims: 384,
-    max_tokens: 4096,
-    name: "BGE-small-4K",
-    description: "Local, 4,096 tokens, 384 dim",
-    adapter: "transformers"
-  },
-  "Xenova/jina-embeddings-v2-base-zh": {
-    id: "Xenova/jina-embeddings-v2-base-zh",
-    batch_size: 1,
-    dims: 512,
-    max_tokens: 8192,
-    name: "Jina-v2-base-zh-8K",
-    description: "Local, 8,192 tokens, 512 dim, Chinese/English bilingual",
-    adapter: "transformers"
-  },
-  "text-embedding-3-small": {
-    id: "text-embedding-3-small",
-    batch_size: 50,
-    dims: 1536,
-    max_tokens: 8191,
-    name: "OpenAI Text-3 Small",
-    description: "API, 8,191 tokens, 1,536 dim",
-    endpoint: "https://api.openai.com/v1/embeddings",
-    adapter: "openai"
-  },
-  "text-embedding-3-large": {
-    id: "text-embedding-3-large",
-    batch_size: 50,
-    dims: 3072,
-    max_tokens: 8191,
-    name: "OpenAI Text-3 Large",
-    description: "API, 8,191 tokens, 3,072 dim",
-    endpoint: "https://api.openai.com/v1/embeddings",
-    adapter: "openai"
-  },
-  "text-embedding-3-small-512": {
-    id: "text-embedding-3-small",
-    batch_size: 50,
-    dims: 512,
-    max_tokens: 8191,
-    name: "OpenAI Text-3 Small - 512",
-    description: "API, 8,191 tokens, 512 dim",
-    endpoint: "https://api.openai.com/v1/embeddings",
-    adapter: "openai"
-  },
-  "text-embedding-3-large-256": {
-    id: "text-embedding-3-large",
-    batch_size: 50,
-    dims: 256,
-    max_tokens: 8191,
-    name: "OpenAI Text-3 Large - 256",
-    description: "API, 8,191 tokens, 256 dim",
-    endpoint: "https://api.openai.com/v1/embeddings",
-    adapter: "openai"
-  },
-  "text-embedding-ada-002": {
-    id: "text-embedding-ada-002",
-    batch_size: 50,
-    dims: 1536,
-    max_tokens: 8191,
-    name: "OpenAI Ada",
-    description: "API, 8,191 tokens, 1,536 dim",
-    endpoint: "https://api.openai.com/v1/embeddings",
-    adapter: "openai"
-  },
-  "Xenova/jina-embeddings-v2-small-en": {
-    id: "Xenova/jina-embeddings-v2-small-en",
-    batch_size: 1,
-    dims: 512,
-    max_tokens: 8192,
-    name: "Jina-v2-small-en",
-    description: "Local, 8,192 tokens, 512 dim",
-    adapter: "transformers"
-  },
-  "nomic-ai/nomic-embed-text-v1.5": {
-    id: "nomic-ai/nomic-embed-text-v1.5",
-    batch_size: 1,
-    dims: 256,
-    max_tokens: 8192,
-    name: "Nomic-embed-text-v1.5",
-    description: "Local, 8,192 tokens, 256 dim",
-    adapter: "transformers"
-  },
-  "Xenova/bge-small-en-v1.5": {
-    id: "Xenova/bge-small-en-v1.5",
-    batch_size: 1,
-    dims: 384,
-    max_tokens: 512,
-    name: "BGE-small",
-    description: "Local, 512 tokens, 384 dim",
-    adapter: "transformers"
-  },
-  "nomic-ai/nomic-embed-text-v1": {
-    id: "nomic-ai/nomic-embed-text-v1",
-    batch_size: 1,
-    dims: 768,
-    max_tokens: 2048,
-    name: "Nomic-embed-text",
-    description: "Local, 2,048 tokens, 768 dim",
-    adapter: "transformers"
-  }
-};
 
 // smart_embed_model.js
 var SmartEmbedModel = class extends SmartModel {
@@ -435,6 +367,7 @@ var SmartEmbedModel = class extends SmartModel {
    */
   constructor(opts = {}) {
     super(opts);
+    __publicField(this, "scope_name", "smart_embed_model");
   }
   /**
    * Count tokens in an input string
@@ -493,40 +426,26 @@ var SmartEmbedModel = class extends SmartModel {
   get batch_size() {
     return this.adapter.batch_size || 1;
   }
-  /** @returns {Object} Map of available embedding models */
-  get models() {
-    return models_default;
-  }
-  /** @returns {string} Default model key if none specified */
-  get default_model_key() {
-    return "TaylorAI/bge-micro-v2";
-  }
   /**
    * Get settings configuration schema
    * @returns {Object} Settings configuration object
    */
   get settings_config() {
     const _settings_config = {
-      model_key: {
-        name: "Embedding Model",
+      adapter: {
+        name: "Embedding Model Platform",
         type: "dropdown",
-        description: "Select an embedding model.",
-        options_callback: "embed_model.get_embedding_model_options",
-        callback: "embed_model_changed",
-        default: "TaylorAI/bge-micro-v2"
-      },
-      "[EMBED_MODEL].min_chars": {
-        name: "Minimum Embedding Length",
-        type: "number",
-        description: "Minimum length of note to embed.",
-        placeholder: "Enter number ex. 300"
+        description: "Select an embedding model platform.",
+        options_callback: "get_platforms_as_options",
+        callback: "adapter_changed",
+        default: this.constructor.defaults.adapter
       },
       ...this.adapter.settings_config || {}
     };
-    return this.process_settings_config(_settings_config, "embed_model");
+    return this.process_settings_config(_settings_config);
   }
   process_setting_key(key) {
-    return key.replace(/\[EMBED_MODEL\]/g, this.model_key);
+    return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
   /**
    * Get available embedding model options
@@ -546,7 +465,7 @@ var SmartEmbedModel = class extends SmartModel {
   }
 };
 __publicField(SmartEmbedModel, "defaults", {
-  model_key: "TaylorAI/bge-micro-v2"
+  adapter: "transformers"
 });
 
 // ../smart-model/adapters/_adapter.js
@@ -615,6 +534,46 @@ var SmartModelAdapter = class {
    */
   get adapter_settings() {
     return this.model.adapter_settings;
+  }
+  /**
+   * Get the models.
+   * @returns {Object} Map of model objects
+   */
+  get models() {
+    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0) return this.adapter_config.models;
+    else {
+      return {};
+    }
+  }
+  /**
+   * Get available models from the API.
+   * @abstract
+   * @param {boolean} [refresh=false] - Whether to refresh cached models
+   * @returns {Promise<Object>} Map of model objects
+   */
+  async get_models(refresh = false) {
+    throw new Error("get_models not implemented");
+  }
+  /**
+   * Validate the parameters for get_models.
+   * @returns {boolean|Array<Object>} True if parameters are valid, otherwise an array of error objects
+   */
+  validate_get_models_params() {
+    return true;
+  }
+  /**
+   * Get available models as dropdown options synchronously.
+   * @returns {Array<Object>} Array of model options.
+   */
+  get_models_as_options_sync() {
+    const models = this.models;
+    const params_valid = this.validate_get_models_params();
+    if (params_valid !== true) return params_valid;
+    if (!Object.keys(models || {}).length) {
+      this.get_models(true);
+      return [{ value: "", name: "No models currently available" }];
+    }
+    return Object.values(models).map((model2) => ({ value: model2.id, name: model2.name || model2.id })).sort((a, b) => a.name.localeCompare(b.name));
   }
   /**
    * Set the adapter's state.
@@ -688,6 +647,18 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
   async embed_batch(inputs) {
     throw new Error("embed_batch method not implemented");
   }
+  get settings_config() {
+    return {
+      "[ADAPTER].model_key": {
+        name: "Embedding Model",
+        type: "dropdown",
+        description: "Select an embedding model.",
+        options_callback: "adapter.get_models_as_options_sync",
+        callback: "model_changed",
+        default: this.constructor.defaults.default_model
+      }
+    };
+  }
   get dims() {
     return this.model_config.dims;
   }
@@ -710,8 +681,23 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
     return this.model.opts.batch_size || this.model_config.batch_size || 1;
   }
 };
+/**
+ * @override in sub-class with adapter-specific default configurations
+ * @property {string} id - The adapter identifier
+ * @property {string} description - Human-readable description
+ * @property {string} type - Adapter type ("API")
+ * @property {string} endpoint - API endpoint
+ * @property {string} adapter - Adapter identifier
+ * @property {string} default_model - Default model to use
+ */
+__publicField(SmartEmbedAdapter, "defaults", {});
 
 // adapters/transformers.js
+var transformers_defaults = {
+  adapter: "transformers",
+  description: "Transformers",
+  default_model: "TaylorAI/bge-micro-v2"
+};
 var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
   /**
    * Create transformers adapter instance
@@ -849,15 +835,109 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
   get settings_config() {
     return transformers_settings_config;
   }
+  /**
+   * Get available models (hardcoded list)
+   * @returns {Promise<Object>} Map of model objects
+   */
+  get_models() {
+    return Promise.resolve(this.models);
+  }
+  get models() {
+    return transformers_models;
+  }
+};
+__publicField(SmartEmbedTransformersAdapter, "defaults", transformers_defaults);
+var transformers_models = {
+  "TaylorAI/bge-micro-v2": {
+    "id": "TaylorAI/bge-micro-v2",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "BGE-micro-v2",
+    "description": "Local, 512 tokens, 384 dim (recommended)",
+    "adapter": "transformers"
+  },
+  "TaylorAI/gte-tiny": {
+    "id": "TaylorAI/gte-tiny",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "GTE-tiny",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Mihaiii/Ivysaur": {
+    "id": "Mihaiii/Ivysaur",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Ivysaur",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "andersonbcdefg/bge-small-4096": {
+    "id": "andersonbcdefg/bge-small-4096",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 4096,
+    "name": "BGE-small-4K",
+    "description": "Local, 4,096 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Xenova/jina-embeddings-v2-base-zh": {
+    "id": "Xenova/jina-embeddings-v2-base-zh",
+    "batch_size": 1,
+    "dims": 512,
+    "max_tokens": 8192,
+    "name": "Jina-v2-base-zh-8K",
+    "description": "Local, 8,192 tokens, 512 dim, Chinese/English bilingual",
+    "adapter": "transformers"
+  },
+  "Xenova/jina-embeddings-v2-small-en": {
+    "id": "Xenova/jina-embeddings-v2-small-en",
+    "batch_size": 1,
+    "dims": 512,
+    "max_tokens": 8192,
+    "name": "Jina-v2-small-en",
+    "description": "Local, 8,192 tokens, 512 dim",
+    "adapter": "transformers"
+  },
+  "nomic-ai/nomic-embed-text-v1.5": {
+    "id": "nomic-ai/nomic-embed-text-v1.5",
+    "batch_size": 1,
+    "dims": 256,
+    "max_tokens": 8192,
+    "name": "Nomic-embed-text-v1.5",
+    "description": "Local, 8,192 tokens, 256 dim",
+    "adapter": "transformers"
+  },
+  "Xenova/bge-small-en-v1.5": {
+    "id": "Xenova/bge-small-en-v1.5",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "BGE-small",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "nomic-ai/nomic-embed-text-v1": {
+    "id": "nomic-ai/nomic-embed-text-v1",
+    "batch_size": 1,
+    "dims": 768,
+    "max_tokens": 2048,
+    "name": "Nomic-embed-text",
+    "description": "Local, 2,048 tokens, 768 dim",
+    "adapter": "transformers"
+  }
 };
 var transformers_settings_config = {
-  "[EMBED_MODEL].gpu_batch_size": {
+  "[ADAPTER].gpu_batch_size": {
     name: "GPU Batch Size",
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter number ex. 10"
   },
-  "legacy_transformers": {
+  "[ADAPTER].legacy_transformers": {
     name: "Legacy Transformers (no GPU)",
     type: "toggle",
     description: "Use legacy transformers (v2) instead of v3.",
