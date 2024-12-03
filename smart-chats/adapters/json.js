@@ -1,11 +1,11 @@
-import { SmartThreadDataAdapter } from "./_adapter.js";
+import { ThreadSourceAdapter } from "./_adapter.js";
 
 /**
- * @class SmartThreadJsonDataAdapter
- * @extends SmartThreadDataAdapter
+ * @class EnvJsonThreadSourceAdapter
+ * @extends ThreadSourceAdapter
  * @description for persisting OpenAI chat completion responses to JSON files
  */
-export class SmartThreadJsonDataAdapter extends SmartThreadDataAdapter {
+export class EnvJsonThreadSourceAdapter extends ThreadSourceAdapter {
   static extension = 'json';
   extension = 'json';
   to_source_data(){

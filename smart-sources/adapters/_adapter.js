@@ -18,9 +18,9 @@ export class SourceAdapter {
   async import() { this.throw_not_implemented('import'); }
   async append(content) { this.throw_not_implemented('append'); }
   async update(full_content, opts = {}) { this.throw_not_implemented('update'); }
-  async _update(content) { this.throw_not_implemented('_update'); }
+  // async _update(content) { this.throw_not_implemented('_update'); }
   async read(opts = {}) { this.throw_not_implemented('read'); }
-  async _read() { this.throw_not_implemented('_read'); }
+  // async _read() { this.throw_not_implemented('_read'); }
   async remove() { this.throw_not_implemented('remove'); }
   async move_to(entity_ref) { this.throw_not_implemented('move_to'); }
   async merge(content, opts = {}) { this.throw_not_implemented('merge'); }

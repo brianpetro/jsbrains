@@ -3,7 +3,7 @@
  * @description Base adapter class for chat data format conversions.
  * Provides interface for converting between internal format and various chat formats.
  */
-export class SmartThreadDataAdapter {
+export class ThreadSourceAdapter {
   /**
    * @constructor
    * @param {SmartThread} item - The SmartThread instance this adapter is attached to

@@ -1,14 +1,13 @@
 import { increase_heading_depth } from "../utils/increase_heading_depth.js";
-import { TextSourceAdapter } from "./text.js";
+import { FileSourceAdapter } from "./file.js";
 import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { get_line_range } from "../utils/get_line_range.js";
 import { block_read, block_update, block_destroy } from "../blocks/markdown_crud.js";
 
-export class MarkdownSourceAdapter extends TextSourceAdapter {
+export class MarkdownSourceAdapter extends FileSourceAdapter {
   get fs() { return this.source_collection.fs; }
   get data() { return this.item.data; }
-  get file_path() { return this.item.file_path; }
   get source() { return this.item.source ? this.item.source : this.item; }
 
   async import() {
@@ -75,10 +74,10 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
       await this.merge(full_content, { mode: "append_blocks" });
     }
   }
-
   async _update(content) {
-    await this.fs.write(this.file_path, content);
+    await super.update(content);
   }
+
 
   async read(opts = {}) {
     let content = await this._read();
@@ -97,10 +96,10 @@ export class MarkdownSourceAdapter extends TextSourceAdapter {
     
     return content;
   }
-
   async _read() {
-    return await this.fs.read(this.file_path);
+    return await super.read();
   }
+
 
   async remove() {
     await this.fs.remove(this.file_path);
