@@ -47,6 +47,11 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
         type: "number",
         description: "Enter the maximum number of input tokens for the chat model.",
       },
+      "[CHAT_ADAPTER].api_key": {
+        name: 'API Key',
+        type: "text",
+        description: "Enter the API key for the chat model.",
+      },
     };
   }
 }
