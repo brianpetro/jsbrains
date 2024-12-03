@@ -9,17 +9,18 @@ export async function build_html(collection, opts = {}) {
   return `<div id="sc-lookup-view">
     <div class="sc-top-bar">
       <button class="sc-fold-toggle">${this.get_icon_html(collection.settings.expanded_view ? 'fold-vertical' : 'unfold-vertical')}</button>
-      <button class="sc-search">${this.get_icon_html('search')}</button>
     </div>
-    <div class="sc-search-container">
+    <div class="sc-container">
       <h2>Smart Lookup</h2>
-      <div class="sc-search-input">
+      <div class="sc-textarea-container">
         <textarea
           id="query"
           name="query"
           placeholder="Describe what you're looking for (e.g., 'PKM strategies', 'story elements', 'personal AI alignment')"
         ></textarea>
-        <button id="search">${this.get_icon_html('search')}</button>
+        <div class="sc-textarea-btn-container">
+          <button class="send-button">${this.get_icon_html('search')}</button>
+        </div>
       </div>
       <p>Use semantic (embeddings) search to surface relevant notes. Results are sorted by similarity to your query. Note: returns different results than lexical (keyword) search.</p>
     </div>
@@ -54,44 +55,57 @@ export async function render(collection, opts = {}) {
 export async function post_process(collection, frag, opts = {}) {
   const query_input = frag.querySelector('#query');
   const results_container = frag.querySelector('.sc-list');
-  const render_search = async (search_text, results_container) => {
-    const results = await collection.lookup({ hypotheticals: [search_text] });
+  const render_lookup = async (query, results_container) => {
+    const results = await collection.lookup({ hypotheticals: [query] });
     results_container.innerHTML = ''; // Clear previous results
     const results_frag = await render_results.call(this, results, opts);
     Array.from(results_frag.children).forEach((elm) => results_container.appendChild(elm));
   }
-  if(opts.search_text){
-    query_input.value = opts.search_text;
-    await render_search(opts.search_text, results_container);
-  }
   
-  const search_button = frag.querySelector('#search');
-  search_button.addEventListener('click', async (event) => {
-    const container = event.target.closest('#sc-lookup-view');
-    const search_text = query_input.value.trim();
-    if (search_text) {
-      await render_search(search_text, results_container);
+  // Add debounced auto-submit functionality
+  let timeout;
+  query_input.addEventListener('input', (event) => {
+    clearTimeout(timeout);
+    const query = event.target.value.trim();
+    if (query) {
+      timeout = setTimeout(async () => {
+        await render_lookup(query, results_container);
+      }, 500);
     }
   });
 
-  // Fold toggle functionality
+  if(opts.query){
+    query_input.value = opts.query;
+    await render_lookup(opts.query, results_container);
+  }
+  
+  const send_button = frag.querySelector('.send-button');
+  send_button.addEventListener('click', async (event) => {
+    clearTimeout(timeout); // Clear any pending auto-submit
+    const query = query_input.value.trim();
+    if (query) {
+      await render_lookup(query, results_container);
+    }
+  });
+
   const fold_toggle = frag.querySelector('.sc-fold-toggle');
-  fold_toggle.addEventListener('click', (event) => {
+  fold_toggle.addEventListener('click', async (event) => {
     const container = event.target.closest('#sc-lookup-view');
     const expanded = collection.settings.expanded_view;
-    container.querySelectorAll(".sc-result").forEach((elm) => {
+    const results = container.querySelectorAll(".sc-result");
+    
+    for (const elm of results) {
       if (expanded) {
         elm.classList.add("sc-collapsed");
       } else {
-        elm.classList.remove("sc-collapsed");
-        const collection_key = elm.dataset.collection;
-        const entity = collection.get(elm.dataset.path);
-        entity.render_item(elm.querySelector("li"));
+        elm.click();
       }
-    });
+    }
+    
     collection.settings.expanded_view = !expanded;
     fold_toggle.innerHTML = this.get_icon_html(collection.settings.expanded_view ? 'fold-vertical' : 'unfold-vertical');
+    fold_toggle.setAttribute('aria-label', collection.settings.expanded_view ? 'Fold all' : 'Unfold all');
   });
-  return frag;
 
+  return frag;
 }
