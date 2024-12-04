@@ -26,6 +26,12 @@ test('returns true if folder contains parentheses', t => {
   const userInput = 'This is a /folder (reference)/';
   t.true(contains_folder_reference(userInput));
 });
+// should return false if contained in a link like [[folder/subfolder/this.md]]
+test('returns false if contained in a link like [[folder/subfolder/this.md]]', t => {
+  const folders = ['/folder/subfolder/'];
+  const user_input = 'This is a [[folder/subfolder/this.md]] link';
+  t.false(contains_folder_reference(user_input), 'should return false if contained in a link like [[folder/subfolder/this.md]]');
+});
 
 // extract_folder_references
 test('returns an array of folder references found in the user input', t => {
@@ -39,6 +45,14 @@ test('returns an array of folder references found in the user input', t => {
 test('returns an empty array if no folder references are found in the user input', t => {
   const folders = ['/folder/subfolder/', '/folder/'];
   const user_input = 'This is a normal text';
+  const expected = [];
+  const result = extract_folder_references(folders, user_input);
+  t.deepEqual(result, expected);
+});
+
+test('returns empty array if folder is in a link like [[folder/subfolder/this.md]]', t => {
+  const folders = ['/folder/subfolder/'];
+  const user_input = 'This is a [[folder/subfolder/this.md]] link';
   const expected = [];
   const result = extract_folder_references(folders, user_input);
   t.deepEqual(result, expected);
