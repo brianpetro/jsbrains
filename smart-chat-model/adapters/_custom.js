@@ -54,4 +54,7 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
       },
     };
   }
+  validate_get_models_params() {
+    return true;
+  }
 }
