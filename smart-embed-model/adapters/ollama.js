@@ -138,7 +138,7 @@ export class SmartEmbedModelOllamaAdapter extends SmartEmbedModelApiAdapter {
       console.log('Available models:', model_data);
 
       this.adapter_settings.models = model_data; // Persist models
-      this.model.render_settings(); // Update settings UI
+      this.model.re_render_settings(); // Update settings UI
 
       return model_data;
     } catch (error) {

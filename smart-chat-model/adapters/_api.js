@@ -115,7 +115,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       const model_data = this.parse_model_data(await response.json());
       console.log('model_data', model_data);
       this.adapter_settings.models = model_data; // set to adapter_settings to persist
-      this.model.render_settings(); // re-render settings to update models dropdown
+      this.model.re_render_settings(); // re-render settings to update models dropdown
       return model_data;
     } catch (error) {
       console.error('Failed to fetch model data:', error);
