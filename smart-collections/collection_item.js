@@ -132,6 +132,14 @@ export class CollectionItem {
       console.error(err, err.stack);
     }
   }
+  async overwrite_saved_data(ajson = super.ajson) {
+    try{
+      // overwrite current file
+      await this.data_adapter.fs.write(this.data_path, ajson);
+    }catch(err){
+      console.error(err, err.stack);
+    }
+  }
   queue_load() { this._queue_load = true; }
   async load() {
     try{

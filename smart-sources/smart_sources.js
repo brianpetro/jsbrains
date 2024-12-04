@@ -80,8 +80,6 @@ export class SmartSources extends SmartEntities {
       source.delete();
     }
     
-    await this.process_save_queue();
-    
     // TEMP: Remove last_history from smart_sources
     Object.values(this.items).forEach(item => {
       if(item.data?.history?.length) item.data.history = null;
@@ -124,7 +122,7 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
     console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
     
-    await this.process_save_queue();
+    await this.process_save_queue(true); // pass true to overwrite saved data
     
     // Queue embedding for items with changed metadata
     const items_w_vec = Object.values(this.items).filter(item => item.vec);

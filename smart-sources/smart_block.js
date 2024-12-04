@@ -447,7 +447,7 @@ export class SmartBlock extends SmartEntity {
    * @deprecated Use `read` instead.
    * @returns {Promise<string>} A promise that resolves with the content of the block or "BLOCK NOT FOUND".
    */
-  async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }
+  async get_content() { return (await this.read()) || "BLOCK NOT FOUND (run \"Prune\" to remove)"; }
 
   /**
    * @deprecated Use `source` instead.

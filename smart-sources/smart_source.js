@@ -364,6 +364,13 @@ export class SmartSource extends SmartEntity {
       }
     });
   }
+  async overwrite_saved_data(ajson = null) {
+    if(!ajson) ajson = [
+      super.ajson,
+      ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
+    ].join("\n");
+    await super.overwrite_saved_data(ajson);
+  }
 
   /**
    * Handles errors during the load process.
@@ -652,7 +659,7 @@ export class SmartSource extends SmartEntity {
    * @deprecated Use `read` instead.
    * @returns {Promise<string>} A promise that resolves with the content of the block or "BLOCK NOT FOUND".
    */
-  async get_content() { return (await this.read()) || "BLOCK NOT FOUND"; }
+  async get_content() { return (await this.read()) || "SOURCE NOT FOUND (run \"Prune\" to remove)"; }
 
   /**
    * @deprecated Use `source` instead.

@@ -305,7 +305,7 @@ export class Collection {
    * Shows a notification during the save process.
    * @returns {Promise<void>}
    */
-  async process_save_queue() {
+  async process_save_queue(overwrite = false) {
     this.notices?.show('saving', "Saving " + this.collection_key + "...", { timeout: 0 });
     if(this._saving) return console.log("Already saving");
     this._saving = true;
@@ -313,7 +313,8 @@ export class Collection {
     const save_queue = Object.values(this.items).filter(item => item._queue_save);
     console.log("Saving " + this.collection_key + ": ", save_queue.length + " items");
     const time_start = Date.now();
-    await Promise.all(save_queue.map(item => item.save()));
+    if(overwrite) await Promise.all(save_queue.map(item => item.overwrite_saved_data()));
+    else await Promise.all(save_queue.map(item => item.save()));
     console.log("Saved " + this.collection_key + " in " + (Date.now() - time_start) + "ms");
     this._saving = false;
     this.notices?.remove('saving');
