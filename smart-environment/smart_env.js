@@ -214,7 +214,11 @@ export class SmartEnv {
     if(!this._components[scope_name]?.[component_key]){
       try{
         if(!this._components[scope_name]) this._components[scope_name] = {};
-        this._components[scope_name][component_key] = this.opts.components[scope_name][component_key].bind(this.init_module('smart_view'));
+        if(this.opts.components[scope_name]?.[component_key]){
+          this._components[scope_name][component_key] = this.opts.components[scope_name][component_key].bind(this.init_module('smart_view'));
+        }else{
+          console.warn(`SmartEnv: component ${component_key} not found for scope ${scope_name}`);
+        }
       }catch(e){
         console.error('Error getting component', e);
         console.log(`scope_name: ${scope_name}; component_key: ${component_key}; this.opts.components: ${Object.keys(this.opts.components || {}).join(', ')}; this.opts.components[scope_name]: ${Object.keys(this.opts.components[scope_name] || {}).join(', ')}`);
