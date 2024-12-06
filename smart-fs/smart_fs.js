@@ -102,8 +102,7 @@ class SmartFs {
       if (file.type === 'file') {
         this.files[file.path] = file;
         this.file_paths.push(file.path);
-      }
-      if (file.type === 'folder') {
+      } else if (file.type === 'folder') {
         this.folders[file.path] = file;
         this.folder_paths.push(file.path);
       }
