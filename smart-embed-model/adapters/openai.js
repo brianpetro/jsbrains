@@ -111,11 +111,6 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
     return SmartEmbedOpenAIResponseAdapter;
   }
 
-  /** @returns {string} OpenAI API key */
-  get api_key() {
-    return this.settings.openai_api_key;
-  }
-
   /** @returns {number} Maximum tokens per input */
   get max_tokens() {
     return this.model_config.max_tokens || 8191;

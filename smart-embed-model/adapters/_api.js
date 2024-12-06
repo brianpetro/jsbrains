@@ -50,7 +50,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
    * @returns {string} API key
    */
   get api_key() {
-    return this.settings.api_key || this.model_config.api_key;
+    return this.adapter_settings.api_key || this.settings.api_key || this.model_config.api_key;
   }
 
   /**

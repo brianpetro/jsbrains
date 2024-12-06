@@ -88,7 +88,9 @@ import { SmartEmbedOpenAIAdapter } from 'smart-embed-model/adapters/openai';
 const model = new SmartEmbedModel({
   model_key: 'text-embedding-3-small',
   settings: {
-    openai_api_key: 'YOUR_API_KEY'
+    openai: {
+      api_key: 'YOUR_API_KEY'
+    }
   },
   adapters: {
     openai: SmartEmbedOpenAIAdapter
