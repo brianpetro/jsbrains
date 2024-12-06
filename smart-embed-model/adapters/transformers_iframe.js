@@ -33,7 +33,7 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
       this.use_gpu = false;
     }
     else this.connector = this.connector
-      .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2')
+      .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.1')
     ;
   }
 
