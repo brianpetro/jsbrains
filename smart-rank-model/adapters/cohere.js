@@ -1,4 +1,4 @@
-import { SmartRankModelApiAdapter, SmartRankModelRequestAdapter, SmartRankModelResponseAdapter } from './api.js';
+import { SmartRankModelApiAdapter, SmartRankModelRequestAdapter, SmartRankModelResponseAdapter } from './_api.js';
 
 /**
  * Adapter for Cohere's ranking API.
@@ -9,7 +9,7 @@ import { SmartRankModelApiAdapter, SmartRankModelRequestAdapter, SmartRankModelR
 export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
   /**
    * Get the request adapter class.
-   * @returns {SmartRankCohereRequestAdapter} The request adapter class
+   * @returns {typeof SmartRankCohereRequestAdapter} The request adapter class
    */
   get req_adapter() {
     return SmartRankCohereRequestAdapter;
@@ -17,19 +17,28 @@ export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
 
   /**
    * Get the response adapter class.
-   * @returns {SmartRankCohereResponseAdapter} The response adapter class
+   * @returns {typeof SmartRankCohereResponseAdapter} The response adapter class
    */
   get res_adapter() {
     return SmartRankCohereResponseAdapter;
   }
 
-  /** @override */
-  async load() { 
+  /**
+   * Load the adapter
+   * @async
+   * @returns {Promise<void>}
+   */
+  async load() {
     // Implement any initialization if necessary
-    return true; 
+    return;
   }
 
-  /** @override */
+  /**
+   * Rank documents using Cohere API
+   * @param {string} query - The query
+   * @param {Array<string>} documents - Documents to rank
+   * @returns {Promise<Array<Object>>} Ranked documents
+   */
   async rank(query, documents) {
     const request_adapter = new this.req_adapter(this, query, documents);
     const request_params = request_adapter.to_platform();
@@ -45,7 +54,7 @@ export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
   }
 
   /**
-   * Override the handle_request_err method for Cohere-specific error handling.
+   * Handle API request errors with specific logic for Cohere
    * @param {Error|Object} error - Error object
    * @param {Object} req - Original request
    * @param {number} retries - Number of retries attempted
@@ -75,10 +84,9 @@ class SmartRankCohereRequestAdapter extends SmartRankModelRequestAdapter {
    */
   prepare_request_body() {
     return {
-      model: "rerank-english-v2.0",
       query: this.query,
       documents: this.documents,
-      // top_n: 3, // Optional: specify if needed
+      model: "rerank-english-v2.0",
     };
   }
 }
@@ -98,10 +106,9 @@ class SmartRankCohereResponseAdapter extends SmartRankModelResponseAdapter {
       console.error("Invalid response format from Cohere API:", this.response);
       return [];
     }
-    return this.response.results.map((result, index) => ({
+    return this.response.results.map((result) => ({
       index: result.document_index,
       score: result.score,
-      // Add additional fields if necessary
     }));
   }
 }

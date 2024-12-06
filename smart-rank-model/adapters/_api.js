@@ -1,35 +1,29 @@
+import { SmartRankAdapter } from "./_adapter.js";
 import { SmartHttpRequest } from "smart-http-request";
-import { SmartRankModelAdapter } from "./_adapter.js";
 import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
 
 /**
- * Base API adapter class for SmartRankModel.
+ * Base adapter class for API-based ranking models (e.g., Cohere)
  * Handles HTTP requests and response processing for remote ranking services.
  * @abstract
  * @class SmartRankModelApiAdapter
- * @extends SmartRankModelAdapter
+ * @extends SmartRankAdapter
  */
-export class SmartRankModelApiAdapter extends SmartRankModelAdapter {
-  
+export class SmartRankModelApiAdapter extends SmartRankAdapter {
   /**
-   * Get the request adapter class.
-   * @returns {SmartRankModelRequestAdapter} The request adapter class
+   * Get the API endpoint URL
+   * @returns {string} Endpoint URL
    */
-  get req_adapter() {
-    return SmartRankModelRequestAdapter;
-  }
-
-  /**
-   * Get the response adapter class.
-   * @returns {SmartRankModelResponseAdapter} The response adapter class
-   */
-  get res_adapter() {
-    return SmartRankModelResponseAdapter;
-  }
-
-  /** @returns {string} API endpoint URL */
   get endpoint() {
     return this.model_config.endpoint;
+  }
+
+  /**
+   * Get the API key for authentication
+   * @returns {string} API key
+   */
+  get api_key() {
+    return this.adapter_settings.api_key || this.settings.api_key || this.model_config.api_key;
   }
 
   /**
@@ -38,29 +32,17 @@ export class SmartRankModelApiAdapter extends SmartRankModelAdapter {
    */
   get http_adapter() {
     if (!this._http_adapter) {
-      if (this.model.opts.http_adapter)
-        this._http_adapter = this.model.opts.http_adapter;
-      else
-        this._http_adapter = new SmartHttpRequest({
-          adapter: SmartHttpRequestFetchAdapter,
-        });
+      if (this.model.opts.http_adapter) this._http_adapter = this.model.opts.http_adapter;
+      else this._http_adapter = new SmartHttpRequest({ adapter: SmartHttpRequestFetchAdapter });
     }
     return this._http_adapter;
-  }
-
-  /**
-   * Get API key for authentication
-   * @returns {string} API key
-   */
-  get api_key() {
-    return this.settings.api_key || this.model_config.api_key;
   }
 
   /**
    * Make an API request with retry logic
    * @param {Object} req - Request configuration
    * @param {number} [retries=0] - Number of retries attempted
-   * @returns {Promise<Object>} API response
+   * @returns {Promise<Object>} API response JSON
    */
   async request(req, retries = 0) {
     try {
@@ -70,9 +52,6 @@ export class SmartRankModelApiAdapter extends SmartRankModelAdapter {
         ...req,
       });
       const resp_json = await this.get_resp_json(resp);
-      if (this.is_error(resp_json)) {
-        return await this.handle_request_err(resp_json, req, retries);
-      }
       return resp_json;
     } catch (error) {
       return await this.handle_request_err(error, req, retries);
@@ -111,7 +90,7 @@ export class SmartRankModelApiAdapter extends SmartRankModelAdapter {
    * @returns {Promise<boolean>} True if API key is valid
    */
   async validate_api_key() {
-    const resp = await this.rank("test query", ["Test document 1", "Test document 2"]);
+    const resp = await this.rank("test query", ["Test document"]);
     return Array.isArray(resp) && resp.length > 0 && resp[0].score !== null;
   }
 }
@@ -122,10 +101,10 @@ export class SmartRankModelApiAdapter extends SmartRankModelAdapter {
  */
 export class SmartRankModelRequestAdapter {
   /**
-   * @constructor
+   * Create request adapter instance
    * @param {SmartRankModelApiAdapter} adapter - The SmartRankModelApiAdapter instance
    * @param {string} query - The query string
-   * @param {Array<string>} documents - Array of document strings
+   * @param {Array<string>} documents - Array of documents
    */
   constructor(adapter, query, documents) {
     this.adapter = adapter;
@@ -138,11 +117,13 @@ export class SmartRankModelRequestAdapter {
    * @returns {Object} Headers object
    */
   get_headers() {
-    return {
+    let headers = {
       "Content-Type": "application/json",
-      ...(this.adapter.adapter_config.headers || {}),
-      "Authorization": `Bearer ${this.adapter.api_key}`,
     };
+    if (this.adapter.api_key) {
+      headers["Authorization"] = `Bearer ${this.adapter.api_key}`;
+    }
+    return headers;
   }
 
   /**
@@ -161,6 +142,7 @@ export class SmartRankModelRequestAdapter {
    * Prepare request body for API call
    * @abstract
    * @returns {Object} Request body object
+   * @throws {Error} If not implemented by subclass
    */
   prepare_request_body() {
     throw new Error("prepare_request_body not implemented");
@@ -184,7 +166,7 @@ export class SmartRankModelResponseAdapter {
 
   /**
    * Convert response to standard format
-   * @returns {Array<Object>} Array of ranking results
+   * @returns {Array<Object>} Array of ranking results {index, score, ...}
    */
   to_standard() {
     return this.parse_response();
@@ -194,9 +176,9 @@ export class SmartRankModelResponseAdapter {
    * Parse API response
    * @abstract
    * @returns {Array<Object>} Parsed ranking results
+   * @throws {Error} If not implemented by subclass
    */
   parse_response() {
     throw new Error("parse_response not implemented");
   }
 }
-

@@ -1,89 +1,101 @@
-import { SmartRankModelAdapter } from "./_adapter.js";
+import { SmartRankMessageAdapter } from "./_message.js";
 
-export class SmartRankIframeAdapter extends SmartRankModelAdapter {
-  constructor(smart_rank) {
-    super(smart_rank);
+/**
+ * Adapter for running ranking models in an iframe
+ * Provides isolation and separate context for model execution.
+ * @class SmartRankIframeAdapter
+ * @extends SmartRankMessageAdapter
+ */
+export class SmartRankIframeAdapter extends SmartRankMessageAdapter {
+  /**
+   * Create iframe adapter instance
+   * @param {SmartRankModel} model - Parent model instance
+   */
+  constructor(model) {
+    super(model);
+    /** @type {HTMLIFrameElement|null} */
     this.iframe = null;
-    this.message_queue = {};
-    this.message_id = 0;
-    this.connector = null; // override in subclass
-    this.origin = window.location.origin;
+    /** @type {string} */
+    this.origin = (typeof window !== 'undefined') ? window.location.origin : 'http://localhost';
+    /** @type {string} */
     this.iframe_id = `smart_rank_iframe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  /**
+   * Initialize iframe and load model
+   * @async
+   * @returns {Promise<void>}
+   */
   async load() {
+    if (typeof document === 'undefined') {
+      throw new Error('SmartRankIframeAdapter requires a browser environment');
+    }
+
+    const existing_iframe = document.getElementById(this.iframe_id);
+    if (existing_iframe) existing_iframe.remove();
+
     // Create and append iframe
     this.iframe = document.createElement('iframe');
     this.iframe.style.display = 'none';
     this.iframe.id = this.iframe_id;
+    this.iframe.sandbox = 'allow-scripts allow-same-origin';
     document.body.appendChild(this.iframe);
 
     // Set up message listener
-    window.addEventListener('message', this._handle_message.bind(this));
+    window.addEventListener('message', this._handle_window_message.bind(this));
 
-    // Load the iframe content
+    // Load iframe content
     this.iframe.srcdoc = `
-          <html>
-            <body>
-              <script type="module">
-                ${this.connector}
-                // Set up a message listener in the iframe
-                window.addEventListener('message', async (event) => {
-                    if (event.origin !== '${this.origin}' || event.data.iframe_id !== '${this.iframe_id}') return console.log('message ignored (listener)', event);
-                    // Process the message and send the response back
-                    const response = await process_message(event.data);
-                    window.parent.postMessage({ ...response, iframe_id: '${this.iframe_id}' }, '${this.origin}');
-                });
-              </script>
-            </body>
-          </html>
-        `;
+      <html>
+        <body>
+          <script type="module">
+            ${this.connector}
+            window.addEventListener('message', async (event) => {
+              if (event.origin !== '${this.origin}' || event.data.iframe_id !== '${this.iframe_id}') return;
+              const response = await process_message(event.data);
+              window.parent.postMessage({ ...response, iframe_id: '${this.iframe_id}' }, '${this.origin}');
+            });
+          </script>
+        </body>
+      </html>
+    `;
 
-    // Wait for iframe to load
     await new Promise(resolve => this.iframe.onload = resolve);
 
-    // Initialize the model in the iframe
-    await this._send_message('load', this.smart_rank.opts);
+    const load_opts = {
+      model_key: this.model.model_key,
+      use_gpu: this.model.opts.use_gpu || false,
+      adapters: null,
+      settings: null,
+    };
+    await this._send_message('load', load_opts);
+
     return new Promise(resolve => {
       const check_model_loaded = () => {
-        if (this.smart_rank.model_loaded) {
-          resolve();
-        } else {
-          setTimeout(check_model_loaded, 100);
-        }
+        if (this.model.model_loaded) resolve();
+        else setTimeout(check_model_loaded, 100);
       };
       check_model_loaded();
     });
   }
 
-  async _send_message(method, params) {
-    return new Promise((resolve, reject) => {
-      const id = this.message_id++;
-      this.message_queue[id] = { resolve, reject };
-      this.iframe.contentWindow.postMessage({ method, params, id, iframe_id: this.iframe_id }, this.origin);
-    });
-  }
-
-  _handle_message(event) {
+  /**
+   * Handle messages from the iframe
+   * @private
+   * @param {MessageEvent} event - Message event
+   */
+  _handle_window_message(event) {
     if (event.origin !== this.origin || event.data.iframe_id !== this.iframe_id) return;
-
     const { id, result, error } = event.data;
-    if (result?.model_loaded) {
-      console.log('model loaded');
-      this.smart_rank.model_loaded = true;
-    }
-    if (this.message_queue[id]) {
-      if (error) {
-        this.message_queue[id].reject(new Error(error));
-      } else {
-        this.message_queue[id].resolve(result);
-      }
-      delete this.message_queue[id];
-    }
+    this._handle_message_result(id, result, error);
   }
 
-  async rank(query, documents) {
-    return this._send_message('rank', { query, documents });
+  /**
+   * Post message to iframe
+   * @protected
+   * @param {Object} message_data - Message to send
+   */
+  _post_message(message_data) {
+    this.iframe.contentWindow.postMessage({ ...message_data, iframe_id: this.iframe_id }, this.origin);
   }
-
 }

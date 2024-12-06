@@ -1,41 +1,61 @@
-# Smart Model
+# smart-model
+
+A flexible base class for building "smart" models that handle configuration, state management, adapter loading, and model operations. Designed to provide a standardized interface, it simplifies creating specialized model classes (e.g., language models, ranking models) with different backends and adapters.
 
 Base class for smart-*-model packages.
 
+## Features
+- Base `SmartModel` class manages:
+  - Adapter lifecycle (load/unload)
+  - Settings configuration and schema processing
+  - State transitions (`unloaded`, `loading`, `loaded`, `unloading`)
+- Extensible architecture for multiple adapters
+- Centralized settings management and re-rendering triggers
 
-## Usage
+## Folder Structure
+```
+smart-model
+├── adapters
+│   └── _adapter.js        # Base adapter class
+├── components
+│   └── settings.js        # Helper for rendering settings UIs
+├── smart_model.js          # Core SmartModel class
+├── test
+│   └── smart_model.test.js # Unit tests for SmartModel
+└── package.json
+```
 
-1. Create an instance of `SmartModel` with the required configuration options:
+## Getting Started
 ```javascript
+import { SmartModel } from 'smart-model';
+
 const model = new SmartModel({
-    adapters: { mock: MockAdapter },
-    settings: { model_key: 'mock_model' },
-    model_config: { adapter: 'mock' }
+  adapters: { myAdapter: MyAdapterClass },
+  settings: { model_key: 'my_model' },
+  model_config: { adapter: 'myAdapter' }
 });
+await model.initialize(); // Loads adapter
 ```
 
-2. Initialize the model (loads the specified adapter):
+## Extending
+Subclass `SmartModel` to add domain logic:
 ```javascript
-await model.initialize();
+class MyCustomModel extends SmartModel {
+  get default_model_key() { return 'my_model'; }
+  async custom_method() {
+    return await this.invoke_adapter_method('some_adapter_method');
+  }
+}
 ```
 
-3. Use adapter-specific methods:
-```javascript
-const result = await model.invoke_adapter_method('mock_method', 'test input');
-console.log(result); // "Processed: test input"
+## Adapters
+Adapters bridge between `SmartModel` and external APIs or local logic. Create a subclass of `SmartModelAdapter` and implement necessary methods (e.g., `load`, `rank`, `invoke_api_call`).
+
+## Testing
+Run tests:
+```
+npm test
 ```
 
-
-
-
-## State Transitions
-
-The `SmartModel` instance has the following states:
-- `unloaded`: No adapter is loaded.
-- `loading`: Adapter is in the process of being loaded.
-- `loaded`: Adapter has been successfully loaded.
-- `unloading`: Adapter is in the process of being unloaded.
-
-These states are managed automatically when calling `load` and `unload`.
-
-
+## License
+MIT

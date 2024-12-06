@@ -2,15 +2,12 @@ import { SmartRankModel } from '../smart_rank_model.js';
 import { SmartRankTransformersAdapter } from '../adapters/transformers.js';
 
 let model = null;
-let smart_env = {
-  smart_rank_active_models: {},
-  opts: {
-    smart_rank_adapters: {
-      transformers: SmartRankTransformersAdapter
-    }
-  }
-}
 
+/**
+ * Process incoming messages and perform ranking.
+ * @param {Object} data - Message data containing method, params, id, iframe_id
+ * @returns {Promise<Object>} Response containing id, result, and iframe_id
+ */
 async function process_message(data) {
   const { method, params, id, iframe_id } = data;
   try {
@@ -21,7 +18,13 @@ async function process_message(data) {
         break;
       case 'load':
         console.log('load', params);
-        model = await SmartRankModel.load(smart_env, { adapter: 'transformers', model_key: params.model_key, ...params });
+        model = new SmartRankModel({
+          ...params,
+          adapters: { transformers: SmartRankTransformersAdapter },
+          adapter: 'transformers',
+          settings: {}
+        });
+        await model.load();
         result = { model_loaded: true };
         break;
       case 'rank':
@@ -37,4 +40,6 @@ async function process_message(data) {
     return { id, error: error.message, iframe_id };
   }
 }
+
+// Initialize if needed
 process_message({ method: 'init' });
