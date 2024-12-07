@@ -135,13 +135,4 @@ export class SmartRankModel extends SmartModel {
     return this.process_settings_config(_settings_config);
   }
 
-
-  /**
-   * Reload ranking model.
-   */
-  reload_model() {
-    if (this.adapter && typeof this.adapter.load === 'function') {
-      this.adapter.load();
-    }
-  }
 }

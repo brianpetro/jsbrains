@@ -34,7 +34,7 @@ export function build_html(threads_collection, opts = {}) {
             ${this.get_icon_html('x')}
           </button>
         </div>
-        <div class="settings-container"></div>
+        <div class="sc-settings"></div>
       </div>
       <div class="sc-thread">
         <!-- Thread messages will be inserted here -->
@@ -71,7 +71,7 @@ export async function post_process(threads_collection, frag, opts) {
   const chat_box = frag.querySelector('.sc-thread');
   const settings_button = frag.querySelector('button[title="Chat Settings"]');
   const overlay_container = frag.querySelector(".smart-chat-overlay");
-  const settings_container = overlay_container.querySelector(".settings-container");
+  const settings_container = overlay_container.querySelector(".sc-settings");
   
   // Initialize thread if needed
   let thread;

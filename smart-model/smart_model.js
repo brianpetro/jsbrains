@@ -347,6 +347,7 @@ export class SmartModel {
   }
 
   re_render_settings() {
+    console.log('re_render_settings', this.opts);
     if(typeof this.opts.re_render_settings === 'function') this.opts.re_render_settings();
     else console.warn('re_render_settings is not a function (must be passed in model opts)');
   }
