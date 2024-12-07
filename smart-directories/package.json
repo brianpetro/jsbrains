@@ -1,18 +1,17 @@
 {
-  "name": "smart-groups",
+  "name": "smart-directories",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "version": "0.0.1",
   "type": "module",
-  "description": "Easy to manage embedded groups.",
+  "description": "Easy to manage embedded directories.",
   "main": "main.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
     "embeddings",
-    "clustering",
-    "groups"
+    "directories"
   ],
   "repository": {
     "type": "git",
