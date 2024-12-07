@@ -288,13 +288,13 @@ var SmartModel = class {
   }
   /**
    * Process an individual setting key.
-   * @param {string} key - Setting key to process
-   * @returns {string} Processed setting key
+   * Example: replace placeholders with actual adapter names.
+   * @param {string} key - The setting key with placeholders.
+   * @returns {string} Processed setting key.
    */
   process_setting_key(key) {
-    return key;
+    return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
-  // override in sub-class if needed for prefixes and variable replacements
   re_render_settings() {
     if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
     else console.warn("re_render_settings is not a function (must be passed in model opts)");
@@ -443,39 +443,18 @@ var SmartRankModel = class extends SmartModel {
    */
   get settings_config() {
     const _settings_config = {
-      model_key: {
-        name: "Ranking Model",
+      adapter: {
+        name: "Ranking Model Platform",
         type: "dropdown",
-        description: "Select a ranking model to use.",
-        options_callback: "get_ranking_model_options",
-        callback: "reload_model",
-        default: this.default_model_key
-      },
-      "[RANKING_ADAPTER].cohere_api_key": {
-        name: "Cohere API Key",
-        type: "password",
-        description: "Enter your Cohere API key for ranking.",
-        placeholder: "Enter Cohere API Key"
+        description: "Select a ranking model platform.",
+        options_callback: "get_platforms_as_options",
+        callback: "adapter_changed",
+        default: this.constructor.defaults.adapter
       },
       // Add adapter-specific settings here
       ...this.adapter.settings_config || {}
     };
-    return this.process_settings_config(_settings_config, "ranking_adapter");
-  }
-  /**
-   * Process setting keys to replace placeholders with actual adapter names.
-   * @param {string} key - The setting key with placeholders.
-   * @returns {string} Processed setting key.
-   */
-  process_setting_key(key) {
-    return key.replace(/\[RANKING_ADAPTER\]/g, this.adapter_name);
-  }
-  /**
-   * Get available ranking model options.
-   * @returns {Array<Object>} Array of model options with value and name.
-   */
-  get_ranking_model_options() {
-    return Object.keys(this.adapters).map((key) => ({ value: key, name: key }));
+    return this.process_settings_config(_settings_config);
   }
   /**
    * Reload ranking model.
@@ -593,7 +572,7 @@ var SmartModelAdapter = class {
    * Get available models as dropdown options synchronously.
    * @returns {Array<Object>} Array of model options.
    */
-  get_models_as_options_sync() {
+  get_models_as_options() {
     const models = this.models;
     const params_valid = this.validate_get_models_params();
     if (params_valid !== true) return params_valid;
@@ -651,6 +630,18 @@ var SmartRankAdapter = class extends SmartModelAdapter {
   async rank(query, documents) {
     throw new Error("rank method not implemented");
   }
+  get settings_config() {
+    return {
+      "[ADAPTER].model_key": {
+        name: "Ranking Model",
+        type: "dropdown",
+        description: "Select a ranking model to use.",
+        options_callback: "adapter.get_models_as_options",
+        callback: "reload_model",
+        default: this.constructor.defaults.default_model
+      }
+    };
+  }
 };
 
 // adapters/transformers.js
@@ -658,6 +649,28 @@ var transformers_defaults = {
   adapter: "transformers",
   description: "Transformers",
   default_model: "jinaai/jina-reranker-v1-tiny-en"
+};
+var transformers_models = {
+  "jinaai/jina-reranker-v1-tiny-en": {
+    id: "jinaai/jina-reranker-v1-tiny-en",
+    adapter: "transformers",
+    model_key: "jinaai/jina-reranker-v1-tiny-en"
+  },
+  "jinaai/jina-reranker-v1-turbo-en": {
+    id: "jinaai/jina-reranker-v1-turbo-en",
+    adapter: "transformers",
+    model_key: "jinaai/jina-reranker-v1-turbo-en"
+  },
+  "mixedbread-ai/mxbai-rerank-xsmall-v1": {
+    id: "mixedbread-ai/mxbai-rerank-xsmall-v1",
+    adapter: "transformers",
+    model_key: "mixedbread-ai/mxbai-rerank-xsmall-v1"
+  },
+  "Xenova/bge-reranker-base": {
+    id: "Xenova/bge-reranker-base",
+    adapter: "transformers",
+    model_key: "Xenova/bge-reranker-base"
+  }
 };
 var SmartRankTransformersAdapter = class extends SmartRankAdapter {
   /**
@@ -719,6 +732,9 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
       score,
       ...return_documents ? { text: documents[i] } : {}
     })).sort((a, b) => b.score - a.score).slice(0, top_k);
+  }
+  get models() {
+    return transformers_models;
   }
 };
 __publicField(SmartRankTransformersAdapter, "defaults", transformers_defaults);

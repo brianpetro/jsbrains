@@ -75,4 +75,10 @@ export class SmartDirectories extends SmartEntities {
     }
     return frag;
   }
+
+  // disable embed_model for SmartDirectories
+  get embed_model() { return null; }
+  async process_embed_queue() {
+    console.log("skipping embed queue processing for SmartDirectories");
+  }
 }

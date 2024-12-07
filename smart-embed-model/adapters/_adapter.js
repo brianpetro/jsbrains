@@ -72,7 +72,7 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
         name: 'Embedding Model',
         type: "dropdown",
         description: "Select an embedding model.",
-        options_callback: 'adapter.get_models_as_options_sync',
+        options_callback: 'adapter.get_models_as_options',
         callback: 'model_changed',
         default: this.constructor.defaults.default_model,
       },

@@ -121,42 +121,20 @@ export class SmartRankModel extends SmartModel {
    */
   get settings_config() {
     const _settings_config = {
-      model_key: {
-        name: 'Ranking Model',
+      adapter: {
+        name: 'Ranking Model Platform',
         type: "dropdown",
-        description: "Select a ranking model to use.",
-        options_callback: 'get_ranking_model_options',
-        callback: 'reload_model',
-        default: this.default_model_key,
-      },
-      "[RANKING_ADAPTER].cohere_api_key": {
-        name: 'Cohere API Key',
-        type: "password",
-        description: "Enter your Cohere API key for ranking.",
-        placeholder: "Enter Cohere API Key",
+        description: "Select a ranking model platform.",
+        options_callback: 'get_platforms_as_options',
+        callback: 'adapter_changed',
+        default: this.constructor.defaults.adapter,
       },
       // Add adapter-specific settings here
       ...(this.adapter.settings_config || {}),
     };
-    return this.process_settings_config(_settings_config, 'ranking_adapter');
+    return this.process_settings_config(_settings_config);
   }
 
-  /**
-   * Process setting keys to replace placeholders with actual adapter names.
-   * @param {string} key - The setting key with placeholders.
-   * @returns {string} Processed setting key.
-   */
-  process_setting_key(key) {
-    return key.replace(/\[RANKING_ADAPTER\]/g, this.adapter_name);
-  }
-
-  /**
-   * Get available ranking model options.
-   * @returns {Array<Object>} Array of model options with value and name.
-   */
-  get_ranking_model_options() {
-    return Object.keys(this.adapters).map(key => ({ value: key, name: key }));
-  }
 
   /**
    * Reload ranking model.

@@ -93,18 +93,7 @@ export class SmartEntities extends Collection {
    * @returns {string} The embedding model key.
    */
   get embed_model_key() {
-    return this.settings?.embed_model?.model_key || "TaylorAI/bge-micro-v2";
-  }
-
-  /**
-   * Gets the settings for the embedding model.
-   * @readonly
-   * @returns {Object} The embedding model settings.
-   */
-  get embed_model_settings() {
-    if (!this.settings.embed_model) this.settings.embed_model = {};
-    if (!this.settings.embed_model?.[this.embed_model_key]) this.settings.embed_model[this.embed_model_key] = {};
-    return this.settings.embed_model[this.embed_model_key];
+    return this.embed_model?.model_key;
   }
 
   /**
@@ -136,7 +125,6 @@ export class SmartEntities extends Collection {
    * @returns {Object|null} The embedding model instance or null if none.
    */
   get embed_model() {
-    if (this.embed_model_key === "None") return null;
     if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
       settings: this.settings.embed_model,
       adapters: this.env.opts.modules.smart_embed_model?.adapters,
@@ -289,8 +277,8 @@ export class SmartEntities extends Collection {
   async lookup(params = {}) {
     const { hypotheticals = [] } = params;
     if (!hypotheticals?.length) return { error: "hypotheticals is required" };
-    if (!this.smart_embed) return { error: "Embedding search is not enabled." };
-    const hyp_vecs = await this.smart_embed.embed_batch(hypotheticals.map(h => ({ embed_input: h })));
+    if (!this.embed_model) return { error: "Embedding search is not enabled." };
+    const hyp_vecs = await this.embed_model.embed_batch(hypotheticals.map(h => ({ embed_input: h })));
     const limit = params.filter?.limit
       || params.k // DEPRECATED: for backwards compatibility
       || this.env.settings.lookup_k
@@ -567,43 +555,43 @@ export const connections_filter_config = {
     "name": "Show Full Path",
     "type": "toggle",
     "description": "Show full path in view.",
-    "callback": "refresh_smart_view"
+    "callback": "re_render"
   },
   "smart_view_filter.render_markdown": {
     "name": "Render Markdown",
     "type": "toggle",
     "description": "Render markdown in results.",
-    "callback": "refresh_smart_view"
+    "callback": "re_render"
   },
   "smart_view_filter.results_limit": {
     "name": "Results Limit",
     "type": "number",
     "description": "Limit the number of results.",
     "default": 20,
-    "callback": "refresh_smart_view"
+    "callback": "re_render"
   },
   "smart_view_filter.exclude_inlinks": {
     "name": "Exclude Inlinks",
     "type": "toggle",
     "description": "Exclude inlinks.",
-    "callback": "refresh_smart_view_filter"
+    "callback": "re_render_settings"
   },
   "smart_view_filter.exclude_outlinks": {
     "name": "Exclude Outlinks",
     "type": "toggle",
     "description": "Exclude outlinks.",
-    "callback": "refresh_smart_view_filter"
+    "callback": "re_render_settings"
   },
   "smart_view_filter.include_filter": {
     "name": "Include Filter",
     "type": "text",
     "description": "Require that results match this value.",
-    "callback": "refresh_smart_view"
+    "callback": "re_render"
   },
   "smart_view_filter.exclude_filter": {
     "name": "Exclude Filter",
     "type": "text",
     "description": "Exclude results that match this value.",
-    "callback": "refresh_smart_view"
+    "callback": "re_render"
   }
 }

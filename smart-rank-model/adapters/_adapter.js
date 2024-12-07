@@ -30,4 +30,17 @@ export class SmartRankAdapter extends SmartModelAdapter {
   async rank(query, documents) {
     throw new Error('rank method not implemented');
   }
+
+  get settings_config() {
+    return {
+      "[ADAPTER].model_key": {
+        name: 'Ranking Model',
+        type: "dropdown",
+        description: "Select a ranking model to use.",
+        options_callback: 'adapter.get_models_as_options',
+        callback: 'reload_model',
+        default: this.constructor.defaults.default_model,
+      },
+    };
+  }
 }

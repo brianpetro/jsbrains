@@ -14,18 +14,22 @@ export const transformers_defaults = {
 
 export const transformers_models = {
   'jinaai/jina-reranker-v1-tiny-en': {
+    id: 'jinaai/jina-reranker-v1-tiny-en',
     adapter: 'transformers',
     model_key: 'jinaai/jina-reranker-v1-tiny-en',
   },
   'jinaai/jina-reranker-v1-turbo-en': {
+    id: 'jinaai/jina-reranker-v1-turbo-en',
     adapter: 'transformers',
     model_key: 'jinaai/jina-reranker-v1-turbo-en',
   },
   'mixedbread-ai/mxbai-rerank-xsmall-v1': {
+    id: 'mixedbread-ai/mxbai-rerank-xsmall-v1',
     adapter: 'transformers',
     model_key: 'mixedbread-ai/mxbai-rerank-xsmall-v1',
   },
   'Xenova/bge-reranker-base': {
+    id: 'Xenova/bge-reranker-base',
     adapter: 'transformers',
     model_key: 'Xenova/bge-reranker-base',
   },
@@ -84,7 +88,7 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
       // pipeline_opts.dtype = 'fp32';
     } else {
       console.log("[Transformers] Using CPU");
-      // env.backends.onnx.wasm.numThreads = 8;
+      // env.backends.onnx.wasm.numThreads = 8; // breaks on windows
     }
 
     this.model_instance = await AutoModelForSequenceClassification.from_pretrained(this.model.model_key, pipeline_opts);
@@ -126,4 +130,10 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
       .sort((a, b) => b.score - a.score)
       .slice(0, top_k);
   }
+
+
+  get models() {
+    return transformers_models;
+  }
+
 }

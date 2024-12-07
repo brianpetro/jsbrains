@@ -29,4 +29,10 @@ export class SmartMessages extends SmartBlocks {
    * @override
    */
   init() { }
+  
+  // disable embed_model for SmartMessages
+  get embed_model() { return null; }
+  async process_embed_queue() {
+    console.log("skipping embed queue processing for SmartMessages");
+  }
 }

@@ -25,7 +25,7 @@ export class EntityAdapter {
    * @readonly
    * @returns {string} The key for the embedding model.
    */
-  get embed_model_key() { return this.smart_entity.embed_model_key; }
+  get embed_model_key() { return this.smart_entity.embed_model?.model_key; }
 
   /**
    * Retrieves the vector representation for this entity's embedding.

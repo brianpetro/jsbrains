@@ -338,10 +338,13 @@ export class SmartModel {
 
   /**
    * Process an individual setting key.
-   * @param {string} key - Setting key to process
-   * @returns {string} Processed setting key
+   * Example: replace placeholders with actual adapter names.
+   * @param {string} key - The setting key with placeholders.
+   * @returns {string} Processed setting key.
    */
-  process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
+  process_setting_key(key) {
+    return key.replace(/\[ADAPTER\]/g, this.adapter_name);
+  }
 
   re_render_settings() {
     if(typeof this.opts.re_render_settings === 'function') this.opts.re_render_settings();

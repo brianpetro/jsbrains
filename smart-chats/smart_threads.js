@@ -192,4 +192,10 @@ export class SmartThreads extends SmartSources {
     }
     return this._fs;
   }
+
+  // disable embed_model for SmartThreads
+  get embed_model() { return null; }
+  async process_embed_queue() {
+    console.log("skipping embed queue processing for SmartThreads");
+  }
 }

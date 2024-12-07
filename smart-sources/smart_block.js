@@ -56,7 +56,10 @@ export class SmartBlock extends SmartEntity {
    * @returns {boolean} `true` if data was updated successfully.
    */
   update_data(data) {
-    if (this.should_clear_embeddings(data)) this.data.embeddings = {};
+    if (this.should_clear_embeddings(data)){
+      console.log(`Clearing embeddings for ${this.path}`);
+      this.data.embeddings = {};
+    }
     if (!this.vec) this._embed_input += data.text; // Store text for embedding
     delete data.text; // Clear data.text to prevent saving text
     super.update_data(data);
@@ -70,7 +73,7 @@ export class SmartBlock extends SmartEntity {
    */
   should_clear_embeddings(data) {
     if(this.is_new) return true;
-    if(this.embed_model && this.embed_model_key !== "None" && this.vec?.length !== this.embed_model.dims) return true;
+    if(this.embed_model && this.vec?.length !== this.embed_model.model_config.dims) return true;
     if(this.data.length !== data.length) return true;
     return false;
   }

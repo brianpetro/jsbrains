@@ -288,13 +288,13 @@ var SmartModel = class {
   }
   /**
    * Process an individual setting key.
-   * @param {string} key - Setting key to process
-   * @returns {string} Processed setting key
+   * Example: replace placeholders with actual adapter names.
+   * @param {string} key - The setting key with placeholders.
+   * @returns {string} Processed setting key.
    */
   process_setting_key(key) {
-    return key;
+    return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
-  // override in sub-class if needed for prefixes and variable replacements
   re_render_settings() {
     if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
     else console.warn("re_render_settings is not a function (must be passed in model opts)");
@@ -565,7 +565,7 @@ var SmartModelAdapter = class {
    * Get available models as dropdown options synchronously.
    * @returns {Array<Object>} Array of model options.
    */
-  get_models_as_options_sync() {
+  get_models_as_options() {
     const models = this.models;
     const params_valid = this.validate_get_models_params();
     if (params_valid !== true) return params_valid;
@@ -653,7 +653,7 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
         name: "Embedding Model",
         type: "dropdown",
         description: "Select an embedding model.",
-        options_callback: "adapter.get_models_as_options_sync",
+        options_callback: "adapter.get_models_as_options",
         callback: "model_changed",
         default: this.constructor.defaults.default_model
       }

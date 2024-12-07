@@ -103,7 +103,7 @@ export class SmartModelAdapter {
    * Get available models as dropdown options synchronously.
    * @returns {Array<Object>} Array of model options.
    */
-  get_models_as_options_sync() {
+  get_models_as_options() {
     const models = this.models;
     const params_valid = this.validate_get_models_params();
     if(params_valid !== true) return params_valid;

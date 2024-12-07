@@ -211,11 +211,13 @@ export class SmartEnv {
   }
   get_component(component_key, scope) {
     const scope_name = scope.collection_key ?? scope.scope_name;
-    if(!this._components[scope_name]?.[component_key]){
+    const _cache_key = scope_name ? `${scope_name}-${component_key}` : component_key;
+    if(!this._components[_cache_key]){
       try{
-        if(!this._components[scope_name]) this._components[scope_name] = {};
         if(this.opts.components[scope_name]?.[component_key]){
-          this._components[scope_name][component_key] = this.opts.components[scope_name][component_key].bind(this.init_module('smart_view'));
+          this._components[_cache_key] = this.opts.components[scope_name][component_key].bind(this.init_module('smart_view'));
+        }else if(this.opts.components[component_key]){
+          this._components[_cache_key] = this.opts.components[component_key].bind(this.init_module('smart_view'));
         }else{
           console.warn(`SmartEnv: component ${component_key} not found for scope ${scope_name}`);
         }
@@ -224,7 +226,7 @@ export class SmartEnv {
         console.log(`scope_name: ${scope_name}; component_key: ${component_key}; this.opts.components: ${Object.keys(this.opts.components || {}).join(', ')}; this.opts.components[scope_name]: ${Object.keys(this.opts.components[scope_name] || {}).join(', ')}`);
       }
     }
-    return this._components[scope_name][component_key];
+    return this._components[_cache_key];
   }
   
   get smart_view() {
@@ -358,6 +360,15 @@ export class SmartEnv {
     await this.smart_sources.fs.init();
     this.smart_sources.render_settings();
   }
+
+  // /**
+  //  * Returns the config object for the SmartEnv instance.
+  //  * @returns {Object} The config object.
+  //  */
+  // get config() {
+  //   // TODO: merge custom actions and components from smart-env folder and cache resulting object
+  //   return this.opts;
+  // }
 
   // DEPRECATED
   /**

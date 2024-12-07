@@ -7,6 +7,12 @@ import { SmartRankModelApiAdapter, SmartRankModelRequestAdapter, SmartRankModelR
  * @extends SmartRankModelApiAdapter
  */
 export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
+  static defaults = {
+    adapter: 'cohere',
+    description: 'Cohere',
+    default_model: 'rerank-v3.5',
+    endpoint: 'https://api.cohere.ai/v2/rerank'
+  }
   /**
    * Get the request adapter class.
    * @returns {typeof SmartRankCohereRequestAdapter} The request adapter class
@@ -29,7 +35,7 @@ export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
    * @returns {Promise<void>}
    */
   async load() {
-    // Implement any initialization if necessary
+    this.model.model_loaded = true;
     return;
   }
 
@@ -70,6 +76,35 @@ export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
     console.error("Cohere API Error:", error);
     return null;
   }
+  get settings_config() {
+    return {
+      ...super.settings_config,
+      "[ADAPTER].api_key": {
+        name: 'Cohere API Key',
+        type: "password",
+        description: "Enter your Cohere API key for ranking.",
+        placeholder: "Enter Cohere API Key",
+      },
+    };
+  }
+  get models() {
+    return cohere_models;
+  }
+}
+
+export const cohere_models = {
+  'rerank-v3.5': {
+    id: 'rerank-v3.5',
+    description: 'State-of-the-art performance in English and non-English languages. Supports documents and semi-structured data (JSON). Context length: 4096 tokens'
+  },
+  'rerank-english-v3.0': {
+    id: 'rerank-english-v3.0',
+    description: 'English language documents and semi-structured data (JSON). Context length: 4096 tokens'
+  },
+  'rerank-multilingual-v3.0': {
+    id: 'rerank-multilingual-v3.0',
+    description: 'Non-English documents and semi-structured data (JSON). Supports same languages as embed-multilingual-v3.0. Context length: 4096 tokens'
+  }
 }
 
 /**
@@ -86,7 +121,9 @@ class SmartRankCohereRequestAdapter extends SmartRankModelRequestAdapter {
     return {
       query: this.query,
       documents: this.documents,
-      model: "rerank-english-v2.0",
+      model: this.adapter.model_key,
+      top_n: 1000,
+      max_tokens_per_doc: 4096
     };
   }
 }
@@ -107,8 +144,8 @@ class SmartRankCohereResponseAdapter extends SmartRankModelResponseAdapter {
       return [];
     }
     return this.response.results.map((result) => ({
-      index: result.document_index,
-      score: result.score,
+      index: result.index,
+      score: result.relevance_score,
     }));
   }
 }
