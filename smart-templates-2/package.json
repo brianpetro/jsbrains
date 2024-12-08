@@ -1,0 +1,38 @@
+{
+  "name": "smart-templates",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.2",
+  "type": "module",
+  "description": "Smart templates for generating content with AI.",
+  "main": "smart_templates.js",
+  "keywords": [
+    "templates",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "dependencies": {
+    "smart-chat-model": "file:../smart-chat-model",
+    "smart-sources": "file:../smart-sources"
+  },
+  "devDependencies": {
+    "ava": "^6.1.3",
+    "dotenv": "^16.4.5"
+  },
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "ava": {
+    "files": [
+      "smart_templates.test.js",
+      "**/*.test.js"
+    ]
+  }
+}
