@@ -542,9 +542,9 @@ export class SmartEntities extends Collection {
  */
 export const settings_config = {
   "min_chars": {
-    name: 'Minimum length of entity to embed',
+    name: 'Minimum length',
     type: "number",
-    description: "Minimum length of entity to embed.",
+    description: "Minimum length of entity to embed (in characters).",
     placeholder: "Enter number ex. 300",
     default: 300,
   },

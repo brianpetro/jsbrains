@@ -690,7 +690,7 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
   async load() {
     console.log("TransformersAdapter initializing");
     console.log(this.model.model_key);
-    const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.1");
+    const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true

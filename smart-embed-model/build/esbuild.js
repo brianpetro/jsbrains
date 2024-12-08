@@ -14,7 +14,7 @@ async function build_transformers_iframe_connector() {
       target: 'es2020',
       outfile: join(__dirname, '../connectors/transformers_iframe.js'),
       write: false,
-      external: ['@xenova/transformers'],
+      external: ['@huggingface/transformers'],
     });
 
     const outputContent = result.outputFiles[0].text;
@@ -37,11 +37,11 @@ async function build_transformers_worker_connector() {
       target: 'es2020',
       outfile: join(__dirname, '../connectors/transformers_worker.js'),
       write: false,
-      external: ['@xenova/transformers'],
+      external: ['@huggingface/transformers'],
     });
 
     const connector = result.outputFiles[0].text
-      .replace('@xenova/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.1')
+      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2')
     ;
     writeFileSync(join(__dirname, '../connectors/transformers_worker.js'), connector);
     console.log('Build worker completed successfully.');

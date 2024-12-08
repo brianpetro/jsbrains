@@ -69,7 +69,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers() {
-    const { pipeline, env, AutoTokenizer } = await import('@xenova/transformers');
+    const { pipeline, env, AutoTokenizer } = await import('@huggingface/transformers');
 
     env.allowLocalModels = false;
     const pipeline_opts = {

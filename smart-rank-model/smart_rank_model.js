@@ -50,8 +50,11 @@ export class SmartRankModel extends SmartModel {
    * @type {Object}
    */
   static defaults = {
-    adapter: 'transformers', // Default to transformers adapter
-    model_key: 'jinaai/jina-reranker-v1-tiny-en',
+    adapter: 'cohere',
+    model_key: 'rerank-v3.5',
+    // LOCAL RERANKER CURRENTLY TOO SLOW FOR DEFAULT
+    // adapter: 'transformers', // Default to transformers adapter
+    // model_key: 'jinaai/jina-reranker-v1-tiny-en',
   };
 
 
