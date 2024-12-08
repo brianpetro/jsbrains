@@ -81,7 +81,7 @@ import {
  */
 export class SmartEmbedModelOllamaAdapter extends SmartEmbedModelApiAdapter {
   static defaults = {
-    description: "Ollama (Local Embedding)",
+    description: "Ollama (Local)",
     type: "API",
     endpoint: "http://localhost:11434/api/embed",
     models_endpoint: "http://localhost:11434/api/tags",

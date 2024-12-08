@@ -7,7 +7,7 @@ import { SmartEmbedAdapter } from "./_adapter.js";
  */
 export const transformers_defaults = {
   adapter: 'transformers',
-  description: 'Transformers',
+  description: 'Transformers (Local, built-in)',
   default_model: 'TaylorAI/bge-micro-v2',
 };
 /**
@@ -247,10 +247,10 @@ export const transformers_models = {
   "nomic-ai/nomic-embed-text-v1.5": {
     "id": "nomic-ai/nomic-embed-text-v1.5",
     "batch_size": 1,
-    "dims": 256,
-    "max_tokens": 8192,
+    "dims": 768,
+    "max_tokens": 2048,
     "name": "Nomic-embed-text-v1.5",
-    "description": "Local, 8,192 tokens, 256 dim",
+    "description": "Local, 8,192 tokens, 768 dim",
     "adapter": "transformers"
   },
   "Xenova/bge-small-en-v1.5": {

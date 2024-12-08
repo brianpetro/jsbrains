@@ -57,7 +57,6 @@ export class SmartBlock extends SmartEntity {
    */
   update_data(data) {
     if (this.should_clear_embeddings(data)){
-      console.log(`Clearing embeddings for ${this.path}`);
       this.data.embeddings = {};
     }
     if (!this.vec) this._embed_input += data.text; // Store text for embedding

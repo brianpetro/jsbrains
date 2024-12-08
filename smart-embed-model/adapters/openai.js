@@ -14,7 +14,7 @@ import cl100k_base from "../cl100k_base.json" assert { type: "json" };
 export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
   static defaults = {
     adapter: 'openai',
-    description: 'OpenAI',
+    description: 'OpenAI (API)',
     default_model: 'text-embedding-3-small',
     endpoint: 'https://api.openai.com/v1/embeddings',
   };
