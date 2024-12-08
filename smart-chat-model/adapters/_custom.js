@@ -1,4 +1,4 @@
-import { SmartChatModelApiAdapter } from './_api.js';
+import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter } from './_api.js';
 
 // Define local platforms
 const local_platforms = ['custom_local', 'ollama', 'lm_studio'];
@@ -8,6 +8,8 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
     description: "Custom API (Local or Remote, OpenAI format)",
     type: "API"
   }
+
+  req_adapter = SmartChatModelCustomRequestAdapter;
 
   get settings_config() {
     return {
@@ -56,5 +58,11 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
   }
   validate_get_models_params() {
     return true;
+  }
+}
+
+export class SmartChatModelCustomRequestAdapter extends SmartChatModelRequestAdapter {
+  get model() {
+    return this.adapter.model_config.model_name;
   }
 }
