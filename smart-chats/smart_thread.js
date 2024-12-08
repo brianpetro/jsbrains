@@ -8,8 +8,6 @@ import {
   extract_internal_embedded_links
 } from "./utils/internal_links";
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
-import { contains_system_prompt_ref, extract_system_prompt_ref } from "./utils/system_prompts";
-import { contains_markdown_image, extract_markdown_images } from "./utils/markdown_images";
 import { render as error_template } from "./components/error.js";
 /**
  * @class SmartThread

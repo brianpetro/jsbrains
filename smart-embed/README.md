@@ -1,1 +1,0 @@
-Moved to [smart-embed-model](https://github.com/brianpetro/jsbrains/tree/main/smart-embed-model)
