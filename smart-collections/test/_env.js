@@ -1,11 +1,11 @@
 import { CollectionItem } from '../main.js';
 import { Collection } from '../main.js';
-import { SmartCollectionTestDataAdapter } from '../adapters/_test.js';
+import { SingleJsonCollectionDataAdapter } from '../adapters/single_json.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
-
+import { SmartSettings } from '../../smart-settings/smart_settings.js';
 const __dirname = new URL('.', import.meta.url).pathname;
 
 class TestMain {
@@ -17,7 +17,9 @@ class TestMain {
       env_path: __dirname,
       env_data_dir: 'test',
       modules: {
-        smart_embed_model: SmartEmbedModel,
+        smart_settings: {
+          class: SmartSettings,
+        },
         smart_fs: {
           class: SmartFs,
           adapter: SmartFsTestAdapter,
@@ -26,7 +28,7 @@ class TestMain {
       collections: {
         collection: {
           class: Collection,
-          data_adapter: SmartCollectionTestDataAdapter,
+          data_adapter: SingleJsonCollectionDataAdapter,
         },
       },
       item_types: {
@@ -38,7 +40,6 @@ class TestMain {
 
 export async function load_test_env(t) {
   const main = new TestMain();
-  const env = new SmartEnv(main, main.smart_env_config);
-  await env.init();
+  const env = await SmartEnv.create(main, main.smart_env_config);
   t.context.env = env;
 }

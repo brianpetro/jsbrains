@@ -1,4 +1,4 @@
-import { SmartCollectionTestDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { SingleJsonCollectionDataAdapter } from '../../smart-collections/adapters/_test.js';
 import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SmartEntity } from '../smart_entity.js';
 import { SmartEntities } from '../smart_entities.js';
@@ -46,7 +46,7 @@ class TestMain {
       collections: {
         smart_entities: {
           class: SmartEntities,
-          data_adapter: SmartCollectionTestDataAdapter,
+          data_adapter: SingleJsonCollectionDataAdapter,
         },
       },
       item_types: {

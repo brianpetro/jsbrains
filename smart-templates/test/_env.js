@@ -1,4 +1,4 @@
-import { SmartCollectionTestDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { SingleJsonCollectionDataAdapter } from '../../smart-collections/adapters/_test.js';
 import { SourceTestAdapter } from 'smart-sources/adapters/_test.js';
 import { MarkdownSourceAdapter } from 'smart-sources/adapters/markdown.js';
 import { SmartSources, SmartSource, SmartBlocks, SmartBlock } from 'smart-sources';
@@ -89,7 +89,7 @@ class TestMain {
       collections: {
         // smart_sources: {
         //   class: SmartSources,
-        //   data_adapter: SmartCollectionTestDataAdapter,
+        //   data_adapter: SingleJsonCollectionDataAdapter,
         //   source_adapters: {
         //     test: SourceTestAdapter,
         //     md: SourceTestAdapter,
@@ -99,7 +99,7 @@ class TestMain {
         // smart_blocks: SmartBlocks,
         smart_templates: { // Include smart_templates collection
           class: SmartTemplates, // Ensure SmartTemplates is imported
-          data_adapter: SmartCollectionTestDataAdapter, // Use appropriate data adapter
+          data_adapter: SingleJsonCollectionDataAdapter, // Use appropriate data adapter
           template_adapters: {
             ejs: SmartTemplateEjsAdapter,
             md: SmartTemplateMarkdownAdapter,

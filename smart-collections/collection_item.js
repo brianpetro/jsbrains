@@ -3,20 +3,21 @@ import { collection_instance_name_from } from "./utils/collection_instance_name_
 import { deep_equal } from "./utils/deep_equal.js";
 
 /**
- * Represents an item within a collection, providing methods for data manipulation, validation, and interaction with its collection.
- * 
- * Key features:
- * - Supports nested item relationships (sub-items and linked items)
- * - Handles data persistence and change detection
- * - Provides lazy loading capabilities
- * - Manages item key syntax and validation
- * 
- * @see Smart Collection docs for detailed item architecture
+ * @class CollectionItem
+ *
+ * Represents an individual item within a `Collection`.
+ *
+ * **Key Features:**
+ * - Encapsulates data and behavior for a single item.
+ * - Supports lazy loading via `_queue_load`.
+ * - Provides data validation and sanitization before saving.
+ * - Can be filtered by a variety of key-based filters.
  */
 export class CollectionItem {
   /**
    * Default properties for an instance of CollectionItem.
-   * @returns {Object} Default data configuration.
+   * Override in subclasses to define different defaults.
+   * @returns {Object}
    */
   static get defaults() {
     return {
@@ -25,39 +26,44 @@ export class CollectionItem {
   }
 
   /**
-   * Creates an instance of CollectionItem.
-   * @param {Object} env - The central storage or context.
+   * @param {Object} env - The environment/context.
    * @param {Object|null} [data=null] - Initial data for the item.
    */
   constructor(env, data = null) {
     this.env = env;
     this.config = this.env?.config;
     this.merge_defaults();
+
     if (data) deep_merge(this.data, data);
-    if(!this.data.class_name) this.data.class_name = this.constructor.name;
+    if (!this.data.class_name) this.data.class_name = this.constructor.name;
   }
 
   /**
-   * Creates and initializes a new CollectionItem instance.
-   * @param {Object} env - The environment context.
-   * @param {Object} data - Initial data for the item.
-   * @returns {CollectionItem} The initialized item.
+   * Loads an item from data and initializes it.
+   * @param {Object} env
+   * @param {Object} data
+   * @returns {CollectionItem}
    */
-  static load(env, data){
+  static load(env, data) {
     const item = new this(env, data);
     item.init();
     return item;
   }
 
   /**
-   * Merges default properties from all classes in the inheritance chain.
+   * Merge default properties from the entire inheritance chain.
+   * @private
    */
   merge_defaults() {
     let current_class = this.constructor;
-    while (current_class) { // deep merge defaults
+    while (current_class) {
       for (let key in current_class.defaults) {
-        if (typeof current_class.defaults[key] === 'object') this[key] = { ...current_class.defaults[key], ...this[key] };
-        else this[key] = current_class.defaults[key];
+        const default_val = current_class.defaults[key];
+        if (typeof default_val === 'object') {
+          this[key] = { ...default_val, ...this[key] };
+        } else {
+          this[key] = (this[key] === undefined) ? default_val : this[key];
+        }
       }
       current_class = Object.getPrototypeOf(current_class);
     }
@@ -76,7 +82,7 @@ export class CollectionItem {
   }
 
   /**
-   * Ensures the item is loaded, implementing lazy loading pattern.
+   * Ensures the item is fully loaded if it was queued for loading.
    * @returns {Promise<void>}
    */
   async ensure_loaded() {
@@ -86,23 +92,24 @@ export class CollectionItem {
   }
 
   /**
-   * Updates the data of this item with new data.
-   * @param {Object} data - The new data for the item.
-   * @returns {boolean} True if data was successfully updated.
+   * Updates the item data and returns true if changed.
+   * @param {Object} data
+   * @returns {boolean} True if data changed.
    */
   update_data(data) {
     const sanitized_data = this.sanitize_data(data);
-    const changed = !deep_equal(this.data, sanitized_data);
+    const current_data = { ...this.data };
+    deep_merge(current_data, sanitized_data);
+    const changed = !deep_equal(this.data, current_data);
     if (!changed) return false;
-    deep_merge(this.data, sanitized_data);
+    this.data = current_data;
     return true;
   }
 
   /**
-   * Sanitizes the data of an item to ensure it can be safely saved.
-   * Handles CollectionItem references, arrays, and nested objects.
-   * @param {*} data - The data to sanitize.
-   * @returns {*} The sanitized data.
+   * Sanitizes data for saving. Ensures no circular references.
+   * @param {*} data
+   * @returns {*} Sanitized data.
    */
   sanitize_data(data) {
     if (data instanceof CollectionItem) return data.ref;
@@ -117,61 +124,86 @@ export class CollectionItem {
   }
 
   /**
-   * Initializes the item with input_data, potentially asynchronously.
-   * Handles interactions with other collection items.
+   * Initializes the item. Override as needed.
+   * @param {Object} [input_data] - Additional data that might be provided on creation.
    */
-  init() { }
+  init(input_data) { /* NO-OP by default */ }
 
+  /**
+   * Queues this item for saving.
+   */
   queue_save() { this._queue_save = true; }
-  async save(ajson=this.ajson) {
-    try{
+
+  /**
+   * Saves this item using its data adapter.
+   * @param {string} [ajson=this.ajson]
+   * @returns {Promise<void>}
+   */
+  async save(ajson = this.ajson) {
+    try {
       await this.data_adapter.save(this, ajson);
       this.init();
-    }catch(err){
+    } catch (err) {
       this._queue_save = true;
       console.error(err, err.stack);
     }
   }
-  async overwrite_saved_data(ajson = super.ajson) {
-    try{
-      // overwrite current file
+
+  /**
+   * Overwrites the saved data with current state.
+   * @param {string} [ajson=this.ajson]
+   * @returns {Promise<void>}
+   */
+  async overwrite_saved_data(ajson = this.ajson) {
+    try {
       await this.data_adapter.fs.write(this.data_path, ajson);
-    }catch(err){
+    } catch (err) {
       console.error(err, err.stack);
     }
   }
+
+  /**
+   * Queues this item for loading.
+   */
   queue_load() { this._queue_load = true; }
+
+  /**
+   * Loads this item using its data adapter.
+   * @returns {Promise<void>}
+   */
   async load() {
-    try{
+    try {
       await this.data_adapter.load(this);
       this.init();
-    }catch(err){
+    } catch (err) {
       this._load_error = err;
       this.on_load_error(err);
-      // console.error(err, err.stack);
     }
   }
-  on_load_error(err){
+
+  /**
+   * Handles load errors by re-queuing for load.
+   * Override if needed.
+   * @param {Error} err
+   */
+  on_load_error(err) {
     this.queue_load();
   }
 
   /**
-   * Validates the item's data before saving.
-   * Ensures key meets requirements:
-   * - Key exists and is not empty
-   * - Key is not 'undefined'
-   * - Key follows correct syntax for item type
-   * @returns {boolean} True if the data is valid for saving
+   * Validates the item before saving. Checks for presence and validity of key.
+   * @returns {boolean}
    */
   validate_save() {
-    if(!this.key) return false;
-    if(this.key.trim() === '') return false;
-    if(this.key === 'undefined') return false;
+    if (!this.key) return false;
+    if (this.key.trim() === '') return false;
+    if (this.key === 'undefined') return false;
     return true;
   }
 
   /**
-   * Deletes the item from its collection.
+   * Marks this item as deleted. This does not immediately remove it from memory,
+   * but queues a save that will result in the item being removed from persistent storage.
    */
   delete() {
     this.deleted = true;
@@ -237,72 +269,130 @@ export class CollectionItem {
   }
 
   /**
-   * Parses the item's data for any necessary processing or transformation. Placeholder for override in child classes.
+   * Parses item data for additional processing. Override as needed.
    */
-  parse() { }
+  parse() { /* NO-OP by default */ }
 
   /**
-   * Retrieves the collection name derived from the class name.
-   * @returns {string} The collection name.
+   * Derives the collection key from the class name.
+   * @returns {string}
    */
-  static get collection_key() { return collection_instance_name_from(this.name); }
+  static get collection_key() {
+    return collection_instance_name_from(this.name);
+  }
 
   /**
-   * Retrieves the collection name for the instance, either from data or the class method.
-   * @returns {string} The collection name.
+   * @returns {string} The collection key for this item.
    */
-  get collection_key() { return collection_instance_name_from(this.constructor.name); }
+  get collection_key() {
+    return collection_instance_name_from(this.constructor.name);
+  }
 
   /**
-   * Retrieves the collection this item belongs to.
-   * @returns {Object} The collection object.
+   * Retrieves the parent collection from the environment.
+   * @returns {Collection}
    */
-  get collection() { return this.env[this.collection_key]; }
+  get collection() {
+    return this.env[this.collection_key];
+  }
 
   /**
-   * Retrieves or generates the key for this item.
    * @returns {string} The item's key.
    */
-  get key() { return this.data?.key || this.get_key(); }
+  get key() {
+    return this.data?.key || this.get_key();
+  }
 
   /**
-   * Provides a reference object for this item, containing the collection name and key.
-   * @returns {Object} The reference object.
+   * A simple reference object for this item.
+   * @returns {{collection_key: string, key: string}}
    */
-  get ref() { return { collection_key: this.collection_key, key: this.key }; }
+  get ref() {
+    return { collection_key: this.collection_key, key: this.key };
+  }
 
   /**
-   * Retrieves string representation of the item, including its key and data.
-   * @returns {string} A string representing the item.
+   * Returns a line of AJSON (appendable JSON) representing this item.
+   * @returns {string}
    */
-  get ajson() { return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? 'null' : JSON.stringify(this.data)}`; }
-  get ajson_key() { return this.constructor.name + ":" + this.key; }
-  get data_adapter() { return this.collection.data_adapter; }
-  get multi_ajson_file_name() { return this.key.replace(/[\s\/\.]/g, '_').replace(".md", ""); }
-  get data_fs() { return this.collection.data_fs; }
-  get data_path() { return this.collection.data_dir + (this.data_fs?.sep || "/") + this.multi_ajson_file_name + '.ajson'; }
+  get ajson() {
+    return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? 'null' : JSON.stringify(this.data)}`;
+  }
 
-  // settings convenience methods
+  /**
+   * @returns {string} The AJSON key: ClassName:Key
+   */
+  get ajson_key() {
+    return this.constructor.name + ":" + this.key;
+  }
+
+  /**
+   * @returns {Object} The data adapter for this item's collection.
+   */
+  get data_adapter() { 
+    return this.collection.data_adapter; 
+  }
+
+  /**
+   * Generates a filename-friendly version of the item's key for storage.
+   * @returns {string}
+   */
+  get multi_ajson_file_name() {
+    return this.key.replace(/[\s\/\.]/g, '_').replace(".md", "");
+  }
+
+  /**
+   * @returns {Object} The filesystem adapter.
+   */
+  get data_fs() { 
+    return this.collection.data_fs; 
+  }
+
+  /**
+   * The path at which this item's data is stored.
+   * @returns {string}
+   */
+  get data_path() {
+    return this.collection.data_dir + (this.data_fs?.sep || "/") + this.multi_ajson_file_name + '.ajson';
+  }
+
+  /**
+   * Access to collection-level settings.
+   * @returns {Object}
+   */
   get settings() {
-    if(!this.env.settings[this.collection_key]) this.env.settings[this.collection_key] = {};
+    if (!this.env.settings[this.collection_key]) this.env.settings[this.collection_key] = {};
     return this.env.settings[this.collection_key];
   }
+
   set settings(settings) {
     this.env.settings[this.collection_key] = settings;
     this.env.smart_settings.save();
   }
 
-  // COMPONENTS
+  /**
+   * Render this item into a container using the item's component.
+   * @deprecated 2024-12-02 Use explicit component pattern from environment
+   * @param {HTMLElement} container
+   * @param {Object} opts
+   * @returns {Promise<HTMLElement>}
+   */
   async render_item(container, opts = {}) {
     const frag = await this.component.call(this.smart_view, this, opts);
     container.innerHTML = '';
     container.appendChild(frag);
     return container;
   }
+
+  /**
+   * @deprecated use env.smart_view
+   * @returns {Object}
+   */
   get smart_view() {
     if (!this._smart_view) this._smart_view = this.env.init_module('smart_view');
     return this._smart_view;
   }
+
   /**
    * Override in child classes to set the component for this item
    * @deprecated 2024-12-02

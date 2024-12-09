@@ -1,34 +1,39 @@
 import { CollectionItem } from './collection_item.js';
 import { deep_merge } from './helpers.js';
-import {render as render_settings_component} from "./components/settings.js";
+import { render as render_settings_component } from "./components/settings.js";
 
-const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor; // for checking if function is async
+const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
 /**
- * Base class representing a collection of items with various methods to manipulate and retrieve these items.
- * Provides core functionality for managing collections including CRUD operations, filtering, and settings management.
- * 
- * Key features:
- * - Maintains items in a flat key-instance structure for optimal performance
- * - Supports batch and queue processing patterns
- * - Handles collection-level data folder configuration
- * - Provides filtering and type detection capabilities
- * 
- * @see Smart Collection docs for detailed architecture and patterns
+ * @class Collection
+ *
+ * The `Collection` class represents a group of `CollectionItem` instances. It provides:
+ * - CRUD operations (create, update, delete) for items
+ * - Filtering and listing items
+ * - Loading and saving items via a data adapter
+ * - Rendering collection-level settings
+ *
+ * **Key Features:**
+ * - Maintains items in a flat key-to-instance structure for performance
+ * - Batch and queue processing for load/save operations
+ * - Data-driven configuration from environment
+ * - Supports filtering by various item key patterns
+ * - Supports rendering settings and using components pattern for UI
  */
 export class Collection {
   /**
    * Constructs a new Collection instance.
-   * @param {Object} env - The environment context containing configurations and adapters
-   * @param {Object} [opts={}] - Optional configuration settings
-   * @param {string} [opts.custom_collection_key] - Custom key to override default collection name
-   * @param {string} [opts.data_dir] - Custom data directory path
-   * @param {boolean} [opts.prevent_load_on_init] - Whether to prevent loading items during initialization
+   *
+   * @param {Object} env - The environment context containing configurations and adapters.
+   * @param {Object} [opts={}] - Optional configuration.
+   * @param {string} [opts.custom_collection_key] - Custom key to override default collection name.
+   * @param {string} [opts.data_dir] - Custom data directory path.
+   * @param {boolean} [opts.prevent_load_on_init] - Whether to prevent loading items on initialization.
    */
   constructor(env, opts = {}) {
     this.env = env;
     this.opts = opts;
-    if(opts.custom_collection_key) this.collection_key = opts.custom_collection_key;
+    if (opts.custom_collection_key) this.collection_key = opts.custom_collection_key;
     this.env[this.collection_key] = this;
     this.config = this.env.config;
     this.items = {};
@@ -40,9 +45,10 @@ export class Collection {
   }
 
   /**
-   * Initializes a new collection in the environment.
-   * @param {Object} env - The environment context
-   * @param {Object} [opts={}] - Optional configuration settings
+   * Initializes a new collection in the environment. Override in subclass if needed.
+   *
+   * @param {Object} env
+   * @param {Object} [opts={}]
    * @returns {Promise<void>}
    */
   static async init(env, opts = {}) {
@@ -52,372 +58,452 @@ export class Collection {
   }
 
   /**
-   * Gets the collection name derived from the class name.
-   * Converts camelCase to snake_case.
-   * @return {string} The collection name
+   * The unique collection key derived from the class name.
+   * @returns {string}
    */
-  static get collection_key() { return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+  static get collection_key() {
+    return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  }
 
-  // INSTANCE METHODS
+  /**
+   * Instance-level init. Override in subclasses if necessary.
+   * @returns {Promise<void>}
+   */
   async init() {}
 
   /**
-   * Creates or updates an item in the collection based on the provided data.
-   * If an existing item is found, it updates it; otherwise, creates a new item.
-   * @param {Object} [data={}] - The data to create or update an item with
-   * @returns {Promise<CollectionItem>|CollectionItem} The created or updated item
+   * Creates or updates an item in the collection. If the item key exists, updates existing item data;
+   * otherwise, creates a new item.
+   *
+   * @param {Object} [data={}] - Data for creating/updating an item.
+   * @returns {Promise<CollectionItem>|CollectionItem} The created or updated item.
    */
   create_or_update(data = {}) {
     const existing = this.find_by(data);
     const item = existing ? existing : new this.item_type(this.env);
-    item._queue_save = !!!existing;
-    const changed = item.update_data(data); // handles this.data
+    item._queue_save = !existing; // If not existing, it must be saved.
+
+    const changed = item.update_data(data); 
     if (!existing) {
-      if (item.validate_save()) this.set(item); // make it available in collection (if valid)
-      else {
-        console.warn("Invalid item, skipping adding to collection: ", item);
+      // Validate before adding to collection
+      if (item.validate_save()) {
+        this.set(item);
+      } else {
+        console.warn("Invalid item, skipping adding to collection:", item);
         return item;
       }
     }
-    if (existing && !changed) return existing; // if existing item and no changes, return existing item (no need to save)
-    // dynamically handle async init functions
-    if (item.init instanceof AsyncFunction) return new Promise((resolve, reject) => { item.init(data).then(() => resolve(item)); });
-    item.init(data); // handles functions that involve other items
+
+    // If item is existing and data didn't change, no need to re-save.
+    if (existing && !changed) return existing;
+
+    // If `init` is async, handle asynchronously.
+    if (item.init instanceof AsyncFunction) {
+      return new Promise((resolve) => { 
+        item.init(data).then(() => resolve(item)); 
+      });
+    }
+
+    item.init(data);
     return item;
   }
 
   /**
-   * Finds an item in the collection that matches the given data.
-   * First checks for a key match, then creates a temporary item to find matches.
-   * @param {Object} data - The data to match against
-   * @returns {CollectionItem|null} The matching item or null if not found
+   * Finds an item by partial data match (first checks key). If `data.key` provided,
+   * returns the item with that key; otherwise attempts a match by merging data.
+   *
+   * @param {Object} data - Data to match against.
+   * @returns {CollectionItem|null}
    */
   find_by(data) {
-    if(data.key) return this.get(data.key);
+    if (data.key) return this.get(data.key);
     const temp = new this.item_type(this.env);
     const temp_data = JSON.parse(JSON.stringify(data, temp.sanitize_data(data)));
-    deep_merge(temp.data, temp_data); // deep merge data
+    deep_merge(temp.data, temp_data);
     return temp.key ? this.get(temp.key) : null;
   }
-  // READ
+
   /**
-   * Filters items in the collection based on provided options.
-   * @param {Object|Function} [filter_opts={}] - Filter options to apply
-   * @param {number} [filter_opts.limit] - Maximum number of items to return
-   * @returns {CollectionItem[]} Array of filtered items
+   * Filters items based on provided filter options or a custom function.
+   *
+   * @param {Object|Function} [filter_opts={}] - Filter options or a predicate function.
+   * @returns {CollectionItem[]} Array of filtered items.
    */
-  filter(filter_opts={}) {
-    // handle function filters
-    if(typeof filter_opts === 'function'){
+  filter(filter_opts = {}) {
+    if (typeof filter_opts === 'function') {
       return Object.values(this.items).filter(filter_opts);
     }
     this.filter_opts = this.prepare_filter(filter_opts);
+
     const results = [];
     const { limit } = this.filter_opts;
+
     for (const item of Object.values(this.items)) {
       if (limit && results.length >= limit) break;
-      if (item.filter(filter_opts)) {
-        results.push(item);
-      }
+      if (item.filter(filter_opts)) results.push(item);
     }
     return results;
   }
-  // alias for filter
+
+  /**
+   * Alias for `filter()`
+   * @param {Object|Function} filter_opts
+   * @returns {CollectionItem[]}
+   */
   list(filter_opts) { return this.filter(filter_opts); }
 
   /**
-   * Prepares filter options for use in the filter implementation.
-   * Used by sub-classes to convert simplified filter options into filter_opts compatible with the filter implementation.
-   * @param {Object} filter_opts - The original filter options provided.
-   * @returns {Object} The prepared filter options compatible with the filter implementation.
+   * Prepares filter options. Can be overridden by subclasses to normalize filter options.
+   *
+   * @param {Object} filter_opts
+   * @returns {Object} Prepared filter options.
    */
   prepare_filter(filter_opts) { return filter_opts; }
+
   /**
-   * Retrieves a single item from the collection based on the provided strategy and options.
-   * @param {String} key - The key of the item to retrieve.
-   * @return {CollectionItem} The retrieved item.
+   * Retrieves an item by key.
+   * @param {string} key
+   * @returns {CollectionItem|undefined}
    */
   get(key) { return this.items[key]; }
+
   /**
-   * Retrieves multiple items from the collection based on the provided keys.
-   * @param {String[]} keys - The keys of the items to retrieve.
-   * @return {CollectionItem[]} The retrieved items.
+   * Retrieves multiple items by an array of keys.
+   * @param {string[]} keys
+   * @returns {CollectionItem[]}
    */
   get_many(keys = []) {
-    if (Array.isArray(keys)) return keys.map((key) => this.get(key)).filter(Boolean);
-    console.error("get_many called with non-array keys: ", keys);
+    if (!Array.isArray(keys)) {
+      console.error("get_many called with non-array keys:", keys);
+      return [];
+    }
+    return keys.map((key) => this.get(key)).filter(Boolean);
   }
+
   /**
-   * Retrieves a random item from the collection based on the provided options.
-   * @param {Object} opts - The options used to retrieve the item.
-   * @return {CollectionItem} The retrieved item.
+   * Retrieves a random item from the collection, optionally filtered by options.
+   * @param {Object} [opts]
+   * @returns {CollectionItem|undefined}
    */
   get_rand(opts = null) {
     if (opts) {
       const filtered = this.filter(opts);
       return filtered[Math.floor(Math.random() * filtered.length)];
     }
-    return this.items[this.keys[Math.floor(Math.random() * this.keys.length)]];
+    const keys = this.keys;
+    return this.items[keys[Math.floor(Math.random() * keys.length)]];
   }
-  // UPDATE
+
   /**
    * Adds or updates an item in the collection.
-   * @param {CollectionItem} item - The item to add or update.
+   * @param {CollectionItem} item
    */
   set(item) {
-    if (!item.key) throw new Error("Item must have key property");
+    if (!item.key) throw new Error("Item must have a key property");
     this.items[item.key] = item;
   }
+
   /**
-   * Updates multiple items in the collection based on the provided keys and data.
-   * @param {String[]} keys - The keys of the items to update.
-   * @param {Object} data - The data to update the items with.
+   * Updates multiple items by their keys.
+   * @param {string[]} keys
+   * @param {Object} data
    */
-  update_many(keys = [], data = {}) { this.get_many(keys).forEach((item) => item.update_data(data)); }
-  // DESTROY
+  update_many(keys = [], data = {}) {
+    this.get_many(keys).forEach((item) => item.update_data(data));
+  }
+
   /**
    * Clears all items from the collection.
    */
   clear() {
     this.items = {};
   }
+
   /**
-   * Deletes an item from the collection based on its key.
-   * Does not trigger save or delete from adapter data.
-   * @param {String} key - The key of the item to delete.
+   * Deletes an item by key from the collection (does not save deletion, just removes from memory).
+   * @param {string} key
    */
   delete_item(key) {
     delete this.items[key];
   }
+
   /**
-   * Deletes multiple items from the collection based on their keys.
-   * @param {String[]} keys - The keys of the items to delete.
+   * Deletes multiple items by their keys. Internally calls `item.delete()` which queues a save.
+   * @param {string[]} keys
    */
   delete_many(keys = []) {
-    // keys.forEach((key) => delete this.items[key]);
     keys.forEach((key) => {
-      this.items[key].delete();
+      if (this.items[key]) this.items[key].delete();
     });
   }
-  // CONVENIENCE METHODS (namespace getters)
+
   /**
-   * Gets or sets the collection name. If a name is set, it overrides the default name.
-   * @param {String} name - The new collection name.
+   * @returns {string} The collection key, can be overridden by opts.custom_collection_key
    */
-  get collection_key() { return (this._collection_key) ? this._collection_key : this.constructor.collection_key; }
+  get collection_key() {
+    return this._collection_key ? this._collection_key : this.constructor.collection_key;
+  }
+
   set collection_key(name) { this._collection_key = name; }
 
-  // DATA ADAPTER
   /**
-   * Gets the data adapter instance for this collection.
-   * Lazily initializes the adapter based on configuration.
-   * @returns {DataAdapter} The data adapter instance for this collection
-   * @throws {Error} If no data adapter class is found in configuration
+   * Lazily initializes and returns the data adapter instance for this collection.
+   * @returns {Object} The data adapter instance.
    */
   get data_adapter() {
-    if(!this._data_adapter){
+    if (!this._data_adapter) {
       const config = this.env.opts.collections?.[this.collection_key];
       const data_adapter_class = config?.data_adapter
-        ?? this.env.opts.collections?.smart_collections?.data_adapter
-      ;
-      if(!data_adapter_class) throw new Error("No data adapter class found for " + this.collection_key + " or smart_collections");
+        ?? this.env.opts.collections?.smart_collections?.data_adapter;
+      if (!data_adapter_class) {
+        throw new Error(`No data adapter class found for ${this.collection_key} or smart_collections`);
+      }
       this._data_adapter = new data_adapter_class(this);
     }
     return this._data_adapter;
   }
 
   /**
-   * Gets the data directory strategy for this collection.
-   * Default is 'multi' for multi-file storage.
-   * @returns {string} The data directory strategy
+   * Data directory strategy for this collection. Defaults to 'multi'.
+   * @returns {string}
    */
   get data_dir() { return 'multi'; }
 
   /**
-   * Gets the filesystem adapter from the environment.
-   * @returns {FileSystem} The filesystem adapter
+   * File system adapter from the environment.
+   * @returns {Object}
    */
   get data_fs() { return this.env.data_fs; }
 
   /**
-   * Gets the class name of the item type the collection manages.
-   * @return {String} The item class name.
+   * Derives the corresponding item class name based on this collection's class name.
+   * @returns {string}
    */
   get item_class_name() {
     const name = this.constructor.name;
-    if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; // Entities -> Entity
-    else if (name.endsWith('s')) return name.slice(0, -1); // Sources -> Source
-    else return name + "Item"; // Collection -> CollectionItem
+    if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; 
+    else if (name.endsWith('s')) return name.slice(0, -1);
+    return name + "Item";
   }
 
   /**
-   * Gets the name of the item type the collection manages, derived from the class name.
-   * @return {String} The item name.
+   * Derives a readable item name from the item class name.
+   * @returns {string}
    */
-  get item_name() { return this.item_class_name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase(); }
+  get item_name() {
+    return this.item_class_name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  }
 
   /**
-   * Gets the constructor of the item type the collection manages.
-   * @return {Function} The item type constructor.
+   * Retrieves the item type (constructor) from the environment.
+   * @returns {Function} Item constructor.
    */
   get item_type() { return this.env.item_types[this.item_class_name]; }
 
   /**
-   * Gets the keys of the items in the collection.
-   * @return {String[]} The keys of the items.
+   * Returns an array of all keys in the collection.
+   * @returns {string[]}
    */
   get keys() { return Object.keys(this.items); }
 
   /**
    * @deprecated use data_adapter instead (2024-09-14)
    */
-  get adapter(){ return this.data_adapter; }
+  get adapter() { return this.data_adapter; }
+
   /**
-   * Gets the data path from the environment.
-   * @deprecated use env.env_data_dir
-   * @returns {string} The data path.
+   * @deprecated Use env.env_data_dir
+   * @returns {string}
    */
-  get data_path() { return this.env.data_path; } // DEPRECATED
-  // ADAPTER METHODS
+  get data_path() { return this.env.data_path; }
+
   /**
    * Saves the current state of the collection.
+   * @returns {Promise<void>}
    */
   async save() { await this.data_adapter.save(); }
+
+  /**
+   * Processes all items queued for saving.
+   * @returns {Promise<void>}
+   */
   async save_queue() { await this.process_save_queue(); }
 
-  // UTILITY METHODS
   /**
-   * Merges default configurations from all classes in the inheritance chain for Collection types; 
-   * e.g. EntityCollection, NoteCollection, etc.
+   * Merges default configurations from class inheritance chain into this collection.
+   * Override or extend if needed.
+   * @private
    */
   merge_defaults() {
     let current_class = this.constructor;
-    while (current_class) { // merge collection config into item config
+    while (current_class) {
       const col_conf = this.config?.collections?.[current_class.collection_key];
-      Object.entries((typeof col_conf === 'object') ? col_conf : {})
-        .forEach(([key, value]) => this[key] = value)
-      ;
+      if (typeof col_conf === 'object') {
+        Object.entries(col_conf).forEach(([key, value]) => this[key] = value);
+      }
       current_class = Object.getPrototypeOf(current_class);
     }
   }
+
   /**
-   * Processes the save queue for all items marked for saving.
-   * Shows a notification during the save process.
+   * Processes the save queue. Saves all items that are flagged with `_queue_save`.
+   * @param {boolean} [overwrite=false]
    * @returns {Promise<void>}
    */
   async process_save_queue(overwrite = false) {
-    this.notices?.show('saving', "Saving " + this.collection_key + "...", { timeout: 0 });
-    if(this._saving) return console.log("Already saving");
+    this.notices?.show('saving', `Saving ${this.collection_key}...`, { timeout: 0 });
+
+    if (this._saving) {
+      console.log("Already saving");
+      return;
+    }
+
     this._saving = true;
-    setTimeout(() => { this._saving = false; }, 10000); // set _saving to false after 10 seconds
+    setTimeout(() => { this._saving = false; }, 10000);
+
     const save_queue = Object.values(this.items).filter(item => item._queue_save);
-    console.log("Saving " + this.collection_key + ": ", save_queue.length + " items");
+    console.log(`Saving ${this.collection_key}: ${save_queue.length} items`);
+
     const time_start = Date.now();
-    if(overwrite) await Promise.all(save_queue.map(item => item.overwrite_saved_data()));
-    else await Promise.all(save_queue.map(item => item.save()));
-    console.log("Saved " + this.collection_key + " in " + (Date.now() - time_start) + "ms");
+    if (overwrite) {
+      await Promise.all(save_queue.map(item => item.overwrite_saved_data()));
+    } else {
+      await Promise.all(save_queue.map(item => item.save()));
+    }
+
+    console.log(`Saved ${this.collection_key} in ${Date.now() - time_start}ms`);
     this._saving = false;
     this.notices?.remove('saving');
   }
+
   /**
-   * Processes the load queue for all items marked for loading.
-   * Loads items in batches for better performance.
-   * Shows a notification during the load process.
+   * Processes all items queued for loading.
+   * Loads items in batches to improve performance.
+   *
    * @returns {Promise<void>}
    */
   async process_load_queue() {
-    this.notices?.show('loading', "Loading " + this.collection_key + "...", { timeout: 0 });
-    if(this._loading) return console.log("Already loading");
+    this.notices?.show('loading', `Loading ${this.collection_key}...`, { timeout: 0 });
+
+    if (this._loading) {
+      console.log("Already loading");
+      return;
+    }
+
     this._loading = true;
-    setTimeout(() => { this._loading = false; }, 10000); // set _loading to false after 10 seconds
+    setTimeout(() => { this._loading = false; }, 10000);
+
     const load_queue = Object.values(this.items).filter(item => item._queue_load);
-    console.log("Loading " + this.collection_key + ": ", load_queue.length + " items");
+    console.log(`Loading ${this.collection_key}: ${load_queue.length} items`);
     const time_start = Date.now();
     const batch_size = 100;
+
+    // TODO: Potential improvement: make batch_size configurable.
     for (let i = 0; i < load_queue.length; i += batch_size) {
       const batch = load_queue.slice(i, i + batch_size);
       await Promise.all(batch.map(item => item.load()));
     }
+
     this.env.collections[this.collection_key] = 'loaded';
     this.load_time_ms = Date.now() - time_start;
-    console.log("Loaded " + this.collection_key + " in " + this.load_time_ms + "ms");
+    console.log(`Loaded ${this.collection_key} in ${this.load_time_ms}ms`);
     this._loading = false;
     this.loaded = load_queue.length;
     this.notices?.remove('loading');
   }
+
+  /**
+   * Retrieves processed settings configuration.
+   * @returns {Object}
+   */
   get settings_config() { return this.process_settings_config({}); }
+
+  /**
+   * Processes given settings config, adding prefixes and handling conditionals.
+   *
+   * @private
+   * @param {Object} _settings_config
+   * @param {string} [prefix='']
+   * @returns {Object}
+   */
   process_settings_config(_settings_config, prefix = '') {
     const add_prefix = (key) =>
       prefix && !key.includes(`${prefix}.`) ? `${prefix}.${key}` : key;
 
     return Object.entries(_settings_config).reduce((acc, [key, val]) => {
-      // Create a shallow copy to avoid mutating the original _settings_config
       let new_val = { ...val };
 
       if (new_val.conditional) {
         if (!new_val.conditional(this)) return acc;
-        delete new_val.conditional; // Remove conditional to prevent re-checking downstream
+        delete new_val.conditional;
       }
 
-      if (new_val.callback) {
-        new_val.callback = add_prefix(new_val.callback);
-      }
-
-      if (new_val.btn_callback) {
-        new_val.btn_callback = add_prefix(new_val.btn_callback);
-      }
-
-      if (new_val.options_callback) {
-        new_val.options_callback = add_prefix(new_val.options_callback);
-      }
+      if (new_val.callback) new_val.callback = add_prefix(new_val.callback);
+      if (new_val.btn_callback) new_val.btn_callback = add_prefix(new_val.btn_callback);
+      if (new_val.options_callback) new_val.options_callback = add_prefix(new_val.options_callback);
 
       const new_key = add_prefix(this.process_setting_key(key));
       acc[new_key] = new_val;
       return acc;
     }, {});
   }
-  process_setting_key(key) { return key; } // override in sub-class if needed for prefixes and variable replacements
+
   /**
-   * Gets the default settings for this collection.
-   * Override in subclasses to provide collection-specific defaults.
-   * @returns {Object} The default settings object
+   * Processes an individual setting key. Override if needed.
+   * @param {string} key
+   * @returns {string}
+   */
+  process_setting_key(key) { return key; }
+
+  /**
+   * Default settings for this collection. Override in subclasses as needed.
+   * @returns {Object}
    */
   get default_settings() { return {}; }
+
   /**
-   * Gets the current settings for this collection.
+   * Current settings for the collection.
    * Initializes with default settings if none exist.
-   * @returns {Object} The current settings object
+   * @returns {Object}
    */
   get settings() {
-    if(!this.env.settings[this.collection_key]){
+    if (!this.env.settings[this.collection_key]) {
       this.env.settings[this.collection_key] = this.default_settings;
     }
     return this.env.settings[this.collection_key];
   }
+
   /**
-   * Gets the smart view instance from the environment.
-   * Lazily initializes if not already created.
    * @deprecated use env.smart_view instead
-   * @returns {SmartView} The smart view instance
+   * @returns {Object} smart_view instance
    */
   get smart_view() {
     if(!this._smart_view) this._smart_view = this.env.init_module('smart_view');
     return this._smart_view;
   }
+
   /**
-   * Renders the settings for the collection.
-   * @param {HTMLElement} container - The container element to render the settings into.
-   * @param {Object} opts - Additional options for rendering.
-   * @param {Object} opts.settings_keys - An array of keys to render.
+   * Renders the settings for the collection into a given container.
+   * @param {HTMLElement} [container=this.settings_container]
+   * @param {Object} opts
+   * @returns {Promise<HTMLElement>}
    */
-  async render_settings(container=this.settings_container, opts = {}) {
+  async render_settings(container = this.settings_container, opts = {}) {
     return await this.render_collection_settings(container, opts);
   }
-  async render_collection_settings(container=this.settings_container, opts = {}) {
-    if(container && (!this.settings_container || this.settings_container !== container)) this.settings_container = container;
-    else if(!container){
-      console.log('no container, creating frag');
-      container = this.env.smart_view.create_doc_dragment('<div></div>') // if still no container input or store, create container frag
+
+  /**
+   * Helper function to render collection settings.
+   * @param {HTMLElement} [container=this.settings_container]
+   * @param {Object} opts
+   * @returns {Promise<HTMLElement>}
+   */
+  async render_collection_settings(container = this.settings_container, opts = {}) {
+    if (container && (!this.settings_container || this.settings_container !== container)) {
+      this.settings_container = container;
+    } else if (!container) {
+      // NOTE: Creating a fragment if no container provided. This depends on `env.smart_view`.
+      container = this.env.smart_view.create_doc_dragment('<div></div>');
     }
     container.innerHTML = `<div class="sc-loading">Loading ${this.collection_key} settings...</div>`;
     const frag = await this.env.render_component('settings', this, opts);
@@ -426,9 +512,17 @@ export class Collection {
     return container;
   }
 
+  /**
+   * Unloads collection data from memory.
+   */
   unload() {
     this.clear();
   }
+
+  /**
+   * Runs load process for all items in the collection, triggering queue loads and rendering settings after done.
+   * @returns {Promise<void>}
+   */
   async run_load() {
     this.loaded = null;
     this.load_time_ms = null;
@@ -437,7 +531,6 @@ export class Collection {
     await this.process_load_queue();
     this.notices?.remove(`loading ${this.collection_key}`);
     this.notices?.show('done loading', `${this.collection_key} loaded`, { timeout: 3000 });
-    this.render_settings(); // re-render settings
+    this.render_settings();
   }
-
 }

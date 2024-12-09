@@ -1,4 +1,4 @@
-import { SmartCollectionTestDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { SingleJsonCollectionDataAdapter } from '../../smart-collections/adapters/_test.js';
 import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SourceTestAdapter } from '../adapters/_test.js';
 import { MarkdownSourceAdapter } from '../adapters/markdown.js';
@@ -43,7 +43,7 @@ class TestMain {
       collections: {
         smart_sources: {
           class: SmartSources,
-          data_adapter: SmartCollectionTestDataAdapter,
+          data_adapter: SingleJsonCollectionDataAdapter,
           source_adapters: {
             test: SourceTestAdapter,
             md: MarkdownSourceAdapter,
