@@ -169,14 +169,27 @@ export class NodeFsSmartFsAdapter {
   async list(rel_path, opts={}) {
     const items = await this.readdir(rel_path, { withFileTypes: true, ...(opts.recursive ? { recursive: true } : {}) });
     const files = items.reduce((acc, item) => {
-      const folder = item.parentPath.replace(this.smart_fs.fs_path, '').replace(/\\/g, '/').slice(1);
+      // Calculate folder path based on whether we're in recursive mode
+      let folder = '';
+      if (opts.recursive && item.path) {
+        // For Node 20+ which supports recursive readdir with paths
+        folder = item.path;
+      } else {
+        // For older Node versions or non-recursive mode
+        folder = rel_path === '.' || rel_path === '/' ? '' : rel_path;
+      }
+      
+      folder = folder.replace(this.smart_fs.fs_path, '').replace(/\\/g, '/').replace(/^\//, '');
+      
       const file = {
         basename: item.name.split('.')[0],
         extension: item.name.split('.').pop().toLowerCase(),
         name: item.name,
         path: folder ? folder + '/' + item.name : item.name,
       };
+
       if(this.smart_fs.is_excluded(file.path)) return acc;
+
       if(item.isFile() && !item.isDirectory()){ // isFile() alone was returning true for directories containing "." in name
         if(opts.type === 'folder') return acc;
         file.type = 'file';
@@ -202,7 +215,7 @@ export class NodeFsSmartFsAdapter {
           }
         });
         acc[file.path] = file;
-      }else if(item.isDirectory()){
+      } else if(item.isDirectory()){
         if(opts.type === 'file') return acc;
         file.type = 'folder';
         delete file.basename;

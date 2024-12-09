@@ -9,8 +9,9 @@ export class JsonSingleFileCollectionDataAdapter extends SmartCollectionDataAdap
   constructor(collection) {
     super(collection);
     this.json_data = null;
-    this.load_json_data();
+    this._initialized = false;
   }
+
 
   get fs() { return this.collection.data_fs || this.env.data_fs; }
 
@@ -18,12 +19,18 @@ export class JsonSingleFileCollectionDataAdapter extends SmartCollectionDataAdap
    * Loads JSON data from the data file
    */
   async load_json_data() {
+    if (this._initialized) return;
+    
     try {
-      if(!(await this.fs.exists(this.data_path))) return this.json_data = {};
-      const data = await this.fs.read(this.data_path, 'utf8');
-      this.json_data = JSON.parse(data);
+      if (!(await this.fs.exists(this.data_path))) {
+        this.json_data = {};
+      } else {
+        const data = await this.fs.read(this.data_path);
+        this.json_data = JSON.parse(data);
+      }
+      this._initialized = true;
     } catch (err) {
-      console.warn("Could not load JSON data, using empty object");
+      console.warn("Could not load JSON data, using empty object", err);
       this.json_data = {};
     }
   }
@@ -31,19 +38,19 @@ export class JsonSingleFileCollectionDataAdapter extends SmartCollectionDataAdap
   get data_path() { 
     return this.collection.settings.single_file_data_path || `.smart-env/${this.collection.collection_key}.json`;
   }
-
   /**
    * Loads data for a collection item from the json_data object
    */
   async load(item) {
-    if(!this.json_data) await this.load_json_data();
+    if(!this.json_data || Object.keys(this.json_data).length === 0) await this.load_json_data();
+    else console.log('json data already loaded', this.json_data);
     try {
       const ajson_key = `${item.constructor.name}:${item.key}`;
       const data = this.json_data[ajson_key];
 
       if (!data) {
         console.log(`Data not found for: ${ajson_key}`);
-        return item.queue_import();
+        return;
       }
 
       const new_data = typeof data === 'string' ? { data } : { ...data };
@@ -65,16 +72,23 @@ export class JsonSingleFileCollectionDataAdapter extends SmartCollectionDataAdap
 
   async save(item) {
     const ajson_key = `${item.constructor.name}:${item.key}`;
+    console.log('saving', ajson_key);
+    
+    if (!this._initialized) {
+      await this.load_json_data();
+    }
 
     try {
       if (item.deleted) {
-        delete this.json_data[ajson_key];
-        delete this.collection.items[item.key];
-        
-        if (!this.collection._pending_saves) {
-          this.collection._pending_saves = {};
+        if (this.json_data[ajson_key]) {
+          delete this.json_data[ajson_key];
+          delete this.collection.items[item.key];
+          
+          if (!this.collection._pending_saves) {
+            this.collection._pending_saves = {};
+          }
+          this.collection._pending_saves[ajson_key] = null;
         }
-        this.collection._pending_saves[ajson_key] = null;
       } else {
         const new_data = JSON.parse(JSON.stringify(item.data));
         if (!new_data.key) new_data.key = item.key;
@@ -89,12 +103,14 @@ export class JsonSingleFileCollectionDataAdapter extends SmartCollectionDataAdap
         }
       }
 
-      if (Object.keys(this.collection._pending_saves || {}).length > 0 && !this.collection._save_timeout) {
-        this.collection._save_timeout = setTimeout(() => {
-          this.save_to_disk();
-          delete this.collection._save_timeout;
-          this.collection._pending_saves = {};
-        }, 0);
+      if (Object.keys(this.collection._pending_saves || {}).length > 0) {
+        if (!this._save_debounce) {
+          this._save_debounce = setTimeout(async () => {
+            await this.save_to_disk();
+            this._save_debounce = null;
+            this.collection._pending_saves = {};
+          }, 100);
+        }
       }
 
       item._queue_save = false;
@@ -112,22 +128,48 @@ export class JsonSingleFileCollectionDataAdapter extends SmartCollectionDataAdap
    */
   async save_to_disk() {
     try {
+      if (!this._initialized) {
+        await this.load_json_data();
+      }
+
+      if (!this.json_data) {
+        console.warn('Cannot save - json_data is not initialized');
+        return;
+      }
+
       if (this.collection._pending_saves) {
+        let changes_made = false;
         Object.entries(this.collection._pending_saves).forEach(([key, value]) => {
           if (value === null) {
-            delete this.json_data[key];
+            if (key in this.json_data) {
+              delete this.json_data[key];
+              changes_made = true;
+            }
           } else {
             this.json_data[key] = value;
+            changes_made = true;
           }
         });
-      }
-      if(this.collection.settings.single_file_pretty){
-        await this.fs.write(this.data_path, JSON.stringify(this.json_data, null, 2));
-      }else{
-        await this.fs.write(this.data_path, JSON.stringify(this.json_data));
+
+        if (changes_made) {
+          if (Object.keys(this.json_data).length === 0) {
+            if (await this.fs.exists(this.data_path)) {
+              console.warn('Preventing save of empty data when file exists');
+              return;
+            }
+          }
+
+          const data = this.collection.settings.single_file_pretty 
+            ? JSON.stringify(this.json_data, null, 2)
+            : JSON.stringify(this.json_data);
+          await this.fs.write(this.data_path, data);
+        } else {
+          console.log('No changes to save');
+        }
       }
     } catch (err) {
       console.error("Error saving to disk:", err);
+      throw err;
     }
   }
 }

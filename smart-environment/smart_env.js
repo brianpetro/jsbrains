@@ -321,10 +321,13 @@ export class SmartEnv {
     return this._fs;
   }
   get data_fs_path() {
-    return this.opts.env_path
-      + (this.opts.env_path ? (this.opts.env_path.includes('\\') ? '\\' : '/') : '') // detect and use correct separator based on env_path
-      + this.env_data_dir
-    ;
+    if(!this._data_fs_path) {
+      this._data_fs_path = (this.opts.env_path
+        + (this.opts.env_path ? (this.opts.env_path.includes('\\') ? '\\' : '/') : '') // detect and use correct separator based on env_path
+        + this.env_data_dir).replace(/\\\\/g, '\\').replace(/\/\//g, '/')
+      ;
+    }
+    return this._data_fs_path;
   }
   /**
    * Saves the current settings to the file system.

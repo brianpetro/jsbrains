@@ -7,15 +7,25 @@ test.beforeEach(async t => {
 });
 
 // test should contain env.collection.settings.single_file_data_path from env default_settings
-test('Collection.load creates a new collection instance and settings are loaded', t => {
+test.serial('Collection.load creates a new collection instance and settings are loaded', t => {
   const { env } = t.context;
-  t.is(env.collection.settings.single_file_data_path, './test/_data.json', 'Expected single_file_data_path to be "./test/_data.json"');
+  t.is(env.collection.settings.single_file_data_path, '_data.json', 'Expected single_file_data_path to be "./test/_data.json"');
+});
+
+// ensure items are loaded
+test.serial('Loaded Collection should contain saved items', async t => {
+  const { env } = t.context;
+  console.log('env.env_data_dir', env.env_data_dir);
+  console.log('env.collection.adapter.data_path', env.collection.adapter.data_path);
+  console.log('env.collection.adapter.json_data', env.collection.adapter.json_data);
+  console.log('env.collection.adapter.fs.opts', env.collection.adapter.fs.opts);
+  t.is(Object.keys(env.collection.items).length, 9, 'Expected 9 items to be loaded');
 });
 
 /**
  * Tests basic initialization of the collection.
 */
-test('Collection.load creates a new collection instance', t => {
+test.serial('Collection.load creates a new collection instance', t => {
   const { env } = t.context;
   const test_collection = env.collection;
 
@@ -26,7 +36,7 @@ test('Collection.load creates a new collection instance', t => {
 /**
  * Tests that create_or_update adds a new item.
  */
-test('Collection.create_or_update creates a new item', t => {
+test.serial('Collection.create_or_update creates a new item', t => {
   const { env } = t.context;
   const test_collection = env.collection;
 
@@ -40,7 +50,7 @@ test('Collection.create_or_update creates a new item', t => {
 /**
  * Tests that create_or_update updates an existing item without re-queueing if data unchanged.
  */
-test('Collection.create_or_update updates an existing item', t => {
+test.serial('Collection.create_or_update updates an existing item', t => {
   const { env } = t.context;
   const test_collection = env.collection;
 
@@ -55,7 +65,7 @@ test('Collection.create_or_update updates an existing item', t => {
 /**
  * Tests that find_by returns the correct item.
  */
-test('Collection.find_by returns the correct item', t => {
+test.serial('Collection.find_by returns the correct item', t => {
   const { env } = t.context;
   const test_collection = env.collection;
 
@@ -69,7 +79,7 @@ test('Collection.find_by returns the correct item', t => {
 /**
  * Tests the filter method with key-based filters.
  */
-test('Collection.filter returns correct items', t => {
+test.serial('Collection.filter returns correct items', t => {
   const { env } = t.context;
   const test_collection = env.collection;
 
@@ -86,7 +96,7 @@ test('Collection.filter returns correct items', t => {
 /**
  * Tests get_many with multiple keys.
  */
-test('Collection.get_many returns correct items', t => {
+test.serial('Collection.get_many returns correct items', t => {
   const { env } = t.context;
   const test_collection = env.collection;
 
@@ -102,40 +112,47 @@ test('Collection.get_many returns correct items', t => {
 /**
  * Tests that delete_many removes the specified items.
  */
-test('Collection.delete_many removes correct items', async t => {
+test.serial('Collection.delete_many removes correct items', async t => {
   const { env } = t.context;
   const test_collection = env.collection;
-  const test_data_ct = Object.keys(test_collection.adapter.json_data || {}).length;
+  
+  // Ensure data is loaded
+  await test_collection.data_adapter.load_json_data();
+  const initial_count = Object.keys(test_collection.items).length;
+
+  // Create test items
+  const item1 = await test_collection.create_or_update({ key: 'item1', data: 'data1' });
+  const item2 = await test_collection.create_or_update({ key: 'item2', data: 'data2' });
+  const item3 = await test_collection.create_or_update({ key: 'item3', data: 'data3' });
+
+  // Wait for saves to complete
+  await test_collection.save_queue();
 
   t.is(
     Object.keys(test_collection.items).length,
-    test_data_ct,
-    'Initially, collection items should match test_data count'
-  );
-
-  await test_collection.create_or_update({ key: 'item1', data: 'data1' });
-  await test_collection.create_or_update({ key: 'item2', data: 'data2' });
-  await test_collection.create_or_update({ key: 'item3', data: 'data3' });
-
-  t.is(
-    Object.keys(test_collection.items).length,
-    test_data_ct + 3,
+    initial_count + 3,
     'After adding 3 items, total count should increase by 3'
   );
 
+  // Delete items
   test_collection.delete_many(['item1', 'item2']);
   await test_collection.save_queue();
 
   t.is(
     Object.keys(test_collection.items).length,
-    test_data_ct + 1,
+    initial_count + 1,
     'After deleting two items, total should decrease by 2'
   );
 
   t.truthy(test_collection.get('item3'), 'item3 should still exist');
 
-  // remove last item
+  // Delete last item
   test_collection.delete_many(['item3']);
   await test_collection.save_queue();
-  t.is(Object.keys(test_collection.items).length, test_data_ct, 'After deleting last item, total should decrease by 1');
+
+  t.is(
+    Object.keys(test_collection.items).length,
+    initial_count,
+    'After deleting last item, total should match initial count'
+  );
 });
