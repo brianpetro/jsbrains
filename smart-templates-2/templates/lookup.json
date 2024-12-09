@@ -1,5 +1,11 @@
 {
-  "opts": {},
+  "opts": {
+    "lookup_hypotheticals_map": {
+      "1": "hypotheticals.1",
+      "2": "hypotheticals.2",
+      "3": "hypotheticals.3"
+    }
+  },
   "name": "lookup",
   "tool": {
     "type": "function",
