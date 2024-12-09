@@ -22,7 +22,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartModel } from 'smart-model';
-import rank_models from './models.json' assert { type: 'json' };
 
 /**
  * SmartRankModel - A versatile class for handling document ranking using various model backends.
@@ -100,14 +99,6 @@ export class SmartRankModel extends SmartModel {
    */
   async rank(query, documents, options = {}) {
     return await this.invoke_adapter_method('rank', query, documents, options);
-  }
-
-  /**
-   * Get available ranking models.
-   * @returns {Object} Map of ranking models.
-   */
-  get models() { 
-    return rank_models; 
   }
 
   /**
