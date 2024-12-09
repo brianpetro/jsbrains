@@ -1,6 +1,6 @@
 import { CollectionItem } from '../main.js';
 import { Collection } from '../main.js';
-import { SingleJsonCollectionDataAdapter } from '../adapters/single_json.js';
+import { JsonSingleFileCollectionDataAdapter } from '../adapters/json_single_file.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
@@ -28,12 +28,18 @@ class TestMain {
       collections: {
         collection: {
           class: Collection,
-          data_adapter: SingleJsonCollectionDataAdapter,
+          data_adapter: JsonSingleFileCollectionDataAdapter,
         },
       },
       item_types: {
         CollectionItem,
       },
+      default_settings: {
+        collection: {
+          single_file_data_path: './test/_data.json',
+          single_file_pretty: true,
+        }
+      }
     };
   }
 }

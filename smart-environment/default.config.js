@@ -1,5 +1,5 @@
 import { SmartSources, SmartBlocks, SmartSource, SmartBlock } from 'smart-sources';
-import { SmartCollectionMultiFileDataAdapter } from "smart-collections/adapters/multi_file";
+import { AjsonMultiFileCollectionDataAdapter } from "smart-collections/adapters/ajson_multi_file";
 import { SourceAdapter } from "smart-sources/adapters/_adapter.js";
 import { MarkdownSourceAdapter } from "smart-sources/adapters/markdown.js";
 import { SmartEmbedModel } from 'smart-embed-model';
@@ -9,7 +9,7 @@ export const smart_env_config = {
   collections: {
     smart_sources: {
       class: SmartSources,
-      data_adapter: SmartCollectionMultiFileDataAdapter,
+      data_adapter: AjsonMultiFileCollectionDataAdapter,
       source_adapters: {
         "md": MarkdownSourceAdapter,
         "default": SourceAdapter,

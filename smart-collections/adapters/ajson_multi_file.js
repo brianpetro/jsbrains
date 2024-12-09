@@ -26,7 +26,7 @@ const class_to_collection_key = {
  * 
  * @extends SmartCollectionDataAdapter
  */
-export class SmartCollectionMultiFileDataAdapter extends SmartCollectionDataAdapter {
+export class AjsonMultiFileCollectionDataAdapter extends SmartCollectionDataAdapter {
   /**
    * Gets the filesystem interface to use for data operations.
    * Uses collection's data_fs if available, otherwise falls back to environment's data_fs.

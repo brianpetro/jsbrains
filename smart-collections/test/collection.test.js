@@ -6,9 +6,15 @@ test.beforeEach(async t => {
   await load_test_env(t);
 });
 
+// test should contain env.collection.settings.single_file_data_path from env default_settings
+test('Collection.load creates a new collection instance and settings are loaded', t => {
+  const { env } = t.context;
+  t.is(env.collection.settings.single_file_data_path, './test/_data.json', 'Expected single_file_data_path to be "./test/_data.json"');
+});
+
 /**
  * Tests basic initialization of the collection.
- */
+*/
 test('Collection.load creates a new collection instance', t => {
   const { env } = t.context;
   const test_collection = env.collection;
@@ -99,7 +105,7 @@ test('Collection.get_many returns correct items', t => {
 test('Collection.delete_many removes correct items', async t => {
   const { env } = t.context;
   const test_collection = env.collection;
-  const test_data_ct = Object.keys(test_collection.adapter.test_data).length;
+  const test_data_ct = Object.keys(test_collection.adapter.json_data || {}).length;
 
   t.is(
     Object.keys(test_collection.items).length,
