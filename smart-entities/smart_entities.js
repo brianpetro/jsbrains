@@ -63,14 +63,6 @@ export class SmartEntities extends Collection {
       // catch error to ensure collection settings still load
       console.error(`Error loading SmartEmbedModel for ${this.embed_model.model_key}`);
       console.error(e);
-      // TEMP: for backwards compatibility with legacy transformers
-      if (this.env.smart_connections_plugin?.settings?.legacy_transformers) {
-        console.log("Switching to legacy transformers");
-        this.settings.embed_model[this.embed_model_key] = this.env.smart_connections_plugin.settings.legacy_transformers;
-        this.env.smart_connections_plugin.settings.legacy_transformers = null;
-        delete this.env.smart_connections_plugin.settings.legacy_transformers;
-        await this.embed_model_changed();
-      }
     }
   }
 
