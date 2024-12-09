@@ -105,9 +105,9 @@ export class SmartThread extends SmartSource {
    */
   async handle_message_from_user(content) {
     try {
-      const new_msg_data = this._prepare_new_user_message_data(content);
-      this._process_inline_embedded_links(new_msg_data);
-      this._extract_context_from_message_content(new_msg_data);
+      const new_msg_data = this.#prepare_new_user_message_data(content);
+      this.#process_inline_embedded_links(new_msg_data);
+      this.#extract_context_from_message_content(new_msg_data);
 
       await this.env.smart_messages.create_or_update(new_msg_data);
     } catch (error) {
@@ -213,7 +213,7 @@ export class SmartThread extends SmartSource {
    */
   async handle_lookup_tool_call(tool_call, msg_data) {
     const previous_message = this.messages[this.messages.length - 2];
-    const params = this._build_lookup_params(tool_call.function.arguments, previous_message);
+    const params = this.#build_lookup_params(tool_call.function.arguments, previous_message);
 
     // Determine lookup collection (blocks or sources)
     const lookup_collection = this.env.smart_blocks.settings.embed_blocks
@@ -251,9 +251,9 @@ export class SmartThread extends SmartSource {
 
     for (const msg of this.messages) {
       // If configured, handle tool output inclusion before adding the message
-      if (this.settings.send_tool_output_in_user_message && this._should_include_tool_output(msg)) {
+      if (this.settings.send_tool_output_in_user_message && this.#should_include_tool_output(msg)) {
         // Insert the next tool output message into the user message content
-        const combined_msg = await this._combine_user_and_tool_output(msg);
+        const combined_msg = await this.#combine_user_and_tool_output(msg);
         request.messages.push(combined_msg);
         continue;
       }
@@ -277,7 +277,7 @@ export class SmartThread extends SmartSource {
     request.frequency_penalty = 0;
 
     // If the last message is a tool_call_output, ensure the last user message is at the end
-    this._reorder_last_user_message_if_needed(request);
+    this.#reorder_last_user_message_if_needed(request);
 
     return request;
   }
@@ -365,7 +365,7 @@ export class SmartThread extends SmartSource {
    * @param {string} content - The raw user-provided content.
    * @returns {Object} The data object for the new message.
    */
-  _prepare_new_user_message_data(content) {
+  #prepare_new_user_message_data(content) {
     return {
       thread_key: this.key,
       role: 'user',
@@ -380,7 +380,7 @@ export class SmartThread extends SmartSource {
    * @private
    * @param {Object} new_msg_data - The message data object to modify.
    */
-  _process_inline_embedded_links(new_msg_data) {
+  #process_inline_embedded_links(new_msg_data) {
     for (let i = 0; i < new_msg_data.content.length; i++) {
       const part = new_msg_data.content[i];
       if (part.type !== 'text' || !part.text) continue;
@@ -390,7 +390,7 @@ export class SmartThread extends SmartSource {
 
         for (const [full_match, link_path] of internal_links) {
           const [before, after] = part.text.split(full_match);
-          const embedded_part = this._create_embedded_part(link_path);
+          const embedded_part = this.#create_embedded_part(link_path);
 
           part.text = after;
           // Insert before text and embedded content
@@ -413,7 +413,7 @@ export class SmartThread extends SmartSource {
    * @param {string} link_path - The path to the embedded content.
    * @returns {Object} The embedded part object.
    */
-  _create_embedded_part(link_path) {
+  #create_embedded_part(link_path) {
     const is_image = ['png', 'jpg', 'jpeg'].some(ext => link_path.endsWith(ext));
     if (is_image) {
       return { type: 'image_url', input: { image_path: link_path } };
@@ -428,7 +428,7 @@ export class SmartThread extends SmartSource {
    * @private
    * @param {Object} new_msg_data - The message data object to modify.
    */
-  _extract_context_from_message_content(new_msg_data) {
+  #extract_context_from_message_content(new_msg_data) {
     for (let i = 0; i < new_msg_data.content.length; i++) {
       const part = new_msg_data.content[i];
       if (part.type !== 'text' || !part.text) continue;
@@ -462,12 +462,12 @@ export class SmartThread extends SmartSource {
    * @param {Object} previous_message - The previous message in the thread (if any).
    * @returns {Object} Formatted lookup parameters.
    */
-  _build_lookup_params(args, previous_message) {
+  #build_lookup_params(args, previous_message) {
     args = typeof args === 'string' ? JSON.parse(args) : args;
     const params = {};
 
-    params.hypotheticals = this._normalize_hypotheticals(args, previous_message);
-    params.filter = this._build_lookup_filter(previous_message);
+    params.hypotheticals = this.#normalize_hypotheticals(args, previous_message);
+    params.filter = this.#build_lookup_filter(previous_message);
 
     return params;
   }
@@ -479,7 +479,7 @@ export class SmartThread extends SmartSource {
    * @param {Object} previous_message - The previous message in the thread (if any).
    * @returns {Array<string>} Normalized hypotheticals.
    */
-  _normalize_hypotheticals(args, previous_message) {
+  #normalize_hypotheticals(args, previous_message) {
     let hypotheticals;
 
     if (Array.isArray(args.hypotheticals)) {
@@ -505,7 +505,7 @@ export class SmartThread extends SmartSource {
    * @param {Object} previous_message - The previous message in the thread (if any).
    * @returns {Object} The filter object for the lookup.
    */
-  _build_lookup_filter(previous_message) {
+  #build_lookup_filter(previous_message) {
     const filter = { limit: this.settings.lookup_limit || 10 };
     const folder_refs = previous_message?.context?.folder_refs;
 
@@ -531,7 +531,7 @@ export class SmartThread extends SmartSource {
    * @param {SmartMessage} msg - The current message being processed.
    * @returns {boolean} True if tool output should be included, false otherwise.
    */
-  _should_include_tool_output(msg) {
+  #should_include_tool_output(msg) {
     return msg.role === 'user' &&
       msg.next_message?.tool_calls?.length &&
       !msg.next_message.is_last_message &&
@@ -545,7 +545,7 @@ export class SmartThread extends SmartSource {
    * @param {SmartMessage} msg - The user message before the tool output.
    * @returns {Promise<Object>} A message object that includes the tool output followed by the user content.
    */
-  async _combine_user_and_tool_output(msg) {
+  async #combine_user_and_tool_output(msg) {
     const message = { role: 'user', content: [] };
     const tool_output = await msg.next_message.next_message.tool_call_output_to_request();
     message.content.push({ type: 'text', text: tool_output });
@@ -561,7 +561,7 @@ export class SmartThread extends SmartSource {
    * @private
    * @param {Object} request - The request object being built.
    */
-  _reorder_last_user_message_if_needed(request) {
+  #reorder_last_user_message_if_needed(request) {
     if (request.messages[request.messages.length - 1]?.tool_call_id) {
       const last_user_msg_index = request.messages.findLastIndex(msg => msg.role === 'user');
       if (last_user_msg_index !== -1 && last_user_msg_index !== request.messages.length - 1) {

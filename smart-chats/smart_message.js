@@ -142,10 +142,10 @@ export class SmartMessage extends SmartBlock {
     const this_message = { role: this.role, content: [] };
 
     // Add contextual internal link content if present
-    await this._append_internal_link_context(this_message);
+    await this.#append_internal_link_context(this_message);
 
     // Add main message content (text and images)
-    await this._append_message_content(this_message);
+    await this.#append_message_content(this_message);
 
     // Handle tool calls and outputs
     if (this.tool_calls?.length) {
@@ -259,7 +259,7 @@ export class SmartMessage extends SmartBlock {
    * @async
    * @param {Object} this_message - The message object being prepared for request.
    */
-  async _append_internal_link_context(this_message) {
+  async #append_internal_link_context(this_message) {
     if (this.context.internal_links?.length > 0) {
       const internal_links_content = await this.fetch_content(this.context.internal_links);
 
@@ -296,7 +296,7 @@ export class SmartMessage extends SmartBlock {
    * @async
    * @param {Object} this_message - The message object being prepared for request.
    */
-  async _append_message_content(this_message) {
+  async #append_message_content(this_message) {
     if (typeof this.content === 'string') {
       // Simple text content
       this_message.content.push({ type: 'text', text: this.content });
@@ -306,11 +306,11 @@ export class SmartMessage extends SmartBlock {
           let text = part.text || '';
           // If text not provided, try reading from provided key
           if (!text && part.input?.key) {
-            text = await this._safe_read_content(part.input.key);
+            text = await this.#safe_read_content(part.input.key);
           }
           this_message.content.push({ type: 'text', text });
         } else if (part.type === 'image_url') {
-          const base64_img = await this._safe_read_image(part.input.image_path);
+          const base64_img = await this.#safe_read_image(part.input.image_path);
           if (base64_img) {
             this_message.content.push({
               type: 'image_url',
@@ -334,7 +334,7 @@ export class SmartMessage extends SmartBlock {
    * @param {string} key - The key to read content from.
    * @returns {Promise<string>} The content read, or an empty string if not found.
    */
-  async _safe_read_content(key) {
+  async #safe_read_content(key) {
     let text = await this.env.smart_sources.get(key)?.read() || '';
     if (!text) {
       text = await this.env.smart_sources.fs.read(key) || '';
@@ -349,7 +349,7 @@ export class SmartMessage extends SmartBlock {
    * @param {string} image_path - The path to the image file.
    * @returns {Promise<string|null>} The base64 data URI if successful, else null.
    */
-  async _safe_read_image(image_path) {
+  async #safe_read_image(image_path) {
     try {
       const extension = image_path.split('.').pop();
       const base64_img = await this.env.smart_sources.fs.read(image_path, 'base64');
