@@ -73,7 +73,7 @@ export class SmartMessage extends SmartBlock {
    * @async
    */
   async init() {
-    while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100)); // this shouldn't be necessary (why is it not working without this?)
+    while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100));
     if(!this.thread.data.messages[this.id]){
       this.thread.data.messages[this.id] = this.msg_i;
       await new Promise(resolve => setTimeout(resolve, 30));
@@ -81,9 +81,7 @@ export class SmartMessage extends SmartBlock {
     await this.render();
     if(this.role === 'user') {
       await this.thread.complete();
-    }else if(this.tool_calls?.length > 0){
-      await this.handle_tool_calls();
-    }else if(this.role === 'tool'){
+    } else if(this.role === 'tool'){
       if(!this.settings.review_context){
         this.thread.complete();
       }
@@ -167,62 +165,6 @@ export class SmartMessage extends SmartBlock {
       console.error(`Error fetching internal links content:`, error);
       return [];
     }
-  }
-
-  async handle_tool_calls(){
-    for(const tool_call of this.tool_calls){
-      if(tool_call.function.name === 'lookup'){
-        await this.handle_lookup_tool_call(tool_call);
-      }
-    }
-  }
-
-  build_lookup_params(args){
-    const params = {};
-    args = typeof args === 'string' ? JSON.parse(args) : args;
-    if(Array.isArray(args.hypotheticals)){
-      params.hypotheticals = args.hypotheticals;
-    }else if(typeof args.hypotheticals === 'object' && args.hypotheticals !== null){
-      params.hypotheticals = Object.values(args.hypotheticals);
-    }else if(typeof args.hypotheticals === 'string'){
-      params.hypotheticals = [args.hypotheticals];
-    }else{
-      console.warn('Invalid hypotheticals provided for lookup tool call, using user message as lookup context, args:' + JSON.stringify(args));
-      params.hypotheticals = [this.content];
-    }
-    params.hypotheticals = params.hypotheticals.map(h => {
-      if(typeof h === 'string') return h;
-      else return JSON.stringify(h);
-    })
-    if(this.previous_message.context.folder_refs) params.filter = {
-      key_starts_with_any: this.previous_message.context.folder_refs
-    };
-    params.filter = {
-      ...(params.filter || {}),
-      limit: this.settings.lookup_limit || 10,
-    };
-    return params;
-  }
-  async handle_lookup_tool_call(tool_call){
-    const params = this.build_lookup_params(tool_call.function.arguments);
-    const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
-    const lookup_results = (await lookup_collection.lookup(params))
-      .map(result => ({
-        key: result.item.key,
-        score: result.score,
-      }))
-    ;
-    const msg_i = Object.keys(this.thread.data.messages || {}).length + 1;
-    const branch_i = (this.thread.data.branches?.[msg_i] || []).length + 1;
-    await this.env.smart_messages.create_or_update({
-      thread_key: this.thread.key,
-      tool_call_id: tool_call.id,
-      tool_name: tool_call.function.name,
-      tool_call_output: lookup_results,
-      role: 'tool',
-      response_id: tool_call.id,
-      id: `tool-${msg_i}-${branch_i}`,
-    });
   }
 
   /**
