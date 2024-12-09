@@ -9,12 +9,13 @@ import {
 } from "./utils/internal_links";
 import { contains_self_referential_keywords } from "./utils/self_referential_keywords";
 import { render as error_template } from "./components/error.js";
+
 /**
  * @class SmartThread
  * @extends SmartSource
- * @description Represents a single chat thread. Manages message history, handles user interactions,
- * coordinates with AI models, and maintains thread state. Supports real-time UI updates and
- * message context management.
+ * @description Represents a single chat thread. It manages message history, handles user interactions,
+ * integrates with AI models, and maintains the thread state. It supports real-time UI updates,
+ * message context management, and tool calls.
  */
 export class SmartThread extends SmartSource {
   /**
@@ -32,29 +33,24 @@ export class SmartThread extends SmartSource {
       }
     };
   }
-  // Define the tools
+
+  // Define available tools
   tools = {
     lookup: {
       type: "function",
       function: {
         name: "lookup",
-        description: "Performs a semantic search of the user's data. Use this function to respond to queries like 'Based on my notes...' or any other request that requires surfacing relevant content.",
+        description: "Performs a semantic search of the user's data to surface relevant content.",
         parameters: {
           type: "object",
           properties: {
             hypotheticals: {
               type: "object",
-              description: "Short hypothetical notes predicted to be semantically similar to the notes necessary to fulfill the user's request. Provide at least three hypotheticals per request. The hypothetical notes may contain paragraphs, lists, or checklists in markdown format. Each hypothetical note should begin with breadcrumbs indicating the anticipated folder(s), file name, and relevant headings separated by ' > ' (no slashes). Example: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.",
+              description: "Predicted relevant notes in markdown format. Provide at least three.",
               properties: {
-                "1": {
-                  type: "string",
-                },
-                "2": {
-                  type: "string",
-                },
-                "3": {
-                  type: "string",
-                },
+                "1": { type: "string" },
+                "2": { type: "string" },
+                "3": { type: "string" },
               },
               required: ["1", "2", "3"]
             }
@@ -68,29 +64,28 @@ export class SmartThread extends SmartSource {
   /**
    * Imports the SmartSource by checking for updates and parsing content.
    * @async
-   * @returns {Promise<void>}
    */
-  async import(){
+  async import() {
     this._queue_import = false;
-    try{
+    try {
       await this.source_adapter.import();
-    }catch(err){
+    } catch (err) {
       this.queue_import();
       console.error(err, err.stack);
     }
   }
 
   /**
-   * Renders the thread interface
+   * Renders the thread UI.
    * @async
-   * @param {HTMLElement} [container] - Container element to render into
-   * @returns {DocumentFragment} Rendered thread interface
+   * @param {HTMLElement} [container=this.container] - The container element to render into.
+   * @param {Object} [opts={}] - Additional rendering options.
+   * @returns {Promise<DocumentFragment>} The rendered thread interface.
    */
   async render(container = this.container, opts = {}) {
     const frag = await thread_template.call(this.smart_view, this, opts);
     if (container) {
       container.empty();
-      // if container is sc-thread, replace it with the frag
       if (container.classList.contains('sc-thread')) {
         container.replaceWith(frag);
       } else {
@@ -101,103 +96,45 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * Creates a new user message and adds it to the thread
+   * Handles a new user message by creating a corresponding SmartMessage.
+   * This involves parsing the message content for inline references, folder references,
+   * and self-referential keywords.
+   *
    * @async
-   * @param {string} content - The content of the user's message
+   * @param {string} content - The raw text content of the user's message.
    */
   async handle_message_from_user(content) {
     try {
-      const new_msg_data = {
-        thread_key: this.key,
-        role: 'user',
-        content: [{
-          type: 'text',
-          text: content.trim(),
-        }],
-        context: {},
-      };
+      const new_msg_data = this._prepare_new_user_message_data(content);
+      this._process_inline_embedded_links(new_msg_data);
+      this._extract_context_from_message_content(new_msg_data);
 
-      // INLINE PROCESSING
-      // Handle internal embedded links (![[link]])
-      for(let i = 0; i < new_msg_data.content.length; i++){
-        const part = new_msg_data.content[i];
-        if(part.type !== 'text' || !part.text) continue;
-        if (contains_internal_embedded_link(part.text)) {
-          const internal_links = extract_internal_embedded_links(part.text);
-          for(const [full_match, link_path] of internal_links){
-            const [before, after] = part.text.split(full_match);
-            const embedded_part = {};
-            const is_image = ['png', 'jpg', 'jpeg'].some(ext => link_path.endsWith(ext));
-            if(is_image){
-              embedded_part.type = 'image_url';
-              embedded_part.input = {
-                image_path: link_path,
-              };
-            } else {
-              embedded_part.type = 'text';
-              embedded_part.input = {
-                key: this.env.smart_sources.fs.get_link_target_path(link_path, '/'),
-              };
-            }
-            part.text = after;
-            if(typeof before === 'string' && before.trim().length) new_msg_data.content.splice(
-              i, 
-              0, 
-              {
-                type: 'text',
-                text: before,
-              },
-              embedded_part
-            );
-          }
-        }
-      }
-  
-      // CONTEXT PROCESSING
-      for(let i=0; i < new_msg_data.content.length; i++){
-        const part = new_msg_data.content[i];
-        if(part.type !== 'text' || !part.text) continue;
-        // Handle internal links ([[link]])
-        if (contains_internal_link(part.text)) {
-          const internal_links = extract_internal_links(part.text);
-          new_msg_data.context.internal_links = internal_links.map(link => {
-            console.log('link', link);
-            return this.env.smart_sources?.fs?.get_link_target_path(link, '/') || link;
-          });
-        }
-        // Handle folder references (/folder/ or /folder/subfolder/)
-        if (contains_folder_reference(part.text)) {
-          const folders = Object.keys(this.env.smart_sources.fs.folders);
-          const folder_refs = extract_folder_references(folders, part.text);
-          new_msg_data.context.folder_refs = folder_refs;
-        }
-    
-        // Handle self-referential keywords
-        if(contains_self_referential_keywords(part.text, this.language)){
-          new_msg_data.context.has_self_ref = true;
-        }
-      }
-  
-      // Create a new SmartMessage for the user's message
       await this.env.smart_messages.create_or_update(new_msg_data);
     } catch (error) {
       console.error("Error in handle_message_from_user:", error);
     }
   }
-  async add_system_message(system_message){
-    if(typeof system_message === 'string'){
-      system_message = {
-        type: 'text',
-        text: system_message,
-      };
+
+  /**
+   * Creates a new system message or updates the last existing system message.
+   * Useful for adding guidance or instructions from the system to the user.
+   *
+   * @async
+   * @param {string|Object} system_message - The system message as text or a content object.
+   */
+  async add_system_message(system_message) {
+    if (typeof system_message === 'string') {
+      system_message = { type: 'text', text: system_message };
     }
-    if(!system_message.type) system_message.type = 'text';
-    // if last message is a system message, update it
+    if (!system_message.type) system_message.type = 'text';
+
     const last_msg = this.messages[this.messages.length - 1];
-    if(last_msg?.role === 'system'){
+    if (last_msg?.role === 'system') {
+      // Append to the last system message if it exists
       last_msg.content.push(system_message);
       last_msg.render();
     } else {
+      // Otherwise, create a new system message
       await this.env.smart_messages.create_or_update({
         role: 'system',
         content: [system_message],
@@ -207,104 +144,82 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * Processes and adds an AI response to the thread
+   * Processes and adds the AI model's response to the thread.
+   * If the model's response includes tool calls, they are handled accordingly.
+   *
    * @async
-   * @param {Object} response - Raw response from the AI model
+   * @param {Object} response - The raw response object from the AI model.
+   * @param {Object} [opts={}] - Additional options.
+   * @returns {Promise<Array>} Array of created or updated message objects.
    */
   async handle_message_from_chat_model(response, opts = {}) {
-    const choices = response.choices;
     const response_id = response.id;
-    if(!response_id) return [];
+    if (!response_id) return [];
 
-    const msg_items = [];
-    for (const choice of choices) {
-      const msg_data = {
-        ...(choice?.message || choice),
-        thread_key: this.key,
-        response_id,
-      };
+    const new_messages = [];
+    for (const choice of (response.choices || [])) {
+      const msg_data = { ...(choice?.message || choice), thread_key: this.key, response_id };
+      const existing_msg = this.messages.find(m => m.data.response_id === response_id);
+      if (existing_msg) msg_data.key = existing_msg.key; // Reuse key if message already exists
 
-      const msg = this.messages.find(m => m.data.response_id === response_id);
-      if(msg) msg_data.key = msg.key;
       const new_msg = await this.env.smart_messages.create_or_update(msg_data);
-      msg_items.push(new_msg);
+      new_messages.push(new_msg);
 
-      // Handle tool calls
+      // If there are tool calls in the message, handle them
       if (msg_data.tool_calls?.length > 0) {
         await this.handle_tool_calls(msg_data.tool_calls, msg_data);
+        // Initialize the message after handling tool calls to trigger follow-up logic
+        await new_msg.init();
       }
     }
-    return msg_items;
+
+    return new_messages;
   }
 
   /**
-   * Handle any tool calls detected in a message.
-   * This was previously in SmartMessage, now moved to SmartThread.
-   * @param {Array<Object>} tool_calls 
-   * @param {Object} msg_data 
+   * Handles the execution of detected tool calls from a message.
+   * Currently supports 'lookup' tool calls. Additional tools can be integrated similarly.
+   *
+   * @async
+   * @param {Array<Object>} tool_calls - Array of tool call objects found in the message.
+   * @param {Object} msg_data - Data of the message that triggered these tool calls.
    */
   async handle_tool_calls(tool_calls, msg_data) {
     for (const tool_call of tool_calls) {
-      if (tool_call.function.name === 'lookup') {
-        await this.handle_lookup_tool_call(tool_call, msg_data);
+      try {
+        switch (tool_call.function.name) {
+          case 'lookup':
+            await this.handle_lookup_tool_call(tool_call, msg_data);
+            break;
+          default:
+            console.warn(`Unhandled tool call: ${tool_call.function.name}`);
+            // Optionally, add a system message or inform the user about the unhandled tool
+            await this.render_error({ message: `No handler for tool: ${tool_call.function.name}` });
+        }
+      } catch (error) {
+        console.error(`Error handling tool call ${tool_call.function.name}:`, error);
+        await this.render_error({ message: `Failed to execute tool: ${tool_call.function.name}`, error });
       }
     }
   }
 
   /**
-   * Builds lookup parameters for the lookup tool call
-   * @param {Object|string} args - tool call arguments
-   * @param {Object} previous_message - the previous SmartMessage instance
-   * @returns {Object} params
-   */
-  build_lookup_params(args, previous_message) {
-    const params = {};
-    args = typeof args === 'string' ? JSON.parse(args) : args;
-    if (Array.isArray(args.hypotheticals)) {
-      params.hypotheticals = args.hypotheticals;
-    } else if (typeof args.hypotheticals === 'object' && args.hypotheticals !== null) {
-      params.hypotheticals = Object.values(args.hypotheticals);
-    } else if (typeof args.hypotheticals === 'string') {
-      params.hypotheticals = [args.hypotheticals];
-    } else {
-      console.warn('Invalid hypotheticals provided for lookup tool call, using user message as lookup context, args:' + JSON.stringify(args));
-      // Fall back to previous message content or empty
-      const fallback_content = previous_message?.content || 'No context';
-      params.hypotheticals = [fallback_content];
-    }
-
-    // Ensure all hypotheticals are strings
-    params.hypotheticals = params.hypotheticals.map(h => {
-      if (typeof h === 'string') return h;
-      else return JSON.stringify(h);
-    });
-
-    // If previous_message has folder refs, use them as filters
-    if (previous_message?.context?.folder_refs) {
-      params.filter = {
-        key_starts_with_any: previous_message.context.folder_refs
-      };
-    }
-
-    params.filter = {
-      ...(params.filter || {}),
-      limit: this.settings.lookup_limit || 10,
-    };
-
-    return params;
-  }
-
-  /**
-   * Handle lookup tool call logic
-   * @param {Object} tool_call 
-   * @param {Object} msg_data - The data for the message that triggered the tool call
+   * Handles a 'lookup' tool call by performing a semantic search and storing the results.
+   * The results are then added as a tool message in the thread.
+   *
+   * @async
+   * @param {Object} tool_call - The tool call object with function name and arguments.
+   * @param {Object} msg_data - The message data that triggered the tool call.
    */
   async handle_lookup_tool_call(tool_call, msg_data) {
-    const previous_message = this.messages[this.messages.length - 1]; 
-    const params = this.build_lookup_params(tool_call.function.arguments, previous_message);
+    const previous_message = this.messages[this.messages.length - 2];
+    const params = this._build_lookup_params(tool_call.function.arguments, previous_message);
 
-    // Determine which collection to use (based on embed settings)
-    const lookup_collection = this.env.smart_blocks.settings.embed_blocks ? this.env.smart_blocks : this.env.smart_sources;
+    // Determine lookup collection (blocks or sources)
+    const lookup_collection = this.env.smart_blocks.settings.embed_blocks
+      ? this.env.smart_blocks
+      : this.env.smart_sources;
+
     const lookup_results = (await lookup_collection.lookup(params)).map(result => ({
       key: result.item.key,
       score: result.score,
@@ -325,128 +240,360 @@ export class SmartThread extends SmartSource {
   }
 
   /**
-   * Prepares the request payload for the AI model
+   * Converts the entire thread state into a request payload for the AI model.
+   * This involves collecting all messages and optionally adding tool definitions and choices.
+   *
    * @async
-   * @returns {Object} Formatted request payload
+   * @returns {Promise<Object>} The request object ready to be sent to the AI model.
    */
   async to_request() {
     const request = { messages: [] };
-    for(const msg of this.messages){
-      // Handle send_tool_output_in_user_message setting
-      if(this.settings.send_tool_output_in_user_message) {
-        // Skip tool messages if they're the last message
-        if(msg.is_last_message && msg.role === 'tool') {
-          continue;
-        }
-        // Skip tool calls if not the last message
-        if(msg.tool_calls && !msg.is_last_message) {
-          continue; 
-        }
-        // For user messages, append tool output if available
-        if(msg.role === 'user' && 
-           msg.next_message?.tool_calls?.length && 
-           !msg.next_message.is_last_message && 
-           msg.next_message.next_message?.role === 'tool') {
-          const message = { role: 'user', content: [] };
-          const tool_output = await msg.next_message.next_message.tool_call_output_to_request();
-          console.log('tool_output', tool_output);
-          message.content.push({type: 'text', text: tool_output});
-          message.content.push(...(await msg.to_request()).content);
-          request.messages.push(message);
-          continue;
-        }
+
+    for (const msg of this.messages) {
+      // If configured, handle tool output inclusion before adding the message
+      if (this.settings.send_tool_output_in_user_message && this._should_include_tool_output(msg)) {
+        // Insert the next tool output message into the user message content
+        const combined_msg = await this._combine_user_and_tool_output(msg);
+        request.messages.push(combined_msg);
+        continue;
       }
 
+      // Normal case: push the message as is
       request.messages.push(await msg.to_request());
-      if(msg.context?.has_self_ref || msg.context?.folder_refs){
+
+      // If the message context requires tool usage, define tools
+      if (msg.context?.has_self_ref || msg.context?.folder_refs) {
         request.tools = [this.tools['lookup']];
-        if(msg.is_last_message) request.tool_choice = { type: "function", function: { name: "lookup" } };
+        if (msg.is_last_message) {
+          request.tool_choice = { type: "function", function: { name: "lookup" } };
+        }
       }
     }
 
-    // DO: review these configurations (inherited from v1)
+    // Set default AI model parameters
     request.temperature = 0.3;
     request.top_p = 1;
     request.presence_penalty = 0;
     request.frequency_penalty = 0;
 
-    // if last message is tool_call_output then should move the most recent user message to the end of the request
-    if(request.messages[request.messages.length - 1]?.tool_call_id){
-      const last_user_msg = request.messages.findLast(msg => msg.role === 'user');
-      if(last_user_msg){
-        request.messages = [
-          ...(request.messages.filter(msg => msg !== last_user_msg)),
-          last_user_msg,
-        ];
-        console.log('moved last user message to the end of the request', request.messages);
-      }
-    }
+    // If the last message is a tool_call_output, ensure the last user message is at the end
+    this._reorder_last_user_message_if_needed(request);
+
     return request;
   }
 
-
   /**
-   * Sends the current thread state to the AI model and processes the response
+   * Sends the current thread state to the AI model for completion.
+   * Handles streaming and non-streaming responses, as well as errors.
+   *
    * @async
    */
   async complete() {
     this.show_typing_indicator();
     const request = await this.to_request();
-    // if streaming and no tool_choice, then stream (may implement streaming for tool calls in the future)
-    // if (this.chat_model.can_stream){ // && !request.tool_choice) {
-    if (this.chat_model.can_stream && !request.tool_choice) {
+
+    // Use streaming if available and no immediate tool calls are requested
+    const should_stream = this.chat_model.can_stream && !request.tool_choice;
+    if (should_stream) {
       await this.chat_model.stream(request, {
         chunk: this.chunk_handler.bind(this),
         done: this.done_handler.bind(this),
         error: this.error_handler.bind(this),
       });
     } else {
+      // Non-streaming fallback
       const response = await this.chat_model.complete(request);
-      if(response.error){
+      if (response.error) {
         return this.error_handler(response);
       }
       this.data.responses[response.id] = response;
       await this.handle_message_from_chat_model(response);
     }
+
     this.hide_typing_indicator();
   }
+
   /**
-   * @description
-   *  - renders the message
+   * Handles partial chunks of a streaming response from the model.
+   * @async
+   * @param {Object} response - The partial response chunk from the model.
    */
   async chunk_handler(response) {
     const msg_items = await this.handle_message_from_chat_model(response);
-    if(msg_items?.length > 0) await msg_items[0].render();
+    if (msg_items?.length > 0) await msg_items[0].render();
   }
+
   /**
-   * @description
-   *  - different from chunk_handler in that it calls init() instead of render()
-   * 	- allows handling tool-calls in `message.init()`
+   * Handles the final event of a streaming response from the model.
+   * @async
+   * @param {Object} response - The final response object from the model.
    */
   async done_handler(response) {
     const msg_items = await this.handle_message_from_chat_model(response);
     this.data.responses[response.id] = response;
-    await msg_items[0].init(); // runs init() to trigger tool_call handlers
+    if (msg_items.length > 0) await msg_items[0].init();
   }
+
+  /**
+   * Handles error responses from the model, rendering an error message in the thread.
+   * @param {Object} response - The error response object.
+   */
   error_handler(response) {
     this.hide_typing_indicator();
     this.render_error(response);
     console.error('error_handler', response);
   }
-  async render_error(response, container=this.messages_container) {
+
+  /**
+   * Renders an error message in the UI.
+   * @async
+   * @param {Object} response - The error response object.
+   * @param {HTMLElement} [container=this.messages_container] - Container element for the error.
+   * @returns {Promise<DocumentFragment>}
+   */
+  async render_error(response, container = this.messages_container) {
     const frag = await error_template.call(this.smart_view, response);
-    if(container) container.appendChild(frag);
+    if (container) container.appendChild(frag);
     return frag;
   }
 
+  /*** Private Helpers ***/
+
   /**
-   * @property {Object} chat_model - The AI chat model instance
-   * @readonly
+   * Prepares initial data for a new user message.
+   * @private
+   * @param {string} content - The raw user-provided content.
+   * @returns {Object} The data object for the new message.
    */
+  _prepare_new_user_message_data(content) {
+    return {
+      thread_key: this.key,
+      role: 'user',
+      content: [{ type: 'text', text: content.trim() }],
+      context: {},
+    };
+  }
+
+  /**
+   * Processes inline embedded links (e.g., ![[link]]) within the user message.
+   * Replaces them with separate message parts (text or images).
+   * @private
+   * @param {Object} new_msg_data - The message data object to modify.
+   */
+  _process_inline_embedded_links(new_msg_data) {
+    for (let i = 0; i < new_msg_data.content.length; i++) {
+      const part = new_msg_data.content[i];
+      if (part.type !== 'text' || !part.text) continue;
+
+      if (contains_internal_embedded_link(part.text)) {
+        const internal_links = extract_internal_embedded_links(part.text);
+
+        for (const [full_match, link_path] of internal_links) {
+          const [before, after] = part.text.split(full_match);
+          const embedded_part = this._create_embedded_part(link_path);
+
+          part.text = after;
+          // Insert before text and embedded content
+          if (before?.trim()?.length) {
+            new_msg_data.content.splice(i, 0,
+              { type: 'text', text: before },
+              embedded_part
+            );
+          } else {
+            new_msg_data.content.splice(i, 0, embedded_part);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Creates an embedded part object (image or text) from an embedded link path.
+   * @private
+   * @param {string} link_path - The path to the embedded content.
+   * @returns {Object} The embedded part object.
+   */
+  _create_embedded_part(link_path) {
+    const is_image = ['png', 'jpg', 'jpeg'].some(ext => link_path.endsWith(ext));
+    if (is_image) {
+      return { type: 'image_url', input: { image_path: link_path } };
+    } else {
+      const resolved_path = this.env.smart_sources.fs.get_link_target_path(link_path, '/');
+      return { type: 'text', input: { key: resolved_path } };
+    }
+  }
+
+  /**
+   * Extracts and attaches relevant context from the message content.
+   * @private
+   * @param {Object} new_msg_data - The message data object to modify.
+   */
+  _extract_context_from_message_content(new_msg_data) {
+    for (let i = 0; i < new_msg_data.content.length; i++) {
+      const part = new_msg_data.content[i];
+      if (part.type !== 'text' || !part.text) continue;
+
+      // Extract internal links ([[link]])
+      if (contains_internal_link(part.text)) {
+        const internal_links = extract_internal_links(part.text);
+        new_msg_data.context.internal_links = internal_links.map(
+          link => this.env.smart_sources?.fs?.get_link_target_path(link, '/') || link
+        );
+      }
+
+      // Extract folder references (/folder/subfolder/)
+      if (contains_folder_reference(part.text)) {
+        const folders = Object.keys(this.env.smart_sources.fs.folders);
+        const folder_refs = extract_folder_references(folders, part.text);
+        new_msg_data.context.folder_refs = folder_refs;
+      }
+
+      // Detect self-referential keywords
+      if (contains_self_referential_keywords(part.text, this.language)) {
+        new_msg_data.context.has_self_ref = true;
+      }
+    }
+  }
+
+  /**
+   * Builds parameters for the 'lookup' tool call.
+   * @private
+   * @param {Object|string} args - Tool call arguments, possibly JSON stringified.
+   * @param {Object} previous_message - The previous message in the thread (if any).
+   * @returns {Object} Formatted lookup parameters.
+   */
+  _build_lookup_params(args, previous_message) {
+    args = typeof args === 'string' ? JSON.parse(args) : args;
+    const params = {};
+
+    params.hypotheticals = this._normalize_hypotheticals(args, previous_message);
+    params.filter = this._build_lookup_filter(previous_message);
+
+    return params;
+  }
+
+  /**
+   * Normalizes 'hypotheticals' argument into an array of strings.
+   * @private
+   * @param {Object} args - Tool call arguments.
+   * @param {Object} previous_message - The previous message in the thread (if any).
+   * @returns {Array<string>} Normalized hypotheticals.
+   */
+  _normalize_hypotheticals(args, previous_message) {
+    let hypotheticals;
+
+    if (Array.isArray(args.hypotheticals)) {
+      hypotheticals = args.hypotheticals;
+    } else if (typeof args.hypotheticals === 'object' && args.hypotheticals !== null) {
+      hypotheticals = Object.values(args.hypotheticals);
+    } else if (typeof args.hypotheticals === 'string') {
+      hypotheticals = [args.hypotheticals];
+    } else {
+      console.warn('Invalid hypotheticals. Using fallback content.');
+      const fallback_content = previous_message?.content || 'No context';
+      hypotheticals = [fallback_content];
+    }
+
+    return hypotheticals.map(h => typeof h === 'string' ? h : JSON.stringify(h));
+  }
+
+  /**
+   * Builds a filter object for the lookup tool call based on the previous message context.
+   * Uses 'key_starts_with' if there is exactly one folder reference.
+   * Uses 'key_starts_with_any' if multiple folder references exist.
+   * @private
+   * @param {Object} previous_message - The previous message in the thread (if any).
+   * @returns {Object} The filter object for the lookup.
+   */
+  _build_lookup_filter(previous_message) {
+    const filter = { limit: this.settings.lookup_limit || 10 };
+    const folder_refs = previous_message?.context?.folder_refs;
+
+    // If folder references are found in the user's message, use them as filters.
+    if (folder_refs && folder_refs.length > 0) {
+      if (folder_refs.length === 1) {
+        // If exactly one folder reference is found, use key_starts_with
+        filter.key_starts_with = folder_refs[0];
+      } else {
+        // If multiple folder references exist, use key_starts_with_any
+        filter.key_starts_with_any = folder_refs;
+      }
+    }
+
+    console.log('filter', filter);
+    return filter;
+  }
+
+
+  /**
+   * Determines if we should include tool output in the user message based on configuration.
+   * @private
+   * @param {SmartMessage} msg - The current message being processed.
+   * @returns {boolean} True if tool output should be included, false otherwise.
+   */
+  _should_include_tool_output(msg) {
+    return msg.role === 'user' &&
+      msg.next_message?.tool_calls?.length &&
+      !msg.next_message.is_last_message &&
+      msg.next_message.next_message?.role === 'tool';
+  }
+
+  /**
+   * Combines the user message with the subsequent tool output, embedding the tool output
+   * in the user message request.
+   * @private
+   * @param {SmartMessage} msg - The user message before the tool output.
+   * @returns {Promise<Object>} A message object that includes the tool output followed by the user content.
+   */
+  async _combine_user_and_tool_output(msg) {
+    const message = { role: 'user', content: [] };
+    const tool_output = await msg.next_message.next_message.tool_call_output_to_request();
+    message.content.push({ type: 'text', text: tool_output });
+    const user_content = await msg.to_request();
+    if (user_content.content) {
+      message.content.push(...user_content.content);
+    }
+    return message;
+  }
+
+  /**
+   * Ensures the last user message is placed at the end of the request if the last message is a tool output.
+   * @private
+   * @param {Object} request - The request object being built.
+   */
+  _reorder_last_user_message_if_needed(request) {
+    if (request.messages[request.messages.length - 1]?.tool_call_id) {
+      const last_user_msg_index = request.messages.findLastIndex(msg => msg.role === 'user');
+      if (last_user_msg_index !== -1 && last_user_msg_index !== request.messages.length - 1) {
+        const last_user_msg = request.messages.splice(last_user_msg_index, 1)[0];
+        request.messages.push(last_user_msg);
+        console.log('Moved last user message to the end of the request for better context handling.');
+      }
+    }
+  }
+
+  /**
+   * Shows the typing indicator in the thread UI.
+   */
+  show_typing_indicator() {
+    const indicator = this.container?.querySelector('.sc-typing-indicator');
+    if (indicator) indicator.classList.add('visible');
+  }
+
+  /**
+   * Hides the typing indicator in the thread UI.
+   */
+  hide_typing_indicator() {
+    const indicator = this.container?.querySelector('.sc-typing-indicator');
+    if (indicator) indicator.classList.remove('visible');
+  }
+
+  /*** Getters and Utility Properties ***/
+
   get chat_model() { return this.collection.chat_model; }
 
-  get created_at() { 
-    if(!this.data.created_at) this.data.created_at = Date.now();
+  get created_at() {
+    if (!this.data.created_at) this.data.created_at = Date.now();
     return this.data.created_at;
   }
 
@@ -465,8 +612,7 @@ export class SmartThread extends SmartSource {
   get messages() {
     return Object.entries(this.data.messages || {})
       .sort((a, b) => a[1] - b[1])
-      .map(([key, msg_i]) => this.env.smart_messages.get(this.key + '#' + key))
-    ;
+      .map(([key]) => this.env.smart_messages.get(this.key + '#' + key));
   }
   /**
    * @alias {Array<SmartMessage>} messages
@@ -474,8 +620,8 @@ export class SmartThread extends SmartSource {
    */
   get blocks() { return this.messages; }
 
-  get_key(){
-    if(!this.data.key) this.data.key = 'Untitled ' + this.created_at;
+  get_key() {
+    if (!this.data.key) this.data.key = 'Untitled ' + this.created_at;
     return this.data.key;
   }
   /**
@@ -483,7 +629,7 @@ export class SmartThread extends SmartSource {
    * @readonly
    */
   get path() {
-    if(!this.data.path){
+    if (!this.data.path) {
       this.data.path = this.collection.source_dir + '/' + this.key + '.' + this.source_adapter.extension;
     }
     return this.data.path;
@@ -500,7 +646,7 @@ export class SmartThread extends SmartSource {
   async process_image_to_base64(file_path) {
     const file = this.env.smart_connections_plugin?.app.vault.getFileByPath(file_path);
     if (!file) return null;
-    
+
     const base64 = await this.env.smart_sources.fs.read(file.path, 'base64');
     return `data:image/${file.extension};base64,${base64}`;
   }
@@ -509,10 +655,11 @@ export class SmartThread extends SmartSource {
    * @returns {void}
    */
   queue_save() {
-    if(this.messages.length === 0) return;
+    if (this.messages.length === 0) return;
     this._queue_save = true;
     this.collection?.queue_save();
   }
+
   async save() {
     await this.source_adapter.save();
   }
@@ -551,7 +698,8 @@ export class SmartThread extends SmartSource {
     this.data.branches[msg_i].push(branch_messages);
     this.queue_save();
   }
-  move_to_branch(msg_i, branch_messages){
+
+  move_to_branch(msg_i, branch_messages) {
     this.create_branch(msg_i, branch_messages);
     Object.keys(branch_messages).forEach(id => delete this.data.messages[id]);
     this.queue_save();
@@ -585,27 +733,4 @@ export class SmartThread extends SmartSource {
     await this.render();
     this.queue_save();
   }
-
-  /**
-   * Shows the typing indicator
-   * @private
-   */
-  show_typing_indicator() {
-    const indicator = this.container?.querySelector('.sc-typing-indicator');
-    if (indicator) {
-      indicator.classList.add('visible');
-    }
-  }
-
-  /**
-   * Hides the typing indicator
-   * @private
-   */
-  hide_typing_indicator() {
-    const indicator = this.container?.querySelector('.sc-typing-indicator');
-    if (indicator) {
-      indicator.classList.remove('visible');
-    }
-  }
-
 }

@@ -4,6 +4,7 @@ import { render as context_template } from "./components/context";
 import { render as tool_calls_template } from "./components/tool_calls";
 import { render as system_message_template } from "./components/system_message";
 import { get_translated_context_suffix_prompt, get_translated_context_prefix_prompt } from "./utils/self_referential_keywords";
+
 /**
  * @class SmartMessage
  * @extends SmartBlock
@@ -16,14 +17,6 @@ export class SmartMessage extends SmartBlock {
    * @static
    * @property {Object} defaults - Default data object for a new message
    * @returns {Object}
-   * @property {string} thread_key - Key for the thread
-   * @property {string} role - Message role ('user' or 'assistant')
-   * @property {number} msg_i - Message index
-   * @property {string} id - Message ID
-   * @property {Array<Object>|null} content - Message content
-   * @property {Array<Object>|null} tool_calls - Tool calls
-   * @property {string|null} tool_call_id - Tool call ID
-   * @property {Object|null} context - Message context
    */
   static get defaults() {
     return {
@@ -42,56 +35,61 @@ export class SmartMessage extends SmartBlock {
   }
 
   /**
-   * Generates a unique key for the message
-   * @returns {string} Unique message identifier
+   * Returns a unique message key based on the thread key and message ID.
+   * @returns {string} Unique message identifier.
    */
   get_key() { return `${this.data.thread_key}#${this.id}`; }
 
   get msg_i() {
-    if(!this.data.msg_i) {
+    if (!this.data.msg_i) {
       const msg_i = Object.keys(this.thread.data.messages || {}).length + 1;
       this.data.msg_i = msg_i;
     }
     return this.data.msg_i;
   }
+
   get branch_i() {
-    if(!this.data.branch_i){
-      const branch_i =  Date.now() + '-' + ((this.thread.data.branches?.[this.msg_i] || []).length + 1);
+    if (!this.data.branch_i) {
+      const branch_i = Date.now() + '-' + ((this.thread.data.branches?.[this.msg_i] || []).length + 1);
       this.data.branch_i = branch_i;
     }
     return this.data.branch_i;
   }
+
   get id() {
-    if(!this.data.id){
+    if (!this.data.id) {
       this.data.id = `${this.role}-${this.msg_i}-${this.branch_i}`;
     }
     return this.data.id;
   }
 
   /**
-   * Initializes the message and triggers processing if it's a user message
+   * Initializes the message. If the message is from the user, triggers thread completion.
+   * If the message represents a tool output and no review is needed, triggers thread completion.
+   *
    * @async
    */
   async init() {
     while (!this.thread) await new Promise(resolve => setTimeout(resolve, 100));
-    if(!this.thread.data.messages[this.id]){
+
+    if (!this.thread.data.messages[this.id]) {
       this.thread.data.messages[this.id] = this.msg_i;
       await new Promise(resolve => setTimeout(resolve, 30));
     }
+
     await this.render();
-    if(this.role === 'user') {
+
+    if (this.role === 'user') {
       await this.thread.complete();
-    } else if(this.role === 'tool'){
-      if(!this.settings.review_context){
-        this.thread.complete();
-      }
+    } else if (this.role === 'tool' && !this.settings.review_context) {
+      this.thread.complete();
     }
+
     this.queue_save();
   }
 
   /**
    * Queues the message for saving via the thread.
-   * @returns {void}
    */
   queue_save() {
     this._queue_save = true;
@@ -99,35 +97,121 @@ export class SmartMessage extends SmartBlock {
   }
 
   /**
-   * Renders the message in the UI
+   * Renders the message interface in the thread UI.
+   * Chooses different templates based on message role and presence of tool calls.
+   *
    * @async
-   * @param {HTMLElement} [container] - Container element to render into
-   * @returns {DocumentFragment} Rendered message interface
+   * @param {HTMLElement} [container=this.thread.messages_container] - The container element.
+   * @returns {Promise<DocumentFragment>} Rendered message fragment.
    */
-  async render(container=this.thread.messages_container) {
+  async render(container = this.thread.messages_container) {
     let frag;
-    if(this.role === 'system'){
+
+    if (this.role === 'system') {
       frag = await system_message_template.call(this.smart_view, this);
-    }else if(this.tool_calls?.length > 0){
+    } else if (this.tool_calls?.length > 0) {
       frag = await tool_calls_template.call(this.smart_view, this);
-    }else if(this.role === 'tool'){
+    } else if (this.role === 'tool') {
       frag = await context_template.call(this.smart_view, this);
-    }else{
+    } else {
       frag = await message_template.call(this.smart_view, this);
     }
-    if(container) {
+
+    if (container) {
       this.elm = container.querySelector(`#${this.data.id}`);
-      if (this.elm) this.elm.replaceWith(frag);
-      else {
+      if (this.elm) {
+        this.elm.replaceWith(frag);
+      } else {
         container.appendChild(frag);
         await new Promise(resolve => setTimeout(resolve, 30));
       }
     }
+
     return frag;
   }
 
   /**
-   * Fetches and processes internal links, embedding images as Base64 data URLs.
+   * Converts the message into a request payload that can be sent to the AI model.
+   * This involves reading and embedding any referenced content (text or images),
+   * and including tool calls or tool call outputs as necessary.
+   *
+   * @async
+   * @returns {Promise<Object>} A request-ready message object.
+   */
+  async to_request() {
+    const this_message = { role: this.role, content: [] };
+
+    // Add contextual internal link content if present
+    await this._append_internal_link_context(this_message);
+
+    // Add main message content (text and images)
+    await this._append_message_content(this_message);
+
+    // Handle tool calls and outputs
+    if (this.tool_calls?.length) {
+      this_message.tool_calls = this.tool_calls;
+      delete this_message.content; 
+      // Note: Removing content here due to potential issues in upstream processing
+    }
+
+    if (this.tool_call_id) {
+      this_message.tool_call_id = this.tool_call_id;
+    }
+
+    if (this.tool_call_output?.length) {
+      const output_content = await this.tool_call_output_to_request();
+      this_message.content = [{ type: 'text', text: output_content }];
+    }
+
+    return this_message;
+  }
+
+  /**
+   * Returns the tool call output as a request-ready string.
+   * For the 'lookup' tool, it either returns JSON or formatted text depending on settings.
+   *
+   * @async
+   * @returns {Promise<string>} The tool call output content as a string.
+   */
+  async tool_call_output_to_request() {
+    if (this.tool_name === 'lookup') {
+      if (this.settings.tool_call_output_as_json) {
+        // Return lookup results as JSON
+        const lookup_collection = this.tool_call_output[0]?.key.includes('#')
+          ? this.env.smart_blocks
+          : this.env.smart_sources;
+
+        const detailed_results = await Promise.all(this.tool_call_output.map(async (result) => ({
+          ...result,
+          content: (await lookup_collection.get(result.key).read())
+        })));
+        return JSON.stringify(detailed_results);
+      }
+
+      // Return lookup results as formatted text
+      const prefix_prompt = get_translated_context_prefix_prompt(this.thread.language);
+      let lookup_output = `${prefix_prompt}\n`;
+      const lookup_content = await this.fetch_content(this.tool_call_output.map(r => r.key));
+
+      this.tool_call_output.forEach((result, index) => {
+        if (lookup_content[index]?.type === 'text') {
+          lookup_output += `-----------------------\n`;
+          lookup_output += `/${result.key} (relevance score: ${result.score})\n`;
+          lookup_output += `---\n${lookup_content[index].content}\n`;
+          lookup_output += `-----------------------\n\n`;
+        }
+      });
+
+      const suffix_prompt = get_translated_context_suffix_prompt(this.thread.language);
+      return lookup_output + suffix_prompt;
+    }
+    return '';
+  }
+
+  /**
+   * Fetches and processes content referenced by internal links.
+   * Can return text or base64 image data depending on the file type.
+   *
    * @async
    * @param {Array<string>} paths - Array of paths to fetch content from
    * @returns {Array<Object>} contents - Array of content objects:
@@ -167,118 +251,111 @@ export class SmartMessage extends SmartBlock {
     }
   }
 
-  /**
-   * Converts the message to a request payload
-   * @returns {Array<Object>} Request payload
-   */
-  async to_request(){
-    const this_message = { role: this.role, content: [] };
+  /*** Private Helpers ***/
 
-    // Add context to first part(s) of content
-    if (this.context.internal_links && this.context.internal_links.length > 0) {
+  /**
+   * Appends context content for internal links to the request message.
+   * @private
+   * @async
+   * @param {Object} this_message - The message object being prepared for request.
+   */
+  async _append_internal_link_context(this_message) {
+    if (this.context.internal_links?.length > 0) {
       const internal_links_content = await this.fetch_content(this.context.internal_links);
-      if (internal_links_content) {
-        let context_content = '';
-        this.context.internal_links.forEach((link, index) => {
-          if (internal_links_content[index].type === 'text') {
-            if(!context_content.length) context_content += `Context specified in message:`;
-            context_content += `\n-----------------------\n`;
-            context_content += `/${link}\n`;
-            context_content += `---\n`;
-            context_content += `${internal_links_content[index].content}\n`;
-            context_content += `-----------------------\n`;
-          } else if (internal_links_content[index].type === 'image') {
-            this_message.content.push({
-              type: 'image_url',
-              image_url: {
-                url: internal_links_content[index].image_url,
-              },
-            });
-          }
-        });
-        if(context_content.length > 0) this_message.content.push({
-          type: 'text',
-          text: context_content,
-        });
+
+      let context_text = '';
+      this.context.internal_links.forEach((link, index) => {
+        const content_item = internal_links_content[index];
+        if (content_item.type === 'text') {
+          if (!context_text.length) context_text += `Context specified in message:\n`;
+          context_text += `-----------------------\n`;
+          context_text += `/${link}\n---\n${content_item.content}\n`;
+          context_text += `-----------------------\n`;
+        } else if (content_item.type === 'image') {
+          // If image in context, add as image_url
+          this_message.content.push({
+            type: 'image_url',
+            image_url: { url: content_item.image_url },
+          });
+        } else if (content_item.type === 'unsupported') {
+          context_text += `Unsupported content in link: ${link}\n`;
+        } else if (content_item.type === 'error') {
+          context_text += `Error retrieving content for: ${link}\n`;
+        }
+      });
+
+      if (context_text.length > 0) {
+        this_message.content.push({ type: 'text', text: context_text });
       }
     }
+  }
 
-    // Add remaining content and inline images
-    if(typeof this.content === 'string'){
-      this_message.content.push({
-        type: 'text',
-        text: this.content,
-      });
-    }else if(Array.isArray(this.content)){
-      for(const part of this.content){
-        if(part.type === 'text'){
+  /**
+   * Appends the main message content (user or assistant text and images) to the request message.
+   * @private
+   * @async
+   * @param {Object} this_message - The message object being prepared for request.
+   */
+  async _append_message_content(this_message) {
+    if (typeof this.content === 'string') {
+      // Simple text content
+      this_message.content.push({ type: 'text', text: this.content });
+    } else if (Array.isArray(this.content)) {
+      for (const part of this.content) {
+        if (part.type === 'text') {
           let text = part.text || '';
-          if(!text && part.input?.key){
-            text = await this.env.smart_sources.get(part.input.key)?.read() || '';
+          // If text not provided, try reading from provided key
+          if (!text && part.input?.key) {
+            text = await this._safe_read_content(part.input.key);
           }
-          if(!text && part.input?.key){
-            text = await this.env.smart_sources.fs.read(part.input.key) || '';
-          }
-          this_message.content.push({
-            type: 'text',
-            text: text,
-          });
-        }else if(part.type === 'image_url'){
-          const base64_img = await this.env.smart_sources.fs.read(part.input.image_path, 'base64');
-          if(base64_img){
-            const extension = part.input.image_path.split('.').pop();
-            const base64_url = `data:image/${extension};base64,${base64_img}`;
+          this_message.content.push({ type: 'text', text });
+        } else if (part.type === 'image_url') {
+          const base64_img = await this._safe_read_image(part.input.image_path);
+          if (base64_img) {
             this_message.content.push({
               type: 'image_url',
-              image_url: {
-                url: base64_url,
-              },
+              image_url: { url: base64_img },
             });
-          }else{
-            console.warn(`Image not found: ${part.input.image_url}`);
+          } else {
             this_message.content.push({
               type: 'text',
-              text: `Image not found: ${part.input.image_url}`,
+              text: `Image not found: ${part.input.image_path}`,
             });
           }
         }
       }
     }
-
-    // Add tool calls and tool call output
-    if (this.tool_calls?.length){
-      this_message.tool_calls = this.tool_calls;
-      delete this_message.content; // empty content causes issues in OpenRouter OpenAI endpoints
-    }
-    if (this.tool_call_id) this_message.tool_call_id = this.tool_call_id;
-    if (this.tool_call_output?.length) this_message.content = await this.tool_call_output_to_request();
-    return this_message;
   }
 
-  async tool_call_output_to_request() {
-    if(this.tool_name === 'lookup'){
-      // // RETURNS LOOKUP OUTPUT AS JSON
-      if(this.settings.tool_call_output_as_json){
-        const lookup_collection = this.tool_call_output[0]?.key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
-        const tool_call_output = await Promise.all(this.tool_call_output.map(async (result) => ({ ...result, content: (await lookup_collection.get(result.key).read()) })));
-        return JSON.stringify(tool_call_output);
-      }
-  
-      // RETURNS LOOKUP OUTPUT AS TEXT
-      const lookup_content = await this.fetch_content(this.tool_call_output.map(result => result.key));
-      const prefix_prompt = get_translated_context_prefix_prompt(this.thread.language);
-      let lookup_output = `${prefix_prompt}\n`;
-      this.tool_call_output.forEach((result, index) => {
-        if (lookup_content[index]?.type === 'text') {
-          lookup_output += `-----------------------\n`;
-          lookup_output += `/${result.key} (relevance score: ${result.score})\n`;
-          lookup_output += `---\n`;
-          lookup_output += `${lookup_content[index].content}\n`;
-          lookup_output += `-----------------------\n\n`;
-        } // should images be added here?
-      });
-      const suffix_prompt = get_translated_context_suffix_prompt(this.thread.language);
-      return lookup_output + suffix_prompt;
+  /**
+   * Safely reads text content from a given key. Returns an empty string if not found.
+   * @private
+   * @async
+   * @param {string} key - The key to read content from.
+   * @returns {Promise<string>} The content read, or an empty string if not found.
+   */
+  async _safe_read_content(key) {
+    let text = await this.env.smart_sources.get(key)?.read() || '';
+    if (!text) {
+      text = await this.env.smart_sources.fs.read(key) || '';
+    }
+    return text;
+  }
+
+  /**
+   * Safely reads and base64-encodes an image from a given path.
+   * @private
+   * @async
+   * @param {string} image_path - The path to the image file.
+   * @returns {Promise<string|null>} The base64 data URI if successful, else null.
+   */
+  async _safe_read_image(image_path) {
+    try {
+      const extension = image_path.split('.').pop();
+      const base64_img = await this.env.smart_sources.fs.read(image_path, 'base64');
+      return `data:image/${extension};base64,${base64_img}`;
+    } catch {
+      return null;
     }
   }
 
@@ -367,8 +444,8 @@ export class SmartMessage extends SmartBlock {
    * @readonly
    */
   get path() { return this.data.thread_key; }
-
   get settings() { return this.thread.settings; }
-
-  get has_image() { return this.content.some(part => part.type === 'image_url'); }
+  get has_image() {
+    return Array.isArray(this.content) && this.content.some(part => part.type === 'image_url');
+  }
 }
