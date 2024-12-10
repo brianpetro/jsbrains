@@ -1,103 +1,114 @@
+```README.md```
 # Smart Collections
-Smart Collections is a JavaScript library that provides a convenient interface for managing collections of items.
+
+Smart Collections is a JavaScript library that provides a convenient and flexible interface for managing collections of items. It aims to support a variety of data sources, storage mechanisms, and query options.
 
 ```bash
 npm install smart-collections
 ```
 
-## usage
+## Overview
+
+Smart Collections consists of two primary classes: `Collection` and `CollectionItem`. These classes provide the foundation for creating, managing, and persisting items in various storage backends (e.g., single-file JSON, multi-file AJSON, or SQLite databases).
+
+### Features
+
+- **CRUD Operations**: Easily create, read, update, and delete items.
+- **Multiple Storage Adapters**: Choose from JSON (single-file), AJSON (multi-file append-only), or SQLite storage adapters.
+- **Filtering and Querying**: Use advanced filter options to refine query results.
+- **Batch and Queue Processing**: Load and save operations can be batched and queued to improve performance and reduce I/O overhead.
+- **Lazy Loading**: Defer loading item data until it is needed.
+- **Extensible Rendering**: Includes a component-based rendering pattern for settings and items, suitable for integrating with UI frameworks or custom logic.
+
+## Usage
 
 ```javascript
 const { Collection, CollectionItem } = require('smart-collections');
-class MyCollection extends Collection { ... };
-class MyCollectionItem extends CollectionItem { ... };
+
+class MyCollection extends Collection {
+  // Optionally override or extend behaviors
+}
+
+class MyCollectionItem extends CollectionItem {
+  // Optionally override or extend behaviors
+}
 ```
 
 ### Collections
 
-- `Collection` is a base collection class that provides functionality for managing a collection of items.
-- It includes methods for creating, updating, reading, and deleting items within the collection.
-- The class also supports saving and loading the collection data from disk. 
-- Additionally, it provides convenience methods for accessing information about the collection and its items.
-- Represents a collection of items.
-- Methods: create, update, read, delete.
-- Supports saving/loading data from disk.
-- Convenience methods for collection information.
-- Filtering items in the collection.
+A `Collection` is responsible for managing a set of items. It:
+
+- Stores items keyed by a unique identifier.
+- Provides `create`, `read`, `update`, and `delete` operations.
+- Supports saving and loading data using a data adapter.
+- Offers filtering capabilities through a unified `filter_opts` parameter.
+- Uses queue and batch methods for loading/saving multiple items efficiently.
+- Can be configured to lazy-load items, preventing loading until explicitly requested.
 
 ### Collection Items
 
-- `CollectionItem` is a class that represents an individual item within a collection.
-- It encapsulates the data and behavior associated with an item.
-- The class includes methods for updating and saving the item's data, as well as initializing and parsing the item.
-- These classes are part of a JavaScript library or application that utilizes collections of items and provides a convenient interface for managing and manipulating them.
-- Represents an item within a collection.
-- Encapsulates data and behavior of an item.
-- Methods: update, save, initialize, parse.
+A `CollectionItem` encapsulates the data and behavior of a single entity within a collection. It:
 
-### Filtering
+- Holds item-level data in `this.data`.
+- Implements `update`, `save`, `load`, `validate_save`, and `delete` methods.
+- Uses `_queue_load` and `_queue_save` for deferred operations.
+- Provides flexible filtering through `filter_opts`.
+- Integrates with a collection’s data adapter to handle persistence.
 
-Both `Collection` and `CollectionItem` classes support advanced filtering options through the `filter_opts` parameter. This allows for flexible and powerful querying of items within a collection.
+### Filtering Options
 
-Each `CollectionItem` has a `filter` method that takes a `filter_opts` object and returns a boolean indicating whether the item matches the filter criteria.
+Both `Collection` and `CollectionItem` support advanced filtering through a `filter_opts` object. These filters allow powerful and flexible queries on keys:
 
-#### Available Filter Options:
+- `exclude_key`: Exclude a single key.
+- `exclude_keys`: Exclude multiple keys.
+- `exclude_key_starts_with`: Exclude keys starting with a given prefix.
+- `exclude_key_starts_with_any`: Exclude keys starting with any string in a given array.
+- `exclude_key_includes`: Exclude keys that include a given substring.
+- `key_ends_with`: Include only keys ending with a given substring.
+- `key_starts_with`: Include only keys starting with a given substring.
+- `key_starts_with_any`: Include only keys starting with any prefix in a given array.
+- `key_includes`: Include only keys that include a given substring.
 
-- `exclude_key`: Excludes a single key.
-- `exclude_keys`: An array of keys to exclude. If `exclude_key` is provided, it's added to this array.
-- `exclude_key_starts_with`: Excludes keys starting with a specific string.
-- `exclude_key_starts_with_any`: Excludes keys starting with any of the provided strings.
-- `exclude_key_includes`: Excludes keys that include a specific string.
-- `key_ends_with`: Includes only keys ending with a specific string.
-- `key_starts_with`: Includes only keys starting with a specific string.
-- `key_starts_with_any`: Includes only keys starting with any of the provided strings.
-- `key_includes`: Includes only keys that include a specific string.
-
-#### Usage Example:
+**Example:**
 ```javascript
 const collection = new MyCollection();
-// list is alias for filter
 const filtered_items = collection.list({ key_starts_with: 'prefix' });
 ```
 
-### Components and Rendering
+### Data Adapters
 
-Smart Collections includes a components/ directory that provides a rendering pattern for collection items and settings. This pattern allows for flexible and customizable rendering of collection data.
+Smart Collections supports multiple data storage strategies via adapters:
 
-#### Settings Component
+- **AJSON Multi-File**: Append-only JSON lines per file, suitable for large datasets and incremental updates.
+- **JSON Single-File (WIP)**: Simple all-in-one JSON storage, convenient for testing or small collections.
+- **SQLite (WIP)**: SQLite-based storage for more robust and queryable persistence.
 
-The `settings.js` file in the components/ directory defines a render function for collection settings:
+Adapting the collection to a storage backend requires specifying a data adapter in the environment configuration.
 
-```javascript
-export async function render(scope, opts = {}) {
-  // Render logic for settings
-}
+### Batch and Queue Processing
 
-export async function post_process(scope, frag, opts = {}) {
-  // Post-processing logic for rendered settings
-}
-```
+- **Batch Processing**: `Collection` classes can implement `process_save_queue()` and `process_load_queue()` methods to handle all queued saves or loads at once.
+- **Queueing**: Items can set `_queue_load` or `_queue_save` to `true` to defer these operations until a batch run, improving performance.
 
-This component is used to render settings for a collection, allowing for easy customization of the settings interface.
+### Lazy Loading
 
-#### Item Component
-
-While not explicitly defined in the provided files, the component pattern can be extended to individual collection items. You can create a custom render function for your collection items:
+When `prevent_load_on_init` is enabled or certain lazy-loading strategies are used, items can defer their load operations until explicitly needed. This reduces initial load times, especially for large datasets.
 
 ```javascript
-async function render_item(item, opts = {}) {
-  // Custom rendering logic for an individual item
-}
+await collection.run_load(); // processes all queued loads
 ```
 
-#### Usage
+### Component-Based Rendering
 
-To use these components, you can call them from your collection or item classes:
+A component-based rendering pattern allows for separation of data logic from presentation. For example:
+
+- `components/settings.js` provides a `render` and `post_process` function to display collection settings.
+- Extend this pattern by implementing custom `render_item` functions for `CollectionItem` subclasses.
 
 ```javascript
 class MyCollection extends Collection {
   async render_settings(container, opts = {}) {
-    const frag = await this.render_settings_component(this, opts);
+    const frag = await this.render_collection_settings(container, opts);
     container.appendChild(frag);
   }
 }
@@ -110,7 +121,8 @@ class MyCollectionItem extends CollectionItem {
 }
 ```
 
-This component-based rendering pattern allows for a clean separation of concerns between data management and presentation, making it easier to customize the display of your collection data.
+By default, these rendering methods use a component pattern that can be replaced or overridden with custom logic as needed.
 
-## about
-Smart Collections was built for the [Smart Connections](https://smartconnections.app) Obsidian plugin and [Smart Predictions Framework](https://wfhbrian.com/).
+## About
+
+Smart Collections was built for the [Smart Connections](https://smartconnections.app) Obsidian plugin. It provides a versatile and extensible foundation for managing data in JavaScript applications.
