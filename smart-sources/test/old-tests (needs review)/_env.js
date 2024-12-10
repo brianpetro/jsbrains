@@ -1,4 +1,4 @@
-import { JsonSingleFileCollectionDataAdapter } from '../../smart-collections/adapters/_test.js';
+import { JsonSingleFileCollectionDataAdapter } from '../../smart-collections/adapters/json_single_file.js';
 import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SourceTestAdapter } from '../adapters/_test.js';
 import { MarkdownSourceAdapter } from '../adapters/markdown.js';

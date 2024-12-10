@@ -316,7 +316,7 @@ export class CollectionItem {
    * @returns {string}
    */
   get ajson() {
-    return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? 'null' : JSON.stringify(this.data)}`;
+    return `${JSON.stringify(this.ajson_key)}: ${(this.deleted) ? 'null' : JSON.stringify(this.data)},`;
   }
 
   /**
