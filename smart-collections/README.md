@@ -1,4 +1,3 @@
-```README.md```
 # Smart Collections
 
 Smart Collections is a JavaScript library that provides a convenient and flexible interface for managing collections of items. It aims to support a variety of data sources, storage mechanisms, and query options.
