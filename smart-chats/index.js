@@ -19,12 +19,10 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import {
-  SmartThreads,
-  SmartThread,
-  SmartMessages,
-  SmartMessage,
-} from "./smart_threads.js";
+import { SmartThreads } from "./smart_threads.js";
+import { SmartThread } from "./smart_thread.js";
+import { SmartMessages } from "./smart_messages.js";
+import { SmartMessage } from "./smart_message.js";
 
 export {
   SmartThreads,

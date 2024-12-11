@@ -13,4 +13,11 @@ export {
   SmartChatModelOpenRouterAdapter,
   SmartChatModelCustomAdapter,
   SmartChatModelOllamaAdapter,
+  SmartChatModelAnthropicAdapter as anthropic,
+  SmartChatModelOpenaiAdapter as openai,
+  SmartChatModelGeminiAdapter as gemini,
+  SmartChatModelCohereAdapter as cohere,
+  SmartChatModelOpenRouterAdapter as open_router,
+  SmartChatModelCustomAdapter as custom,
+  SmartChatModelOllamaAdapter as ollama,
 };

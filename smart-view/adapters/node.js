@@ -12,6 +12,34 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
    * Retrieves the Lucide icon for the given icon name.
    */
   get_icon_html(icon_name) { return lucide[icon_name]; }
+  /**
+   * Check if the given event is a "mod" event, i.e., if a control or meta key is pressed.
+   * This serves as a fallback behavior for environments without Obsidian's Keymap.
+   * @param {Event} event - The keyboard or mouse event.
+   * @returns {boolean} True if the event is considered a "mod" event.
+   */
+  is_mod_event(event) {
+    // On Windows/Linux, Ctrl is often the "mod" key.
+    // On macOS, Cmd (metaKey) is the "mod" key.
+    // This heuristic checks both.
+    return !!(event && (event.ctrlKey || event.metaKey));
+  }
+  /**
+   * Renders the given markdown content.
+   * For a Node.js/browser environment without Obsidian's MarkdownRenderer,
+   * we provide a simple fallback. If you want proper markdown to HTML conversion,
+   * integrate a library like `marked` or `showdown`.
+   *
+   * @param {string} markdown - The markdown content.
+   * @param {object|null} [scope=null] - The scope in which to render the markdown.
+   * @returns {Promise<DocumentFragment>} A promise that resolves to a DocumentFragment.
+   */
+  async render_markdown(markdown, scope=null) {
+    // Basic fallback: Just escape the markdown and wrap it in a <pre> for display.
+    // Replace this with a proper markdown -> HTML conversion if desired.
+    const html = `<pre>${this.main.escape_html(markdown)}</pre>`;
+    return this.main.create_doc_fragment(html);
+  }
 }
 
 export class Setting {
