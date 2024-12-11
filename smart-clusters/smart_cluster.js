@@ -1,89 +1,99 @@
 import { SmartEntity } from "smart-entities";
 
 export class SmartCluster extends SmartEntity {
-  /**
-   * Represents a cluster of items (e.g., sources, blocks, directories).
-   * Clusters are generated from embedding vectors and are intended to help
-   * organize or group items by similarity.
-   * 
-   * Features (planned):
-   * - Stores a centroid vector (mean/median embedding)
-   * - Maintains a list of member keys
-   * - Cluster naming (based on members)
-   * - Timestamps for when clustering occurred
-   */
   static get defaults() {
     return {
       data: {
-        key: null,            // unique cluster key
-        member_keys: [],      // array of item keys belonging to this cluster
-        centroid_vec: null,   // embedding vector representing cluster centroid
-        last_clustered_at: 0, // timestamp of last clustering operation
-        size: 0,              // number of members in cluster
-        name: '',             // generated or user-defined cluster name
-        config: {},           // cluster-specific config (e.g., centroid_type)
+        key: null,
+        member_keys: [],
+        centroid_vec: null,
+        last_clustered_at: 0,
+        size: 0,
+        name: '',
+        config: {}
       },
     };
   }
 
-  constructor(env, data = null) {
-    this.env = env;
-    this.data = {};
-    this.merge_defaults();
-    if (data) Object.assign(this.data, data);
+  constructor(env, data = {}) {
+    super(env, data);
   }
-
-  merge_defaults() {
-    let current_class = this.constructor;
-    while (current_class) {
-      for (const key in current_class.defaults) {
-        if (typeof current_class.defaults[key] === 'object') {
-          this[key] = { ...current_class.defaults[key], ...this[key] };
-        } else {
-          if (this[key] === undefined) this[key] = current_class.defaults[key];
-        }
-      }
-      current_class = Object.getPrototypeOf(current_class);
-    }
-  }
-
-  get key() { return this.data.key; }
 
   /**
-   * Updates cluster data with new member keys or centroid.
-   * @param {Object} updates - Partial data updates.
-   * @returns {boolean} true if data changed.
+   * Recalculate centroid of this cluster using either mean or median of members' embeddings.
    */
-  update_data(updates) {
-    let changed = false;
-    for (const [k, v] of Object.entries(updates)) {
-      if (JSON.stringify(this.data[k]) !== JSON.stringify(v)) {
-        this.data[k] = v;
-        changed = true;
-      }
-    }
-    return changed;
-  }
-
-  // Placeholder method for recalculating centroid after membership changes.
   recalculate_centroid() {
-    // TODO: implement centroid calculation (mean/median of member vectors)
+    if (!this.member_keys?.length) {
+      this.data.centroid_vec = null;
+      return;
+    }
+
+    const member_vectors = this.member_keys
+      .map(key => this.get_item_vector(key))
+      .filter(vec => vec && Array.isArray(vec));
+
+    if (!member_vectors.length) {
+      this.data.centroid_vec = null;
+      return;
+    }
+
+    const vec_length = member_vectors[0].length;
+    const all_values = member_vectors.map(v => v.slice());
+
+    if (this.data.config.centroid_type === 'median') {
+      // median centroid
+      const median_vec = [];
+      for (let i = 0; i < vec_length; i++) {
+        const vals = all_values.map(vec => vec[i]).sort((a, b) => a - b);
+        const mid = Math.floor(vals.length / 2);
+        median_vec[i] = vals.length % 2 === 0 ? (vals[mid - 1] + vals[mid]) / 2 : vals[mid];
+      }
+      this.data.centroid_vec = median_vec;
+    } else {
+      // mean centroid (default)
+      const sum_vec = new Array(vec_length).fill(0);
+      for (const vec of all_values) {
+        for (let i = 0; i < vec_length; i++) {
+          sum_vec[i] += vec[i];
+        }
+      }
+      const mean_vec = sum_vec.map(val => val / all_values.length);
+      this.data.centroid_vec = mean_vec;
+    }
   }
 
-  // Placeholder for naming logic.
+  /**
+   * Retrieves vector for a given item key.
+   * Currently assumes items are from smart_sources or smart_blocks.
+   * Extend as needed for other collections.
+   * @param {string} item_key
+   */
+  get_item_vector(item_key) {
+    const source = this.env.smart_sources.get(item_key) || this.env.smart_blocks.get(item_key);
+    return source?.vec || null;
+  }
+
+  /**
+   * Generate a name for the cluster from its members.
+   * Simple heuristic: take top few member names and join them.
+   */
   generate_name() {
-    // TODO: implement name generation from member keys or item names.
+    const items = this.member_keys.map(key => this.env.smart_sources.get(key) || this.env.smart_blocks.get(key))
+      .filter(item => item);
+
+    const names = items.map(it => it.name || it.key);
+    // Simple name: first 2-3 item names joined
+    this.data.name = names.slice(0, 3).join(", ") + (names.length > 3 ? "..." : "");
   }
 
-  // Placeholder for saving changes.
   async save() {
-    // Integration with data adapter once implemented.
+    await this.env.smart_clusters.data_adapter.save(this);
   }
 
-  // Placeholder for load logic.
-  async load() {
-    // Integration with data adapter once implemented.
-  }
+  get member_keys() { return this.data.member_keys; }
 
-  // Cluster filtering, searching, etc. can be added here.
+  set member_keys(keys) {
+    this.data.member_keys = keys;
+    this.data.size = keys.length;
+  }
 }
