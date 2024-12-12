@@ -336,6 +336,13 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     return `${JSON.stringify(`${collection_key}:${key}`)}: ${data_value},`;
   }
 
+  async _read_item_file() {
+    const data_path = this.get_data_path();
+    const data_ajson = await this.fs.adapter.read(data_path, 'utf-8', { no_cache: true });
+    return data_ajson?.trim() || null;
+  }
+
+  // temp: for backwards compatibility
   _rewrite_legacy_ajson_keys(ajson_key) {
     const [prefix, ...rest] = ajson_key.split(":");
     const item_key = rest.join(":");
@@ -347,10 +354,11 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     }
     return { new_ajson_key: `${new_prefix}:${item_key}`, changed };
   }
-
-  async _read_item_file() {
-    const data_path = this.get_data_path();
-    const data_ajson = await this.fs.adapter.read(data_path, 'utf-8', { no_cache: true });
-    return data_ajson?.trim() || null;
+  _make_backwards_compatible_with_trailing_comma_format(ajson) {
+    // if last character is not a comma, needs comma added to every line
+    if (ajson[ajson.length - 1] !== ',') {
+      ajson = ajson.split('\n').map(line => line.endsWith(',') ? line : line + ',').join('\n');
+    }
+    return ajson;
   }
 }

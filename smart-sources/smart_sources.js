@@ -284,9 +284,16 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Processes the import queue by importing queued items in batches.
-   * @async
-   * @returns {Promise<void>}
+   * @method process_import_queue
+   * @description 
+   * Imports items (SmartSources or SmartBlocks) that have been flagged for import (_queue_import). 
+   * Import typically means reading the raw file content (e.g., .md) to update internal data structures.
+   * After import, items are often queued for embedding or saving.
+   * 
+   * Import vs Load:
+   * "import" usually means reading from the original source file (like .md) to build internal data structures.
+   * "load" often refers to retrieving already serialized data from AJSON or SQLite into memory.
+   * After loading, no file parsing is necessary since data is in a pre-processed form.
    */
   async process_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);

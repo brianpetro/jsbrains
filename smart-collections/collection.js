@@ -345,9 +345,10 @@ export class Collection {
 
   
   /**
-   * Processes the save queue. Saves all items that are flagged with `_queue_save`.
-   * @param {boolean} [overwrite=false]
-   * @returns {Promise<void>}
+   * @method process_save_queue
+   * @description 
+   * Saves items flagged for saving (_queue_save) back to AJSON or SQLite. This ensures persistent storage 
+   * of any updates made since last load/import. This method also writes changes to disk (AJSON files or DB).
    */
   async process_save_queue() {
     // Just delegate to the adapter
@@ -355,10 +356,11 @@ export class Collection {
   }
 
   /**
-   * Processes all items queued for loading.
-   * Loads items in batches to improve performance.
-   *
-   * @returns {Promise<void>}
+   * @method process_load_queue
+   * @description 
+   * Loads items that have been flagged for loading (_queue_load). This may involve 
+   * reading from AJSON/SQLite or re-importing from markdown if needed. 
+   * Called once initial environment is ready and collections are known.
    */
   async process_load_queue() {
     // Just delegate to the adapter

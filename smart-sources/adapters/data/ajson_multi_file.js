@@ -56,6 +56,9 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     const source_data = final_states[this.item.key];
     if (!source_data && !this.item.deleted) {
       this.item.queue_import();
+      if (rewrite_needed) {
+        await this._rewrite_minimal_file_for_multi(final_states);
+      }
       return;
     }
     if (source_data) {
@@ -171,34 +174,44 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     const final_states = {};
     if (!ajson.length) return { final_states, rewrite_needed: false };
 
-    const original_line_count = ajson.trim().split('\n').length;
+    // trim once
+    ajson = ajson.trim();
+
+    // temp: for backwards compatibility
+    ajson = this._make_backwards_compatible_with_trailing_comma_format(ajson);
+
+    const original_line_count = ajson.split('\n').length;
 
     let json_str;
     try {
-      json_str = '{' + ajson.trim().slice(0, -1) + '}';
+      json_str = '{' + ajson.slice(0, -1) + '}';
     } catch (e) {
       console.warn("Error preparing JSON string:", e);
       return { final_states, rewrite_needed: false };
     }
 
-    let data;
+    let changed = false;
+    let data = {};
     try {
       data = JSON.parse(json_str);
     } catch (e) {
       console.warn("Error parsing multi-line JSON:", e);
-      return { final_states, rewrite_needed: false };
+      console.warn(this.item.key);
+      return { final_states, rewrite_needed: true };
     }
 
     for (const [ajson_key, value] of Object.entries(data)) {
-      const { new_ajson_key } = this._rewrite_legacy_ajson_keys(ajson_key);
+      const { new_ajson_key, changed: changed_in_this_loop } = this._rewrite_legacy_ajson_keys(ajson_key);
       const item_key = new_ajson_key.split(':').slice(1).join(':');
       final_states[item_key] = value;
+      changed = changed || changed_in_this_loop;
     }
 
-    const rewrite_needed = original_line_count > Object.keys(final_states).length;
+    const rewrite_needed = changed || (original_line_count > Object.keys(final_states).length);
 
     return { final_states, rewrite_needed };
   }
+
 
   async _rewrite_minimal_file_for_multi(final_states) {
     const data_path = this.get_data_path();
@@ -225,6 +238,7 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     if (lines.length) {
       await this.fs.write(data_path, lines.join('\n'));
     } else {
+      console.warn("No active items remain, removing file", data_path);
       // No active items remain, remove file
       if (await this.fs.exists(data_path)) await this.fs.remove(data_path);
     }

@@ -21,6 +21,13 @@
 
 import { render as settings_template } from './components/settings.js';
 
+/**
+ * @class SmartEnv
+ * @description 
+ * The SmartEnv class represents a global runtime environment managing configuration, 
+ * references to collections, modules, and a global scope. It ensures that only one instance 
+ * of the environment is created and acts as a central point of coordination.
+ */
 export class SmartEnv {
   scope_name = 'smart_env';
   constructor(opts={}) {

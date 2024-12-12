@@ -44,7 +44,6 @@ export class SmartEntity extends CollectionItem {
   init() {
     super.init();
     if (!this.vec && this.should_embed) {
-      console.log('queueing embed for', this.key);
       this.queue_embed();
     }
     // Only keep active model embeddings
