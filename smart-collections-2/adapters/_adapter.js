@@ -2,10 +2,12 @@
  * @interface CollectionDataAdapter
  * @description
  * Provides an interface for collection-level data operations, such as loading and saving multiple items,
- * processing queues, and orchestrating batch operations. This adapter does not handle individual item 
- * file reading or writing directly, but delegates that to `ItemDataAdapter` instances.
+ * processing queues, and orchestrating batch operations.
+ *
+ * This adapter does not handle individual item file reading or writing directly, but delegates that
+ * to `ItemDataAdapter` instances.
  */
-class CollectionDataAdapter {
+export class CollectionDataAdapter {
   /**
    * @constructor
    * @param {Object} collection - The collection instance that this adapter manages.
@@ -82,7 +84,7 @@ class CollectionDataAdapter {
  * writing, and deleting the data for a single item. It is meant to be used by the
  * `CollectionDataAdapter` to handle individual item I/O.
  */
-class ItemDataAdapter {
+export class ItemDataAdapter {
   /**
    * @constructor
    * @param {Object} item - The collection item instance that this adapter manages.
@@ -137,5 +139,7 @@ class ItemDataAdapter {
   /**
    * @returns {CollectionDataAdapter} The collection data adapter that this item data adapter belongs to.
    */
-  get collection_adapter() { return this.item.collection.data_adapter; }
+  get collection_adapter() {
+    return this.item.collection.data_adapter;
+  }
 }
