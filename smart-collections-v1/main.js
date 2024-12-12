@@ -19,11 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { Item } from './item.js';
+import { CollectionItem } from './collection_item.js';
 import { Collection } from './collection.js';
 
-export {
-  Collection,
-  Item,
-  Item as CollectionItem, // for backwards compatibility
-};
+export { CollectionItem, Collection };

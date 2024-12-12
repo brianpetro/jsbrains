@@ -43,7 +43,10 @@ export class SmartEntity extends CollectionItem {
    */
   init() {
     super.init();
-    if (!this.vec) this.queue_embed();
+    if (!this.vec && this.should_embed) {
+      console.log('queueing embed for', this.key);
+      this.queue_embed();
+    }
     // Only keep active model embeddings
     Object.entries(this.data.embeddings || {}).forEach(([model, embedding]) => {
       if (model !== this.embed_model_key) {

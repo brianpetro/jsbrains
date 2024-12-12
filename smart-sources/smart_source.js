@@ -64,7 +64,7 @@ export class SmartSource extends SmartEntity {
       }
       if(this.meta_changed){
         this.data.blocks = null;
-        await this.save(super.ajson);
+        await this.save();
         this.data.mtime = stat.mtime;
         this.data.size = stat.size;
         await this.source_adapter.import();
@@ -344,33 +344,33 @@ export class SmartSource extends SmartEntity {
     }
   }
 
-  /**
-   * Saves the SmartSource and its blocks by processing the save queue.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async save() {
-    if(this.deleted) return await super.save(super.ajson);
-    const blocks_to_save = this.blocks.filter(block => block._queue_save);
-    const ajson = [
-      super.ajson,
-      ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
-    ].join("\n");
-    await super.save(ajson);
-    blocks_to_save.forEach(block => {
-      block._queue_save = false;
-      if(block.deleted && this.block_collection.items[block.key]){
-        this.block_collection.delete_item(block.key);
-      }
-    });
-  }
-  async overwrite_saved_data(ajson = null) {
-    if(!ajson) ajson = [
-      super.ajson,
-      ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
-    ].join("\n");
-    await super.overwrite_saved_data(ajson);
-  }
+  // /**
+  //  * Saves the SmartSource and its blocks by processing the save queue.
+  //  * @async
+  //  * @returns {Promise<void>}
+  //  */
+  // async save() {
+  //   if(this.deleted) return await super.save(super.ajson);
+  //   const blocks_to_save = this.blocks.filter(block => block._queue_save);
+  //   const ajson = [
+  //     super.ajson,
+  //     ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
+  //   ].join("\n");
+  //   await super.save(ajson);
+  //   blocks_to_save.forEach(block => {
+  //     block._queue_save = false;
+  //     if(block.deleted && this.block_collection.items[block.key]){
+  //       this.block_collection.delete_item(block.key);
+  //     }
+  //   });
+  // }
+  // async overwrite_saved_data(ajson = null) {
+  //   if(!ajson) ajson = [
+  //     super.ajson,
+  //     ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
+  //   ].join("\n");
+  //   await super.overwrite_saved_data(ajson);
+  // }
 
   /**
    * Handles errors during the load process.

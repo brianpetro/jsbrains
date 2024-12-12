@@ -9,6 +9,12 @@ import { CollectionDataAdapter, ItemDataAdapter } from './_adapter.js';
  */
 export class FileCollectionDataAdapter extends CollectionDataAdapter {
   /**
+   * The class to use for item adapters.
+   * @type {typeof ItemDataAdapter}
+   */
+  ItemDataAdapter = FileItemDataAdapter;
+
+  /**
    * @returns {Object} Filesystem interface derived from environment or collection settings.
    */
   get fs() {

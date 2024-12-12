@@ -1,4 +1,5 @@
-import { deep_merge } from './utils/helpers.js';
+import { CollectionItem } from './collection_item.js';
+import { deep_merge } from './helpers.js';
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
@@ -74,7 +75,7 @@ export class Collection {
    * otherwise, creates a new item.
    *
    * @param {Object} [data={}] - Data for creating/updating an item.
-   * @returns {Promise<Item>|Item} The created or updated item.
+   * @returns {Promise<CollectionItem>|CollectionItem} The created or updated item.
    */
   create_or_update(data = {}) {
     const existing = this.find_by(data);
@@ -111,7 +112,7 @@ export class Collection {
    * returns the item with that key; otherwise attempts a match by merging data.
    *
    * @param {Object} data - Data to match against.
-   * @returns {Item|null}
+   * @returns {CollectionItem|null}
    */
   find_by(data) {
     if (data.key) return this.get(data.key);
@@ -125,7 +126,7 @@ export class Collection {
    * Filters items based on provided filter options or a custom function.
    *
    * @param {Object|Function} [filter_opts={}] - Filter options or a predicate function.
-   * @returns {Item[]} Array of filtered items.
+   * @returns {CollectionItem[]} Array of filtered items.
    */
   filter(filter_opts = {}) {
     if (typeof filter_opts === 'function') {
@@ -146,7 +147,7 @@ export class Collection {
   /**
    * Alias for `filter()`
    * @param {Object|Function} filter_opts
-   * @returns {Item[]}
+   * @returns {CollectionItem[]}
    */
   list(filter_opts) { return this.filter(filter_opts); }
 
@@ -161,14 +162,14 @@ export class Collection {
   /**
    * Retrieves an item by key.
    * @param {string} key
-   * @returns {Item|undefined}
+   * @returns {CollectionItem|undefined}
    */
   get(key) { return this.items[key]; }
 
   /**
    * Retrieves multiple items by an array of keys.
    * @param {string[]} keys
-   * @returns {Item[]}
+   * @returns {CollectionItem[]}
    */
   get_many(keys = []) {
     if (!Array.isArray(keys)) {
@@ -181,7 +182,7 @@ export class Collection {
   /**
    * Retrieves a random item from the collection, optionally filtered by options.
    * @param {Object} [opts]
-   * @returns {Item|undefined}
+   * @returns {CollectionItem|undefined}
    */
   get_rand(opts = null) {
     if (opts) {
@@ -194,7 +195,7 @@ export class Collection {
 
   /**
    * Adds or updates an item in the collection.
-   * @param {Item} item
+   * @param {CollectionItem} item
    */
   set(item) {
     if (!item.key) throw new Error("Item must have a key property");
@@ -319,7 +320,7 @@ export class Collection {
    * Saves the current state of the collection.
    * @returns {Promise<void>}
    */
-  async save() { await this.data_adapter.save_all_items(); }
+  async save() { await this.data_adapter.save(); }
 
   /**
    * Processes all items queued for saving.
@@ -343,15 +344,35 @@ export class Collection {
     }
   }
 
-  
   /**
    * Processes the save queue. Saves all items that are flagged with `_queue_save`.
    * @param {boolean} [overwrite=false]
    * @returns {Promise<void>}
    */
-  async process_save_queue() {
-    // Just delegate to the adapter
-    await this.data_adapter.process_save_queue();
+  async process_save_queue(overwrite = false) {
+    this.notices?.show('saving', `Saving ${this.collection_key}...`, { timeout: 0 });
+
+    if (this._saving) {
+      console.log("Already saving");
+      return;
+    }
+
+    this._saving = true;
+    setTimeout(() => { this._saving = false; }, 10000);
+
+    const save_queue = Object.values(this.items).filter(item => item._queue_save);
+    console.log(`Saving ${this.collection_key}: ${save_queue.length} items`);
+
+    const time_start = Date.now();
+    if (overwrite) {
+      await Promise.all(save_queue.map(item => item.overwrite_saved_data()));
+    } else {
+      await Promise.all(save_queue.map(item => item.save()));
+    }
+
+    console.log(`Saved ${this.collection_key} in ${Date.now() - time_start}ms`);
+    this._saving = false;
+    this.notices?.remove('saving');
   }
 
   /**
@@ -361,8 +382,33 @@ export class Collection {
    * @returns {Promise<void>}
    */
   async process_load_queue() {
-    // Just delegate to the adapter
-    await this.data_adapter.process_load_queue();
+    this.notices?.show('loading', `Loading ${this.collection_key}...`, { timeout: 0 });
+
+    if (this._loading) {
+      console.log("Already loading");
+      return;
+    }
+
+    this._loading = true;
+    setTimeout(() => { this._loading = false; }, 10000);
+
+    const load_queue = Object.values(this.items).filter(item => item._queue_load);
+    console.log(`Loading ${this.collection_key}: ${load_queue.length} items`);
+    const time_start = Date.now();
+    const batch_size = 100;
+
+    // TODO: Potential improvement: make batch_size configurable.
+    for (let i = 0; i < load_queue.length; i += batch_size) {
+      const batch = load_queue.slice(i, i + batch_size);
+      await Promise.all(batch.map(item => item.load()));
+    }
+
+    this.env.collections[this.collection_key] = 'loaded';
+    this.load_time_ms = Date.now() - time_start;
+    console.log(`Loaded ${this.collection_key} in ${this.load_time_ms}ms`);
+    this._loading = false;
+    this.loaded = load_queue.length;
+    this.notices?.remove('loading');
   }
 
   /**
@@ -487,4 +533,3 @@ export class Collection {
     this.render_settings();
   }
 }
-
