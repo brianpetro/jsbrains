@@ -5,6 +5,10 @@ import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { get_line_range } from "../utils/get_line_range.js";
 import { block_read, block_update, block_destroy } from "../blocks/markdown_crud.js";
 
+/**
+ * @module MarkdownSourceAdapter
+ * @description Adapter that reads and writes markdown files as sources for Smart Connections.
+ */
 export class MarkdownSourceAdapter extends FileSourceAdapter {
   get fs() { return this.source_collection.fs; }
   get data() { return this.item.data; }

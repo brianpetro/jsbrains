@@ -502,7 +502,7 @@ export class Collection {
       this.settings_container = container;
     } else if (!container) {
       // NOTE: Creating a fragment if no container provided. This depends on `env.smart_view`.
-      container = this.env.smart_view.create_doc_dragment('<div></div>');
+      container = this.env.smart_view.create_doc_fragment('<div></div>');
     }
     container.innerHTML = `<div class="sc-loading">Loading ${this.collection_key} settings...</div>`;
     const frag = await this.env.render_component('settings', this, opts);

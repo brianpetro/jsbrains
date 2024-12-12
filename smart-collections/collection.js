@@ -35,7 +35,6 @@ export class Collection {
     this.env[this.collection_key] = this;
     this.config = this.env.config;
     this.items = {};
-    this.merge_defaults();
     this.loaded = null;
     this._loading = false;
     this.load_time_ms = null;
@@ -70,38 +69,53 @@ export class Collection {
   async init() {}
 
   /**
-   * Creates or updates an item in the collection. If the item key exists, updates existing item data;
-   * otherwise, creates a new item.
+   * Creates or updates an item in the collection.
+   * - If `data` includes a key that matches an existing item, that item is updated.
+   * - Otherwise, a new item is created.
+   * After updating or creating, the item is validated. If validation fails, the item is logged and returned without being saved.
+   * If validation succeeds for a new item, it is added to the collection and marked for saving.
+   *
+   * If the item’s `init()` method is async, a promise is returned that resolves once init completes.
    *
    * @param {Object} [data={}] - Data for creating/updating an item.
-   * @returns {Promise<Item>|Item} The created or updated item.
+   * @returns {Promise<Item>|Item} The created or updated item. May return a promise if `init()` is async.
    */
-  create_or_update(data = {}) {
-    const existing = this.find_by(data);
-    const item = existing ? existing : new this.item_type(this.env);
-    item._queue_save = !existing; // If not existing, it must be saved.
 
-    const changed = item.update_data(data); 
-    if (!existing) {
-      // Validate before adding to collection
-      if (item.validate_save()) {
-        this.set(item);
-      } else {
-        console.warn("Invalid item, skipping adding to collection:", item);
-        return item;
-      }
+  create_or_update(data = {}) {
+    // Attempt to find an existing item based on the provided data
+    const existing_item = this.find_by(data);
+
+    // If no existing item, create a new one
+    const item = existing_item ? existing_item : new this.item_type(this.env);
+
+    // If a new item is being created, we need to save it by default
+    item._queue_save = !existing_item;
+
+    // Update the item's data and note if it changed
+    const data_changed = item.update_data(data);
+
+    // If this is a new item, validate it before adding to the collection
+    if (!existing_item && !item.validate_save()) {
+      console.warn("Invalid item, skipping adding to collection:", item);
+      return item;
     }
 
-    // If item is existing and data didn't change, no need to re-save.
-    if (existing && !changed) return existing;
+    // If new item is valid, add it to the collection
+    if (!existing_item) {
+      this.set(item);
+    }
 
-    // If `init` is async, handle asynchronously.
+    // If existing item data didn't change, no need to re-save or re-init
+    if (existing_item && !data_changed) return existing_item;
+
+    // If initialization is asynchronous, return a promise that resolves after init
     if (item.init instanceof AsyncFunction) {
-      return new Promise((resolve) => { 
-        item.init(data).then(() => resolve(item)); 
+      return new Promise((resolve) => {
+        item.init(data).then(() => resolve(item));
       });
     }
 
+    // For synchronous init, just run init and return the item
     item.init(data);
     return item;
   }
@@ -328,23 +342,6 @@ export class Collection {
   async save_queue() { await this.process_save_queue(); }
 
   /**
-   * Merges default configurations from class inheritance chain into this collection.
-   * Override or extend if needed.
-   * @private
-   */
-  merge_defaults() {
-    let current_class = this.constructor;
-    while (current_class) {
-      const col_conf = this.config?.collections?.[current_class.collection_key];
-      if (typeof col_conf === 'object') {
-        Object.entries(col_conf).forEach(([key, value]) => this[key] = value);
-      }
-      current_class = Object.getPrototypeOf(current_class);
-    }
-  }
-
-  
-  /**
    * @method process_save_queue
    * @description 
    * Saves items flagged for saving (_queue_save) back to AJSON or SQLite. This ensures persistent storage 
@@ -458,7 +455,7 @@ export class Collection {
       this.settings_container = container;
     } else if (!container) {
       // NOTE: Creating a fragment if no container provided. This depends on `env.smart_view`.
-      container = this.env.smart_view.create_doc_dragment('<div></div>');
+      container = this.env.smart_view.create_doc_fragment('<div></div>');
     }
     container.innerHTML = `<div class="sc-loading">Loading ${this.collection_key} settings...</div>`;
     const frag = await this.env.render_component('settings', this, opts);
