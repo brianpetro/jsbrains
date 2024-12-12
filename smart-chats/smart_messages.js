@@ -16,7 +16,7 @@ export class SmartMessages extends SmartBlocks {
    * Override for processing import queue
    * @override
    */
-  process_import_queue() { }
+  process_source_import_queue() { }
 
   /**
    * @property {string} data_folder - Path to message storage

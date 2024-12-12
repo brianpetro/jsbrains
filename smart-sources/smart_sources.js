@@ -154,7 +154,7 @@ export class SmartSources extends SmartEntities {
    */
   async refresh(){
     await this.prune();
-    await this.process_import_queue();
+    await this.process_source_import_queue();
     await this.env.smart_blocks.process_embed_queue();
     await this.process_embed_queue();
   }
@@ -279,12 +279,12 @@ export class SmartSources extends SmartEntities {
       this.block_collection.loaded = Object.keys(this.block_collection.items).length;
     }
     if(!this.opts.prevent_import_on_load){
-      await this.process_import_queue();
+      await this.process_source_import_queue();
     }
   }
 
   /**
-   * @method process_import_queue
+   * @method process_source_import_queue
    * @description 
    * Imports items (SmartSources or SmartBlocks) that have been flagged for import (_queue_import). 
    * Import typically means reading the raw file content (e.g., .md) to update internal data structures.
@@ -295,7 +295,7 @@ export class SmartSources extends SmartEntities {
    * "load" often refers to retrieving already serialized data from AJSON or SQLite into memory.
    * After loading, no file parsing is necessary since data is in a pre-processed form.
    */
-  async process_import_queue(){
+  async process_source_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     console.log("import_queue " + import_queue.length);
     if(import_queue.length){
@@ -462,8 +462,8 @@ export class SmartSources extends SmartEntities {
    * @async
    * @returns {Promise<void>}
    */
-  async run_load() {
-    await super.run_load();
+  async run_data_load() {
+    await super.run_data_load();
     this.block_collection.render_settings();
     this.render_settings(); // Re-render settings to update buttons
   }
@@ -479,7 +479,7 @@ export class SmartSources extends SmartEntities {
     Object.values(this.items).forEach(item => {
       if (item.meta_changed) item.queue_import();
     });
-    await this.process_import_queue();
+    await this.process_source_import_queue();
     const end_time = Date.now();
     console.log(`Time spent importing: ${end_time - start_time}ms`);
     this.render_settings();
@@ -518,7 +518,7 @@ export class SmartSources extends SmartEntities {
       item.loaded_at = Date.now() + 9999999999; // Prevent re-loading during import
     });
     
-    await this.process_import_queue();
+    await this.process_source_import_queue();
     this.notices?.remove('clearing all');
     this.notices?.show('cleared all', "All data cleared and reimported", { timeout: 3000 });
   }

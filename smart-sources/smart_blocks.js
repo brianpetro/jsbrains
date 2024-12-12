@@ -140,7 +140,7 @@ export class SmartBlocks extends SmartEntities {
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */
-  async run_load() { throw "Not implemented: run_load"; }
+  async run_data_load() { throw "Not implemented: run_data_load"; }
 
   /**
    * @async

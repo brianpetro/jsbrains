@@ -7,12 +7,19 @@ const class_to_collection_key = {
   'SmartBlock': 'smart_blocks',
   'SmartDirectory': 'smart_directories',
 };
-
 /**
  * @class AjsonMultiFileCollectionDataAdapter
  * @extends FileCollectionDataAdapter
  * @description
  * Adapter for handling multi-file data storage for smart collections using AJSON format.
+ * AJSON stands for Append-only JSON log format for item states.
+ * AJSON Format:
+ * - Each file is essentially a log of states.
+ * - Each line is of the form: `"collection_key:item_key": data,`
+ * - Null data indicates a delete operation.
+ * - On load, we parse all lines and compute the final state.
+ * - On save, we append a new line with the latest state.
+ * - Periodically, we rewrite to a minimal form (one line per active item).
  *
  * Responsibilities:
  * - Orchestrates loading, saving, and deleting items by key.
@@ -178,7 +185,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
   get_data_path() {
     const dir = this.collection_adapter.collection.data_dir || 'multi';
     const sep = this.fs?.sep || '/';
-    const file_name = this._make_file_name_from_item_key(this.item.key);
+    const file_name = this._get_data_file_name(this.item.key);
     return dir + sep + file_name + '.ajson';
   }
 
@@ -190,7 +197,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
    * @param {string} key 
    * @returns {string} safe file name
    */
-  _make_file_name_from_item_key(key) {
+  _get_data_file_name(key) {
     return key.replace(/[\s\/\.]/g, '_').replace(".md", "");
   }
 
@@ -246,7 +253,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     }
 
     // Append a line representing current state (or null if deleted)
-    const ajson_line = this._make_ajson_line_for_item(this.item, this.item.deleted ? null : this.item.data);
+    const ajson_line = this._build_ajson_line(this.item, this.item.deleted ? null : this.item.data);
     await this.fs.append(data_path, '\n' + ajson_line);
 
     this.item._queue_save = false;
@@ -254,7 +261,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
 
   async delete() {
     const data_path = this.get_data_path();
-    const ajson_line = this._make_ajson_line_for_item(this.item, null);
+    const ajson_line = this._build_ajson_line(this.item, null);
     await this.fs.append(data_path, '\n' + ajson_line);
     this.item.collection.delete_item(this.item.key);
   }
@@ -264,7 +271,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     const data_path = this.get_data_path();
     if (!ajson) {
       if (!this.item.deleted) {
-        ajson = this._make_ajson_line_for_item(this.item, this.item.data);
+        ajson = this._build_ajson_line(this.item, this.item.data);
       } else {
         // If deleted, remove file if exists
         if (await this.fs.exists(data_path)) {
@@ -287,7 +294,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
   async _rewrite_minimal_file(final_state) {
     const data_path = this.get_data_path();
     if (final_state !== null) {
-      const line = this._make_ajson_line_for_item(this.item, final_state);
+      const line = this._build_ajson_line(this.item, final_state);
       await this.fs.write(data_path, line);
     } else {
       // If no final state (deleted), remove file
@@ -329,7 +336,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     return last_state || null;
   }
 
-  _make_ajson_line_for_item(item, data) {
+  _build_ajson_line(item, data) {
     const collection_key = item.collection_key;
     const key = item.key;
     const data_value = data === null ? 'null' : JSON.stringify(data);

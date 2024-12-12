@@ -6,3 +6,5 @@ blocks/
 schema.js
 test/old-tests (needs review)/
 markdown.test.js
+sqlite.**
+*.sqlite

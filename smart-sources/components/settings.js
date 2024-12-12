@@ -16,7 +16,7 @@ export async function post_process(source_collection, frag, opts = {}) {
   await this.render_setting_components(frag, {scope: source_collection});
   
   frag.querySelector('.sources-load-btn')?.addEventListener('click', () => {
-    source_collection.run_load();
+    source_collection.run_data_load();
   });
   
   if (source_collection.loaded) {

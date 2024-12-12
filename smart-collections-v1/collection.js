@@ -522,7 +522,7 @@ export class Collection {
    * Runs load process for all items in the collection, triggering queue loads and rendering settings after done.
    * @returns {Promise<void>}
    */
-  async run_load() {
+  async run_data_load() {
     this.loaded = null;
     this.load_time_ms = null;
     Object.values(this.items).forEach((item) => item.queue_load());

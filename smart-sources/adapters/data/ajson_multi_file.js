@@ -113,14 +113,14 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
 
     // If this source needs saving
     if (this.item._queue_save) {
-      const source_line = this._make_ajson_line_for_item(this.item, this.item.deleted ? null : this.item.data);
+      const source_line = this._build_ajson_line(this.item, this.item.deleted ? null : this.item.data);
       lines.push(source_line);
     }
 
     // Check blocks associated with this source
     for (const block of this.item.blocks) {
       if (block._queue_save) {
-        const block_line = this._make_ajson_line_for_item(block, block.deleted ? null : block.data);
+        const block_line = this._build_ajson_line(block, block.deleted ? null : block.data);
         lines.push(block_line);
       }
     }
@@ -146,7 +146,7 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
   async delete() {
     // Append a null line for this item
     const data_path = this.get_data_path();
-    const ajson_line = this._make_ajson_line_for_item(this.item, null);
+    const ajson_line = this._build_ajson_line(this.item, null);
     await this.fs.append(data_path, '\n' + ajson_line);
     this.item.collection.delete_item(this.item.key);
   }
@@ -157,11 +157,11 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     if (!ajson) {
       const lines = [];
       if (!this.item.deleted) {
-        lines.push(this._make_ajson_line_for_item(this.item, this.item.data));
+        lines.push(this._build_ajson_line(this.item, this.item.data));
       }
       for (const block of this.item.blocks) {
         if (!block.deleted) {
-          lines.push(this._make_ajson_line_for_item(block, block.data));
+          lines.push(this._build_ajson_line(block, block.data));
         }
       }
       ajson = lines.join('\n');
@@ -231,7 +231,7 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
           const collection_key = this._guess_collection_key_from_data(data);
           lines.push(this._make_ajson_line_for_arbitrary_key(key, data, collection_key));
         } else {
-          lines.push(this._make_ajson_line_for_item(item, data));
+          lines.push(this._build_ajson_line(item, data));
         }
       }
     }

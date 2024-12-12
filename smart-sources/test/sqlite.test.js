@@ -59,12 +59,12 @@ async function load_env() {
   const temp_main = new TestMultiFileSourceMain();
   const temp_env = await SmartEnv.create(temp_main, temp_main.smart_env_config);
   
-  await temp_env.smart_sources.process_import_queue();
+  await temp_env.smart_sources.process_source_import_queue();
   await temp_env.smart_sources.process_save_queue();
   
   const main = new TestMultiFileSourceMain();
   const env = await SmartEnv.create(main, main.smart_env_config);
-  env.smart_sources.process_import_queue = async () => {};
+  env.smart_sources.process_source_import_queue = async () => {};
   return env;
 }
 
@@ -111,7 +111,7 @@ test.serial('Import and save sources from markdown files', async t => {
   const fs = sources.data_fs;
 
   await sources.init_items();
-  await sources.process_import_queue();
+  await sources.process_source_import_queue();
   
   const expected_sources = [
     'my_source.md',
@@ -155,7 +155,7 @@ test.serial('Update and delete sources, verify SQLite updates', async t => {
 
   // Ensure environment and sources are loaded
   await sources.init_items();
-  await sources.process_import_queue();
+  await sources.process_source_import_queue();
   await sources.process_save_queue();
 
   // Update append_source.md
@@ -199,7 +199,7 @@ test.serial('Blocks reflect in SQLite and block removal updates database', async
   const blocks = env.smart_blocks;
 
   await sources.init_items();
-  await sources.process_import_queue();
+  await sources.process_source_import_queue();
   
   const source_with_blocks = sources.get('source_with_blocks.md');
   await source_with_blocks.import();
@@ -246,7 +246,7 @@ test.serial('No re-import needed if no changes after loading from AJSON', async 
 
   // Initial import and save
   await sources.init_items();
-  await sources.process_import_queue();
+  await sources.process_source_import_queue();
   await sources.process_save_queue();
 
   // Reload environment from AJSON
@@ -286,7 +286,7 @@ test.serial('Verify SmartBlock format in AJSON files', async t => {
 
   // Initialize and process queues
   await sources.init_items();
-  await sources.process_import_queue();
+  await sources.process_source_import_queue();
   
   // Get source with blocks and ensure it's imported
   const source_with_blocks = sources.get('source_with_blocks.md');
