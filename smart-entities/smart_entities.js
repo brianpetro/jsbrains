@@ -242,14 +242,14 @@ export class SmartEntities extends Collection {
         else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
       }
       // exclude inlinks
-      if (exclude_inlinks && this.env.links[entity.path]) {
+      if (exclude_inlinks && this.links?.[entity.path]) {
         if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
-        opts.exclude_key_starts_with_any.push(...Object.keys(this.env.links[entity.path] || {}));
+        opts.exclude_key_starts_with_any.push(...Object.keys(this.links?.[entity.path] || {}));
       }
       // exclude outlinks
       if (exclude_outlinks) {
         if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
-        opts.exclude_key_starts_with_any.push(...entity.outlink_paths);
+        opts.exclude_key_starts_with_any.push(...entity.outlinks);
       }
     }
     return opts;
@@ -378,9 +378,7 @@ export class SmartEntities extends Collection {
       while (this.active_queue_length) {
         if (this.is_queue_halted) break;
 
-        console.log("batching", this._active_embed_queue.length);
         const batch = this._active_embed_queue.splice(0, this.embed_model.batch_size);
-        console.log("batched", this._active_embed_queue.length);
         await Promise.all(batch.map(item => item.get_embed_input()));
         const start_time = Date.now();
         await this.embed_model.embed_batch(batch);

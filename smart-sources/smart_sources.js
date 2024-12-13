@@ -131,14 +131,17 @@ export class SmartSources extends SmartEntities {
    * @returns {Object} An object mapping link paths to source keys.
    */
   build_links_map() {
-    const links_map = {};
+    const start_time = Date.now();
+    this.links = {};
     for (const source of Object.values(this.items)) {
-      for (const link of source.outlink_paths) {
-        if (!links_map[link]) links_map[link] = {};
-        links_map[link][source.key] = true;
+      for (const link of source.outlinks) {
+        if (!this.links[link]) this.links[link] = {};
+        this.links[link][source.key] = true;
       }
     }
-    return links_map;
+    const end_time = Date.now();
+    console.log(`Time spent building links: ${end_time - start_time}ms`);
+    return this.links;
   }
 
   /**
@@ -263,6 +266,7 @@ export class SmartSources extends SmartEntities {
     if(!this.opts.prevent_import_on_load){
       await this.process_source_import_queue();
     }
+    this.build_links_map();
   }
 
   /**
@@ -293,10 +297,7 @@ export class SmartSources extends SmartEntities {
     } else {
       this.notices?.show('no import queue', ["No items in import queue"]);
     }
-    const start_time = Date.now();
-    this.env.links = this.build_links_map();
-    const end_time = Date.now();
-    console.log(`Time spent building links: ${end_time - start_time}ms`);
+    this.build_links_map();
     await this.process_embed_queue();
     await this.process_save_queue();
   }

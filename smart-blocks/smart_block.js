@@ -53,7 +53,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {void}
    */
   queue_embed() {
-    if(!this._queue_embed){
+    if(!this._queue_embed && this.should_embed){
       this._queue_embed = true;
       if(this.source.collection._active_embed_queue.length){
         // add to active queue
@@ -346,7 +346,7 @@ export class SmartBlock extends SmartEntity {
    * @readonly
    * @returns {Array<string>} An array of outlink paths.
    */
-  get outlink_paths() { return this.source.outlink_paths; }
+  get outlinks() { return this.source.outlinks; }
 
   /**
    * Retrieves the path of the SmartBlock.

@@ -525,7 +525,7 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {Array<string>} An array of inlink paths.
    */
-  get inlinks() { return Object.keys(this.env.links?.[this.path] || {}); }
+  get inlinks() { return Object.keys(this.collection.links?.[this.path] || {}); }
 
   /**
    * Determines if the SmartSource is a canvas file.
@@ -577,7 +577,7 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {Array<string>} An array of outlink paths.
    */
-  get outlink_paths() {
+  get outlinks() {
     return (this.data.outlinks || [])
       .filter(link => !link.target.startsWith("http"))
       .map(link => {
