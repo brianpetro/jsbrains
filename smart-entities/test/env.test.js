@@ -7,7 +7,7 @@ import { SmartEntities } from '../smart_entities.js';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartEmbedModel } from '../../smart-embed-model/smart_embed_model.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
-import { EntityAdapter } from '../adapters/_adapter.js';
+import { EntityVectorAdapter } from '../adapters/_adapter.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -70,7 +70,7 @@ test('SmartEntity adapter is initialized correctly', t => {
   const smart_entities = t.context.env.smart_entities;
   const entity = smart_entities.get(Object.keys(smart_entities.items)[0]);
   t.truthy(entity.entity_adapter);
-  t.true(entity.entity_adapter instanceof EntityAdapter);
+  t.true(entity.entity_adapter instanceof EntityVectorAdapter);
 });
 
 test('SmartEntity methods work correctly', async t => {

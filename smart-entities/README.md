@@ -34,7 +34,7 @@ The base class representing an individual smart entity. It provides properties a
 - the entity's embedding vector 
 - the number of tokens in the entity's content
 
-### EntityAdapter
+### EntityVectorAdapter
 
 A utility class that provides a standardized interface for working with entity data, particularly embeddings.
 

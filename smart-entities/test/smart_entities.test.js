@@ -46,7 +46,7 @@ test.serial('SmartEntity find_connections', async t => {
   t.is(connections[0].path, 'test2', 'First connection should be entity2');
 });
 
-test.serial('SmartEntity vec getter and setter via EntityAdapter', async t => {
+test.serial('SmartEntity vec getter and setter via EntityVectorAdapter', async t => {
   const { env } = t.context;
   const entity_data = test_data['SmartEntity:test1'];
   const entity = await env.smart_entities.create_or_update(entity_data);

@@ -1,2 +1,2 @@
-import { EntityAdapter } from "./_adapter.js";
-export class TestEntityAdapter extends EntityAdapter { }
+import { EntityVectorAdapter } from "./_adapter.js";
+export class TestEntityVectorAdapter extends EntityVectorAdapter { }

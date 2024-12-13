@@ -1,6 +1,6 @@
 import { CollectionItem } from "smart-collections";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
-import { EntityAdapter } from "smart-entities/adapters/_adapter.js";
+import { EntityVectorAdapter } from "smart-entities/adapters/_adapter.js";
 import { render as render_entity_component } from "./components/entity.js";
 
 /**
@@ -17,8 +17,8 @@ export class SmartEntity extends CollectionItem {
    */
   constructor(env, opts = {}) {
     super(env, opts);
-    /** @type {EntityAdapter} */
-    this.entity_adapter = new EntityAdapter(this);
+    /** @type {EntityVectorAdapter} */
+    this.entity_adapter = new EntityVectorAdapter(this);
   }
 
   /**
