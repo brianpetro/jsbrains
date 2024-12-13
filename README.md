@@ -1,6 +1,20 @@
 # JS Brains
-
 JS Brains is a collection of lightweight modules for building intelligent applications with JavaScript. It's designed to empower developers to easily integrate AI capabilities into their projects, with a focus on minimal dependencies, extendability, and security.
+
+## Top-Level Overview
+- [**smart-environment/**](https://github.com/brianpetro/jsbrains/tree/main/smart-environment#readme) Manages global runtime configuration, settings loading/saving, and provides a context to integrate collections, file systems, and model adapters.
+- [**smart-collections/**](https://github.com/brianpetro/jsbrains/tree/main/smart-collections#readme) Generalized collection framework for persisting items (sources, blocks, messages) using JSON, AJSON, or SQLite, offering CRUD, filtering, and batch processing utilities.
+	- [**smart-entities/**](https://github.com/brianpetro/jsbrains/tree/main/smart-entities#readme) Adds embeddings, semantic searches, and nearest-neighbor lookups for items within collections, enhancing entities with vector-based intelligence.
+		- [**smart-sources/**](https://github.com/brianpetro/jsbrains/tree/main/smart-sources#readme) Handles structured documents (sources) and their embedded blocks, integrating with embeddings and semantic lookups.
+			- [**smart-chats/**](https://github.com/brianpetro/jsbrains/tree/main/smart-chats#readme) Manages chat threads, messages, and system or user prompts, integrating with LLM-based chat models for dynamic conversation handling.
+			- [**smart-templates/**](https://github.com/brianpetro/jsbrains/tree/main/smart-templates#readme) Manages templates, enabling variable substitution and EJS rendering for turning templates into prompts or documents, often integrated with chat and embed models.
+		- [**smart-blocks/**](https://github.com/brianpetro/jsbrains/tree/main/smart-blocks#readme) Manages block-level granularity within sources, representing distinct sections or pieces of content for targeted embedding, search, and tool integration.
+- [**smart-model/**](https://github.com/brianpetro/jsbrains/tree/main/smart-model#readme) Base classes for model abstractions and adapter management, setting a pattern for uniform access to various AI model types.
+	- [**smart-chat-model/**](https://github.com/brianpetro/jsbrains/tree/main/smart-chat-model#readme) Provides a unified API for chat-completion models (OpenAI, Anthropic, Cohere), handling streaming responses, function calling, and multi-provider fallback.
+	- [**smart-embed-model/**](https://github.com/brianpetro/jsbrains/tree/main/smart-embed-model#readme) Offers a uniform interface to embedding models (OpenAI, Transformers, Ollama), allowing generation of vector embeddings and efficient semantic searches.
+	- [**smart-rank-model/**](https://github.com/brianpetro/jsbrains/tree/main/smart-rank-model#readme) Specializes in ranking documents using LLM-based rerankers (Cohere, local Transformer models), enabling sorting of candidate answers or documents by relevance.
+- [**smart-fs/**](https://github.com/brianpetro/jsbrains/tree/main/smart-fs#readme) Abstracts file system operations through multiple adapters (Node.js FS, Obsidian Vault, Web File System Access), adding support for ignore patterns, AJSON, and other features.
+- [**smart-view/**](https://github.com/brianpetro/jsbrains/tree/main/smart-view#readme) Handles UI and rendering tasks for settings interfaces, markdown previewing, and icon sets, with adapters tailored to Node.js, Obsidian, or browser environments.
 
 ## Vision and Mission
 
@@ -20,16 +34,74 @@ Our mission is to democratize AI development for JavaScript developers, providin
 - **Security-Focused**: Minimizes vulnerabilities through careful dependency management and secure coding practices.
 - **User-Aligned**: Prioritizes user privacy and control, ensuring that AI tools serve the user's best interests.
 
-## Smart Environment
+## Detailed Hierarchical Structure
+### smart-environment/
+- **SmartEnv**: Central hub orchestrating configuration, settings, and top-level references.
+### smart-collections/
+- **Collection**: Manages sets of items with CRUD and filtering.
+- **Item**: Represents a single record (e.g., source, message) within a collection.
+- **Data Adapters**: Implement persistent storage strategies (JSON, AJSON, SQLite).
+#### smart-entities/
+- **SmartEntity**: Extends items with embedding capabilities.
+- **Embeddings & Lookup**: Provides vector similarity search, top-N results, and semantic filtering.
+##### smart-sources/
+- **SmartSource**: Represents a document (note, file) with embeddings and blocks.
+- **SmartBlocks**: Handles embedded logical units (like headings, paragraphs).
+- **File/Markdown Adapters**: Imports, updates, and merges content from various file formats.
+###### smart-chats/
+- **SmartThread**: Represents a conversation thread.
+- **SmartMessage**: Represents an individual user or assistant message.
+- **Model Integration**: Retrieves completions, applies function calls, and renders results within the chat flow.
+###### smart-templates/
+- **SmartTemplate**: Represents a template file ready to be rendered into prompts or content.
+- **Variable Parsing & EJS Rendering**: Inserts dynamic data into templates.
+- **Integration with Chat/Embed Models**: Turns templates into model prompts, processing responses to create outputs.
+### smart-model/
+- **SmartModel**: Base class for standardized adapter loading and initialization.
+- **Adapter Interface**: Defines how models are invoked (e.g., complete(), embed()).
+#### smart-chat-model/
+- **SmartChatModel**: Provides `complete()` for chat conversations.
+- **Adapters (OpenAI, Anthropic)**: Translate requests into provider-specific payloads.
+- **Request/Response Mappers**: Normalize streaming and function calling responses.
+#### smart-embed-model/
+- **SmartEmbedModel**: Provides `embed()` and `embed_batch()` for text vectors.
+- **Transformers, OpenAI, Ollama Adapters**: Manage local or remote embedding services.
+- **Token Counting & Truncation**: Ensures requests fit model constraints.
+#### smart-rank-model/
+- **SmartRankModel**: Provides `rank()` for sorting documents by relevance.
+- **Cohere, Transformers Adapters**: Handle rerank endpoints or local models.
+- **Response Normalization**: Outputs standard {index, score, text} arrays.
+### smart-fs/
+- **SmartFs**: Wraps file operations with advanced features like `.gitignore` support.
+- **Adapters (NodeFs, Obsidian, WebFS)**: Same FS API, different backends.
+- **Append, Rename, List & Recursive Operations**: Provides uniform FS interactions in any environment.
+### smart-view/
+- **SmartView**: Renders settings UI, markdown previews, and icons through adapters.
+- **Adapter (Node, Obsidian)**: Chooses the right rendering logic (e.g., Obsidian’s MarkdownRenderer).
+- **Setting Components**: Dropdowns, toggles, text fields, and advanced inputs are standardized.
 
-JS Brains uses a Smart Environment (`env`) as a central orchestrator for module interactions. This design allows for:
+## Key Architectural Concepts
 
-- Seamless integration between different components
-- Easy extension of functionality
-- Centralized configuration and management
-- Consistent data flow and state management across modules
+### Adapters Everywhere
+- **Adapter Pattern**: Each subsystem (FS, Models, Views) uses adapters so you can easily switch implementations.
+- **Minimal Core Logic**: The core logic doesn’t assume a platform or provider, making code environment-agnostic.
 
-The Smart Environment acts as a backbone for building complex AI-powered applications, providing a unified interface for various AI functionalities.
+### Collections & Items
+- **Data Persistence**: Items (like sources, messages, templates) are just JSON objects managed by collections.
+- **Query & Filter**: Collections offer a uniform API to load, save, filter, and batch process items.
+
+### Models via a Common Interface
+- **Chat vs. Embed vs. Rank**: Different model classes share a similar pattern: a main class and multiple adapters.
+- **Unified Requests**: Send a request in OpenAI format; the adapter converts it to the provider's native schema.
+
+### Layered Functionality
+- **Entities Build on Collections**: Embeddings and semantic queries extend the basic collections layer.
+- **Sources & Blocks**: Sources are entities with content that can be block-parsed, embedded, and transformed.
+- **Chats & Templates**: Add another layer for user interaction (conversations) and content generation (templates).
+
+---
+
+By understanding the directories, classes, and their relationships, and following these best practices, you can confidently navigate, extend, and utilize the JSBrains architecture for your project.
 
 ## Architecture: The Adapter Pattern
 
@@ -76,17 +148,3 @@ At the core of JS Brains is a mission to empower individuals with AI tools that 
 4. **Accessibility is key**: We strive to make AI tools accessible to developers of all skill levels, democratizing access to advanced AI capabilities.
 
 By adhering to these principles, we aim to create a ecosystem of AI tools that users can trust and rely on to enhance their personal and professional lives.
-
-## Core Modules
-
-For detailed information on how to use each module, please refer to their respective README files linked in the Core Modules section above. Each module is designed to be used independently or in conjunction with others, providing maximum flexibility for your project needs.
-
-- [Smart Chat Model](https://github.com/brianpetro/jsbrains/tree/main/smart-chat-model#readme): Facilitates intelligent conversational interfaces
-- [Smart Chunks](https://github.com/brianpetro/jsbrains/tree/main/smart-chunks#readme): Efficient text processing and analysis
-- [Smart Collections](https://github.com/brianpetro/jsbrains/tree/main/smart-collections#readme): Manages and organizes AI-related data structures
-- [Smart Embed Model](https://github.com/brianpetro/jsbrains/tree/main/smart-embed-model#readme): Handles text embedding for semantic analysis
-- [Smart Entities](https://github.com/brianpetro/jsbrains/tree/main/smart-entities#readme): Entity recognition and management system
-- [Smart Environment](https://github.com/brianpetro/jsbrains/tree/main/smart-environment#readme): Orchestrates interactions between modules
-- [Smart Ranker Model](https://github.com/brianpetro/jsbrains/tree/main/smart-ranker-model#readme): Implements content ranking algorithms
-- [Smart Sources](https://github.com/brianpetro/jsbrains/tree/main/smart-sources#readme): Manages and organizes sources of information
-- [Smart Templates](https://github.com/brianpetro/jsbrains/tree/main/smart-templates#readme): Enables structured outputs using templates
