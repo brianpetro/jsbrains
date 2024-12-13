@@ -1,4 +1,7 @@
 import { SmartEntities } from "smart-entities";
+import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
+import { get_line_range } from "smart-sources/utils/get_line_range.js";
+import { markdown_to_blocks } from "smart-sources/blocks/markdown_to_blocks.js";
 
 /**
  * @class SmartBlocks
@@ -11,6 +14,64 @@ export class SmartBlocks extends SmartEntities {
    * @returns {void}
    */
   init() { /* mute */ }
+
+  /**
+   * @method import_source
+   * @description Imports blocks for a given source by parsing the content. Delegates parsing to a parser
+   * depending on the source.file_type (e.g., markdown_to_blocks for .md).
+   * @async
+   * @param {SmartSource} source The source whose blocks are to be imported.
+   * @param {string} content The raw content of the source file.
+   * @returns {Promise<void>}
+   */
+  async import_source(source, content) {
+    let blocks_obj = markdown_to_blocks(content);
+  
+    for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
+      // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
+      const block_key = source.key + sub_key;
+      const block_content = get_line_range(content, line_range[0], line_range[1]);
+      const block_outlinks = get_markdown_links(block_content);
+      const block_data = {
+        key: block_key,
+        lines: line_range,
+        size: block_content.length,
+        outlinks: block_outlinks,
+      };
+      const block = await this.create_or_update(block_data);
+      await block.get_embed_input(block_content);
+      block.queue_embed();
+    }
+  
+    this.clean_and_update_source_blocks(source, blocks_obj);
+  }
+
+  /**
+   * Remove blocks that are no longer present in the parsed block data.
+   * This ensures that after re-importing a source, stale blocks are cleaned up.
+   * 
+   * @param {SmartSource} source - The source that was re-imported.
+   * @param {Object} blocks_obj - The newly parsed blocks object.
+   */
+  clean_and_update_source_blocks(source, blocks_obj) {
+    const current_block_keys = new Set(Object.keys(blocks_obj).map(sk => source.key + sk));
+    for (const key of Object.keys(this.items)) {
+      if (key.startsWith(source.key) && !current_block_keys.has(key)) {
+        // This block no longer exists, mark it deleted
+        const block = this.get(key);
+        if (block) {
+          block.deleted = true;
+          block.queue_save(); 
+          // Will remove embeddings & data on next save (AJSON updated by SmartSources)
+        }
+      }
+    }
+    // Update source data with new blocks
+    source.data.blocks = blocks_obj;
+  }
+
+
+
 
   /**
    * Retrieves the embedding model associated with the SmartSources collection.

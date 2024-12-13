@@ -2,9 +2,10 @@ utils/
 package.json
 components/
 README.md
-blocks/
 schema.js
 test/old-tests (needs review)/
 markdown.test.js
 sqlite.**
 *.sqlite
+smart_block.js
+smart_blocks.js

@@ -1,4 +1,7 @@
 import { create_hash } from "../utils/create_hash.js";
+/**
+ * @deprecated
+ */
 export class SourceAdapter {
   constructor(item, opts = {}) {
     this.item = item;
@@ -35,5 +38,19 @@ export class SourceAdapter {
   async block_move_to(entity_ref) { this.throw_not_implemented('block_move_to'); }
   async block_merge(content, opts = {}) { this.throw_not_implemented('block_merge'); }
   // HELPER METHODS
+  async create_hash(content) { return await create_hash(content); }
+}
+
+export class SourceContentAdapter {
+  constructor(item) {
+    this.item = item;
+  }
+  async import() { this.throw_not_implemented('import'); }
+  async create() { this.throw_not_implemented('create'); }
+  async update() { this.throw_not_implemented('update'); }
+  async read() { this.throw_not_implemented('read'); }
+  async remove() { this.throw_not_implemented('remove'); }
+  // HELPER METHODS
+  get data() { return this.item.data; }
   async create_hash(content) { return await create_hash(content); }
 }

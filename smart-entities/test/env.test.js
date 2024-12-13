@@ -78,7 +78,6 @@ test('SmartEntity methods work correctly', async t => {
   const entity = smart_entities.get(Object.keys(smart_entities.items)[0]);
 
   t.truthy(entity.nearest);
-  t.truthy(entity.get_as_context);
   t.truthy(entity.find_connections);
 
   const connections = entity.find_connections();

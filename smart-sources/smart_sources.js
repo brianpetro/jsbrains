@@ -80,12 +80,6 @@ export class SmartSources extends SmartEntities {
       source.delete();
     }
     
-    // TEMP: Remove last_history from smart_sources
-    Object.values(this.items).forEach(item => {
-      if(item.data?.history?.length) item.data.history = null;
-      item.queue_save();
-    });
-    
     this.notices?.remove('pruning sources');
     this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
     this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
@@ -127,7 +121,7 @@ export class SmartSources extends SmartEntities {
     // Queue embedding for items with changed metadata
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
-      if (item.meta_changed) item.queue_import();
+      if (item.source_adapter.should_import) item.queue_import();
       else if (item.is_unembedded) item.queue_embed();
     }
   }
@@ -145,18 +139,6 @@ export class SmartSources extends SmartEntities {
       }
     }
     return links_map;
-  }
-
-  /**
-   * Refreshes the SmartSources by pruning, importing, and processing embed queues.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async refresh(){
-    await this.prune();
-    await this.process_source_import_queue();
-    await this.env.smart_blocks.process_embed_queue();
-    await this.process_embed_queue();
   }
 
   /**
@@ -304,6 +286,7 @@ export class SmartSources extends SmartEntities {
       for (let i = 0; i < import_queue.length; i += 100) {
         this.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
+        this.process_embed_queue();
       }
       this.notices?.remove('import progress');
       this.notices?.show('done import', [`Processed import queue in ${Date.now() - time_start}ms`], { timeout: 3000 });
@@ -477,7 +460,7 @@ export class SmartSources extends SmartEntities {
     const start_time = Date.now();
     // Queue import for items with changed metadata
     Object.values(this.items).forEach(item => {
-      if (item.meta_changed) item.queue_import();
+      if (item.source_adapter.should_import) item.queue_import();
     });
     await this.process_source_import_queue();
     const end_time = Date.now();

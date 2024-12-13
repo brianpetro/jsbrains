@@ -7,6 +7,7 @@ import { block_read, block_update, block_destroy } from "../blocks/markdown_crud
 
 /**
  * @module MarkdownSourceAdapter
+ * @deprecated
  * @description Adapter that reads and writes markdown files as sources for Smart Connections.
  */
 export class MarkdownSourceAdapter extends FileSourceAdapter {

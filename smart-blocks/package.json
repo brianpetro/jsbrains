@@ -1,0 +1,38 @@
+{
+  "name": "smart-blocks",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Easy to manage collections of blocks.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "keywords": [
+    "blocks",
+    "collections",
+    "sources"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "devDependencies": {
+    "ava": "^6.0.1"
+  },
+  "dependencies": {
+    "smart-collections": "file:../smart-collections",
+    "smart-entities": "file:../smart-entities",
+    "smart-sources": "file:../smart-sources"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.js"
+    ]
+  }
+}

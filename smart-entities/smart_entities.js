@@ -19,10 +19,6 @@ export class SmartEntities extends Collection {
     super(env, opts);
     /** @type {string|null} */
     this.model_instance_id = null;
-    /** @type {boolean} */
-    this.is_processing_queue = false;
-    /** @type {number} */
-    this.queue_total = 0;
     /** @type {number} */
     this.embedded_total = 0;
     /** @type {boolean} */
@@ -31,6 +27,8 @@ export class SmartEntities extends Collection {
     this.total_tokens = 0;
     /** @type {number} */
     this.total_time = 0;
+    /** @type {Array<Object>} */
+    this._active_embed_queue = [];
   }
 
   /**
@@ -345,32 +343,45 @@ export class SmartEntities extends Collection {
   get embed_queue() {
     return Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
   }
+  get active_queue_length() {
+    return this._active_embed_queue.length;
+  }
 
   /**
-   * Processes the embed queue by batching and embedding items.
+   * Processes the embed queue by batching and embedding items using a promise-based state.
+   *
    * @async
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
-    try {
+    if (this._process_promise) {
+      console.log(`Smart Connections: Embed queue processing already in progress for ${this.collection_key}`);
+      return this._process_promise;
+    }
+
+    this._process_promise = (async () => {
       if (this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
       if (!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-      if (this.is_queue_halted || this.is_processing_queue) return console.log(`Smart Connections: Embed queue processing already in progress for ${this.collection_key}`);
-      this.is_processing_queue = true;
+      if (this.is_queue_halted) return console.log(`Smart Connections: Embed queue processing halted for ${this.collection_key}`);
+
       const datetime_start = new Date();
-      const queue = this.embed_queue;
+      if(!this._active_embed_queue.length){
+        this._active_embed_queue = this.embed_queue;
+      }
       const datetime_end = new Date();
       console.log(`Time spent getting embed queue: ${datetime_end.getTime() - datetime_start.getTime()}ms`);
-      this.queue_total = queue.length;
-      if (!this.queue_total) {
-        this.is_processing_queue = false;
+      if (!this.active_queue_length) {
         return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
       }
-      console.log(`Processing ${this.collection_key} embed queue: ${this.queue_total} items`);
-      for (let i = this.embedded_total; i < this.queue_total; i += this.embed_model.batch_size) {
+
+      console.log(`Processing ${this.collection_key} embed queue: ${this.active_queue_length} items`);
+      while (this.active_queue_length) {
         if (this.is_queue_halted) break;
-        const batch = queue.slice(i, i + this.embed_model.batch_size);
-        await Promise.all(batch.map(item => item.get_embed_input())); // Future: May be handled in SmartEmbedModel
+
+        console.log("batching", this._active_embed_queue.length);
+        const batch = this._active_embed_queue.splice(0, this.embed_model.batch_size);
+        console.log("batched", this._active_embed_queue.length);
+        await Promise.all(batch.map(item => item.get_embed_input()));
         const start_time = Date.now();
         await this.embed_model.embed_batch(batch);
         this.total_time += Date.now() - start_time;
@@ -378,16 +389,24 @@ export class SmartEntities extends Collection {
         this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
         this._show_embed_progress_notice();
       }
-      this.is_processing_queue = false;
+
       if (!this.is_queue_halted) this._embed_queue_complete();
-    } catch (e) {
-      if(e.message.includes("API key not set")){
-        this.halt_embed_queue_processing(`API key not set for ${this.embed_model_key}\nPlease set the API key in the settings.`);
-      }
-      this.is_processing_queue = false;
-      console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
-    }
+    })()
+      .catch((e) => {
+        if (e && e.message && e.message.includes("API key not set")) {
+          this.halt_embed_queue_processing(`API key not set for ${this.embed_model_key}\nPlease set the API key in the settings.`);
+        }
+        console.error(e);
+        console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
+      })
+      .finally(() => {
+        this._process_promise = null;
+      });
+
+    return this._process_promise;
   }
+
+
 
   /**
    * Displays the embedding progress notice.
@@ -402,7 +421,7 @@ export class SmartEntities extends Collection {
     this.notices?.show('embedding_progress',
       [
         `Making Smart Connections...`,
-        `Embedding progress: ${this.embedded_total} / ${this.queue_total}`,
+        `Embedding progress: ${this.embedded_total} / ${this.active_queue_length + this.embedded_total}`,
         `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
       ],
       {
@@ -442,13 +461,12 @@ export class SmartEntities extends Collection {
    * @returns {void}
    */
   _embed_queue_complete() {
-    this.is_processing_queue = false;
     if (this.completed_embed_queue_timeout) clearTimeout(this.completed_embed_queue_timeout);
     this.completed_embed_queue_timeout = setTimeout(() => {
       this._show_embed_completion_notice();
       this._reset_embed_queue_stats();
       this.env.save();
-    }, 3000);
+    }, 1000);
   }
 
   /**
@@ -457,13 +475,14 @@ export class SmartEntities extends Collection {
    * @returns {void}
    */
   _reset_embed_queue_stats() {
-    this.embedded_total = 0;
-    this.queue_total = 0;
-    this.total_tokens = 0;
-    this.total_time = 0;
-    this.last_notice_embedded_total = 0;
-    this.is_processing_queue = false;
-    this.is_queue_halted = false;
+    if(this.queue_stats_reset_timeout) clearTimeout(this.queue_stats_reset_timeout);
+    this.queue_stats_reset_timeout = setTimeout(() => {
+      this.embedded_total = 0;
+      this.total_tokens = 0;
+      this.total_time = 0;
+      this.last_notice_embedded_total = 0;
+      this.is_queue_halted = false;
+    }, 3000);
   }
 
   /**
@@ -476,7 +495,7 @@ export class SmartEntities extends Collection {
     this.notices?.remove('embedding_progress');
     this.notices?.show('embedding_paused', [
       msg || `Embedding paused.`,
-      `Progress: ${this.embedded_total} / ${this.queue_total}`,
+      `Progress: ${this.embedded_total} / ${this.active_queue_length}`,
       `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
     ],
       {

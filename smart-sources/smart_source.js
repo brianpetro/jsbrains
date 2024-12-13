@@ -48,29 +48,8 @@ export class SmartSource extends SmartEntity {
   async import(){
     this._queue_import = false;
     try{
-      const stat = this.file.stat;
-      if(stat.error) throw stat.error;
-      if(this.file_type === 'md' && stat.size > 1000000) {
-        console.log(`Smart Connections: Skipping large file: ${this.path}`);
-        return;
-      }
-      // Must check exists using async because not always reflects by file.stat (e.g., Obsidian)
-      if((await this.data_fs.exists(this.data_path))){
-        // Check if file has been updated on disk
-        if(this.loaded_at && (this.env.fs.files[this.data_path] && this.env.fs.files[this.data_path].mtime > (this.loaded_at + 1 * 60 * 1000))){
-          console.log(`Smart Connections: Re-loading data source for ${this.path} because it has been updated on disk`);
-          return await this.load();
-        }
-      }
-      if(this.meta_changed){
-        this.data.blocks = null;
-        await this.save();
-        this.data.mtime = stat.mtime;
-        this.data.size = stat.size;
-        await this.source_adapter.import();
-        this.loaded_at = Date.now(); // Reset loaded_at to now to prevent unneeded reloads
-        this.queue_embed();
-      } // else console.log(`Smart Connections: No changes to ${this.path}`);
+      await this.check_if_data_updated_on_disk();
+      await this.source_adapter.import();
     }catch(err){
       if(err.code === "ENOENT"){
         console.log(`Smart Connections: Deleting ${this.path} data because it no longer exists on disk`);
@@ -78,6 +57,17 @@ export class SmartSource extends SmartEntity {
       }else{
         console.warn("Smart Connections: Error during import: re-queueing import", err);
         this.queue_import();
+      }
+    }
+  }
+
+  async check_if_data_updated_on_disk() {
+    // Must check exists using async because not always reflects by file.stat (e.g., Obsidian)
+    if ((await this.data_fs.exists(this.data_path))) {
+      // Check if file has been updated on disk
+      if (this.loaded_at && (this.env.fs.files[this.data_path] && this.env.fs.files[this.data_path].mtime > (this.loaded_at + 1 * 60 * 1000))) {
+        console.log(`Smart Connections: Re-loading data source for ${this.path} because it has been updated on disk`);
+        await this.load();
       }
     }
   }
@@ -124,9 +114,9 @@ export class SmartSource extends SmartEntity {
    * @async
    * @returns {Promise<string|false>} The embed input string or `false` if already embedded.
    */
-  async get_embed_input() {
+  async get_embed_input(content=null) {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // Return cached (temporary) input
-    let content = await this.read(); // Get content from file
+    if(!content) content = await this.read(); // Get content from file
     if(this.excluded_lines.length){
       const content_lines = content.split("\n");
       this.excluded_lines.forEach(lines => {
@@ -409,17 +399,8 @@ export class SmartSource extends SmartEntity {
    */
   get blocks() {
     if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key)); // Fastest (no iterating over all blocks)
-    else if(this.last_history) return this.block_collection.get_many(Object.keys(this.last_history.blocks)); // TEMP: for backwards compatibility (2024-09-30)
-    // else return this.block_collection.filter({key_starts_with: this.key});
     return [];
   }
-
-  /**
-   * @deprecated Only for backwards compatibility in `this.blocks` (2024-09-30).
-   * @readonly
-   * @returns {Object|null} The last history entry or null if none.
-   */
-  get last_history() { return this.data.history?.length ? this.data.history[this.data.history.length - 1] : null; }
 
   /**
    * Retrieves the data path for the SmartSource.
@@ -459,6 +440,13 @@ export class SmartSource extends SmartEntity {
   }
 
   /**
+   * Retrieves the file system instance from the SmartSource's collection.
+   * @readonly
+   * @returns {SmartFS} The file system instance.
+   */
+  get fs() { return this.collection.fs; }
+
+  /**
    * Retrieves the file object associated with the SmartSource.
    * @readonly
    * @returns {Object} The file object.
@@ -491,11 +479,39 @@ export class SmartSource extends SmartEntity {
   }
 
   /**
-   * Retrieves the file system instance from the SmartSource's collection.
+   * Retrieves the modification time of the SmartSource.
    * @readonly
-   * @returns {SmartFS} The file system instance.
+   * @returns {number} The modification time.
    */
-  get fs() { return this.collection.fs; }
+  get mtime() { return this.file?.stat?.mtime || 0; }
+
+  /**
+   * Retrieves the size of the SmartSource.
+   * @readonly
+   * @returns {number} The size.
+   */
+  get size() { return this.file?.stat?.size || 0; }
+
+  /**
+   * Retrieves the last import stat of the SmartSource.
+   * @readonly
+   * @returns {Object} The last import stat.
+   */
+  get last_import() { return this.data?.last_import; }
+
+  /**
+   * Retrieves the last import modification time of the SmartSource.
+   * @readonly
+   * @returns {number} The last import modification time.
+   */
+  get last_import_mtime() { return this.last_import?.mtime || 0; }
+
+  /**
+   * Retrieves the last import size of the SmartSource.
+   * @readonly
+   * @returns {number} The last import size.
+   */
+  get last_import_size() { return this.last_import?.size || 0; }
 
   /**
    * Retrieves the hash of the SmartSource.
@@ -537,37 +553,7 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {string|undefined} The last read hash or `undefined` if not set.
    */
-  get last_read_hash() { return this.data?.last_read_hash; }
-
-  /**
-   * Determines if the SmartSource has changed based on metadata.
-   * @readonly
-   * @returns {boolean} `true` if metadata has changed, `false` otherwise.
-   */
-  get meta_changed() {
-    try {
-      if(!this.file) return true;
-      if(this.last_read_hash !== this.hash) return true;
-      if (!this.mtime || this.mtime < this.file.stat.mtime) {
-        if(!this.size) return true;
-        const size_diff = Math.abs(this.size - this.file.stat.size);
-        const size_diff_ratio = size_diff / (this.size || 1);
-        if (size_diff_ratio > 0.01) return true; // if size diff greater than 1% of this.data.size, assume file changed
-        // else console.log(`Smart Connections: Considering change of <1% (${size_diff_ratio * 100}%) "unchanged" for ${this.path}`);
-      }
-      return false;
-    } catch (e) {
-      console.warn("error getting meta changed for ", this.path, ": ", e);
-      return true;
-    }
-  }
-
-  /**
-   * Retrieves the modification time of the SmartSource.
-   * @readonly
-   * @returns {number} The modification time.
-   */
-  get mtime() { return this.data.mtime || 0; }
+  get last_read_hash() { return this.data?.last_read?.hash; }
 
   /**
    * Retrieves the multi AJSON file name derived from the path.
@@ -601,7 +587,6 @@ export class SmartSource extends SmartEntity {
       .filter(link_path => link_path);
   }
   get path() { return this.data.path; }
-  get size() { return this.data.size || 0; }
   get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
   get source_adapters() { return this.collection.source_adapters; }
   get source_adapter() {

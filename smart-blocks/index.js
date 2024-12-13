@@ -19,10 +19,10 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { SmartSource } from "./smart_source.js";
-import { SmartSources } from "./smart_sources.js";
+import { SmartBlock } from "./smart_block.js";
+import { SmartBlocks } from "./smart_blocks.js";
 
 export {
-  SmartSource,
-  SmartSources,
+  SmartBlock,
+  SmartBlocks,
 }

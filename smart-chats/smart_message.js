@@ -1,4 +1,5 @@
-import { SmartBlock } from "smart-sources";
+// import { SmartBlock } from "smart-sources";
+import { SmartBlock } from "smart-blocks";
 import { render as message_template } from "./components/message";
 import { render as context_template } from "./components/context";
 import { render as tool_calls_template } from "./components/tool_calls";

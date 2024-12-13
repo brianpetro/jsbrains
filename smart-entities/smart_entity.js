@@ -59,7 +59,15 @@ export class SmartEntity extends CollectionItem {
    * Queues the entity for embedding.
    * @returns {void}
    */
-  queue_embed() { this._queue_embed = true; }
+  queue_embed() {
+    if(!this._queue_embed){
+      this._queue_embed = true;
+      if(this.collection._active_embed_queue.length){
+        // add to active queue
+        this.collection._active_embed_queue.push(this);
+      }
+    }
+  }
 
   /**
    * Finds the nearest entities to this entity.
@@ -69,22 +77,12 @@ export class SmartEntity extends CollectionItem {
   nearest(filter = {}) { return this.collection.nearest_to(this, filter); }
 
   /**
-   * Generates the context string for the entity.
-   * @async
-   * @param {Object} [params={}] - Parameters for context generation.
-   * @param {number} [params.i] - Optional index for note numbering.
-   * @returns {Promise<string>} The context string.
-   */
-  async get_as_context(params = {}) {
-    return `---BEGIN NOTE${params.i ? " " + params.i : ""} [[${this.path}]]---\n${await this.get_content()}\n---END NOTE${params.i ? " " + params.i : ""}---`;
-  }
-
-  /**
    * Prepares the input for embedding.
    * @async
+   * @param {string} [content=null] - Optional content to use instead calling subsequent read()
    * @returns {Promise<void>} Should be overridden in child classes.
    */
-  async get_embed_input() { } // override in child class
+  async get_embed_input(content=null) { } // override in child class
 
   /**
    * Prepares filter options for finding connections based on parameters.

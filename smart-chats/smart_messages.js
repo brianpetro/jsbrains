@@ -1,4 +1,5 @@
-import { SmartBlocks } from "smart-sources";
+// import { SmartBlocks } from "smart-sources";
+import { SmartBlocks } from "smart-blocks";
 
 /**
  * @class SmartMessages

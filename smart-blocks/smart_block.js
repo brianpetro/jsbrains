@@ -1,6 +1,6 @@
 import { SmartEntity } from "smart-entities";
-import { render as render_source_component } from "./components/source.js";
-import { create_hash } from "./utils/create_hash.js";
+// import { render as render_source_component } from "./components/source.js";
+// import { create_hash } from "./utils/create_hash.js";
 
 /**
  * @class SmartBlock
@@ -23,6 +23,12 @@ export class SmartBlock extends SmartEntity {
       _embed_input: '', // Stored temporarily
     };
   }
+  get block_adapter() {
+    if(!this._block_adapter){
+      this._block_adapter = new this.collection.opts.block_adapters[this.file_type](this);
+    }
+    return this._block_adapter;
+  }
 
   /**
    * Initializes the SmartBlock instance by queuing an embed if embedding is enabled.
@@ -40,6 +46,21 @@ export class SmartBlock extends SmartEntity {
   queue_save() {
     this._queue_save = true;
     this.source?.queue_save();
+  }
+
+  /**
+   * Queues the entity for embedding.
+   * @returns {void}
+   */
+  queue_embed() {
+    if(!this._queue_embed){
+      this._queue_embed = true;
+      if(this.source.collection._active_embed_queue.length){
+        // add to active queue
+        this.source.collection._active_embed_queue.push(this);
+      }
+      this.source?.queue_embed();
+    }
   }
 
   /**
@@ -82,76 +103,80 @@ export class SmartBlock extends SmartEntity {
    * @async
    * @returns {Promise<string|false>} The embed input string or `false` if already embedded.
    */
-  async get_embed_input() {
+  async get_embed_input(content=null) {
     if(typeof this._embed_input !== "string" || !this._embed_input.length){
-      this._embed_input = this.breadcrumbs + "\n" + (await this.read());
+      if(!content) content = await this.read();
+      this._embed_input = this.breadcrumbs + "\n" + content;
     }
-    if(this.vec){
-      // PREVENT EMBEDDING BASED ON HASH
-      // likely better handled since reduces embed_batch size
-      // falsy values filtered out in SmartEmbedModel.embed_batch
-      const hash = await create_hash(this._embed_input);
-      if(hash === this.hash) return false; // Already embedded
-    }
+    // if(this.vec){
+    //   // PREVENT EMBEDDING BASED ON HASH
+    //   // likely better handled since reduces embed_batch size
+    //   // falsy values filtered out in SmartEmbedModel.embed_batch
+    //   const hash = await create_hash(this._embed_input);
+    //   if(hash === this.hash) return false; // Already embedded
+    // }
     return this._embed_input;
   }
 
   // CRUD
-
   /**
-   * Reads the content of the block.
+   * @method read
+   * @description Reads the block content by delegating to the block adapter.
    * @async
-   * @param {Object} [opts={}] - Additional options for reading.
-   * @returns {Promise<string>} A promise that resolves with the content of the block.
+   * @returns {Promise<string>} The block content.
    */
-  async read(opts = {}) {
-    return await this.source_adapter.block_read(opts);
+  async read() {
+    return await this.block_adapter.block_read();
   }
 
   /**
-   * Appends content to the block.
+   * @method append
+   * @description Appends content to this block by delegating to the block adapter.
    * @async
-   * @param {string} append_content - The content to append to the block.
-   * @returns {Promise<void>} A promise that resolves when the operation is complete.
+   * @param {string} content
+   * @returns {Promise<void>}
    */
-  async append(append_content) {
-    await this.source_adapter.block_append(append_content);
+  async append(content) {
+    await this.block_adapter.block_append(content);
+    this.queue_save();
   }
 
   /**
-   * Updates the block with new content.
+   * @method update
+   * @description Updates the block content by delegating to the block adapter.
    * @async
-   * @param {string} new_block_content - The new content for the block.
-   * @param {Object} [opts={}] - Additional options for the update.
-   * @returns {Promise<void>} A promise that resolves when the operation is complete.
+   * @param {string} new_block_content
+   * @param {Object} [opts={}]
+   * @returns {Promise<void>}
    */
-  async update(new_block_content, opts = {}) {
-    await this.source_adapter.block_update(new_block_content, opts);
+  async update(new_block_content, opts={}) {
+    await this.block_adapter.block_update(new_block_content, opts);
+    this.queue_save();
   }
 
   /**
-   * Removes the block from the source.
+   * @method remove
+   * @description Removes the block by delegating to the block adapter.
    * @async
-   * @returns {Promise<void>} A promise that resolves when the block is removed.
+   * @returns {Promise<void>}
    */
   async remove() {
-    await this.source_adapter.block_remove();
+    await this.block_adapter.block_remove();
+    this.queue_save();
   }
 
   /**
-   * Moves the block to a new location.
+   * @method move_to
+   * @description Moves the block to another location by delegating to the block adapter.
    * @async
-   * @param {string} to_key - The destination key (path) to move the block to.
-   * @returns {Promise<void>} A promise that resolves when the block is moved.
+   * @param {string} to_key
+   * @returns {Promise<void>}
    */
   async move_to(to_key) {
-    try {
-      await this.source_adapter.block_move_to(to_key);
-    } catch (error) {
-      console.error('error_during_block_move:', error);
-      throw error;
-    }
+    await this.block_adapter.block_move_to(to_key);
+    this.queue_save();
   }
+
 
   // Getters
 
@@ -413,7 +438,6 @@ export class SmartBlock extends SmartEntity {
   get file() { return this.source.file; }
   get is_canvas() { return this.source.is_canvas; }
   get is_excalidraw() { return this.source.is_excalidraw; }
-  get meta_changed() { return this.source.meta_changed; }
   get mtime() { return this.source.mtime; }
   get multi_ajson_file_name() { return this.source.multi_ajson_file_name; }
   get smart_change_adapter() { return this.source.smart_change_adapter; }
@@ -425,22 +449,8 @@ export class SmartBlock extends SmartEntity {
    * @readonly
    * @returns {Function} The render function for the source component.
    */
-  get component() { return render_source_component; }
+  // get component() { return render_source_component; }
 
-  // CURRENTLY UNUSED
-
-  /**
-   * Retrieves the next k-shot example content for the block.
-   * @async
-   * @param {number} i - The index for the k-shot example.
-   * @returns {Promise<string|null>} A promise that resolves to the k-shot example string or `null` if not available.
-   */
-  async get_next_k_shot(i) {
-    if (!this.next_block) return null;
-    const current = await this.get_content();
-    const next = await this.next_block.get_content();
-    return `---BEGIN CURRENT ${i}---\n${current}\n---END CURRENT ${i}---\n---BEGIN NEXT ${i}---\n${next}\n---END NEXT ${i}---\n`;
-  }
 
   // DEPRECATED
 
