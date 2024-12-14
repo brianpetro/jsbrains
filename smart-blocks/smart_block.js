@@ -78,8 +78,8 @@ export class SmartBlock extends SmartEntity {
     if (this.should_clear_embeddings(data)){
       this.data.embeddings = {};
     }
-    if (!this.vec) this._embed_input += data.text; // Store text for embedding
-    delete data.text; // Clear data.text to prevent saving text
+    // if (!this.vec) this._embed_input += data.text; // Store text for embedding
+    // delete data.text; // Clear data.text to prevent saving text
     super.update_data(data);
     return true;
   }
