@@ -358,13 +358,6 @@ export class SmartSource extends SmartEntity {
   //     }
   //   });
   // }
-  // async overwrite_saved_data(ajson = null) {
-  //   if(!ajson) ajson = [
-  //     super.ajson,
-  //     ...this.blocks.map(block => block.ajson).filter(ajson => ajson),
-  //   ].join("\n");
-  //   await super.overwrite_saved_data(ajson);
-  // }
 
   /**
    * Handles errors during the load process.

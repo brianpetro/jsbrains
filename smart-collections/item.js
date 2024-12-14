@@ -149,19 +149,6 @@ export class CollectionItem {
   }
 
   /**
-   * Overwrites the saved data with current state.
-   * @param {string} [ajson=this.ajson]
-   * @returns {Promise<void>}
-   */
-  async overwrite_saved_data(ajson = this.ajson) {
-    try {
-      await this.data_adapter.fs.write(this.data_path, ajson);
-    } catch (err) {
-      console.error(err, err.stack);
-    }
-  }
-
-  /**
    * Queues this item for loading.
    */
   queue_load() { this._queue_load = true; }

@@ -145,25 +145,6 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     this.item.collection.delete_item(this.item.key);
   }
 
-  async overwrite_saved_data(ajson = null) {
-    // Overwrite with minimal lines:
-    // One for the source if not deleted, one per non-deleted block
-    if (!ajson) {
-      const lines = [];
-      if (!this.item.deleted) {
-        lines.push(this._build_ajson_line(this.item, this.item.data));
-      }
-      for (const block of this.item.blocks) {
-        if (!block.deleted) {
-          lines.push(this._build_ajson_line(block, block.data));
-        }
-      }
-      ajson = lines.join('\n');
-    }
-    const data_path = this.get_data_path();
-    await this.fs.write(data_path, ajson);
-  }
-
   _parse(ajson) {
     const final_states = {};
     if (!ajson.length) return { final_states, rewrite_needed: false };

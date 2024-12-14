@@ -259,23 +259,6 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     this.item.collection.delete_item(this.item.key);
   }
 
-  async overwrite_saved_data(ajson = null) {
-    // Overwrite with the current item state if not provided
-    const data_path = this.get_data_path();
-    if (!ajson) {
-      if (!this.item.deleted) {
-        ajson = this._build_ajson_line(this.item, this.item.data);
-      } else {
-        // If deleted, remove file if exists
-        if (await this.fs.exists(data_path)) {
-          await this.fs.remove(data_path);
-        }
-        return;
-      }
-    }
-    await this.fs.write(data_path, ajson);
-  }
-
   async _cleanup_deleted_item() {
     const data_path = this.get_data_path();
     if (await this.fs.exists(data_path)) {

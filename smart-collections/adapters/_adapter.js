@@ -146,15 +146,6 @@ export class ItemDataAdapter {
   get_data_path() { throw new Error('Not implemented'); }
 
   /**
-   * Overwrite the saved data with the current state of the item. Unlike `save()`, this 
-   * may replace the entire file rather than append. Useful for cleanup or recovery operations.
-   * @async
-   * @param {string|null} [ajson=null] - An optional serialized representation of the item’s data.
-   * @returns {Promise<void>} Resolves when the data is overwritten.
-   */
-  async overwrite_saved_data(ajson = null) { throw new Error('Not implemented'); }
-
-  /**
    * @returns {CollectionDataAdapter} The collection data adapter that this item data adapter belongs to.
    */
   get collection_adapter() {
