@@ -18,13 +18,14 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
   /**
    * Read the content of the block.
    * @async
-   * @param {Object} [opts={}] Optional parameters.
    * @returns {Promise<string>} The block content as a string.
    * @throws {Error} If the block cannot be found.
    */
-  async block_read(opts = {}) {
+  async read() {
     const source_content = await this.item.source.read();
-    return this._extract_block(source_content);
+    const content = this._extract_block(source_content);
+    this.update_last_read(content);
+    return content;
   }
 
   /**
@@ -35,7 +36,7 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
    * @returns {Promise<void>}
    * @throws {Error} If the block cannot be found.
    */
-  async block_append(content) {
+  async append(content) {
     let full_content = await this.item.source.read();
     const { line_start, line_end } = this.item;
 
@@ -55,12 +56,12 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
   /**
    * Update the block with new content, replacing its current lines.
    * @async
-   * @param {string} new_block_content New content for the block.
+   * @param {string} new_content New content for the block.
    * @param {Object} [opts={}] Additional options.
    * @returns {Promise<void>}
    * @throws {Error} If the block cannot be found.
    */
-  async block_update(new_block_content, opts = {}) {
+  async update(new_content, opts = {}) {
     let full_content = await this.item.source.read();
     const { line_start, line_end } = this.item;
     if (!line_start || !line_end) {
@@ -70,7 +71,7 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
     const lines = full_content.split("\n");
     const updated_lines = [
       ...lines.slice(0, line_start - 1),
-      ...new_block_content.split("\n"),
+      ...new_content.split("\n"),
       ...lines.slice(line_end)
     ];
     const updated_content = updated_lines.join("\n");
@@ -85,7 +86,7 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
    * @returns {Promise<void>}
    * @throws {Error} If the block cannot be found.
    */
-  async block_remove() {
+  async remove() {
     let full_content = await this.item.source.read();
     const { line_start, line_end } = this.item;
     if (!line_start || !line_end) {
@@ -111,11 +112,11 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
    * @returns {Promise<void>}
    * @throws {Error} If the block or target is invalid.
    */
-  async block_move_to(to_key) {
-    const block_content = await this.block_read();
-    await this.block_remove();
+  async move_to(to_key) {
+    const content = await this.read();
+    await this.remove();
 
-    // Determine where to append the block_content
+    // Determine where to append the content
     // If to_key includes '#', treat as block reference (i.e., append to that block or heading)
     // Else treat as source file
     const is_block_ref = to_key.includes("#");
@@ -124,21 +125,21 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
 
     if (!target_source) {
       // create new source if needed
-      await this.item.env.smart_sources.create(target_source_key, block_content);
+      await this.item.env.smart_sources.create(target_source_key, content);
       return;
     }
 
     if (is_block_ref) {
       const target_block = this.item.env.smart_blocks.get(to_key);
       if (target_block) {
-        await target_block.append(block_content);
+        await target_block.append(content);
       } else {
         // If no block, append to source at heading.
-        await target_source.append(block_content);
+        await target_source.append(content);
       }
     } else {
       // Append to source directly
-      await target_source.append(block_content);
+      await target_source.append(content);
     }
   }
 
@@ -166,8 +167,6 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
    * @returns {Promise<void>}
    */
   async _reparse_source() {
-    const source = this.item.source;
-    const content = await source.read();
-    await this.item.collection.import_source(source, content);
+    await this.item.source.import();
   }
 }

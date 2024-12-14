@@ -1,3 +1,4 @@
+import { create_hash } from "smart-sources/utils/create_hash.js";
 /**
  * @file _adapter.js
  * @description Abstract base class for block-level adapters.
@@ -25,7 +26,7 @@ export class BlockContentAdapter {
    * @returns {Promise<string>} The content of the block.
    * @throws {Error} If not implemented by subclass.
    */
-  async block_read() { throw new Error('Not implemented'); }
+  async read() { throw new Error('Not implemented'); }
 
   /**
    * Append content to the block.
@@ -35,18 +36,18 @@ export class BlockContentAdapter {
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
-  async block_append(content) { throw new Error('Not implemented'); }
+  async append(content) { throw new Error('Not implemented'); }
 
   /**
    * Update the block with new content.
    * @abstract
    * @async
-   * @param {string} new_block_content New content for the block.
+   * @param {string} new_content New content for the block.
    * @param {Object} [opts={}] Additional options.
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
-  async block_update(new_block_content, opts={}) { throw new Error('Not implemented'); }
+  async update(new_content, opts={}) { throw new Error('Not implemented'); }
 
   /**
    * Remove the block from the source.
@@ -55,7 +56,7 @@ export class BlockContentAdapter {
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
-  async block_remove() { throw new Error('Not implemented'); }
+  async remove() { throw new Error('Not implemented'); }
 
   /**
    * Move the block to another location.
@@ -65,5 +66,33 @@ export class BlockContentAdapter {
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
-  async block_move_to(to_key) { throw new Error('Not implemented'); }
+  async move_to(to_key) { throw new Error('Not implemented'); }
+
+
+  get data(){
+    return this.item.data;
+  }
+
+  /**
+   * Update the last read timestamp and hash of the block.
+   * @async
+   * @param {string} content The content of the block.
+   * @returns {Promise<void>}
+   */
+  async update_last_read(content){
+    this.data.last_read = {
+      hash: await this.create_hash(content),
+      at: Date.now(),
+    };
+  }
+
+  /**
+   * Create a hash of the block content.
+   * @async
+   * @param {string} content The content to hash.
+   * @returns {Promise<string>} The hash of the content.
+   */
+  async create_hash(content) {
+    return await create_hash(content);
+  }
 }

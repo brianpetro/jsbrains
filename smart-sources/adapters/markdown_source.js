@@ -30,9 +30,10 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     const outlinks = get_markdown_links(content);
     this.data.outlinks = outlinks;
 
+    const { mtime, size } = this.item.file.stat;
     this.data.last_import = {
-      mtime: this.item.mtime,
-      size: this.item.size,
+      mtime,
+      size,
       at: Date.now(),
       hash: this.data.last_read.hash,
     }
@@ -44,7 +45,6 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     }
 
     // Queue embedding
-    await this.item.get_embed_input(content);
     this.item.queue_embed();
   }
 
@@ -55,11 +55,11 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
       return false;
     }
     if(this.item.file_type !== 'md') {
-      console.warn(`MarkdownSourceContentAdapter: Skipping non-markdown file: ${this.file_path}`);
+      // console.warn(`MarkdownSourceContentAdapter: Skipping non-markdown file: ${this.file_path}`);
       return false;
     }
     if(this.item.size > 1000000) {
-      console.warn(`MarkdownSourceContentAdapter: Skipping large file: ${this.file_path}`);
+      // console.warn(`MarkdownSourceContentAdapter: Skipping large file: ${this.file_path}`);
       return false;
     }
     // Skip if no changes

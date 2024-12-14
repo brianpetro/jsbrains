@@ -26,7 +26,7 @@ export class MarkdownSourceAdapter extends FileSourceAdapter {
     }
 
     this.data.hash = hash; // set import hash
-    this.data.last_read_hash = hash;
+    this.data.last_read.hash = hash;
 
     const blocks_obj = markdown_to_blocks(content);
     this.data.blocks = blocks_obj;
@@ -86,8 +86,8 @@ export class MarkdownSourceAdapter extends FileSourceAdapter {
 
   async read(opts = {}) {
     let content = await this._read();
-    this.source.data.last_read_hash = await this.create_hash(content);
-    if (this.source.last_read_hash !== this.source.hash) {
+    this.source.data.last_read.hash = await this.create_hash(content);
+    if (this.source.last_read.hash !== this.source.hash) {
       this.source.loaded_at = null;
       await this.source.import();
     }

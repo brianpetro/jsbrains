@@ -27,8 +27,6 @@ export class SmartEntities extends Collection {
     this.total_tokens = 0;
     /** @type {number} */
     this.total_time = 0;
-    /** @type {Array<Object>} */
-    this._active_embed_queue = [];
   }
 
   /**
@@ -341,10 +339,8 @@ export class SmartEntities extends Collection {
    * @returns {Array<Object>} The embed queue.
    */
   get embed_queue() {
-    return Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
-  }
-  get active_queue_length() {
-    return this._active_embed_queue.length;
+    if(!this._embed_queue.length) this._embed_queue = Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
+    return this._embed_queue;
   }
 
   /**
@@ -354,54 +350,44 @@ export class SmartEntities extends Collection {
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
-    if (this._process_promise) {
-      console.log(`Smart Connections: Embed queue processing already in progress for ${this.collection_key}`);
-      return this._process_promise;
+    this._reset_embed_queue_stats();
+    if (this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
+    if (!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
+    const datetime_start = new Date();
+    if (!this.embed_queue.length) {
+      return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
     }
-
-    this._process_promise = (async () => {
-      if (this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-      if (!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-      if (this.is_queue_halted) return console.log(`Smart Connections: Embed queue processing halted for ${this.collection_key}`);
-
-      const datetime_start = new Date();
-      if(!this._active_embed_queue.length){
-        this._active_embed_queue = this.embed_queue;
+    console.log(`Time spent getting embed queue: ${(new Date()).getTime() - datetime_start.getTime()}ms`);
+    console.log(`Processing ${this.collection_key} embed queue: ${this.embed_queue.length} items`);
+    for (let i = 0; i < this.embed_queue.length; i += this.embed_model.batch_size) {
+      if (this.is_queue_halted){
+        this.is_queue_halted = false;
+        break;
       }
-      const datetime_end = new Date();
-      console.log(`Time spent getting embed queue: ${datetime_end.getTime() - datetime_start.getTime()}ms`);
-      if (!this.active_queue_length) {
-        return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
-      }
-
-      console.log(`Processing ${this.collection_key} embed queue: ${this.active_queue_length} items`);
-      while (this.active_queue_length) {
-        if (this.is_queue_halted) break;
-
-        const batch = this._active_embed_queue.splice(0, this.embed_model.batch_size);
-        await Promise.all(batch.map(item => item.get_embed_input()));
+      const batch = this.embed_queue.slice(i, i + this.embed_model.batch_size);
+      await Promise.all(batch.map(item => item.get_embed_input()));
+      try{
         const start_time = Date.now();
         await this.embed_model.embed_batch(batch);
         this.total_time += Date.now() - start_time;
-        this.embedded_total += batch.length;
-        this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
-        this._show_embed_progress_notice();
-      }
-
-      if (!this.is_queue_halted) this._embed_queue_complete();
-    })()
-      .catch((e) => {
+      } catch(e){
         if (e && e.message && e.message.includes("API key not set")) {
           this.halt_embed_queue_processing(`API key not set for ${this.embed_model_key}\nPlease set the API key in the settings.`);
         }
         console.error(e);
         console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
-      })
-      .finally(() => {
-        this._process_promise = null;
-      });
-
-    return this._process_promise;
+      }
+      this.embedded_total += batch.length;
+      this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
+      this._show_embed_progress_notice();
+      // process save queue every 1000 items
+      if(this.embedded_total - this.last_save_total > 1000){
+        this.last_save_total = this.embedded_total;
+        await this.process_save_queue();
+      }
+    }
+    if (!this.is_queue_halted) this._embed_queue_complete();
+    this.process_save_queue();
   }
 
 
@@ -412,14 +398,13 @@ export class SmartEntities extends Collection {
    * @returns {void}
    */
   _show_embed_progress_notice() {
-    if (this.is_queue_halted) return;
     if (this.embedded_total - this.last_notice_embedded_total < 100) return;
     this.last_notice_embedded_total = this.embedded_total;
     const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
     this.notices?.show('embedding_progress',
       [
         `Making Smart Connections...`,
-        `Embedding progress: ${this.embedded_total} / ${this.active_queue_length + this.embedded_total}`,
+        `Embedding progress: ${this.embedded_total} / ${this.embed_queue.length}`,
         `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
       ],
       {
@@ -459,12 +444,8 @@ export class SmartEntities extends Collection {
    * @returns {void}
    */
   _embed_queue_complete() {
-    if (this.completed_embed_queue_timeout) clearTimeout(this.completed_embed_queue_timeout);
-    this.completed_embed_queue_timeout = setTimeout(() => {
-      this._show_embed_completion_notice();
-      this._reset_embed_queue_stats();
-      this.env.save();
-    }, 1000);
+    this._show_embed_completion_notice();
+    this._reset_embed_queue_stats();
   }
 
   /**
@@ -473,14 +454,13 @@ export class SmartEntities extends Collection {
    * @returns {void}
    */
   _reset_embed_queue_stats() {
-    if(this.queue_stats_reset_timeout) clearTimeout(this.queue_stats_reset_timeout);
-    this.queue_stats_reset_timeout = setTimeout(() => {
-      this.embedded_total = 0;
-      this.total_tokens = 0;
-      this.total_time = 0;
-      this.last_notice_embedded_total = 0;
-      this.is_queue_halted = false;
-    }, 3000);
+    this.is_queue_halted = false;
+    this.last_save_total = 0;
+    this._embed_queue = [];
+    this.embedded_total = 0;
+    this.total_tokens = 0;
+    this.total_time = 0;
+    this.last_notice_embedded_total = 0;
   }
 
   /**
@@ -493,7 +473,7 @@ export class SmartEntities extends Collection {
     this.notices?.remove('embedding_progress');
     this.notices?.show('embedding_paused', [
       msg || `Embedding paused.`,
-      `Progress: ${this.embedded_total} / ${this.active_queue_length}`,
+      `Progress: ${this.embedded_total} / ${this.embed_queue.length}`,
       `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
     ],
       {

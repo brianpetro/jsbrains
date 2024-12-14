@@ -86,7 +86,6 @@ export class SmartSources extends SmartEntities {
     
     // Identify blocks to remove
     const remove_smart_blocks = Object.values(this.block_collection.items)
-      // .filter(item => item.vec && (item.is_gone || !item.should_embed || !item.data?.hash))
       .filter(item => {
         if(!item.vec) return false;
         if(item.is_gone) {
@@ -290,7 +289,6 @@ export class SmartSources extends SmartEntities {
       for (let i = 0; i < import_queue.length; i += 100) {
         this.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
-        this.process_embed_queue();
       }
       this.notices?.remove('import progress');
       this.notices?.show('done import', [`Processed import queue in ${Date.now() - time_start}ms`], { timeout: 3000 });
@@ -413,18 +411,21 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<Object>} The embed queue.
    */
   get embed_queue() {
-    try{
-      const embed_blocks = this.block_collection.settings.embed_blocks;
-      return Object.values(this.items).reduce((acc, item) => {
-        if(item._queue_embed) acc.push(item);
-        if(embed_blocks) item.blocks.forEach(block => {
-          if(block._queue_embed && block.should_embed) acc.push(block);
-        });
-        return acc;
-      }, []);
-    }catch(e){
-      console.error(`Error getting embed queue: ` + JSON.stringify((e || {}), null, 2));
+    if(!this._embed_queue.length){
+      try{
+        const embed_blocks = this.block_collection.settings.embed_blocks;
+        this._embed_queue = Object.values(this.items).reduce((acc, item) => {
+          if(item._queue_embed) acc.push(item);
+          if(embed_blocks) item.blocks.forEach(block => {
+            if(block._queue_embed && block.should_embed) acc.push(block);
+          });
+          return acc;
+        }, []);
+      }catch(e){
+        console.error(`Error getting embed queue: ` + JSON.stringify((e || {}), null, 2));
+      }
     }
+    return this._embed_queue;
   }
 
   /**
@@ -502,9 +503,9 @@ export class SmartSources extends SmartEntities {
       item.loaded_at = Date.now() + 9999999999; // Prevent re-loading during import
     });
     
-    await this.process_source_import_queue();
     this.notices?.remove('clearing all');
     this.notices?.show('cleared all', "All data cleared and reimported", { timeout: 3000 });
+    await this.process_source_import_queue();
   }
 
   /**

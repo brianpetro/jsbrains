@@ -207,13 +207,6 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
    * @returns {Promise<void>}
    */
   async load() {
-    const data_path = this.get_data_path();
-    if (!(await this.fs.exists(data_path))) {
-      // If no file, item might need import
-      this.item.queue_import();
-      return;
-    }
-
     const raw_data = await this._read_item_file();
     if (!raw_data) {
       this.item.queue_import();
@@ -344,9 +337,15 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
   }
 
   async _read_item_file() {
-    const data_path = this.get_data_path();
-    const data_ajson = await this.fs.adapter.read(data_path, 'utf-8', { no_cache: true });
-    return data_ajson?.trim() || null;
+    try{
+      const data_path = this.get_data_path();
+      const data_ajson = await this.fs.adapter.read(data_path, 'utf-8', { no_cache: true });
+      return data_ajson?.trim() || null;
+    }catch(e){
+      // console.error(`Error reading item file: ` + JSON.stringify((e || {}), null, 2));
+      console.warn('no data found for item');
+      return null;
+    }
   }
 
   // temp: for backwards compatibility

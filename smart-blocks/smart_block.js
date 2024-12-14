@@ -1,6 +1,6 @@
 import { SmartEntity } from "smart-entities";
 // import { render as render_source_component } from "./components/source.js";
-// import { create_hash } from "./utils/create_hash.js";
+import { create_hash } from "smart-sources/utils/create_hash.js";
 
 /**
  * @class SmartBlock
@@ -19,6 +19,10 @@ export class SmartBlock extends SmartEntity {
       data: {
         text: null,
         length: 0,
+        last_read: {
+          hash: null,
+          at: 0,
+        },
       },
       _embed_input: '', // Stored temporarily
     };
@@ -53,14 +57,8 @@ export class SmartBlock extends SmartEntity {
    * @returns {void}
    */
   queue_embed() {
-    if(!this._queue_embed && this.should_embed){
-      this._queue_embed = true;
-      if(this.source.collection._active_embed_queue.length){
-        // add to active queue
-        this.source.collection._active_embed_queue.push(this);
-      }
-      this.source?.queue_embed();
-    }
+    this._queue_embed = true;
+    this.source?.queue_embed();
   }
 
   /**
@@ -94,7 +92,6 @@ export class SmartBlock extends SmartEntity {
   should_clear_embeddings(data) {
     if(this.is_new) return true;
     if(this.embed_model && this.vec?.length !== this.embed_model.model_config.dims) return true;
-    if(this.data.length !== data.length) return true;
     return false;
   }
 
@@ -108,13 +105,13 @@ export class SmartBlock extends SmartEntity {
       if(!content) content = await this.read();
       this._embed_input = this.breadcrumbs + "\n" + content;
     }
-    // if(this.vec){
-    //   // PREVENT EMBEDDING BASED ON HASH
-    //   // likely better handled since reduces embed_batch size
-    //   // falsy values filtered out in SmartEmbedModel.embed_batch
-    //   const hash = await create_hash(this._embed_input);
-    //   if(hash === this.hash) return false; // Already embedded
-    // }
+    // PREVENT EMBEDDING BASED ON HASH
+    // likely better handled since reduces embed_batch size
+    if(this.vec){
+      // falsy values filtered out in SmartEmbedModel.embed_batch
+      if(this.last_embed.hash === this.last_read.hash) return false; // Already embedded
+      this.last_embed.hash = this.last_read.hash;
+    }
     return this._embed_input;
   }
 
@@ -126,7 +123,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<string>} The block content.
    */
   async read() {
-    return await this.block_adapter.block_read();
+    return await this.block_adapter.read();
   }
 
   /**
@@ -137,7 +134,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<void>}
    */
   async append(content) {
-    await this.block_adapter.block_append(content);
+    await this.block_adapter.append(content);
     this.queue_save();
   }
 
@@ -150,7 +147,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<void>}
    */
   async update(new_block_content, opts={}) {
-    await this.block_adapter.block_update(new_block_content, opts);
+    await this.block_adapter.update(new_block_content, opts);
     this.queue_save();
   }
 
@@ -161,7 +158,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<void>}
    */
   async remove() {
-    await this.block_adapter.block_remove();
+    await this.block_adapter.remove();
     this.queue_save();
   }
 
@@ -173,7 +170,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<void>}
    */
   async move_to(to_key) {
-    await this.block_adapter.block_move_to(to_key);
+    await this.block_adapter.move_to(to_key);
     this.queue_save();
   }
 
@@ -279,6 +276,9 @@ export class SmartBlock extends SmartEntity {
     return super.is_unembedded;
   }
 
+  get last_embed() { return this.data.last_embed; }
+  get last_read() { return this.data.last_read; }
+
   /**
    * Retrieves the sub-key of the block.
    * @readonly
@@ -365,6 +365,7 @@ export class SmartBlock extends SmartEntity {
       if(this.settings?.min_chars && this.size < this.settings.min_chars) return false;
       const match_line_start = this.line_start + 1;
       const match_line_end = this.line_end;
+      // check if sub-blocks should be embedded individually
       const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})
         .reduce((acc, [key, range]) => {
           if(!key.startsWith(this.sub_key+"#")) return acc;

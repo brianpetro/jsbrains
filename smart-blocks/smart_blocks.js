@@ -26,7 +26,8 @@ export class SmartBlocks extends SmartEntities {
    */
   async import_source(source, content) {
     let blocks_obj = markdown_to_blocks(content);
-  
+    
+    const blocks = [];
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
       // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
       const block_key = source.key + sub_key;
@@ -38,11 +39,9 @@ export class SmartBlocks extends SmartEntities {
         size: block_content.length,
         outlinks: block_outlinks,
       };
-      const block = await this.create_or_update(block_data);
-      await block.get_embed_input(block_content);
-      block.queue_embed();
+      blocks.push(this.create_or_update(block_data));
     }
-  
+    await Promise.all(blocks);
     this.clean_and_update_source_blocks(source, blocks_obj);
   }
 
@@ -55,15 +54,22 @@ export class SmartBlocks extends SmartEntities {
    */
   clean_and_update_source_blocks(source, blocks_obj) {
     const current_block_keys = new Set(Object.keys(blocks_obj).map(sk => source.key + sk));
-    for (const key of Object.keys(this.items)) {
-      if (key.startsWith(source.key) && !current_block_keys.has(key)) {
-        // This block no longer exists, mark it deleted
-        const block = this.get(key);
-        if (block) {
-          block.deleted = true;
-          block.queue_save(); 
-          // Will remove embeddings & data on next save (AJSON updated by SmartSources)
-        }
+    // for (const key of Object.keys(this.items)) {
+    //   if (key.startsWith(source.key) && !current_block_keys.has(key)) {
+    //     // This block no longer exists, mark it deleted
+    //     const block = this.get(key);
+    //     if (block) {
+    //       block.deleted = true;
+    //       block.queue_save(); 
+    //       // Will remove embeddings & data on next save (AJSON updated by SmartSources)
+    //     }
+    //   }
+    // }
+    const blocks = source.blocks;
+    for(let i = 0; i < blocks.length; i++){
+      if(!current_block_keys.has(blocks[i].key)){
+        blocks[i].deleted = true;
+        blocks[i].queue_save(); 
       }
     }
     // Update source data with new blocks

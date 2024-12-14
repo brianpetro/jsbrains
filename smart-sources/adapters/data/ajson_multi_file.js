@@ -37,12 +37,6 @@ export class AjsonMultiFileSourcesDataAdapter extends AjsonMultiFileCollectionDa
  */
 export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapter {
   async load() {
-    const data_path = this.get_data_path();
-    if (!(await this.fs.exists(data_path))) {
-      this.item.queue_import();
-      return;
-    }
-
     const raw_data = await this._read_item_file();
     if (!raw_data) {
       this.item.queue_import();

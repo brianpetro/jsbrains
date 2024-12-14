@@ -19,6 +19,10 @@ export class SmartSource extends SmartEntity {
     return {
       data: {
         history: [], // Array of { mtime, hash, length, blocks[] }
+        last_read: {
+          hash: null,
+          mtime: 0,
+        },
       },
       _embed_input: null, // Stored temporarily
       _queue_load: true,
@@ -514,13 +518,6 @@ export class SmartSource extends SmartEntity {
   get last_import_size() { return this.last_import?.size || 0; }
 
   /**
-   * Retrieves the hash of the SmartSource.
-   * @readonly
-   * @returns {string|undefined} The hash value or `undefined` if not set.
-   */
-  get hash() { return this.data?.hash; }
-
-  /**
    * Retrieves the paths of inlinks to this SmartSource.
    * @readonly
    * @returns {Array<string>} An array of inlink paths.
@@ -553,7 +550,7 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {string|undefined} The last read hash or `undefined` if not set.
    */
-  get last_read_hash() { return this.data?.last_read?.hash; }
+  get last_read() { return this.data.last_read; }
 
   /**
    * Retrieves the multi AJSON file name derived from the path.

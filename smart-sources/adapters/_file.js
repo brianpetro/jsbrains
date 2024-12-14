@@ -131,7 +131,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
       }
       const block = this.item.block_collection.get(block_key);
       const content_hash = await this.create_hash(block_content);
-      if(content_hash !== block.hash){
+      if(content_hash !== block.last_read?.hash){
         changed_blocks.push({
           key: block_key,
           state: "changed",

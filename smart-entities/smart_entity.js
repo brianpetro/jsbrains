@@ -32,7 +32,9 @@ export class SmartEntity extends CollectionItem {
       data: {
         path: null,
         embeddings: {}, // contains keys per model
-        embedding: {}, // DEPRECATED
+        last_embed: {
+          hash: null,
+        },
       },
     };
   }
@@ -43,7 +45,7 @@ export class SmartEntity extends CollectionItem {
    */
   init() {
     super.init();
-    if (!this.vec && this.should_embed) {
+    if (!this.vec) {
       this.queue_embed();
     }
     // Only keep active model embeddings
@@ -60,13 +62,7 @@ export class SmartEntity extends CollectionItem {
    * @returns {void}
    */
   queue_embed() {
-    if(!this._queue_embed){
-      this._queue_embed = true;
-      if(this.collection._active_embed_queue.length){
-        // add to active queue
-        this.collection._active_embed_queue.push(this);
-      }
-    }
+    this._queue_embed = true;
   }
 
   /**

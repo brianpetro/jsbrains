@@ -678,7 +678,7 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
     this._use_gpu = value;
   }
   get batch_size() {
-    if (this.use_gpu && this.model_settings?.gpu_batch_size) return this.model_settings.gpu_batch_size;
+    if (this.use_gpu && this.model_config?.gpu_batch_size) return this.model_config.gpu_batch_size;
     return this.model.opts.batch_size || this.model_config.batch_size || 1;
   }
 };
