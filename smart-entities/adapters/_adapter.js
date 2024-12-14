@@ -6,87 +6,88 @@
  * Future adapters can extend this base class to persist or retrieve vector embeddings from external sources
  * (e.g., local file storage, databases, or cloud-based vector stores / vector search APIs).
  */
-
 /**
  * @class EntityVectorAdapter
- * @classdesc A base adapter for handling vector embeddings of a SmartEntity instance. By default, this adapter
- * interacts with the SmartEntity's internal data object to get and set embeddings. Future implementations
- * can override the `get vec` and `set vec` accessors to interface with external storage solutions.
+ * @classdesc 
+ * A base adapter for handling vector embeddings of a SmartEntity instance.  
+ * This adapter defines a standard interface to get and set vector embeddings 
+ * associated with a particular embedding model. By default, embeddings are stored 
+ * inside the item's internal `data` object.  
+ * 
+ * **Intended Usage**:  
+ * - Extend this class to integrate with external vector storage systems (files, databases, APIs).  
+ * - Override `get vec()` and `set vec()` accessors to interact with your chosen storage layer.
+ * 
+ * **Example**:
+ * ```js
+ * class MyExternalVectorAdapter extends EntityVectorAdapter {
+ *   get vec() {
+ *     // Fetch vector from external DB
+ *   }
+ *   set vec(val) {
+ *     // Save vector to external DB
+ *   }
+ * }
+ * ```
  */
 export class EntityVectorAdapter {
   /**
-   * Creates an instance of EntityVectorAdapter.
    * @constructor
-   * @param {Object} item - The SmartEntity instance this adapter manages.
-   * @example
-   * const adapter = new EntityVectorAdapter(mySmartEntity);
+   * @param {Object} item - The SmartEntity instance this adapter manages. 
+   * The `item` should have `data` property, `embed_model` property, and 
+   * potentially `data.embeddings` object for storing embeddings.
    */
   constructor(item) {
     /** 
-     * @type {Object} 
-     * @private
-     * @description The SmartEntity instance this adapter is wrapping.
+     * @type {Object}
+     * @description The SmartEntity instance this adapter is associated with.
      */
     this.item = item;
   }
 
   /**
-   * Retrieves the full data object of the associated SmartEntity. This data object typically contains
-   * metadata, embeddings, and other entity-related information.
-   * @readonly
+   * @name data
    * @type {Object}
-   * @example
-   * const data = adapter.data;
+   * @readonly
+   * @description 
+   * Access the SmartEntity's internal data object. This typically includes `embeddings`
+   * keyed by the embedding model’s unique identifier.
    */
   get data() {
     return this.item.data;
   }
 
   /**
-   * Retrieves the key identifying which embedding model is currently in use. This key is used to
-   * access the correct embedding vector from the data object.
-   * @readonly
+   * @name embed_model_key
    * @type {string|undefined}
-   * @example
-   * const modelKey = adapter.embed_model_key;
+   * @readonly
+   * @description 
+   * The unique key identifying the currently active embedding model for this entity.
+   * Returns `undefined` if no embedding model is associated.
    */
   get embed_model_key() {
     return this.item.embed_model?.model_key;
   }
 
   /**
-   * Retrieves the vector representation (the embedding) associated with the current embedding model.
-   * 
-   * By default, this adapter stores embeddings directly in `this.smart_entity.data.embeddings`,
-   * keyed by the embedding model's key. If no vector is found, `undefined` is returned.
-   *
-   * Future adapters could override this getter to retrieve the vector from external sources, such as:
-   * - Local disk storage (e.g., reading from a local file or database).
-   * - Cloud-based vector databases or APIs.
-   * - Custom caching layers for faster access.
-   *
-   * @readonly
+   * @name vec
    * @type {Array<number>|undefined}
-   * @example
-   * const vector = adapter.vec; // [0.23, 0.01, ...] or undefined if not set
+   * @description 
+   * Retrieve the vector embedding associated with the current embedding model from 
+   * the entity’s data. If no vector or model is set, returns `undefined`.  
+   * 
+   * Override this getter to integrate with external vector stores.
    */
   get vec() {
     return this.data?.embeddings?.[this.embed_model_key]?.vec;
   }
 
   /**
-   * Sets the vector representation (the embedding) for the current embedding model. If the embeddings
-   * data structure does not exist, it is initialized. This default implementation persists the vector
-   * in the SmartEntity's internal data object.
-   * 
-   * Future adapters could override this setter to store the vector in external systems, for example:
-   * - Writing to a local database for persistence.
-   * - Sending the vector to a remote vector database or search index.
-   * - Implementing custom storage strategies (e.g., sharding, caching).
-   *
-   * @param {Array<number>} vec - The embedding vector.
-   * @example
-   * adapter.vec = [0.23, 0.01, 0.76, ...];
+   * @name vec
+   * @param {Array<number>} vec
+   * @description 
+   * Store the vector embedding for the current model in the entity’s data.  
+   * Override this setter to write embeddings to external storage.
    */
   set vec(vec) {
     if (!this.data.embeddings) {

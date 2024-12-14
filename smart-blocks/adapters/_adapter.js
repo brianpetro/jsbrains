@@ -6,78 +6,94 @@ import { create_hash } from "smart-sources/utils/create_hash.js";
 
 /**
  * @class BlockContentAdapter
- * @classdesc Abstract base class that defines the interface for block-level CRUD operations.
- * Concrete implementations (like MarkdownBlockContentAdapter) must implement these methods.
+ * @classdesc 
+ * Abstract base class defining CRUD operations for a single block’s content.  
+ * Concrete adapters (e.g., `MarkdownBlockContentAdapter`) must implement these methods 
+ * to perform actual read/update/remove operations at the block level.
+ *
+ * **Intended Usage**:  
+ * - Extend this class for different file formats or content types.  
+ * - Implement all abstract methods to handle block-level changes in the source file.
  */
 export class BlockContentAdapter {
   /**
    * @constructor
    * @param {Object} item - The SmartBlock instance this adapter operates on.
+   * The `item` should at least provide `data` and references to its parent source.
    */
   constructor(item) {
-    /** @type {Object} */
+    /**
+     * @type {Object}
+     * @description The SmartBlock instance handled by this adapter.
+     */
     this.item = item;
   }
 
   /**
-   * Read the content of the block.
-   * @abstract
    * @async
+   * @method read
+   * @abstract
    * @returns {Promise<string>} The content of the block.
    * @throws {Error} If not implemented by subclass.
    */
   async read() { throw new Error('Not implemented'); }
 
   /**
-   * Append content to the block.
-   * @abstract
    * @async
-   * @param {string} content Content to append.
+   * @method append
+   * @abstract
+   * @param {string} content Content to append to the block.
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
   async append(content) { throw new Error('Not implemented'); }
 
   /**
-   * Update the block with new content.
-   * @abstract
    * @async
-   * @param {string} new_content New content for the block.
-   * @param {Object} [opts={}] Additional options.
+   * @method update
+   * @abstract
+   * @param {string} new_content The new content for the block.
+   * @param {Object} [opts={}] Additional update options.
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
   async update(new_content, opts={}) { throw new Error('Not implemented'); }
 
   /**
-   * Remove the block from the source.
-   * @abstract
    * @async
+   * @method remove
+   * @abstract
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
   async remove() { throw new Error('Not implemented'); }
 
   /**
-   * Move the block to another location.
-   * @abstract
    * @async
-   * @param {string} to_key Destination path or entity reference.
+   * @method move_to
+   * @abstract
+   * @param {string} to_key The destination key (source or block reference).
    * @returns {Promise<void>}
    * @throws {Error} If not implemented by subclass.
    */
   async move_to(to_key) { throw new Error('Not implemented'); }
 
-
+  /**
+   * @name data
+   * @type {Object}
+   * @readonly
+   * @description Access the block’s data object. Useful for updating metadata like line references or hashes.
+   */
   get data(){
     return this.item.data;
   }
 
   /**
-   * Update the last read timestamp and hash of the block.
    * @async
-   * @param {string} content The content of the block.
+   * @method update_last_read
+   * @param {string} content The current content of the block.
    * @returns {Promise<void>}
+   * @description Update the block’s `last_read` hash and timestamp based on the given content.
    */
   async update_last_read(content){
     this.data.last_read = {
@@ -87,10 +103,11 @@ export class BlockContentAdapter {
   }
 
   /**
-   * Create a hash of the block content.
    * @async
+   * @method create_hash
    * @param {string} content The content to hash.
-   * @returns {Promise<string>} The hash of the content.
+   * @returns {Promise<string>} The computed hash of the content.
+   * @description Hash the block content to detect changes and prevent unnecessary re-embeddings.
    */
   async create_hash(content) {
     return await create_hash(content);

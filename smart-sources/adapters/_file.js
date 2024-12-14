@@ -1,14 +1,73 @@
 import { SourceContentAdapter } from "./_adapter.js";
+/**
+ * @class FileSourceContentAdapter
+ * @extends SourceContentAdapter
+ * @classdesc 
+ * A base class for source-level content operations using a file system.  
+ * This adapter reads, writes, and removes source files on disk. It manages 
+ * hashing and last-read timestamps to track changes.
+ * 
+ * **Intended Usage**:  
+ * - Extend this adapter for various file types (Markdown, Text) that rely 
+ *   on a standard file system backend.
+ * - Override methods as necessary for custom file handling logic.
+ */
 export class FileSourceContentAdapter extends SourceContentAdapter {
-  get fs() { return this.item.collection.fs; }
-  get file_path() { return this.item.file_path; }
+  /**
+   * @name fs
+   * @type {Object}
+   * @readonly
+   * @description 
+   * Access the file system interface used by this adapter. Typically derived 
+   * from `this.item.collection.fs`.
+   */
+  get fs() {
+    return this.item.collection.fs;
+  }
+
+  /**
+   * @name file_path
+   * @type {string}
+   * @readonly
+   * @description 
+   * The file path on disk corresponding to the source. Used for read/write operations.
+   */
+  get file_path() {
+    return this.item.file_path;
+  }
+
+  /**
+   * @async
+   * @method create
+   * @param {string|null} [content=null] Initial content for the new file.
+   * @description 
+   * Create a new file on disk. If content is not provided, attempts to use 
+   * `this.item.data.content` as fallback.
+   */
   async create(content=null) {
     if(!content) content = this.item.data.content || "";
     await this.fs.write(this.file_path, content);
   }
+
+  /**
+   * @async
+   * @method update
+   * @param {string} content The full new content to write to the file.
+   * @description 
+   * Overwrite the entire file content on disk.
+   */
   async update(content) {
     await this.fs.write(this.file_path, content);
   }
+
+  /**
+   * @async
+   * @method read
+   * @returns {Promise<string>} The content of the file.
+   * @description 
+   * Read the file content from disk. Updates `last_read` hash and timestamp on the entity’s data.
+   * If file is large or special handling is needed, override this method.
+   */
   async read() {
     const content = await this.fs.read(this.file_path);
     this.data.last_read = {
@@ -17,10 +76,17 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
     };
     return content;
   }
+
+  /**
+   * @async
+   * @method remove
+   * @returns {Promise<void>}
+   * @description 
+   * Delete the file from disk. After removal, the source item should also be deleted or updated accordingly.
+   */
   async remove() {
     await this.fs.remove(this.file_path);
   }
-
 
 
   /**
