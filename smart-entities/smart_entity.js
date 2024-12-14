@@ -143,6 +143,17 @@ export class SmartEntity extends CollectionItem {
     this.env.connections_cache[cache_key] = connections;
   }
 
+  get read_hash() { return this.data.last_read?.hash; }
+  set read_hash(hash) {
+    if(!this.data.last_read) this.data.last_read = {};
+    this.data.last_read.hash = hash;
+  }
+  get embed_hash() { return this.data.last_embed?.hash; }
+  set embed_hash(hash) {
+    if(!this.data.last_embed) this.data.last_embed = {};
+    this.data.last_embed.hash = hash;
+  }
+
   /**
    * Gets the embed link for the entity.
    * @readonly
@@ -208,7 +219,7 @@ export class SmartEntity extends CollectionItem {
    * @readonly
    * @returns {boolean} Always returns true. Can be overridden in child classes.
    */
-  get should_embed() { return true; } // may override in child class
+  get should_embed() { return !this.vec; } // may override in child class
 
   /**
    * Sets the error for the embedding model.

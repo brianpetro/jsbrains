@@ -377,6 +377,9 @@ export class SmartEntities extends Collection {
         console.error(e);
         console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
       }
+      batch.forEach(item => {
+        item.embed_hash = item.read_hash;
+      });
       this.embedded_total += batch.length;
       this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
       this._show_embed_progress_notice();

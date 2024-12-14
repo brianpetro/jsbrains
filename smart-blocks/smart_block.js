@@ -105,13 +105,6 @@ export class SmartBlock extends SmartEntity {
       if(!content) content = await this.read();
       this._embed_input = this.breadcrumbs + "\n" + content;
     }
-    // PREVENT EMBEDDING BASED ON HASH
-    // likely better handled since reduces embed_batch size
-    if(this.vec){
-      // falsy values filtered out in SmartEmbedModel.embed_batch
-      if(this.last_embed.hash === this.last_read.hash) return false; // Already embedded
-      this.last_embed.hash = this.last_read.hash;
-    }
     return this._embed_input;
   }
 
@@ -278,7 +271,7 @@ export class SmartBlock extends SmartEntity {
 
   get last_embed() { return this.data.last_embed; }
   get last_read() { return this.data.last_read; }
-
+  
   /**
    * Retrieves the sub-key of the block.
    * @readonly
