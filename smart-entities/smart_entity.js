@@ -41,11 +41,17 @@ export class SmartEntity extends CollectionItem {
 
   /**
    * Initializes the SmartEntity instance.
+   * Checks if the entity has a vector and if it matches the model dimensions.
+   * If not, it queues an embed.
+   * Removes embeddings for inactive models.
    * @returns {void}
    */
   init() {
     super.init();
-    if (!this.vec) {
+    if (!this.vec){
+      this.queue_embed();
+    }else if (this.vec.length !== this.embed_model.model_config.dims) {
+      this.vec = null;
       this.queue_embed();
     }
     // Only keep active model embeddings

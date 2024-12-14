@@ -386,7 +386,7 @@ export class SmartEntities extends Collection {
         await this.process_save_queue();
       }
     }
-    if (!this.is_queue_halted) this._embed_queue_complete();
+    this._show_embed_completion_notice();
     this.process_save_queue();
   }
 
@@ -439,16 +439,6 @@ export class SmartEntities extends Collection {
   }
 
   /**
-   * Handles the completion of the embed queue processing.
-   * @private
-   * @returns {void}
-   */
-  _embed_queue_complete() {
-    this._show_embed_completion_notice();
-    this._reset_embed_queue_stats();
-  }
-
-  /**
    * Resets the statistics related to embed queue processing.
    * @private
    * @returns {void}
@@ -480,7 +470,6 @@ export class SmartEntities extends Collection {
         timeout: 0,
         button: { text: "Resume", callback: () => this.resume_embed_queue_processing(100) }
       });
-    this.env.save();
   }
 
   /**
@@ -490,7 +479,6 @@ export class SmartEntities extends Collection {
    */
   resume_embed_queue_processing(delay = 0) {
     console.log("resume_embed_queue_processing");
-    this.is_queue_halted = false;
     this.notices?.remove('embedding_paused');
     setTimeout(() => {
       this.embedded_total = 0;

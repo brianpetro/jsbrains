@@ -189,6 +189,12 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     try {
       data = JSON.parse(json_str);
     } catch (e) {
+      // if any lines do not end with a comma, add comma to end of line and try again
+      if(ajson.split('\n').some(line => !line.endsWith(','))) {
+        console.warn("fixing trailing comma error");
+        ajson = ajson.split('\n').map(line => line.endsWith(',') ? line : line + ',').join('\n');
+        return this._parse(ajson);
+      }
       console.warn("Error parsing multi-line JSON:", e);
       console.warn(this.item.key);
       return { final_states, rewrite_needed: true };
@@ -234,7 +240,7 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     } else {
       console.warn("No active items remain, removing file", data_path);
       // No active items remain, remove file
-      if (await this.fs.exists(data_path)) await this.fs.remove(data_path);
+      // if (await this.fs.exists(data_path)) await this.fs.remove(data_path);
     }
   }
 
