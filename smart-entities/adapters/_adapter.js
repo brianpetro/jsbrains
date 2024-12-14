@@ -1,101 +1,149 @@
 /**
- * @file _adapter.js
- * @description Defines the EntityVectorAdapter class, serving as a base adapter for managing vector embeddings
- * within SmartEntity instances. This default adapter stores embeddings directly in the entity's internal data object.
+ * @file EntitiesVectorAdapter and EntityVectorAdapter base classes
+ * @description
+ * Provides an abstract base interface for vector operations on collections (EntitiesVectorAdapter)
+ * and single entities (EntityVectorAdapter).
  *
- * Future adapters can extend this base class to persist or retrieve vector embeddings from external sources
- * (e.g., local file storage, databases, or cloud-based vector stores / vector search APIs).
+ * Subclasses should override and implement their logic for storing and retrieving vectors,
+ * calculating nearest/furthest results, embedding batches, etc.
+ *
+ * All methods throw by default, serving as an interface until implemented by concrete adapters.
  */
+
 /**
- * @class EntityVectorAdapter
- * @classdesc 
- * A base adapter for handling vector embeddings of a SmartEntity instance.  
- * This adapter defines a standard interface to get and set vector embeddings 
- * associated with a particular embedding model. By default, embeddings are stored 
- * inside the item's internal `data` object.  
+ * @class EntitiesVectorAdapter
+ * @classdesc
+ * Abstract base class for handling vector operations at the collection level.
+ * Responsible for batch embedding, finding nearest/furthest items, and processing embed queues.
  * 
- * **Intended Usage**:  
- * - Extend this class to integrate with external vector storage systems (files, databases, APIs).  
- * - Override `get vec()` and `set vec()` accessors to interact with your chosen storage layer.
- * 
- * **Example**:
- * ```js
- * class MyExternalVectorAdapter extends EntityVectorAdapter {
- *   get vec() {
- *     // Fetch vector from external DB
+ * @example
+ * class MyEntitiesVectorAdapter extends EntitiesVectorAdapter {
+ *   async nearest(vec, filter = {}) {
+ *     // implement logic for finding nearest entities based on `vec`
  *   }
- *   set vec(val) {
- *     // Save vector to external DB
+ *   async embed_batch(entities) {
+ *     // implement logic for embedding a batch of entities
  *   }
  * }
- * ```
+ */
+export class EntitiesVectorAdapter {
+  /**
+   * @constructor
+   * @param {Object} collection - The collection (SmartEntities or derived class) instance.
+   */
+  constructor(collection) {
+    /**
+     * @type {Object}
+     * @description Reference to the SmartEntities collection instance.
+     */
+    this.collection = collection;
+  }
+
+  /**
+   * Find the nearest entities to the given vector.
+   * @async
+   * @param {number[]} vec - The reference vector.
+   * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
+   * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score descending.
+   * @throws {Error} Not implemented by default.
+   */
+  async nearest(vec, filter = {}) {
+    throw new Error('EntitiesVectorAdapter.nearest() not implemented');
+  }
+
+  /**
+   * Find the furthest entities from the given vector.
+   * @async
+   * @param {number[]} vec - The reference vector.
+   * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
+   * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score ascending (furthest).
+   * @throws {Error} Not implemented by default.
+   */
+  async furthest(vec, filter = {}) {
+    throw new Error('EntitiesVectorAdapter.furthest() not implemented');
+  }
+
+  /**
+   * Embed a batch of entities.
+   * @async
+   * @param {Object[]} entities - Array of entity instances to embed.
+   * @returns {Promise<void>}
+   * @throws {Error} Not implemented by default.
+   */
+  async embed_batch(entities) {
+    throw new Error('EntitiesVectorAdapter.embed_batch() not implemented');
+  }
+
+  /**
+   * Process a queue of entities waiting to be embedded.
+   * Typically, this will call embed_batch in batches and update entities.
+   * @async
+   * @param {Object[]} embed_queue - Array of entities to embed.
+   * @returns {Promise<void>}
+   * @throws {Error} Not implemented by default.
+   */
+  async process_embed_queue(embed_queue) {
+    throw new Error('EntitiesVectorAdapter.process_embed_queue() not implemented');
+  }
+}
+
+/**
+ * @class EntityVectorAdapter
+ * @classdesc
+ * Abstract base class for handling vector operations for a single entity.
+ * Responsible for getting/setting/deleting the vector and potentially interacting with external stores.
+ *
+ * @example
+ * class MyEntityVectorAdapter extends EntityVectorAdapter {
+ *   async get_vec() {
+ *     // Return vector from external store or item.data
+ *   }
+ *   async set_vec(vec) {
+ *     // Store vector in external system
+ *   }
+ * }
  */
 export class EntityVectorAdapter {
   /**
    * @constructor
-   * @param {Object} item - The SmartEntity instance this adapter manages. 
-   * The `item` should have `data` property, `embed_model` property, and 
-   * potentially `data.embeddings` object for storing embeddings.
+   * @param {Object} item - The SmartEntity instance that this adapter is associated with.
    */
   constructor(item) {
-    /** 
+    /**
      * @type {Object}
-     * @description The SmartEntity instance this adapter is associated with.
+     * @description The SmartEntity instance this adapter manages.
      */
     this.item = item;
   }
 
   /**
-   * @name data
-   * @type {Object}
-   * @readonly
-   * @description 
-   * Access the SmartEntity's internal data object. This typically includes `embeddings`
-   * keyed by the embedding model’s unique identifier.
+   * Retrieve the current vector embedding for this entity.
+   * @async
+   * @returns {Promise<number[]|undefined>} The entity's vector or undefined if not set.
+   * @throws {Error} Not implemented by default.
    */
-  get data() {
-    return this.item.data;
+  async get_vec() {
+    throw new Error('EntityVectorAdapter.get_vec() not implemented');
   }
 
   /**
-   * @name embed_model_key
-   * @type {string|undefined}
-   * @readonly
-   * @description 
-   * The unique key identifying the currently active embedding model for this entity.
-   * Returns `undefined` if no embedding model is associated.
+   * Store/update the vector embedding for this entity.
+   * @async
+   * @param {number[]} vec - The vector to set.
+   * @returns {Promise<void>}
+   * @throws {Error} Not implemented by default.
    */
-  get embed_model_key() {
-    return this.item.embed_model?.model_key;
+  async set_vec(vec) {
+    throw new Error('EntityVectorAdapter.set_vec() not implemented');
   }
 
   /**
-   * @name vec
-   * @type {Array<number>|undefined}
-   * @description 
-   * Retrieve the vector embedding associated with the current embedding model from 
-   * the entity’s data. If no vector or model is set, returns `undefined`.  
-   * 
-   * Override this getter to integrate with external vector stores.
+   * Delete/remove the vector embedding for this entity.
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Not implemented by default.
    */
-  get vec() {
-    return this.data?.embeddings?.[this.embed_model_key]?.vec;
-  }
-
-  /**
-   * @name vec
-   * @param {Array<number>} vec
-   * @description 
-   * Store the vector embedding for the current model in the entity’s data.  
-   * Override this setter to write embeddings to external storage.
-   */
-  set vec(vec) {
-    if (!this.data.embeddings) {
-      this.data.embeddings = {};
-    }
-    if (!this.data.embeddings[this.embed_model_key]) {
-      this.data.embeddings[this.embed_model_key] = {};
-    }
-    this.data.embeddings[this.embed_model_key].vec = vec;
+  async delete_vec() {
+    throw new Error('EntityVectorAdapter.delete_vec() not implemented');
   }
 }
