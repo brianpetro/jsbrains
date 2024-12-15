@@ -257,16 +257,6 @@ export class SmartBlock extends SmartEntity {
     return false;
   }
 
-  /**
-   * Determines if the block is unembedded based on exclusion and embedding status.
-   * @readonly
-   * @returns {boolean} `true` if unembedded, `false` otherwise.
-   */
-  get is_unembedded() {
-    if(this.excluded) return false;
-    return super.is_unembedded;
-  }
-
   get last_embed() { return this.data.last_embed; }
   get last_read() { return this.data.last_read; }
   

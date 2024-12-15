@@ -91,7 +91,7 @@ test('SmartEntity getters work correctly', t => {
   t.truthy(entity.embed_link);
   t.truthy(entity.name);
   t.truthy(entity.embed_model_key);
-  t.truthy(entity.is_unembedded);
+  t.truthy(entity.should_embed);
 });
 
 test('SmartEntity vec getter and setter work correctly', t => {
@@ -119,5 +119,5 @@ test('SmartEntity handles unembedded entities', t => {
 
   t.deepEqual(entity.data.embeddings, {}, 'Unembedded entity has empty embeddings');
   t.is(entity.vec, undefined, 'Unembedded entity has undefined vec');
-  t.true(entity.is_unembedded, 'Unembedded entity is correctly identified');
+  t.true(entity.should_embed, 'Unembedded entity is correctly identified');
 });

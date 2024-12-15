@@ -121,7 +121,7 @@ export class SmartSources extends SmartEntities {
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
       if (item.source_adapter.should_import) item.queue_import();
-      else if (item.is_unembedded) item.queue_embed();
+      else if (item.should_embed) item.queue_embed();
     }
   }
 

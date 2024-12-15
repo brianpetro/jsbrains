@@ -18,6 +18,10 @@ import { results_acc, furthest_acc } from "../top_acc.js";
  * Supports nearest/furthest queries and batch embedding via the collection's embed_model.
  */
 export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
+  constructor(collection) {
+    super(collection);
+    this._reset_embed_queue_stats();
+  }
   /**
    * Find the nearest entities to the given vector.
    * @async
@@ -92,13 +96,163 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * Process a queue of entities waiting to be embedded.
    * Typically, this will call embed_batch in batches and update entities.
    * @async
-   * @param {Object[]} embed_queue - Array of entities to embed.
    * @returns {Promise<void>}
    */
-  async process_embed_queue(embed_queue) {
-    // Default implementation: Just embed all at once
-    // In practice, you may batch this as needed.
-    await this.embed_batch(embed_queue);
+  async process_embed_queue() {
+    // Reset stats as in SmartEntities
+    this._reset_embed_queue_stats();
+    
+    if (this.collection.embed_model_key === "None") {
+      console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
+      return;
+    }
+
+    if (!this.collection.embed_model) {
+      console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
+      return;
+    }
+
+    const datetime_start = new Date();
+    if (!this.collection.embed_queue.length) {
+      return console.log(`Smart Connections: No items in ${this.collection.collection_key} embed queue`);
+    }
+
+    console.log(`Time spent getting embed queue: ${(new Date()).getTime() - datetime_start.getTime()}ms`);
+    console.log(`Processing ${this.collection.collection_key} embed queue: ${embed_queue.length} items`);
+
+    // Process in batches according to embed_model.batch_size
+    for (let i = 0; i < this.collection.embed_queue.length; i += this.collection.embed_model.batch_size) {
+      if (this.collection.is_queue_halted) {
+        this.collection.is_queue_halted = false; // reset halt after break
+        break;
+      }
+      const batch = embed_queue.slice(i, i + this.collection.embed_model.batch_size);
+
+      // Prepare input
+      await Promise.all(batch.map(item => item.get_embed_input()));
+
+      // Embed batch
+      try {
+        const start_time = Date.now();
+        await this.embed_batch(batch);
+        this.collection.total_time += Date.now() - start_time;
+      } catch (e) {
+        if (e && e.message && e.message.includes("API key not set")) {
+          this.halt_embed_queue_processing(`API key not set for ${this.collection.embed_model_key}\nPlease set the API key in the settings.`);
+        }
+        console.error(e);
+        console.error(`Error processing ${this.collection.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
+      }
+
+      // Update hash and stats
+      batch.forEach(item => {
+        item.embed_hash = item.read_hash;
+      });
+      this.collection.embedded_total += batch.length;
+      this.collection.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
+
+      // Show progress notice every ~100 items
+      this._show_embed_progress_notice(embed_queue.length);
+
+      // Process save queue every 1000 items
+      if (this.collection.embedded_total - this.collection.last_save_total > 1000) {
+        this.collection.last_save_total = this.collection.embedded_total;
+        await this.collection.process_save_queue();
+      }
+    }
+
+    // Show completion notice
+    this._show_embed_completion_notice(embed_queue.length);
+    this.collection.process_save_queue();
+  }
+
+  /**
+   * Displays the embedding progress notice.
+   * @private
+   * @returns {void}
+   */
+  _show_embed_progress_notice() {
+    if (this.embedded_total - this.last_notice_embedded_total < 100) return;
+    this.last_notice_embedded_total = this.embedded_total;
+    const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
+    this.notices?.show('embedding_progress',
+      [
+        `Making Smart Connections...`,
+        `Embedding progress: ${this.embedded_total} / ${this.embed_queue.length}`,
+        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
+      ],
+      {
+        timeout: 0,
+        button: pause_btn
+      }
+    );
+  }
+  /**
+   * Displays the embedding completion notice.
+   * @private
+   * @returns {void}
+   */
+  _show_embed_completion_notice() {
+    this.notices?.remove('embedding_progress');
+    this.notices?.show('embedding_complete', [
+      `Embedding complete.`,
+      `${this.embedded_total} entities embedded.`,
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
+    ], { timeout: 10000 });
+  }
+  /**
+   * Halts the embed queue processing.
+   * @param {string|null} msg - Optional message.
+   */
+  halt_embed_queue_processing(msg=null) {
+    this.is_queue_halted = true;
+    console.log("Embed queue processing halted");
+    this.notices?.remove('embedding_progress');
+    this.notices?.show('embedding_paused', [
+      msg || `Embedding paused.`,
+      `Progress: ${this.embedded_total} / ${this.embed_queue.length}`,
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
+    ],
+      {
+        timeout: 0,
+        button: { text: "Resume", callback: () => this.resume_embed_queue_processing(100) }
+      });
+  }
+  /**
+   * Resumes the embed queue processing after a delay.
+   * @param {number} [delay=0] - The delay in milliseconds before resuming.
+   * @returns {void}
+   */
+  resume_embed_queue_processing(delay = 0) {
+    console.log("resume_embed_queue_processing");
+    this.notices?.remove('embedding_paused');
+    setTimeout(() => {
+      this.embedded_total = 0;
+      this.process_embed_queue();
+    }, delay);
+  }
+  /**
+   * Calculates the number of tokens processed per second.
+   * @private
+   * @returns {number} Tokens per second.
+   */
+  _calculate_embed_tokens_per_second() {
+    const elapsed_time = this.total_time / 1000;
+    return Math.round(this.total_tokens / elapsed_time);
+  }
+  /**
+   * Resets the statistics related to embed queue processing.
+   * @private
+   * @returns {void}
+   */
+  _reset_embed_queue_stats() {
+    this._embed_queue = [];
+    this.embedded_total = 0;
+    this.is_queue_halted = false;
+    this.last_save_total = 0;
+    this.last_notice_embedded_total = 0;
+    this.total_tokens = 0;
+    this.total_time = 0;
   }
 }
 

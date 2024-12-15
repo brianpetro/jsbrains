@@ -1,6 +1,11 @@
+/**
+ * @file smart_entity.js
+ * @description Represents a single smart entity within a collection, now using the DefaultEntityVectorAdapter for vector operations.
+ */
+
 import { CollectionItem } from "smart-collections";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
-import { EntityVectorAdapter } from "smart-entities/adapters/_adapter.js";
+import { DefaultEntityVectorAdapter } from "./adapters/default.js";
 import { render as render_entity_component } from "./components/entity.js";
 
 /**
@@ -17,8 +22,11 @@ export class SmartEntity extends CollectionItem {
    */
   constructor(env, opts = {}) {
     super(env, opts);
-    /** @type {EntityVectorAdapter} */
-    this.entity_adapter = new EntityVectorAdapter(this);
+    /** 
+     * @type {DefaultEntityVectorAdapter} 
+     * @description Adapter for this entity's vector operations.
+     */
+    this.entity_adapter = new DefaultEntityVectorAdapter(this);
   }
 
   /**
@@ -31,7 +39,7 @@ export class SmartEntity extends CollectionItem {
     return {
       data: {
         path: null,
-        embeddings: {}, // contains keys per model
+        embeddings: {},
         last_embed: {
           hash: null,
         },
@@ -50,7 +58,7 @@ export class SmartEntity extends CollectionItem {
     super.init();
     if (!this.vec){
       this.queue_embed();
-    }else if (this.vec.length !== this.embed_model.model_config.dims) {
+    } else if (this.vec.length !== this.embed_model.model_config.dims) {
       this.vec = null;
       this.queue_embed();
     }
@@ -74,14 +82,14 @@ export class SmartEntity extends CollectionItem {
   /**
    * Finds the nearest entities to this entity.
    * @param {Object} [filter={}] - Optional filters to apply.
-   * @returns {Array<Result>} An array of result objects with score and item.
+   * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
   nearest(filter = {}) { return this.collection.nearest_to(this, filter); }
 
   /**
    * Prepares the input for embedding.
    * @async
-   * @param {string} [content=null] - Optional content to use instead calling subsequent read()
+   * @param {string} [content=null] - Optional content to use instead of calling subsequent read()
    * @returns {Promise<void>} Should be overridden in child classes.
    */
   async get_embed_input(content=null) { } // override in child class
@@ -105,7 +113,7 @@ export class SmartEntity extends CollectionItem {
   /**
    * Finds connections relevant to this entity based on provided parameters.
    * @param {Object} [params={}] - Parameters for finding connections.
-   * @returns {Array<Result>} An array of result objects with score and item.
+   * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
   find_connections(params = {}) {
     const filter_opts = this.prepare_find_connections_filter_opts(params);
@@ -127,7 +135,7 @@ export class SmartEntity extends CollectionItem {
   /**
    * Retrieves connections from the cache based on the cache key.
    * @param {string} cache_key - The cache key.
-   * @returns {Array<Result>} The cached connections.
+   * @returns {Array<{item:Object, score:number}>} The cached connections.
    */
   connections_from_cache(cache_key) {
     return this.env.connections_cache[cache_key];
@@ -136,7 +144,7 @@ export class SmartEntity extends CollectionItem {
   /**
    * Stores connections in the cache with the provided cache key.
    * @param {string} cache_key - The cache key.
-   * @param {Array<Result>} connections - The connections to cache.
+   * @param {Array<{item:Object, score:number}>} connections - The connections to cache.
    * @returns {void}
    */
   connections_to_cache(cache_key, connections) {
@@ -204,22 +212,11 @@ export class SmartEntity extends CollectionItem {
   get tokens() { return this.data.embeddings[this.embed_model_key]?.tokens; }
 
   /**
-   * Determines if the entity is unembedded based on vector presence and size.
-   * @readonly
-   * @returns {boolean} True if unembedded, false otherwise.
-   */
-  get is_unembedded() {
-    if (this.vec) return false;
-    if (this.size < (this.settings?.min_chars || 300)) return false; // ignore small files
-    return true;
-  }
-
-  /**
    * Determines if the entity should be embedded.
    * @readonly
-   * @returns {boolean} Always returns true. Can be overridden in child classes.
+   * @returns {boolean} True if no vector is set, false otherwise.
    */
-  get should_embed() { return !this.vec; } // may override in child class
+  get should_embed() { return !this.vec && this.size > (this.settings?.min_chars || 300); }
 
   /**
    * Sets the error for the embedding model.
@@ -242,14 +239,14 @@ export class SmartEntity extends CollectionItem {
    * @readonly
    * @returns {Array<number>|undefined} The vector or undefined if not set.
    */
-  get vec() { return this.entity_adapter.vec; }
+  get vec() { return this.entity_adapter.get_vec(); }
 
   /**
    * Sets the vector representation in the entity adapter.
    * @param {Array<number>} vec - The vector to set.
    */
   set vec(vec) {
-    this.entity_adapter.vec = vec;
+    this.entity_adapter.set_vec(vec);
     this._queue_embed = false;
     this._embed_input = null;
     this.queue_save();

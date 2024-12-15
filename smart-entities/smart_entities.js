@@ -1,7 +1,12 @@
+/**
+ * @file smart_entities.js
+ * @description Manages a collection of smart entities with embedding capabilities.
+ * Delegates vector operations (nearest, furthest, embedding) to the assigned vector adapter (DefaultEntitiesVectorAdapter).
+ */
+
 import { Collection } from "smart-collections";
-import { results_acc, furthest_acc } from "./top_acc.js";
-import { cos_sim } from "./cos_sim.js";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { DefaultEntitiesVectorAdapter } from "./adapters/default.js";
 
 /**
  * @class SmartEntities
@@ -17,16 +22,14 @@ export class SmartEntities extends Collection {
    */
   constructor(env, opts) {
     super(env, opts);
+    /**
+     * @type {DefaultEntitiesVectorAdapter}
+     * @description Adapter that handles vector operations (nearest/furthest/embedding) for this collection.
+     */
+    this.entities_vector_adapter = new DefaultEntitiesVectorAdapter(this);
+
     /** @type {string|null} */
     this.model_instance_id = null;
-    /** @type {number} */
-    this.embedded_total = 0;
-    /** @type {boolean} */
-    this.is_queue_halted = false;
-    /** @type {number} */
-    this.total_tokens = 0;
-    /** @type {number} */
-    this.total_time = 0;
   }
 
   /**
@@ -136,45 +139,32 @@ export class SmartEntities extends Collection {
    * Finds the nearest entities to a given entity.
    * @param {Object} entity - The reference entity.
    * @param {Object} [filter={}] - Optional filters to apply.
-   * @returns {Array<Result>} An array of result objects with score and item.
+   * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
   nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
 
   /**
-   * Finds the nearest entities to a vector based on cosine similarity.
+   * Finds the nearest entities to a vector using the default adapter.
+   * @async
    * @param {Array<number>} vec - The vector to compare against.
    * @param {Object} [filter={}] - Optional filters to apply.
-   * @param {number} [filter.limit=50] - The maximum number of results to return.
-   * @returns {Array<Result>} An array of result objects with score and item.
+   * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
   nearest(vec, filter = {}) {
     if (!vec) return console.log("no vec");
-    const {
-      limit = 50, // TODO: default configured in settings
-    } = filter;
-    const nearest = this.filter(filter)
-      .reduce((acc, item) => {
-        if (!item.vec) return acc; // skip if no vec
-        const result = { item, score: cos_sim(vec, item.vec) };
-        results_acc(acc, result, limit); // update acc
-        return acc;
-      }, { min: 0, results: new Set() });
-    return Array.from(nearest.results);
+    return this.entities_vector_adapter.nearest(vec, filter);
   }
 
+  /**
+   * Finds the furthest entities from a vector using the default adapter.
+   * @async
+   * @param {Array<number>} vec - The vector to compare against.
+   * @param {Object} [filter={}] - Optional filters to apply.
+   * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
+   */
   furthest(vec, filter = {}) {
     if (!vec) return console.log("no vec");
-    const {
-      limit = 50, // TODO: default configured in settings
-    } = filter;
-    const furthest = this.filter(filter)
-      .reduce((acc, item) => {
-        if (!item.vec) return acc; // skip if no vec
-        const result = { item, score: cos_sim(vec, item.vec) };
-        furthest_acc(acc, result, limit); // update acc
-        return acc;
-      }, { max: 0, results: new Set() });
-    return Array.from(furthest.results);
+    return this.entities_vector_adapter.furthest(vec, filter);
   }
 
   /**
@@ -183,9 +173,6 @@ export class SmartEntities extends Collection {
    * @returns {string} The constructed file name.
    */
   get file_name() { return this.collection_key + '-' + this.embed_model_key.split("/").pop(); }
-
-  // Uncomment and implement if needed
-  // get data_dir() { return this.env.env_data_dir + "/" + this.embed_model_key.replace("/", "_"); }
 
   /**
    * Calculates the relevance of an item based on the search filter.
@@ -339,155 +326,19 @@ export class SmartEntities extends Collection {
    * @returns {Array<Object>} The embed queue.
    */
   get embed_queue() {
-    if(!this._embed_queue.length) this._embed_queue = Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
+    if(!this._embed_queue?.length) this._embed_queue = Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
     return this._embed_queue;
   }
 
   /**
-   * Processes the embed queue by batching and embedding items using a promise-based state.
-   *
+   * Processes the embed queue by delegating to the default vector adapter.
    * @async
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
-    this._reset_embed_queue_stats();
-    if (this.embed_model_key === "None") return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-    if (!this.embed_model) return console.log(`Smart Connections: No active embedding model for ${this.collection_key}, skipping embedding`);
-    const datetime_start = new Date();
-    if (!this.embed_queue.length) {
-      return console.log(`Smart Connections: No items in ${this.collection_key} embed queue`);
-    }
-    console.log(`Time spent getting embed queue: ${(new Date()).getTime() - datetime_start.getTime()}ms`);
-    console.log(`Processing ${this.collection_key} embed queue: ${this.embed_queue.length} items`);
-    for (let i = 0; i < this.embed_queue.length; i += this.embed_model.batch_size) {
-      if (this.is_queue_halted){
-        this.is_queue_halted = false;
-        break;
-      }
-      const batch = this.embed_queue.slice(i, i + this.embed_model.batch_size);
-      await Promise.all(batch.map(item => item.get_embed_input()));
-      try{
-        const start_time = Date.now();
-        await this.embed_model.embed_batch(batch);
-        this.total_time += Date.now() - start_time;
-      } catch(e){
-        if (e && e.message && e.message.includes("API key not set")) {
-          this.halt_embed_queue_processing(`API key not set for ${this.embed_model_key}\nPlease set the API key in the settings.`);
-        }
-        console.error(e);
-        console.error(`Error processing ${this.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
-      }
-      batch.forEach(item => {
-        item.embed_hash = item.read_hash;
-      });
-      this.embedded_total += batch.length;
-      this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
-      this._show_embed_progress_notice();
-      // process save queue every 1000 items
-      if(this.embedded_total - this.last_save_total > 1000){
-        this.last_save_total = this.embedded_total;
-        await this.process_save_queue();
-      }
-    }
-    this._show_embed_completion_notice();
-    this.process_save_queue();
+    await this.entities_vector_adapter.process_embed_queue();
   }
 
-
-
-  /**
-   * Displays the embedding progress notice.
-   * @private
-   * @returns {void}
-   */
-  _show_embed_progress_notice() {
-    if (this.embedded_total - this.last_notice_embedded_total < 100) return;
-    this.last_notice_embedded_total = this.embedded_total;
-    const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
-    this.notices?.show('embedding_progress',
-      [
-        `Making Smart Connections...`,
-        `Embedding progress: ${this.embedded_total} / ${this.embed_queue.length}`,
-        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
-      ],
-      {
-        timeout: 0,
-        button: pause_btn
-      }
-    );
-  }
-
-  /**
-   * Displays the embedding completion notice.
-   * @private
-   * @returns {void}
-   */
-  _show_embed_completion_notice() {
-    this.notices?.remove('embedding_progress');
-    this.notices?.show('embedding_complete', [
-      `Embedding complete.`,
-      `${this.embedded_total} entities embedded.`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
-    ], { timeout: 10000 });
-  }
-
-  /**
-   * Calculates the number of tokens processed per second.
-   * @private
-   * @returns {number} Tokens per second.
-   */
-  _calculate_embed_tokens_per_second() {
-    const elapsed_time = this.total_time / 1000;
-    return Math.round(this.total_tokens / elapsed_time);
-  }
-
-  /**
-   * Resets the statistics related to embed queue processing.
-   * @private
-   * @returns {void}
-   */
-  _reset_embed_queue_stats() {
-    this.is_queue_halted = false;
-    this.last_save_total = 0;
-    this._embed_queue = [];
-    this.embedded_total = 0;
-    this.total_tokens = 0;
-    this.total_time = 0;
-    this.last_notice_embedded_total = 0;
-  }
-
-  /**
-   * Halts the embed queue processing.
-   * @returns {void}
-   */
-  halt_embed_queue_processing(msg=null) {
-    this.is_queue_halted = true;
-    console.log("Embed queue processing halted");
-    this.notices?.remove('embedding_progress');
-    this.notices?.show('embedding_paused', [
-      msg || `Embedding paused.`,
-      `Progress: ${this.embedded_total} / ${this.embed_queue.length}`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
-    ],
-      {
-        timeout: 0,
-        button: { text: "Resume", callback: () => this.resume_embed_queue_processing(100) }
-      });
-  }
-
-  /**
-   * Resumes the embed queue processing after a delay.
-   * @param {number} [delay=0] - The delay in milliseconds before resuming.
-   * @returns {void}
-   */
-  resume_embed_queue_processing(delay = 0) {
-    console.log("resume_embed_queue_processing");
-    this.notices?.remove('embedding_paused');
-    setTimeout(() => {
-      this.embedded_total = 0;
-      this.process_embed_queue();
-    }, delay);
-  }
 
   /**
    * Handles changes to the embedding model by reinitializing and processing the load queue.
@@ -574,4 +425,4 @@ export const connections_filter_config = {
     "description": "Exclude results that match this value.",
     "callback": "re_render"
   }
-}
+};
