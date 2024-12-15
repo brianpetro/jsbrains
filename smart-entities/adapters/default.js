@@ -33,16 +33,17 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     if (!vec || !Array.isArray(vec)) {
       throw new Error("Invalid vector input to nearest()");
     }
-    const { limit = 50 } = filter;
-    const items = Object.values(this.collection.items).filter(item => item.vec);
-    const acc = { min: 0, results: new Set(), minResult: null };
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const score = cos_sim(vec, item.vec);
-      const result = { item, score };
-      results_acc(acc, result, limit);
-    }
-    return Array.from(acc.results).sort((a,b) => b.score - a.score);
+    const {
+      limit = 50, // TODO: default configured in settings
+    } = filter;
+    const nearest = this.collection.filter(filter)
+      .reduce((acc, item) => {
+        if (!item.vec) return acc; // skip if no vec
+        const result = { item, score: cos_sim(vec, item.vec) };
+        results_acc(acc, result, limit); // update acc
+        return acc;
+      }, { min: 0, results: new Set() });
+    return Array.from(nearest.results);
   }
 
   /**
@@ -56,18 +57,17 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     if (!vec || !Array.isArray(vec)) {
       throw new Error("Invalid vector input to furthest()");
     }
-    const { limit = 50 } = filter;
-    const items = Object.values(this.collection.items).filter(item => item.vec);
-    const acc = { max: 1, results: new Set(), maxResult: null };
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const score = cos_sim(vec, item.vec);
-      const result = { item, score };
-      furthest_acc(acc, result, limit);
-    }
-    const results = Array.from(acc.results);
-    // sort ascending by score for furthest
-    return results.sort((a,b) => a.score - b.score);
+    const {
+      limit = 50, // TODO: default configured in settings
+    } = filter;
+    const furthest = this.collection.filter(filter)
+      .reduce((acc, item) => {
+        if (!item.vec) return acc; // skip if no vec
+        const result = { item, score: cos_sim(vec, item.vec) };
+        furthest_acc(acc, result, limit); // update acc
+        return acc;
+      }, { max: 0, results: new Set() });
+    return Array.from(furthest.results);
   }
 
   /**
