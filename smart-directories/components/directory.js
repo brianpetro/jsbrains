@@ -68,8 +68,8 @@ async function render_content(directory, sources_container, subdirs_container, o
     subdirs_container.innerHTML = '';
 
     const results = directory.settings.sort_nearest
-      ? directory.nearest_sources_results
-      : directory.furthest_sources_results;
+      ? await directory.get_nearest_sources_results()
+      : await directory.get_furthest_sources_results();
     const result_frags = await render_results.call(this, results, opts);
     sources_container.appendChild(result_frags);
   }

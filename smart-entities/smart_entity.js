@@ -84,7 +84,7 @@ export class SmartEntity extends CollectionItem {
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
-  nearest(filter = {}) { return this.collection.nearest_to(this, filter); }
+  async nearest(filter = {}) { return await this.collection.nearest_to(this, filter); }
 
   /**
    * Prepares the input for embedding.
@@ -112,10 +112,11 @@ export class SmartEntity extends CollectionItem {
 
   /**
    * Finds connections relevant to this entity based on provided parameters.
+   * @async
    * @param {Object} [params={}] - Parameters for finding connections.
    * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
-  find_connections(params = {}) {
+  async find_connections(params = {}) {
     const filter_opts = this.prepare_find_connections_filter_opts(params);
     const limit = params.filter?.limit
       || params.limit // DEPRECATED: for backwards compatibility
@@ -124,7 +125,7 @@ export class SmartEntity extends CollectionItem {
     const cache_key = this.key + JSON.stringify(params); // no objects/instances in cache key
     if (!this.env.connections_cache) this.env.connections_cache = {};
     if (!this.env.connections_cache[cache_key]) {
-      const connections = this.nearest(filter_opts)
+      const connections = (await this.nearest(filter_opts))
         .sort(sort_by_score)
         .slice(0, limit);
       this.connections_to_cache(cache_key, connections);
@@ -239,14 +240,14 @@ export class SmartEntity extends CollectionItem {
    * @readonly
    * @returns {Array<number>|undefined} The vector or undefined if not set.
    */
-  get vec() { return this.entity_adapter.get_vec(); }
+  get vec() { return this.entity_adapter.vec; }
 
   /**
    * Sets the vector representation in the entity adapter.
    * @param {Array<number>} vec - The vector to set.
    */
   set vec(vec) {
-    this.entity_adapter.set_vec(vec);
+    this.entity_adapter.vec = vec;
     this._queue_embed = false;
     this._embed_input = null;
     this.queue_save();

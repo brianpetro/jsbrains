@@ -58,7 +58,7 @@ const entity = new SmartEntity(environment, {
 await smartEntities.create_or_update(entity);
 
 // Find nearest neighbors
-const nearestNeighbors = smartEntities.nearest(entity.vec);
+const nearestNeighbors = await smartEntities.nearest(entity.vec);
 
 // Perform a lookup based on hypotheticals
 const results = await smartEntities.lookup({

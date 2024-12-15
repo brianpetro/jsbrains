@@ -80,7 +80,7 @@ test('SmartEntity methods work correctly', async t => {
   t.truthy(entity.nearest);
   t.truthy(entity.find_connections);
 
-  const connections = entity.find_connections();
+  const connections = await entity.find_connections();
   t.true(Array.isArray(connections));
 });
 

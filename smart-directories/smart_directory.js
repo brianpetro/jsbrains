@@ -95,7 +95,7 @@ export class SmartDirectory extends SmartEntity {
     );
   }
 
-  get nearest_sources_results() {
+  async get_nearest_sources_results() {
     if(!this.median_vec) {
       console.log(`no median vec for directory: ${this.data.path}`);
       return [];
@@ -103,10 +103,10 @@ export class SmartDirectory extends SmartEntity {
     const filter = {
       key_starts_with: this.data.path
     }
-    const results = this.env.smart_sources.nearest(this.median_vec, filter);
+    const results = await this.env.smart_sources.nearest(this.median_vec, filter);
     return results.sort(sort_by_score_descending);
   }
-  get furthest_sources_results() {
+  async get_furthest_sources_results() {
     if(!this.median_vec) {
       console.log(`no median vec for directory: ${this.data.path}`);
       return [];
@@ -114,7 +114,7 @@ export class SmartDirectory extends SmartEntity {
     const filter = {
       key_starts_with: this.data.path
     }
-    const results = this.env.smart_sources.furthest(this.median_vec, filter);
+    const results = await this.env.smart_sources.furthest(this.median_vec, filter);
     return results.sort(sort_by_score_ascending);
   }
 

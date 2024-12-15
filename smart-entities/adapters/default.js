@@ -99,6 +99,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
+    const embed_queue = this.collection.embed_queue;
     // Reset stats as in SmartEntities
     this._reset_embed_queue_stats();
     
@@ -113,7 +114,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     }
 
     const datetime_start = new Date();
-    if (!this.collection.embed_queue.length) {
+    if (!embed_queue.length) {
       return console.log(`Smart Connections: No items in ${this.collection.collection_key} embed queue`);
     }
 
@@ -121,7 +122,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     console.log(`Processing ${this.collection.collection_key} embed queue: ${embed_queue.length} items`);
 
     // Process in batches according to embed_model.batch_size
-    for (let i = 0; i < this.collection.embed_queue.length; i += this.collection.embed_model.batch_size) {
+    for (let i = 0; i < embed_queue.length; i += this.collection.embed_model.batch_size) {
       if (this.collection.is_queue_halted) {
         this.collection.is_queue_halted = false; // reset halt after break
         break;
@@ -254,6 +255,10 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.total_tokens = 0;
     this.total_time = 0;
   }
+  
+  get notices() {
+    return this.collection.notices;
+  }
 }
 
 
@@ -264,13 +269,16 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
  * In-memory adapter for a single entity. Stores and retrieves vectors from item.data.
  */
 export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
+  get data() {
+    return this.item.data;
+  }
   /**
    * Retrieve the current vector embedding for this entity.
    * @async
    * @returns {Promise<number[]|undefined>} The entity's vector or undefined if not set.
    */
   async get_vec() {
-    return this.item.data?.embeddings?.[this.item.embed_model_key]?.vec;
+    return this.vec;
   }
 
   /**
@@ -280,13 +288,7 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
    * @returns {Promise<void>}
    */
   async set_vec(vec) {
-    if (!this.item.data.embeddings) {
-      this.item.data.embeddings = {};
-    }
-    if (!this.item.data.embeddings[this.item.embed_model_key]) {
-      this.item.data.embeddings[this.item.embed_model_key] = {};
-    }
-    this.item.data.embeddings[this.item.embed_model_key].vec = vec;
+    this.vec = vec;
   }
 
   /**
@@ -299,4 +301,19 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
       delete this.item.data.embeddings[this.item.embed_model_key].vec;
     }
   }
+
+  // adds synchronous get/set for vec
+  get vec() {
+    return this.item.data?.embeddings?.[this.item.embed_model_key]?.vec;
+  }
+  set vec(vec){
+    if (!this.item.data.embeddings) {
+      this.item.data.embeddings = {};
+    }
+    if (!this.item.data.embeddings[this.item.embed_model_key]) {
+      this.item.data.embeddings[this.item.embed_model_key] = {};
+    }
+    this.item.data.embeddings[this.item.embed_model_key].vec = vec;
+  }
+
 }

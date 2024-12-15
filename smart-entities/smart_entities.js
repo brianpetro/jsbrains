@@ -30,6 +30,8 @@ export class SmartEntities extends Collection {
 
     /** @type {string|null} */
     this.model_instance_id = null;
+    /** @type {Array<Object>} */
+    this._embed_queue = [];
   }
 
   /**
@@ -137,11 +139,12 @@ export class SmartEntities extends Collection {
 
   /**
    * Finds the nearest entities to a given entity.
+   * @async
    * @param {Object} entity - The reference entity.
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
-  nearest_to(entity, filter = {}) { return this.nearest(entity.vec, filter); }
+  async nearest_to(entity, filter = {}) { return await this.nearest(entity.vec, filter); }
 
   /**
    * Finds the nearest entities to a vector using the default adapter.
@@ -150,9 +153,9 @@ export class SmartEntities extends Collection {
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
-  nearest(vec, filter = {}) {
-    if (!vec) return console.log("no vec");
-    return this.entities_vector_adapter.nearest(vec, filter);
+  async nearest(vec, filter = {}) {
+    if (!vec) return console.warn("nearest: no vec");
+    return await this.entities_vector_adapter.nearest(vec, filter);
   }
 
   /**
@@ -162,9 +165,9 @@ export class SmartEntities extends Collection {
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
-  furthest(vec, filter = {}) {
-    if (!vec) return console.log("no vec");
-    return this.entities_vector_adapter.furthest(vec, filter);
+  async furthest(vec, filter = {}) {
+    if (!vec) return console.warn("furthest: no vec");
+    return await this.entities_vector_adapter.furthest(vec, filter);
   }
 
   /**
@@ -264,26 +267,26 @@ export class SmartEntities extends Collection {
       ...(this.env.chats?.current?.scope || {}),
       ...(params.filter || {}),
     };
-    const results = hyp_vecs
-      .reduce((acc, embedding, i) => {
-        const results = this.nearest(embedding.vec, filter);
-        results.forEach(result => {
-          if (!acc[result.item.path] || result.score > acc[result.item.path].score) {
-            acc[result.item.path] = {
-              key: result.item.key,
-              score: result.score,
-              item: result.item,
-              entity: result.item, // DEPRECATED: use item instead
-              hypothetical_i: i,
-            };
-          } else {
-            // DEPRECATED: Handling when last score added to entity is not top score
-            result.score = acc[result.item.path].score;
-          }
-        });
-        return acc;
-      }, {})
-    ;
+    const results = await hyp_vecs.reduce(async (acc_promise, embedding, i) => {
+    const acc = await acc_promise;
+    const results = await this.nearest(embedding.vec, filter);
+    results.forEach(result => {
+        if (!acc[result.item.path] || result.score > acc[result.item.path].score) {
+          acc[result.item.path] = {
+            key: result.item.key,
+            score: result.score,
+            item: result.item,
+            entity: result.item, // DEPRECATED: use item instead
+            hypothetical_i: i,
+          };
+        } else {
+          // DEPRECATED: Handling when last score added to entity is not top score
+          result.score = acc[result.item.path].score;
+        }
+      });
+      return acc;
+    }, Promise.resolve({}));
+
     const top_k = Object.values(results)
       .sort(sort_by_score)
       .slice(0, limit)

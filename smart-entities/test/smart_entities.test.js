@@ -23,7 +23,7 @@ test.serial('SmartEntities nearest', async t => {
   const { env } = t.context;
   await Promise.all(Object.values(test_data).map(entity_data => env.smart_entities.create_or_update(entity_data)));
   
-  const nearest = env.smart_entities.nearest([0.1, 0.2, 0.3]);
+  const nearest = await env.smart_entities.nearest([0.1, 0.2, 0.3]);
   t.is(nearest.length, 3, 'Should return all entities');
   t.is(nearest[0].path, 'test1', 'Nearest entity should be entity1');
 });
@@ -41,7 +41,7 @@ test.serial('SmartEntity find_connections', async t => {
   await Promise.all(Object.values(test_data).map(entity_data => env.smart_entities.create_or_update(entity_data)));
   
   const entity = env.smart_entities.get('test1');
-  const connections = entity.find_connections();
+  const connections = await entity.find_connections();
   t.is(connections.length, 2, 'Should return 2 connections');
   t.is(connections[0].path, 'test2', 'First connection should be entity2');
 });
