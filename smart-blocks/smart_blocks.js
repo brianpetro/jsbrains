@@ -54,17 +54,6 @@ export class SmartBlocks extends SmartEntities {
    */
   clean_and_update_source_blocks(source, blocks_obj) {
     const current_block_keys = new Set(Object.keys(blocks_obj).map(sk => source.key + sk));
-    // for (const key of Object.keys(this.items)) {
-    //   if (key.startsWith(source.key) && !current_block_keys.has(key)) {
-    //     // This block no longer exists, mark it deleted
-    //     const block = this.get(key);
-    //     if (block) {
-    //       block.deleted = true;
-    //       block.queue_save(); 
-    //       // Will remove embeddings & data on next save (AJSON updated by SmartSources)
-    //     }
-    //   }
-    // }
     const blocks = source.blocks;
     for(let i = 0; i < blocks.length; i++){
       if(!current_block_keys.has(blocks[i].key)){
@@ -194,13 +183,6 @@ export class SmartBlocks extends SmartEntities {
    * @returns {Promise<void>}
    */
   async search() { throw "Not implemented: search"; }
-
-  /**
-   * @async
-   * @throws {Error} Throws an error indicating the method is not implemented.
-   * @returns {Promise<void>}
-   */
-  async import_file() { throw "Not implemented: import_file"; }
 
   /**
    * @async

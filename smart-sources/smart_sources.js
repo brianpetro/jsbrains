@@ -229,27 +229,6 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Imports a file by adding it to the file system and initializing the corresponding SmartSource.
-   * @async
-   * @param {Object} file - The file object to import.
-   * @param {string} file.path - The path of the file.
-   * @returns {Promise<void>}
-   */
-  async import_file(file){
-    // Add file to fs
-    this.fs.files[file.path] = file;
-    this.fs.file_paths.push(file.path);
-    // Create source
-    const source = await this.create_or_update({ path: file.path });
-    // Import
-    await source.import();
-    // Process embed queue
-    await this.process_embed_queue();
-    // Process save queue
-    await this.process_save_queue();
-  }
-
-  /**
    * Processes the load queue by loading items and optionally importing them.
    * @async
    * @returns {Promise<void>}
