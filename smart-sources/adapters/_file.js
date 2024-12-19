@@ -236,3 +236,8 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
   }
 
 }
+
+export default {
+  collection: null, // No collection adapter for this base file
+  item: FileSourceContentAdapter
+};

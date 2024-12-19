@@ -237,3 +237,8 @@ export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapt
     return 'smart_sources';
   }
 }
+
+export default {
+  collection: AjsonMultiFileSourcesDataAdapter,
+  item: AjsonMultiFileSourceDataAdapter
+};

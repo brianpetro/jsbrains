@@ -147,3 +147,8 @@ export class EntityVectorAdapter {
     throw new Error('EntityVectorAdapter.delete_vec() not implemented');
   }
 }
+
+export default {
+  collection: EntitiesVectorAdapter,
+  item: EntityVectorAdapter
+};

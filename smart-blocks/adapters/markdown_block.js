@@ -170,3 +170,8 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
     await this.item.source.import();
   }
 }
+
+export default {
+  collection: null, // No collection adapter needed for markdown blocks
+  item: MarkdownBlockContentAdapter
+};

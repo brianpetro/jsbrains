@@ -264,15 +264,20 @@ export class Collection {
    */
   get data_adapter() {
     if (!this._data_adapter) {
-      const config = this.env.opts.collections?.[this.collection_key];
-      const data_adapter_class = config?.data_adapter
-        ?? this.env.opts.collections?.smart_collections?.data_adapter;
-      if (!data_adapter_class) {
-        throw new Error(`No data adapter class found for ${this.collection_key} or smart_collections`);
-      }
-      this._data_adapter = new data_adapter_class(this);
+      const AdapterClass = this.get_adapter_class('data');
+      this._data_adapter = new AdapterClass(this);
     }
     return this._data_adapter;
+  }
+  get_adapter_class(type) {
+    const config = this.env.opts.collections?.[this.collection_key];
+    const adapter_key = type + '_adapter';
+    const adapter_module = config?.[adapter_key]
+      ?? this.env.opts.collections?.smart_collections?.[adapter_key]
+    ;
+    if(typeof adapter_module === 'function') return adapter_module; // backward compatibility
+    if(typeof adapter_module?.collection === 'function') return adapter_module.collection;
+    throw new Error(`No adapter class found for ${this.collection_key} or smart_collections`);
   }
 
   /**

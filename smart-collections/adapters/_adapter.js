@@ -152,3 +152,8 @@ export class ItemDataAdapter {
     return this.item.collection.data_adapter;
   }
 }
+
+export default {
+  collection: CollectionDataAdapter,
+  item: ItemDataAdapter
+};

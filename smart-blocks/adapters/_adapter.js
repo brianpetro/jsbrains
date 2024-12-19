@@ -113,3 +113,8 @@ export class BlockContentAdapter {
     return await create_hash(content);
   }
 }
+
+export default {
+  collection: null, // No collection adapter for this base file
+  item: BlockContentAdapter
+};

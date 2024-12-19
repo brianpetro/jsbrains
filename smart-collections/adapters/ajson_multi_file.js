@@ -351,3 +351,8 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     return ajson;
   }
 }
+
+export default {
+  collection: AjsonMultiFileCollectionDataAdapter,
+  item: AjsonMultiFileItemDataAdapter
+};

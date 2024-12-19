@@ -82,16 +82,6 @@ export class CollectionItem {
   }
 
   /**
-   * Ensures the item is fully loaded if it was queued for loading.
-   * @returns {Promise<void>}
-   */
-  async ensure_loaded() {
-    if (this._queue_load) {
-      await this.load();
-    }
-  }
-
-  /**
    * Updates the item data and returns true if changed.
    * @param {Object} data
    * @returns {boolean} True if data changed.
@@ -159,7 +149,7 @@ export class CollectionItem {
    */
   async load() {
     try {
-      await this.data_adapter.load(this);
+      await this.data_adapter.load_item(this);
       this.init();
     } catch (err) {
       this._load_error = err;

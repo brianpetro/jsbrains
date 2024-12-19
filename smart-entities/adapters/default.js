@@ -317,3 +317,8 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
   }
 
 }
+
+export default {
+  collection: DefaultEntitiesVectorAdapter,
+  item: DefaultEntityVectorAdapter
+};

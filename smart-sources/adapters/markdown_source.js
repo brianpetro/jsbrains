@@ -103,3 +103,8 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   }
 
 }
+
+export default {
+  collection: null, // No collection adapter needed for markdown sources
+  item: MarkdownSourceContentAdapter
+};

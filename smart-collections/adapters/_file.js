@@ -37,3 +37,8 @@ export class FileItemDataAdapter extends ItemDataAdapter {
     return this.item.collection.data_fs || this.item.collection.env.data_fs;
   }
 }
+
+export default {
+  collection: FileCollectionDataAdapter,
+  item: FileItemDataAdapter
+};

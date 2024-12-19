@@ -261,3 +261,8 @@ export class SqliteSourceDataAdapter extends SqliteCollectionDataAdapter {
     }
   }
 }
+
+export default {
+  collection: SqliteSourceDataAdapter,
+  item: SqliteSourceDataAdapter
+};

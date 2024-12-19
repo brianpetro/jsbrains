@@ -9,7 +9,7 @@ class TestItem extends CollectionItem {
 }
 
 // A mock data adapter to ensure data_adapter is always available.
-class MockDataAdapter {
+class MockCollectionDataAdapter {
   constructor(collection) {
     this.collection = collection;
   }
@@ -19,6 +19,9 @@ class MockDataAdapter {
   async save_item(item) {}
   async load(item) {}
 }
+const default_adapter_export = {
+  collection: MockCollectionDataAdapter
+};
 
 // Create an environment with the specified item type and mock data adapter
 function create_env_and_collection(itemType = CollectionItem) {
@@ -31,7 +34,7 @@ function create_env_and_collection(itemType = CollectionItem) {
     opts: {
       collections: {
         test_items: {
-          data_adapter: MockDataAdapter
+          data_adapter: default_adapter_export
         }
       }
     },
