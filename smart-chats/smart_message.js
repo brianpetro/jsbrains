@@ -240,7 +240,7 @@ export class SmartMessage extends SmartBlock {
               return { type: 'text', content: await item.read() };
             }
           }catch(e){
-            console.error(`Error fetching content for ${path}:`, e);
+            console.warn(`Error fetching content for ${path}:`, e);
             return { type: 'error', content: 'Failed to fetch content' };
           }
         }

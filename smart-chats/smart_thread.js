@@ -200,14 +200,26 @@ export class SmartThread extends SmartSource {
   async to_request() {
     const request = { messages: [] };
 
-    for (const msg of this.messages) {
+    for (let i = 0; i < this.messages.length; i++) {
+      const msg = this.messages[i];
       // If configured, handle tool output inclusion before adding the message
-      if (this.settings.send_tool_output_in_user_message && this.#should_include_tool_output(msg)) {
-        // Insert the next tool output message into the user message content
-        const combined_msg = await this.#combine_user_and_tool_output(msg);
-        request.messages.push(combined_msg);
-        continue;
+      if (this.settings.send_tool_output_in_user_message){
+        if (this.#should_include_tool_output(msg)) {
+          // Insert the next tool output message into the user message content
+          const combined_msg = await this.#combine_user_and_tool_output(msg);
+          request.messages.push(combined_msg);
+          continue;
+        }
+        if(msg.role === 'assistant' && msg.tool_calls?.length){
+          // skip when sending tool output in user message
+          continue;
+        }
+        if(msg.role === 'tool'){
+          // skip when sending tool output in user message
+          continue;
+        }
       }
+
 
       // Normal case: push the message as is
       request.messages.push(await msg.to_request());
@@ -231,6 +243,11 @@ export class SmartThread extends SmartSource {
     this.#reorder_last_user_message_if_needed(request);
 
     return request;
+  }
+
+  get last_message_is_tool(){
+    const last_msg = this.messages[this.messages.length - 1];
+    return last_msg?.role === 'tool';
   }
 
   /**
