@@ -114,7 +114,15 @@ export class SmartBlock extends SmartEntity {
    * @returns {Promise<string>} The block content.
    */
   async read() {
-    return await this.block_adapter.read();
+    try{
+      return await this.block_adapter.read();
+    } catch (e) {
+      if(e.message.includes('BLOCK NOT FOUND')){
+        return "BLOCK NOT FOUND (run \"Prune\" to remove)";
+      } else {
+        throw e;
+      }
+    }
   }
 
   /**

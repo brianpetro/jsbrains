@@ -1,17 +1,7 @@
 export async function render(entity, opts = {}) {
   let markdown;
   if(should_render_embed(entity)) markdown = entity.embed_link;
-  else{
-    try{
-      markdown = process_for_rendering(await entity.read())
-    } catch (e) {
-      if(e.message.includes('BLOCK NOT FOUND')){
-        markdown = "BLOCK NOT FOUND (run \"Prune\" to remove)";
-      } else {
-        throw e;
-      }
-    }
-  }
+  else markdown = process_for_rendering(await entity.read())
   let frag;
   if(entity.env.settings.smart_view_filter.render_markdown) frag = await this.render_markdown(markdown, entity);
   else frag = this.create_doc_fragment(markdown);

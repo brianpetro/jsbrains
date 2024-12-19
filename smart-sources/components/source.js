@@ -5,18 +5,8 @@ import {
 } from "smart-entities/components/entity.js";
 export async function render(source, opts = {}) {
   let markdown;
-  if(should_render_embed(entity)) markdown = entity.embed_link;
-  else{
-    try{
-      markdown = process_for_rendering(await entity.read())
-    } catch (e) {
-      if(e.message.includes('BLOCK NOT FOUND')){
-        markdown = "BLOCK NOT FOUND (run \"Prune\" to remove)";
-      } else {
-        throw e;
-      }
-    }
-  }
+  if(should_render_embed(source)) markdown = source.embed_link;
+  else markdown = process_for_rendering(await source.read())
   let frag;
   if(source.env.settings.smart_view_filter.render_markdown) frag = await this.render_markdown(markdown, source);
   else frag = this.create_doc_fragment(`<span>${markdown}</span>`);
