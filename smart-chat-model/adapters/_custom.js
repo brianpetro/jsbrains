@@ -11,6 +11,31 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
 
   req_adapter = SmartChatModelCustomRequestAdapter;
 
+  get custom_protocol() {
+    return this.adapter_config.protocol || 'http';
+  }
+  get custom_hostname(){
+    return this.adapter_config.hostname || 'localhost';
+  }
+  get custom_port(){
+    return this.adapter_config.port ? `:${this.adapter_config.port}` : '';
+  }
+  get custom_path(){
+    let path = this.adapter_config.path || '';
+    if(path && !path.startsWith('/')) path = `/${path}`;
+    return path;
+  }
+
+  get endpoint() {
+    return [
+      this.custom_protocol,
+      '://',
+      this.custom_hostname,
+      this.custom_port,
+      this.custom_path
+    ].join('');
+  }
+
   get settings_config() {
     return {
       // LOCAL PLATFORM SETTINGS

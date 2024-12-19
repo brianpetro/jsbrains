@@ -227,10 +227,17 @@ export class SmartThread extends SmartSource {
       // If the message context requires tool usage, define tools
       if (msg.context?.has_self_ref || msg.context?.folder_refs) {
         request.tools = [this.tools['lookup']];
-        if (msg.is_last_message) {
+        if (msg.is_last_message && msg.role === 'user') {
           request.tool_choice = { type: "function", function: { name: "lookup" } };
         }
       }
+    }
+    // if last message role is tool and send_tool_output_in_user_message is true, remove tools
+    if(this.last_message_is_tool && this.settings.send_tool_output_in_user_message){
+      request.tools = null;
+    }
+    if(this.last_message_is_tool){
+      request.tool_choice = 'none';
     }
 
     // Set default AI model parameters

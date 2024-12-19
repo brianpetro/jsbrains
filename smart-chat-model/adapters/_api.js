@@ -473,7 +473,7 @@ export class SmartChatModelRequestAdapter {
   _transform_single_message_to_openai(message) {
     const transformed = {
       role: this._get_openai_role(message.role),
-      content: this._get_openai_content(message.content),
+      content: this._get_openai_content(message),
     };
 
     if (message.name) transformed.name = message.name;
@@ -501,9 +501,9 @@ export class SmartChatModelRequestAdapter {
    * @returns {string} The transformed content.
    * @private
    */
-  _get_openai_content(content) {
+  _get_openai_content(message) {
     // Override in subclasses if needed
-    return content;
+    return message.content;
   }
 
   /**
@@ -721,7 +721,7 @@ export class SmartChatModelResponseAdapter {
   _transform_message_to_openai(message={}) {
     const transformed = {
       role: this._get_openai_role(message.role),
-      content: this._get_openai_content(message.content),
+      content: this._get_openai_content(message),
     };
 
     if (message.name) transformed.name = message.name;
@@ -748,9 +748,9 @@ export class SmartChatModelResponseAdapter {
    * @returns {string} The transformed content.
    * @private
    */
-  _get_openai_content(content) {
+  _get_openai_content(message) {
     // Override in subclasses if needed
-    return content;
+    return message.content;
   }
 
   /**
