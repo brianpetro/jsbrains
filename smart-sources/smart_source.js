@@ -328,27 +328,6 @@ export class SmartSource extends SmartEntity {
     }
   }
 
-  // /**
-  //  * Saves the SmartSource and its blocks by processing the save queue.
-  //  * @async
-  //  * @returns {Promise<void>}
-  //  */
-  // async save() {
-  //   if(this.deleted) return await super.save(super.ajson);
-  //   const blocks_to_save = this.blocks.filter(block => block._queue_save);
-  //   const ajson = [
-  //     super.ajson,
-  //     ...blocks_to_save.map(block => block.ajson).filter(ajson => ajson),
-  //   ].join("\n");
-  //   await super.save(ajson);
-  //   blocks_to_save.forEach(block => {
-  //     block._queue_save = false;
-  //     if(block.deleted && this.block_collection.items[block.key]){
-  //       this.block_collection.delete_item(block.key);
-  //     }
-  //   });
-  // }
-
   /**
    * Handles errors during the load process.
    * @param {Error} err - The error encountered during load.
@@ -388,13 +367,6 @@ export class SmartSource extends SmartEntity {
     if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key)); // Fastest (no iterating over all blocks)
     return [];
   }
-
-  /**
-   * Retrieves the data path for the SmartSource.
-   * @readonly
-   * @returns {string} The data path.
-   */
-  get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
 
   /**
    * Retrieves the embed input, either from cache or by generating it.
@@ -527,13 +499,6 @@ export class SmartSource extends SmartEntity {
    * @returns {string|undefined} The last read hash or `undefined` if not set.
    */
   get last_read() { return this.data.last_read; }
-
-  /**
-   * Retrieves the multi AJSON file name derived from the path.
-   * @readonly
-   * @returns {string} The multi AJSON file name.
-   */
-  get multi_ajson_file_name() { return (this.path.split("#").shift()).replace(/[\s\/\.]/g, '_').replace(".md", ""); }
 
   /**
    * Retrieves the display name of the SmartSource.

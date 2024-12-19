@@ -295,14 +295,6 @@ export class CollectionItem {
   }
 
   /**
-   * Generates a filename-friendly version of the item's key for storage.
-   * @returns {string}
-   */
-  get multi_ajson_file_name() {
-    return this.key.replace(/[\s\/\.]/g, '_').replace(".md", "");
-  }
-
-  /**
    * @returns {Object} The filesystem adapter.
    */
   get data_fs() { 

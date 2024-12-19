@@ -427,7 +427,6 @@ export class SmartBlock extends SmartEntity {
   get is_canvas() { return this.source.is_canvas; }
   get is_excalidraw() { return this.source.is_excalidraw; }
   get mtime() { return this.source.mtime; }
-  get multi_ajson_file_name() { return this.source.multi_ajson_file_name; }
   get smart_change_adapter() { return this.source.smart_change_adapter; }
   
   // COMPONENTS
