@@ -634,13 +634,6 @@ export class SmartSource extends SmartEntity {
   // DEPRECATED methods
 
   /**
-   * @async
-   * @deprecated Use `read` instead.
-   * @returns {Promise<string>} A promise that resolves with the content of the block or "BLOCK NOT FOUND".
-   */
-  async get_content() { return (await this.read()) || "SOURCE NOT FOUND (run \"Prune\" to remove)"; }
-
-  /**
    * @deprecated Use `source` instead.
    * @readonly
    * @returns {SmartSource} The associated SmartSource instance.
