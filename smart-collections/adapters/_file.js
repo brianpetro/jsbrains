@@ -36,6 +36,19 @@ export class FileItemDataAdapter extends ItemDataAdapter {
   get fs() {
     return this.item.collection.data_fs || this.item.collection.env.data_fs;
   }
+  get_data_path() { throw new Error('Not implemented'); }
+
+  async load_if_updated() {
+    const data_path = this.get_data_path();
+    if(await this.fs.exists(data_path)) {
+      const loaded_at = this.item.loaded_at || 0;
+      const data_file_stat = await this.fs.stat(data_path);
+      if(data_file_stat.mtime > (loaded_at + 1 * 60 * 1000)) {
+        console.log(`Smart Collections: Re-loading item ${this.item.key} because it has been updated on disk`);
+        await this.load();
+      }
+    }
+  }
 }
 
 export default {

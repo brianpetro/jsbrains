@@ -158,6 +158,11 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
     this.collection.notices?.remove('saving');
   }
+
+  get_item_data_path(item) {
+    const item_adapter = this.create_item_adapter(item);
+    return item_adapter.get_data_path();
+  }
   
 }
 

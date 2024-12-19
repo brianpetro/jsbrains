@@ -310,14 +310,6 @@ export class CollectionItem {
   }
 
   /**
-   * The path at which this item's data is stored.
-   * @returns {string}
-   */
-  get data_path() {
-    return this.collection.data_dir + (this.data_fs?.sep || "/") + this.multi_ajson_file_name + '.ajson';
-  }
-
-  /**
    * Access to collection-level settings.
    * @returns {Object}
    */

@@ -76,7 +76,8 @@ export class SmartSources extends SmartEntities {
     // Remove identified sources
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
-      await this.data_fs.remove(source.data_path);
+      const source_data_path = this.data_adapter.get_item_data_path(source);
+      await this.data_fs.remove(source_data_path);
       source.delete();
     }
     

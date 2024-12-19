@@ -52,7 +52,7 @@ export class SmartSource extends SmartEntity {
   async import(){
     this._queue_import = false;
     try{
-      await this.check_if_data_updated_on_disk();
+      await this.data_adapter.load_if_updated(this);
       await this.source_adapter.import();
     }catch(err){
       if(err.code === "ENOENT"){
@@ -61,17 +61,6 @@ export class SmartSource extends SmartEntity {
       }else{
         console.warn("Smart Connections: Error during import: re-queueing import", err);
         this.queue_import();
-      }
-    }
-  }
-
-  async check_if_data_updated_on_disk() {
-    // Must check exists using async because not always reflects by file.stat (e.g., Obsidian)
-    if ((await this.data_fs.exists(this.data_path))) {
-      // Check if file has been updated on disk
-      if (this.loaded_at && (this.env.fs.files[this.data_path] && this.env.fs.files[this.data_path].mtime > (this.loaded_at + 1 * 60 * 1000))) {
-        console.log(`Smart Connections: Re-loading data source for ${this.path} because it has been updated on disk`);
-        await this.load();
       }
     }
   }
@@ -406,13 +395,6 @@ export class SmartSource extends SmartEntity {
    * @returns {string} The data path.
    */
   get data_path() { return this.collection.data_dir + "/" + this.multi_ajson_file_name + '.ajson'; }
-
-  /**
-   * Retrieves the data file associated with the SmartSource.
-   * @readonly
-   * @returns {Object} The data file object.
-   */
-  get data_file() { return this.data_fs.files[this.data_path]; }
 
   /**
    * Retrieves the embed input, either from cache or by generating it.

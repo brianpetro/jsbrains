@@ -422,8 +422,6 @@ export class SmartBlock extends SmartEntity {
   }
 
   // source dependent
-  get data_path() { return this.source.data_path; }
-  get data_file() { return this.source.data_file; }
   get excluded_lines() { return this.source.excluded_lines; }
   get file() { return this.source.file; }
   get is_canvas() { return this.source.is_canvas; }

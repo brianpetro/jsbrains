@@ -96,7 +96,7 @@ export class Collection {
 
     // If this is a new item, validate it before adding to the collection
     if (!existing_item && !item.validate_save()) {
-      console.warn("Invalid item, skipping adding to collection:", item);
+      // console.warn("Invalid item, skipping adding to collection:", item);
       return item;
     }
 
@@ -327,12 +327,6 @@ export class Collection {
    * @deprecated use data_adapter instead (2024-09-14)
    */
   get adapter() { return this.data_adapter; }
-
-  /**
-   * @deprecated Use env.env_data_dir
-   * @returns {string}
-   */
-  get data_path() { return this.env.data_path; }
 
   /**
    * Saves the current state of the collection.

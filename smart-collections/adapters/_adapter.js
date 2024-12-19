@@ -92,6 +92,17 @@ export class CollectionDataAdapter {
    * @returns {Promise<void>}
    */
   async process_save_queue() { throw new Error('Not implemented'); }
+
+  /**
+   * Load the item's data from storage if it has been updated externally.
+   * @async
+   * @param {string} key - The key of the item to load.
+   * @returns {Promise<void>} Resolves when the item is loaded.
+   */
+  async load_item_if_updated(item) {
+    const adapter = this.create_item_adapter(item);
+    await adapter.load_if_updated();
+  }
 }
 
 
@@ -151,6 +162,13 @@ export class ItemDataAdapter {
   get collection_adapter() {
     return this.item.collection.data_adapter;
   }
+
+  /**
+   * Load the item's data from storage if it has been updated externally.
+   * @async
+   * @returns {Promise<void>} Resolves when the item is loaded.
+   */
+  async load_if_updated() { throw new Error('Not implemented'); }
 }
 
 export default {
