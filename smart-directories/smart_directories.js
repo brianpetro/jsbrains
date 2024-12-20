@@ -1,11 +1,8 @@
-import { SmartEntities } from "smart-entities";
-import { SmartDirectory } from "./smart_directory.js";
-import { render as render_directories_component } from "./components/directories.js";
+import { SmartGroups } from "smart-groups";
 
-export class SmartDirectories extends SmartEntities {
+export class SmartDirectories extends SmartGroups {
   static get defaults() {
     return {
-      item_type: SmartDirectory,
       collection_key: 'smart_directories',
     };
   }
@@ -46,13 +43,9 @@ export class SmartDirectories extends SmartEntities {
    */
   async init() {
     await super.init();
-    
-    // Create directories for all source paths
-    const source_paths = Object.keys(this.env.smart_sources.items);
-    for (const path of source_paths) {
-      const dir_path = path.split('/').slice(0, -1).join('/') + '/';
-      await this.ensure_parent_directories(dir_path);
-    }
+    // Build groups from sources
+    await this.group_adapter.build_groups();
+    await this.process_save_queue();
   }
 
   /**

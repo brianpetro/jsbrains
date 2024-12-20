@@ -24,6 +24,7 @@ export class SmartEntity extends CollectionItem {
     super(env, opts);
     /** 
      * @type {DefaultEntityVectorAdapter} 
+     * @deprecated use vector_adapter instead
      * @description Adapter for this entity's vector operations.
      */
     this.entity_adapter = new DefaultEntityVectorAdapter(this);
@@ -45,6 +46,12 @@ export class SmartEntity extends CollectionItem {
         },
       },
     };
+  }
+  get vector_adapter() {
+    if(!this._vector_adapter) {
+      this._vector_adapter = new this.collection.opts.vector_adapter.item(this);
+    }
+    return this._vector_adapter;
   }
 
   /**

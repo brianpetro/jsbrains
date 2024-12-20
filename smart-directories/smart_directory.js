@@ -1,8 +1,6 @@
-import { SmartEntity } from "smart-entities";
-import { render as directory_component } from "./components/directory.js";
-import { sort_by_score_ascending, sort_by_score_descending } from "smart-entities/utils/sort_by_score.js";
+import { SmartGroup } from "smart-groups";
 
-export class SmartDirectory extends SmartEntity {
+export class SmartDirectory extends SmartGroup {
   static get defaults() {
     return {
       data: {
@@ -25,14 +23,12 @@ export class SmartDirectory extends SmartEntity {
 
   async init() {
     this.data.path = this.data.path.replace(/\\/g, "/");
-    // await this.create(this.data.path);
     this.queue_save();
   }
 
   get fs() { return this.env.smart_sources.fs; }
 
   get file_type() { return 'directory'; }
-  
   get smart_embed() { return false; }
 
   async read() {
@@ -45,7 +41,6 @@ export class SmartDirectory extends SmartEntity {
 
   async move_to(new_path) {
     const old_path = this.data.path;
-
     if (!(await this.fs.exists(old_path))) {
       throw new Error(`Directory not found: ${old_path}`);
     }
@@ -95,27 +90,17 @@ export class SmartDirectory extends SmartEntity {
     );
   }
 
+  /**
+   * @deprecated use get_nearest_members() instead
+   */
   async get_nearest_sources_results() {
-    if(!this.median_vec) {
-      console.log(`no median vec for directory: ${this.data.path}`);
-      return [];
-    }
-    const filter = {
-      key_starts_with: this.data.path
-    }
-    const results = await this.env.smart_sources.nearest(this.median_vec, filter);
-    return results.sort(sort_by_score_descending);
+    return this.vector_adapter.nearest_members();
   }
+  /**
+   * @deprecated use get_furthest_members() instead
+   */
   async get_furthest_sources_results() {
-    if(!this.median_vec) {
-      console.log(`no median vec for directory: ${this.data.path}`);
-      return [];
-    }
-    const filter = {
-      key_starts_with: this.data.path
-    }
-    const results = await this.env.smart_sources.furthest(this.median_vec, filter);
-    return results.sort(sort_by_score_ascending);
+    return this.vector_adapter.furthest_members();
   }
 
   /**
@@ -151,28 +136,7 @@ export class SmartDirectory extends SmartEntity {
    * Gets the median vector of all contained sources
    */
   get median_vec() {
-    if (this.data.median_vec) return this.data.median_vec;
-    
-    const source_vecs = this.sources
-      .map(source => source.vec)
-      .filter(vec => vec);
-
-    if (!source_vecs.length) return null;
-
-    const vec_length = source_vecs[0].length;
-    const median_vec = new Array(vec_length);
-    const mid = Math.floor(source_vecs.length / 2);
-
-    for (let i = 0; i < vec_length; i++) {
-      const values = source_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      median_vec[i] = source_vecs.length % 2 !== 0
-        ? values[mid]
-        : (values[mid - 1] + values[mid]) / 2;
-    }
-
-    this.data.median_vec = median_vec;
-    // this.queue_save();
-    return median_vec;
+    return this.vector_adapter.median_vec;
   }
   get vec() { return this.median_vec; }
 
@@ -181,74 +145,7 @@ export class SmartDirectory extends SmartEntity {
    * Gets the median vector of all contained blocks
    */
   get median_block_vec() {
-    if (this.data.median_block_vec) return this.data.median_block_vec;
-    
-    const block_vecs = this.sources
-      .flatMap(source => source.blocks)
-      .map(block => block.vec)
-      .filter(vec => vec);
-
-    if (!block_vecs.length) return null;
-
-    const vec_length = block_vecs[0].length;
-    const median_vec = new Array(vec_length);
-    const mid = Math.floor(block_vecs.length / 2);
-
-    for (let i = 0; i < vec_length; i++) {
-      const values = block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      median_vec[i] = block_vecs.length % 2 !== 0
-        ? values[mid]
-        : (values[mid - 1] + values[mid]) / 2;
-    }
-
-    this.data.median_block_vec = median_vec;
-    // this.queue_save();
-    return median_vec;
-  }
-
-  /**
-   * Performs a lookup within this directory's sources
-   */
-  async lookup(opts = {}) {
-    return await this.env.smart_sources.lookup({
-      ...opts,
-      filter: {
-        ...(opts.filter || {}),
-        key_starts_with: this.data.path
-      }
-    });
-  }
-
-  // Add method to update directory statistics
-  async update_stats() {
-    const sources = this.sources;
-    this.data.metadata.stats = {
-      total_files: sources.length,
-      total_size: sources.reduce((sum, src) => sum + (src.size || 0), 0),
-      last_scan: Date.now()
-    };
-    this.queue_save();
-  }
-
-  // Add method to manage directory labels
-  async update_label(label, q_score, block_key = null) {
-    if (!this.data.metadata.labels[label]) {
-      this.data.metadata.labels[label] = {
-        q_score: 0,
-        supporting_blocks: {}
-      };
-    }
-    
-    if (block_key) {
-      this.data.metadata.labels[label].supporting_blocks[block_key] = q_score;
-    }
-    
-    // Recalculate overall q-score for label
-    const scores = Object.values(this.data.metadata.labels[label].supporting_blocks);
-    this.data.metadata.labels[label].q_score = 
-      scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    
-    this.queue_save();
+    return this.vector_adapter.median_block_vec;
   }
 
   // Track directory changes
@@ -260,5 +157,4 @@ export class SmartDirectory extends SmartEntity {
     this.queue_save();
   }
 
-  get component() { return directory_component; }
 }
