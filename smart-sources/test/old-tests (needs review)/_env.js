@@ -1,7 +1,7 @@
 import { JsonSingleFileCollectionDataAdapter } from '../../smart-collections/adapters/json_single_file.js';
 import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
 import { SourceTestAdapter } from '../adapters/_test.js';
-import { MarkdownSourceAdapter } from '../adapters/markdown.js';
+import { MarkdownSourceContentAdapter } from '../adapters/markdown_source.js';
 import { SmartSource } from '../smart_source.js';
 import { SmartSources } from '../smart_sources.js';
 import { SmartBlock } from '../smart_block.js';
@@ -46,8 +46,8 @@ class TestMain {
           data_adapter: JsonSingleFileCollectionDataAdapter,
           source_adapters: {
             test: SourceTestAdapter,
-            md: MarkdownSourceAdapter,
-            default: MarkdownSourceAdapter
+            md: MarkdownSourceContentAdapter,
+            default: MarkdownSourceContentAdapter
           },
         },
         smart_blocks: SmartBlocks,

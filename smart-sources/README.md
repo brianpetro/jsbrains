@@ -95,9 +95,9 @@ The `SmartBlock` class extends `SmartEntity` and represents an individual block 
 
 Smart Sources uses adapters to handle different types of content. The main adapters are:
 
-- `SourceAdapter`: Base adapter class for handling source operations.
-- `MarkdownSourceAdapter`: Specializes in handling Markdown files.
-- `PDFSourceAdapter`: Handles PDF files, extracting content into well-formed markdown.
+- `SourceContentAdapter`: Base adapter class for handling source operations.
+- `MarkdownSourceContentAdapter`: Specializes in handling Markdown files.
+- `PDFSourceContentAdapter`: Handles PDF files, extracting content into well-formed markdown.
 
 Adapters provide a consistent interface for various operations on different content types.
 

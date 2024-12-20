@@ -1,6 +1,5 @@
 import { JsonSingleFileCollectionDataAdapter } from '../../smart-collections/adapters/json_single_file.js';
 import { SourceTestAdapter } from 'smart-sources/adapters/_test.js';
-import { MarkdownSourceAdapter } from 'smart-sources/adapters/markdown.js';
 import { SmartSources, SmartSource, SmartBlocks, SmartBlock } from 'smart-sources';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartEmbedModel } from '../../smart-embed-model-v1/smart_embed_model.js';

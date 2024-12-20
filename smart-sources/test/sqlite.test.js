@@ -3,7 +3,7 @@ import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import { NodeFsSmartFsAdapter } from '../../smart-fs/adapters/node_fs.js';
 import { SmartSettings } from '../../smart-settings/smart_settings.js';
-import { MarkdownSourceAdapter } from '../adapters/markdown.js';
+import { MarkdownSourceContentAdapter } from '../adapters/markdown_source.js';
 import { SmartSources } from '../smart_sources.js';
 import { SmartSource } from '../smart_source.js';
 import { SmartBlocks } from '../smart_blocks.js';
@@ -33,8 +33,8 @@ class TestMultiFileSourceMain {
           class: SmartSources,
           data_adapter: SqliteSourceDataAdapter,
           source_adapters: {
-            default: MarkdownSourceAdapter,
-            md: MarkdownSourceAdapter,
+            default: MarkdownSourceContentAdapter,
+            md: MarkdownSourceContentAdapter,
           }
         },
         smart_blocks: {
