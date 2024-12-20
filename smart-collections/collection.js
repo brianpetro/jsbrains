@@ -484,5 +484,14 @@ export class Collection {
     this.notices?.show('done loading', `${this.collection_key} loaded`, { timeout: 3000 });
     this.render_settings();
   }
+  /**
+   * Helper function to render a component in the collection scope
+   * @param {*} component_key 
+   * @param {*} opts 
+   * @returns 
+   */
+  async render_component(component_key, opts = {}) {
+    return await this.env.render_component(component_key, this, opts);
+  }
 }
 
