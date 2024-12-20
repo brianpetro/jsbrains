@@ -106,6 +106,8 @@ test.after(async t => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   // delete test/test-content/variations directory
   fs.rmdirSync('test/test-content/variations', { recursive: true });
+  // delete test/test-content/test-env/multi directory
+  fs.rmdirSync('test/test-content/test-env/multi', { recursive: true });
 });
 
 test.serial('frontmatter_note.md: import and verify blocks', async t => {
