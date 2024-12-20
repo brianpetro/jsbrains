@@ -7,7 +7,11 @@
   "description": "Easy to manage collections mapped to local or remote sources.",
   "main": "main.js",
   "scripts": {
+    "test_content": "test/test_content.sh",
     "test": "npx ava --verbose"
+  },
+  "bin": {
+    "test_content": "./test/test_content.sh"
   },
   "keywords": [
     "embeddings",
@@ -23,7 +27,11 @@
   },
   "homepage": "https://jsbrains.org",
   "devDependencies": {
-    "ava": "^6.0.1"
+    "ava": "^6.0.1",
+    "smart-blocks": "file:../smart-blocks",
+    "smart-environment": "file:../smart-environment",
+    "smart-fs": "file:../smart-fs",
+    "smart-settings": "file:../smart-settings"
   },
   "dependencies": {
     "smart-collections": "file:../smart-collections",

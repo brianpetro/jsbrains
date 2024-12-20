@@ -52,7 +52,7 @@ export class SmartSource extends SmartEntity {
   async import(){
     this._queue_import = false;
     try{
-      await this.data_adapter.load_if_updated(this);
+      await this.data_adapter.load_item_if_updated(this);
       await this.source_adapter.import();
     }catch(err){
       if(err.code === "ENOENT"){
