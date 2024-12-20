@@ -13,20 +13,19 @@ export function build_html(message, opts = {}) {
   const content = Array.isArray(message.content) 
     ? message.content.map(part => {
         if (part.type === "image_url") {
-          // return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
           return ' ![[' + part.input.image_path + ']] ';
         }
-        if(part.type === 'text' && part.input?.key?.length) return ' ![[' + part.input.key + ']] ';
-        if(part.type === 'text' && part.text?.length) return part.text;
+        if (part.type === 'text' && part.input?.key?.length) return ' ![[' + part.input.key + ']] ';
+        if (part.type === 'text' && part.text?.length) return part.text;
       }).join('\n')
-    : message.content
-  ;
+    : message.content;
 
   // Get branches for this message
   const branches = message.thread.get_branches(message.msg_i);
   const has_branches = branches && branches.length > 0;
 
-  return `
+  // Build base HTML
+  let html = `
     <div class="sc-message ${message.role}" id="${message.data.id}">
       <div class="sc-message-content" data-content="${encodeURIComponent(content)}">
         <span>${content}</span>
@@ -45,8 +44,19 @@ export function build_html(message, opts = {}) {
       ${message.role === 'user' ? `<textarea class="sc-message-edit" style="display: none;">${content}</textarea>` : ''}
     </div>
   `;
-}
 
+  // If user message has self_ref, show "expecting lookup" indicator after the bubble
+  if (message.role === 'user' && message.context?.has_self_ref === true) {
+    html += `
+      <div class="sc-tool-call-missing-indicator" style="font-style: italic; margin-top: 4px;">
+        expecting lookup
+      </div>
+    `;
+  }
+
+
+  return html;
+}
 /**
  * Renders a chat message
  * @async
@@ -151,7 +161,7 @@ export async function post_process(message, frag, opts) {
           edit_button.innerHTML = this.get_icon_html('edit');
           edit_button.title = 'Edit message';
           
-          // Use existing thread method to handle the edited message (creates a new branch)
+          // Use existing thread method to handle the edited message
           await thread.handle_message_from_user(new_content);
           await thread.render();
         } else {
@@ -164,7 +174,6 @@ export async function post_process(message, frag, opts) {
       } else {
         // Show textarea for editing
         edit_textarea.style.display = 'block';
-        // msg_content.style.display = 'none';
         edit_button.innerHTML = this.get_icon_html('check');
         edit_button.title = 'Save changes';
         edit_textarea.focus();
