@@ -7,7 +7,7 @@
   "description": "Easy to manage collections mapped to local or remote sources.",
   "main": "main.js",
   "scripts": {
-    "test_content": "test/test_content.sh",
+    "test_content": "node test/test_content.js",
     "test": "npx ava --verbose"
   },
   "bin": {

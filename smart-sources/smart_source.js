@@ -234,7 +234,7 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>}
    */
   async _update(content) {
-    await this.source_adapter._update(content);
+    await this.source_adapter.update(content);
   }
 
   /**

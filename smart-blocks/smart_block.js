@@ -280,7 +280,8 @@ export class SmartBlock extends SmartEntity {
    * @readonly
    * @returns {Array<number>|undefined} An array containing the start and end lines or `undefined` if not set.
    */
-  get lines() { return this.source?.data?.blocks?.[this.sub_key]; }
+  // get lines() { return this.source?.data?.blocks?.[this.sub_key]; }
+  get lines() { return this.data.lines; }
 
   /**
    * Retrieves the starting line number of the block.

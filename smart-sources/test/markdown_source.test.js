@@ -35,18 +35,27 @@ import { SmartBlocks } from 'smart-blocks/smart_blocks.js';
 import { SmartBlock } from 'smart-blocks/smart_block.js';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { MarkdownSourceContentAdapter } from 'smart-sources/adapters/markdown_source.js';
+import { MarkdownBlockContentAdapter } from 'smart-blocks/adapters/markdown_block.js';
 import ajson_data_adapter from 'smart-sources/adapters/data/ajson_multi_file.js';
+import path from 'path';
 
 const VARIATIONS_DIR = 'test/test-content/variations';
+import { execSync } from 'child_process';
+import fs from 'fs';
 
 async function create_test_env() {
+  // run adjacent test_content.js script and wait for it to finish (use execSync)
+  execSync('node test/test_content.js');
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  const env_path = path.join(process.cwd(), 'test/test-content');
+  // console.log(env_path);
   const env = await SmartEnv.create({
     // Mock main or configuration object
     load_settings(){ return {}; },
     save_settings(){},
     get settings(){ return {}; }
   }, {
-    env_path: 'test/test-content',
+    env_path: env_path,
     modules: {
       smart_fs: { class: SmartFs, adapter: NodeFsSmartFsAdapter },
       smart_settings: { class: SmartSettings },
@@ -64,6 +73,10 @@ async function create_test_env() {
       smart_blocks: {
         class: SmartBlocks,
         data_adapter: ajson_data_adapter,
+        block_adapters: {
+          md: MarkdownBlockContentAdapter,
+          default: MarkdownBlockContentAdapter,
+        }
       },
     },
     item_types: {
@@ -84,13 +97,21 @@ async function create_test_env() {
 test.before(async t => {
   t.context.env = await create_test_env();
   // Process initial import and save queues to ensure a stable state
+  await t.context.env.smart_sources.process_load_queue();
   await t.context.env.smart_sources.process_source_import_queue();
   await t.context.env.smart_sources.process_save_queue();
+});
+
+test.after(async t => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  // delete test/test-content/variations directory
+  fs.rmdirSync('test/test-content/variations', { recursive: true });
 });
 
 test.serial('frontmatter_note.md: import and verify blocks', async t => {
   const { env } = t.context;
   const source = env.smart_sources.get('variations/frontmatter_note.md');
+  // console.log(Object.keys(env.smart_sources.items));
   t.truthy(source, 'frontmatter_note.md should be imported');
 
   // Verify frontmatter block
