@@ -174,17 +174,13 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
  *
  * Key points:
  * - On save or delete, append a single line representing the item’s current state (or null if deleted).
- * - On load, read all lines for this single item, determine final state.
- *   If multiple historical lines or deleted, rewrite minimal form (one line if active, or remove file if deleted).
- *
- * Note: This class does not handle multiple items (like blocks related to a source).
- *       It assumes one file = one item transaction log.
- *       Block or multi-item logic must be implemented in a subclass.
+ * - On load, read the `.ajson` file, parse it as JSON, determine final state for the single item.
+ *   If multiple historical lines or legacy keys, rewrite minimal form (one line if active).
+ * - If item is deleted, remove the file.
  */
 export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
   /**
    * Derives the `.ajson` file path from the collection's data_dir and item key.
-   * Removes invalid characters from key and appends `.ajson`.
    * @returns {string}
    */
   get_data_path() {
@@ -196,8 +192,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
 
   /**
    * Transforms the item key into a safe filename.
-   * Replaces spaces, slashes, and dots with underscores, 
-   * also removes ".md" suffix if present.
+   * Replaces spaces, slashes, and dots with underscores.
    * @private
    * @param {string} key 
    * @returns {string} safe file name
@@ -218,31 +213,27 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
       return;
     }
 
-    const lines = raw_data.split('\n').map(l => l.trim()).filter(Boolean);
-    if (!lines.length) {
-      this.item.queue_import();
-      return;
-    }
+    const { data, rewrite_needed } = this._parse(raw_data);
 
-    // Parse lines for this single item
-    // Each line format: `"collection_key:item_key": {...},`
-    const states = this._parse_lines(lines, this.item.key);
-    const final_state = this._determine_final_state(states);
-
-    if (final_state !== null) {
+    if (data !== null && this.item.key in data) {
       // Active item
-      this.item.data = final_state;
+      this.item.data = data[this.item.key];
       this.item._queue_load = false;
       this.item.loaded_at = Date.now();
-      // If multiple lines existed, rewrite minimal file with a single line
-      if (states.length > 1) await this._rewrite_minimal_file(final_state);
+      if (rewrite_needed) {
+        await this._rewrite_minimal_file(data);
+      }
     } else {
-      // Item deleted or never existed
-      // Remove file since item no longer active
+      // Deleted item or never existed
       await this._cleanup_deleted_item();
     }
   }
 
+  /**
+   * Save the current state of the item by appending a new line to its `.ajson` file.
+   * @async
+   * @returns {Promise<void>}
+   */
   async save() {
     const data_path = this.get_data_path();
     const dir = this.collection_adapter.collection.data_dir;
@@ -257,6 +248,11 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     this.item._queue_save = false;
   }
 
+  /**
+   * Delete the item by appending a null-state line.
+   * @async
+   * @returns {Promise<void>}
+   */
   async delete() {
     const data_path = this.get_data_path();
     const ajson_line = this._build_ajson_line(this.item, null);
@@ -264,6 +260,12 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     this.item.collection.delete_item(this.item.key);
   }
 
+  /**
+   * Remove the file for a deleted item.
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   */
   async _cleanup_deleted_item() {
     const data_path = this.get_data_path();
     if (await this.fs.exists(data_path)) {
@@ -272,10 +274,17 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     this.item._queue_load = false;
   }
 
-  async _rewrite_minimal_file(final_state) {
+  /**
+   * Rewrites the `.ajson` file to a minimal form with a single line if the item is active.
+   * If the item is deleted, removes the file.
+   * @private
+   * @async
+   * @param {Object|null} data
+   */
+  async _rewrite_minimal_file() {
     const data_path = this.get_data_path();
-    if (final_state !== null) {
-      const line = this._build_ajson_line(this.item, final_state);
+    if (this.item.data !== null) {
+      const line = this._build_ajson_line(this.item, this.item.data);
       await this.fs.write(data_path, line);
     } else {
       // If no final state (deleted), remove file
@@ -283,40 +292,13 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     }
   }
 
-  _parse_lines(lines, item_key) {
-    const states = [];
-    for (const line of lines) {
-      const trimmed = line.replace(/,$/, '');
-      const idx = trimmed.indexOf(':');
-      if (idx === -1) continue;
-      const key_str = trimmed.slice(0, idx).trim();
-      const value_str = trimmed.slice(idx + 1).trim();
-      let ajson_key;
-      let value;
-      try {
-        ajson_key = JSON.parse(key_str);
-        value = JSON.parse(value_str);
-      } catch (e) {
-        console.warn("Error parsing line:", line, e);
-        continue;
-      }
-
-      // Rewrite legacy keys if needed
-      const { new_ajson_key } = this._rewrite_legacy_ajson_keys(ajson_key);
-      const parsed_item_key = new_ajson_key.split(':').slice(1).join(':');
-      if (parsed_item_key === item_key) {
-        states.push(value);
-      }
-    }
-    return states;
-  }
-
-  _determine_final_state(states) {
-    // The final state is the last non-null entry
-    const last_state = [...states].reverse().find(s => s !== null);
-    return last_state || null;
-  }
-
+  /**
+   * Build a single AJSON line for the given item and data.
+   * @private
+   * @param {Object} item 
+   * @param {Object|null} data 
+   * @returns {string}
+   */
   _build_ajson_line(item, data) {
     const collection_key = item.collection_key;
     const key = item.key;
@@ -324,19 +306,92 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
     return `${JSON.stringify(`${collection_key}:${key}`)}: ${data_value},`;
   }
 
+  /**
+   * Reads the entire `.ajson` file for this item.
+   * @private
+   * @async
+   * @returns {Promise<string|null>}
+   */
   async _read_item_file() {
-    try{
+    try {
       const data_path = this.get_data_path();
       const data_ajson = await this.fs.adapter.read(data_path, 'utf-8', { no_cache: true });
       return data_ajson?.trim() || null;
-    }catch(e){
-      // console.error(`Error reading item file: ` + JSON.stringify((e || {}), null, 2));
+    } catch (e) {
       console.warn('no data found for item');
       return null;
     }
   }
 
-  // temp: for backwards compatibility
+  /**
+   * Parse the entire AJSON content as a JSON object, handle legacy keys, and extract final state.
+   * @private
+   * @param {string} ajson 
+   * @returns {{final_state: Object|null, rewrite_needed: boolean}}
+   */
+  _parse(ajson) {
+    let data = null;
+    let rewrite_needed = false;
+
+    if (!ajson.length) return { data, rewrite_needed };
+
+    ajson = ajson.trim();
+    ajson = this._make_backwards_compatible_with_trailing_comma_format(ajson);
+
+    const original_line_count = ajson.split('\n').length;
+
+    let json_str;
+    try {
+      json_str = '{' + ajson.slice(0, -1) + '}'; // remove trailing comma and wrap in braces
+    } catch (e) {
+      console.warn("Error preparing JSON string:", e);
+      return { data, rewrite_needed: false };
+    }
+
+    try {
+      data = JSON.parse(json_str);
+    } catch (e) {
+      // Try fixing trailing commas if needed
+      if (ajson.split('\n').some(line => !line.endsWith(','))) {
+        console.warn("fixing trailing comma error");
+        ajson = ajson.split('\n').map(line => line.endsWith(',') ? line : line + ',').join('\n');
+        return this._parse(ajson);
+      }
+      console.warn("Error parsing JSON:", e);
+      return { data, rewrite_needed: true };
+    }
+
+    // If multiple lines for the same item or a changed key were found, rewrite needed
+    console.log(ajson);
+    console.log(Object.keys(data).length);
+    console.log(original_line_count);
+    // Also if original line count > 1 and we ended up with a single final state, we want to rewrite
+    if (rewrite_needed || (original_line_count > Object.keys(data).length)) {
+      rewrite_needed = true;
+    }
+
+    return { data, rewrite_needed };
+  }
+
+  /**
+   * Make the AJSON backwards compatible with trailing commas format, ensuring every line ends with a comma.
+   * @private
+   * @param {string} ajson 
+   * @returns {string}
+   */
+  _make_backwards_compatible_with_trailing_comma_format(ajson) {
+    if (ajson[ajson.length - 1] !== ',') {
+      ajson = ajson.split('\n').map(line => line.endsWith(',') ? line : line + ',').join('\n');
+    }
+    return ajson;
+  }
+
+  /**
+   * Rewrites legacy AJSON keys to their modern equivalents, if needed.
+   * @private
+   * @param {string} ajson_key 
+   * @returns {{new_ajson_key: string, changed: boolean}}
+   */
   _rewrite_legacy_ajson_keys(ajson_key) {
     const [prefix, ...rest] = ajson_key.split(":");
     const item_key = rest.join(":");
@@ -347,13 +402,6 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
       if (new_prefix !== prefix) changed = true;
     }
     return { new_ajson_key: `${new_prefix}:${item_key}`, changed };
-  }
-  _make_backwards_compatible_with_trailing_comma_format(ajson) {
-    // if last character is not a comma, needs comma added to every line
-    if (ajson[ajson.length - 1] !== ',') {
-      ajson = ajson.split('\n').map(line => line.endsWith(',') ? line : line + ',').join('\n');
-    }
-    return ajson;
   }
 }
 

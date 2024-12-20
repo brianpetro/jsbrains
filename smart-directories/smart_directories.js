@@ -45,7 +45,7 @@ export class SmartDirectories extends SmartGroups {
     await super.init();
     // Build groups from sources
     await this.group_adapter.build_groups();
-    await this.process_save_queue();
+    // await this.process_save_queue();
   }
 
   /**
