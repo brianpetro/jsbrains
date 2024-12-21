@@ -186,7 +186,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       [
         `Making Smart Connections...`,
         `Embedding progress: ${this.embedded_total} / ${this.collection.embed_queue.length}`,
-        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
+        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
       ],
       {
         timeout: 0,
