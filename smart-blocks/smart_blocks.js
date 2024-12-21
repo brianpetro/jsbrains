@@ -39,9 +39,13 @@ export class SmartBlocks extends SmartEntities {
         size: block_content.length,
         outlinks: block_outlinks,
       };
-      blocks.push(this.create_or_update(block_data));
+      // prevent premature save by not using create_or_update
+      const new_item = new this.item_type(this.env, block_data);
+      // blocks.push(this.create_or_update(block_data));
+      new_item.queue_embed();
+      this.set(new_item);
     }
-    await Promise.all(blocks);
+    // await Promise.all(blocks);
     this.clean_and_update_source_blocks(source, blocks_obj);
   }
 

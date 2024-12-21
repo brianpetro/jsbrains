@@ -71,14 +71,29 @@ export class SmartSources extends SmartEntities {
     
     // Identify sources to remove
     const remove_sources = Object.values(this.items)
-      .filter(item => item.is_gone || item.excluded || !item.should_embed || !item.data.blocks);
+      .filter(item => {
+        if(item.is_gone){
+          item.reason = "is_gone";
+          return true;
+        }
+        if(item.excluded){
+          item.reason = "excluded";
+          return true;
+        }
+        if(!item.data.blocks){
+          item.reason = "!data.blocks";
+          return true;
+        }
+        return false;
+      });
     
     // Remove identified sources
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
-      const source_data_path = this.data_adapter.get_item_data_path(source.key);
-      await this.data_fs.remove(source_data_path);
-      source.delete();
+      console.log(source.reason);
+      // const source_data_path = this.data_adapter.get_item_data_path(source.key);
+      // await this.data_fs.remove(source_data_path);
+      // source.delete();
     }
     
     this.notices?.remove('pruning sources');

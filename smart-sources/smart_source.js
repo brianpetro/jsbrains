@@ -18,11 +18,11 @@ export class SmartSource extends SmartEntity {
   static get defaults() {
     return {
       data: {
-        history: [], // Array of { mtime, hash, length, blocks[] }
         last_read: {
           hash: null,
           mtime: 0,
         },
+        embeddings: {},
       },
       _embed_input: null, // Stored temporarily
       _queue_load: true,
@@ -526,7 +526,7 @@ export class SmartSource extends SmartEntity {
   }
   get path() { return this.data.path; }
   get should_embed() {
-    return !this.vec || !this.embed_hash || this.embed_hash !== this.read_hash;
+    return !this.vec || !this.embed_hash || (this.embed_hash !== this.read_hash);
   }
   get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
   get source_adapters() { return this.collection.source_adapters; }

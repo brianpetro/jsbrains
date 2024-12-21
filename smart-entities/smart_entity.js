@@ -40,10 +40,10 @@ export class SmartEntity extends CollectionItem {
     return {
       data: {
         path: null,
-        embeddings: {},
         last_embed: {
           hash: null,
         },
+        embeddings: {},
       },
     };
   }
