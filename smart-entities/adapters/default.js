@@ -178,14 +178,14 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @private
    * @returns {void}
    */
-  _show_embed_progress_notice() {
+  _show_embed_progress_notice(embed_queue_length) {
     if (this.embedded_total - this.last_notice_embedded_total < 100) return;
     this.last_notice_embedded_total = this.embedded_total;
     const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
     this.notices?.show('embedding_progress',
       [
         `Making Smart Connections...`,
-        `Embedding progress: ${this.embedded_total} / ${this.collection.embed_queue.length}`,
+        `Embedding progress: ${this.embedded_total} / ${embed_queue_length}`,
         `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
       ],
       {
@@ -217,7 +217,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.notices?.remove('embedding_progress');
     this.notices?.show('embedding_paused', [
       msg || `Embedding paused.`,
-      `Progress: ${this.embedded_total} / ${this.collection.embed_queue.length}`,
+      `Progress: ${this.embedded_total} / ${this.collection._embed_queue.length}`,
       `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
     ],
       {
@@ -320,7 +320,6 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
       this.item.data.embeddings[this.item.embed_model_key] = {};
     }
     this.item.data.embeddings[this.item.embed_model_key].vec = vec;
-    this.item.queue_save();
   }
 
 }

@@ -63,6 +63,7 @@ export class SmartBlocks extends SmartEntities {
     }
     // Update source data with new blocks
     source.data.blocks = blocks_obj;
+    source.queue_save();
   }
 
 

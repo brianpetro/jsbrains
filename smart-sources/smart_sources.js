@@ -97,10 +97,6 @@ export class SmartSources extends SmartEntities {
           item.reason = "!should_embed";
           return true;
         }
-        if(!item.data?.hash) {
-          item.reason = "!data.hash";
-          return true;
-        }
         return false;
       })
     ;
@@ -542,9 +538,9 @@ export class SmartSources extends SmartEntities {
    * @returns {number} The number of included files.
    */
   get included_files() {
+    const extensions = Object.keys(this.source_adapters);
     return this.fs.file_paths
-      .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
-      .filter(file => !this.fs.is_excluded(file))
+      .filter(file_path => extensions.some(ext => file_path.endsWith(ext)) && !this.fs.is_excluded(file_path))
       .length;
   }
 
