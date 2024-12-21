@@ -123,8 +123,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
     // Process in batches according to embed_model.batch_size
     for (let i = 0; i < embed_queue.length; i += this.collection.embed_model.batch_size) {
-      if (this.collection.is_queue_halted) {
-        this.collection.is_queue_halted = false; // reset halt after break
+      if (this.is_queue_halted) {
+        this.is_queue_halted = false; // reset halt after break
         break;
       }
       const batch = embed_queue.slice(i, i + this.collection.embed_model.batch_size);
@@ -136,7 +136,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       try {
         const start_time = Date.now();
         await this.embed_batch(batch);
-        this.collection.total_time += Date.now() - start_time;
+        this.total_time += Date.now() - start_time;
       } catch (e) {
         if (e && e.message && e.message.includes("API key not set")) {
           this.halt_embed_queue_processing(`API key not set for ${this.collection.embed_model_key}\nPlease set the API key in the settings.`);
@@ -149,15 +149,15 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       batch.forEach(item => {
         item.embed_hash = item.read_hash;
       });
-      this.collection.embedded_total += batch.length;
-      this.collection.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
+      this.embedded_total += batch.length;
+      this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
 
       // Show progress notice every ~100 items
       this._show_embed_progress_notice(embed_queue.length);
 
       // Process save queue every 1000 items
-      if (this.collection.embedded_total - this.collection.last_save_total > 1000) {
-        this.collection.last_save_total = this.collection.embedded_total;
+      if (this.embedded_total - this.last_save_total > 1000) {
+        this.last_save_total = this.embedded_total;
         await this.collection.process_save_queue();
         if(this.collection.block_collection) {
           await this.collection.block_collection.process_save_queue();
@@ -185,7 +185,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.notices?.show('embedding_progress',
       [
         `Making Smart Connections...`,
-        `Embedding progress: ${this.embedded_total} / ${this.embed_queue.length}`,
+        `Embedding progress: ${this.embedded_total} / ${this.collection.embed_queue.length}`,
         `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
       ],
       {
@@ -204,7 +204,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.notices?.show('embedding_complete', [
       `Embedding complete.`,
       `${this.embedded_total} entities embedded.`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
     ], { timeout: 10000 });
   }
   /**
@@ -217,8 +217,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.notices?.remove('embedding_progress');
     this.notices?.show('embedding_paused', [
       msg || `Embedding paused.`,
-      `Progress: ${this.embedded_total} / ${this.embed_queue.length}`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.embed_model_key}`
+      `Progress: ${this.embedded_total} / ${this.collection.embed_queue.length}`,
+      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
     ],
       {
         timeout: 0,
@@ -253,7 +253,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @returns {void}
    */
   _reset_embed_queue_stats() {
-    this._embed_queue = [];
+    this.collection._embed_queue = [];
     this.embedded_total = 0;
     this.is_queue_halted = false;
     this.last_save_total = 0;
