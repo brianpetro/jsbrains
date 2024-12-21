@@ -36,23 +36,6 @@ export class CollectionDataAdapter {
   }
 
   /**
-   * Load all items from the underlying data storage into the collection.
-   * This may initiate a batch load operation that uses multiple item adapters.
-   * @async
-   * @returns {Promise<void>} Resolves when the load operation is complete.
-   */
-  async load_all_items() { throw new Error('Not implemented'); }
-
-  /**
-   * Save all items that require saving to the underlying data storage.
-   * Typically processes all items queued for saving and delegates the actual I/O 
-   * to individual `ItemDataAdapter` instances.
-   * @async
-   * @returns {Promise<void>} Resolves when the save operation is complete.
-   */
-  async save_all_items() { throw new Error('Not implemented'); }
-
-  /**
    * Load a single item by its key using an `ItemDataAdapter`.
    * @async
    * @param {string} key - The key of the item to load.
@@ -154,13 +137,16 @@ export class ItemDataAdapter {
    * the item's data. This may be a file name derived from the item's key.
    * @returns {string} The path or identifier for the item's data.
    */
-  get_data_path() { throw new Error('Not implemented'); }
+  get data_path() { throw new Error('Not implemented'); }
 
   /**
    * @returns {CollectionDataAdapter} The collection data adapter that this item data adapter belongs to.
    */
   get collection_adapter() {
     return this.item.collection.data_adapter;
+  }
+  get env() {
+    return this.item.env;
   }
 
   /**

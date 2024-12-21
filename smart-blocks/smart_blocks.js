@@ -131,15 +131,6 @@ export class SmartBlocks extends SmartEntities {
   get source_collection() { return this.env.smart_sources; }
 
   /**
-   * Processes the save queue by delegating to the SmartSources collection.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async process_save_queue() {
-    await this.source_collection.process_save_queue();
-  }
-
-  /**
    * Processes the embed queue. Currently handled by SmartSources, so this method is muted.
    * @async
    * @returns {Promise<void>}

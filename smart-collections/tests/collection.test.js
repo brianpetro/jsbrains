@@ -13,7 +13,6 @@ class MockCollectionDataAdapter {
   constructor(collection) {
     this.collection = collection;
   }
-  async save_all_items() {}
   async process_save_queue() {}
   async process_load_queue() {}
   async save_item(item) {}
@@ -261,13 +260,10 @@ test('save and save_queue should call adapter methods', async t => {
   let processed_queue = false;
   
   // Mock adapter methods
-  collection.data_adapter.save_all_items = async () => { saved = true; };
   collection.data_adapter.process_save_queue = async () => { processed_queue = true; };
 
   await collection.save();
-  t.true(saved, 'save should call save_all_items');
 
-  await collection.save_queue();
   t.true(processed_queue, 'save_queue should call process_save_queue');
 });
 

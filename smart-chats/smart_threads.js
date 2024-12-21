@@ -198,4 +198,7 @@ export class SmartThreads extends SmartSources {
   async process_embed_queue() {
     console.log("skipping embed queue processing for SmartThreads");
   }
+  async process_load_queue() {
+    console.log("skipping load queue processing for SmartThreads");
+  }
 }

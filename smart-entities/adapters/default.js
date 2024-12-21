@@ -159,12 +159,18 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       if (this.collection.embedded_total - this.collection.last_save_total > 1000) {
         this.collection.last_save_total = this.collection.embedded_total;
         await this.collection.process_save_queue();
+        if(this.collection.block_collection) {
+          await this.collection.block_collection.process_save_queue();
+        }
       }
     }
 
     // Show completion notice
     this._show_embed_completion_notice(embed_queue.length);
     this.collection.process_save_queue();
+    if(this.collection.block_collection) {
+      await this.collection.block_collection.process_save_queue();
+    }
   }
 
   /**
@@ -314,6 +320,7 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
       this.item.data.embeddings[this.item.embed_model_key] = {};
     }
     this.item.data.embeddings[this.item.embed_model_key].vec = vec;
+    this.item.queue_save();
   }
 
 }

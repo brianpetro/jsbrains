@@ -328,17 +328,6 @@ export class Collection {
    */
   get adapter() { return this.data_adapter; }
 
-  /**
-   * Saves the current state of the collection.
-   * @returns {Promise<void>}
-   */
-  async save() { await this.data_adapter.save_all_items(); }
-
-  /**
-   * Processes all items queued for saving.
-   * @returns {Promise<void>}
-   */
-  async save_queue() { await this.process_save_queue(); }
 
   /**
    * @method process_save_queue
@@ -346,10 +335,18 @@ export class Collection {
    * Saves items flagged for saving (_queue_save) back to AJSON or SQLite. This ensures persistent storage 
    * of any updates made since last load/import. This method also writes changes to disk (AJSON files or DB).
    */
-  async process_save_queue() {
+  async process_save_queue(opts = {}) {
+    if(opts.force) {
+      Object.values(this.items).forEach((item) => item._queue_save = true);
+    }
     // Just delegate to the adapter
-    await this.data_adapter.process_save_queue();
+    await this.data_adapter.process_save_queue(opts);
   }
+  /**
+   * @alias process_save_queue
+   * @returns {Promise<void>}
+   */
+  async save(opts = {}) { await this.process_save_queue(opts); }
 
   /**
    * @method process_load_queue

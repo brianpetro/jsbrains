@@ -9,6 +9,13 @@ import { AjsonMultiFileCollectionDataAdapter, AjsonMultiFileItemDataAdapter } fr
  */
 export class AjsonMultiFileGroupsDataAdapter extends AjsonMultiFileCollectionDataAdapter {
   ItemDataAdapter = AjsonMultiFileGroupDataAdapter;
+  get_data_file_name(key) {
+    return key
+      .replace(/[\s\/\.]/g, '_')
+      .replace(/^_+/, '')
+      .replace(/_+$/, '')
+    ;
+  }
 }
 
 /**
@@ -18,20 +25,7 @@ export class AjsonMultiFileGroupsDataAdapter extends AjsonMultiFileCollectionDat
  * Handles individual directory group items stored in append-only AJSON files.
  */
 export class AjsonMultiFileGroupDataAdapter extends AjsonMultiFileItemDataAdapter {
-  get_data_path() {
-    const dir = this.collection_adapter.collection.data_dir || 'groups';
-    const sep = this.fs?.sep || '/';
-    const file_name = this._get_data_file_name(this.item.key);
-    return dir + sep + file_name + '.ajson';
-  }
 
-  _get_data_file_name(key) {
-    return key
-      .replace(/[\s\/\.]/g, '_')
-      .replace(/^_+/, '')
-      .replace(/_+$/, '')
-    ;
-  }
 }
 
 export default {

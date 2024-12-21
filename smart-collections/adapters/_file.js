@@ -36,10 +36,10 @@ export class FileItemDataAdapter extends ItemDataAdapter {
   get fs() {
     return this.item.collection.data_fs || this.item.collection.env.data_fs;
   }
-  get_data_path() { throw new Error('Not implemented'); }
+  get data_path() { throw new Error('Not implemented'); }
 
   async load_if_updated() {
-    const data_path = this.get_data_path();
+    const data_path = this.data_path;
     if(await this.fs.exists(data_path)) {
       const loaded_at = this.item.loaded_at || 0;
       const data_file_stat = await this.fs.stat(data_path);

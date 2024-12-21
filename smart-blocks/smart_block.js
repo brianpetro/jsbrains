@@ -49,7 +49,6 @@ export class SmartBlock extends SmartEntity {
    */
   queue_save() {
     this._queue_save = true;
-    this.source?.queue_save();
   }
 
   /**
