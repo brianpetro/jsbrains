@@ -10,6 +10,12 @@ export class SmartClusters extends SmartGroups {
   // E.g., store them under "clusters" folder or "multi" if desired
   get data_dir() { return 'clusters'; }
 
+  async init(){
+    await super.init();
+    await this.create_or_update({key: 'orphaned'});
+    await this.process_load_queue(); 
+  }
+
   /**
    * Primary method that triggers the clustering adapter to create or update clusters.
    */

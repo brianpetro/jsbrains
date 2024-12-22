@@ -31,7 +31,6 @@ export class SourceClustersAdapter extends ClusterCollectionAdapter {
     const {
       max_iterations = 10,
       max_cluster_size_percent = 0.3,
-      clusters_ct = 5,
       // new settings:
       min_similarity_threshold_mode = 'lowest',
       orphan_cluster_key = 'orphaned',
@@ -42,6 +41,13 @@ export class SourceClustersAdapter extends ClusterCollectionAdapter {
       console.warn("No vectorized sources found; skipping cluster build for SourceClustersAdapter.");
       return;
     }
+    let clusters_ct;
+    if(this.collection.settings?.clusters_ct) {
+      clusters_ct = this.collection.settings.clusters_ct;
+    } else {
+      clusters_ct = Math.max(5, Math.floor(sources.length / 100));
+    }
+    
     const max_cluster_size = Math.max(1, Math.floor(max_cluster_size_percent * sources.length));
 
     // 1) Remove existing clusters
