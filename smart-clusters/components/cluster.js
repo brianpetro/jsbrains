@@ -1,20 +1,21 @@
 export async function render(scope, opts = {}) {
-  const html = `<div class="sg-clusters-view">
-    <h2>Clusters</h2>
-    <p>View and manage your clusters below:</p>
-    <div class="sg-cluster-list"></div>
-  </div>`;
+  const html = `
+    <div class="sc-clusters-view">
+      <h2>Smart Clusters</h2>
+      <p>These are your automatically generated clusters based on source vectors.</p>
+      <ul class="sc-cluster-list"></ul>
+    </div>
+  `;
   const frag = this.create_doc_fragment(html);
 
-  const list = frag.querySelector('.sg-cluster-list');
-  // Render each cluster
-  for (const cluster of Object.values(scope.items)) {
-    const div = document.createElement('div');
-    div.className = 'sg-cluster-item';
-    div.innerHTML = `<h3>${cluster.data.name || cluster.key}</h3>
-      <p>Members: ${cluster.data.member_keys.length}</p>`;
-    list.appendChild(div);
-  }
-
+  const ul = frag.querySelector('.sc-cluster-list');
+  Object.values(scope.items).forEach(cluster => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${cluster.name}</strong>
+      <small>(Members: ${cluster.data.members?.length ?? 0})</small>
+    `;
+    ul.appendChild(li);
+  });
   return frag;
 }

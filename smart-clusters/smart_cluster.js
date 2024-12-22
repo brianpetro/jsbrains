@@ -1,99 +1,88 @@
-import { SmartEntity } from "smart-entities";
+import { SmartGroup } from "smart-groups";
+import { cos_sim } from "../smart-entities/cos_sim.js";
 
-export class SmartCluster extends SmartEntity {
+export class SmartCluster extends SmartGroup {
   static get defaults() {
     return {
       data: {
-        key: null,
-        member_keys: [],
-        centroid_vec: null,
-        last_clustered_at: 0,
-        size: 0,
+        center_source_key: null,
+        members: [],
         name: '',
-        config: {}
-      },
+        number_of_members: 0,
+        clustering_timestamp: 0,
+      }
     };
   }
 
-  constructor(env, data = {}) {
-    super(env, data);
+  get key() {
+    return this.center_source.key;
   }
 
   /**
-   * Recalculate centroid of this cluster using either mean or median of members' embeddings.
+   * cluster.center_vec is a getter returning cluster.center_source.vec
+   * @returns {number[]|null}
    */
-  recalculate_centroid() {
-    if (!this.member_keys?.length) {
-      this.data.centroid_vec = null;
-      return;
-    }
+  get center_vec() {
+    return this.center_source?.vec || null;
+  }
 
-    const member_vectors = this.member_keys
-      .map(key => this.get_item_vector(key))
-      .filter(vec => vec && Array.isArray(vec));
+  /**
+   * cluster.center_source is a getter returning the source instance
+   * from env.smart_sources.get(cluster.data.center_source_key)
+   */
+  get center_source() {
+    if(!this.data.center_source_key) return null;
+    return this.env.smart_sources.get(this.data.center_source_key);
+  }
 
-    if (!member_vectors.length) {
-      this.data.centroid_vec = null;
-      return;
-    }
+  /**
+   * Dynamically generate a cluster name from top members or use data.name if present.
+   * Example: "Cluster: (Note1, Note2, ...)"
+   */
+  get name() {
+    if(this.data.name) return this.data.name;
+    const membersList = (this.data.members || [])
+      .slice(0, 3)
+      .map(k => this.env.smart_sources.get(k)?.file_name || k)
+      .join(", ");
+    return `Cluster (${membersList}${this.data.members?.length>3 ? "..." : ""})`;
+  }
+  set name(val) {
+    this.data.name = val;
+  }
 
-    const vec_length = member_vectors[0].length;
-    const all_values = member_vectors.map(v => v.slice());
+  async delete() {
+    // 1) Reassign members
+    const allClusters = Object.values(this.collection.items)
+      .filter(c => c.key !== this.key);
 
-    if (this.data.config.centroid_type === 'median') {
-      // median centroid
-      const median_vec = [];
-      for (let i = 0; i < vec_length; i++) {
-        const vals = all_values.map(vec => vec[i]).sort((a, b) => a - b);
-        const mid = Math.floor(vals.length / 2);
-        median_vec[i] = vals.length % 2 === 0 ? (vals[mid - 1] + vals[mid]) / 2 : vals[mid];
-      }
-      this.data.centroid_vec = median_vec;
-    } else {
-      // mean centroid (default)
-      const sum_vec = new Array(vec_length).fill(0);
-      for (const vec of all_values) {
-        for (let i = 0; i < vec_length; i++) {
-          sum_vec[i] += vec[i];
+    if (allClusters.length) {
+      this.data.members.forEach(mKey => {
+        const source = this.env.smart_sources.get(mKey);
+        if (!source?.vec) return;
+
+        // find the best new cluster
+        let best = { cluster: null, sim: -Infinity };
+        allClusters.forEach(cluster => {
+          const cvec = cluster.center_vec;
+          if (!cvec) return;
+          const sim = cos_sim(source.vec, cvec);
+          if (sim > best.sim) best = { cluster, sim };
+        });
+        if (best.cluster) {
+          best.cluster.data.members.push(mKey);
+          best.cluster.queue_save();
         }
-      }
-      const mean_vec = sum_vec.map(val => val / all_values.length);
-      this.data.centroid_vec = mean_vec;
+      });
+    } else {
+      console.warn("No other clusters exist; members are un-clustered.");
     }
-  }
 
-  /**
-   * Retrieves vector for a given item key.
-   * Currently assumes items are from smart_sources or smart_blocks.
-   * Extend as needed for other collections.
-   * @param {string} item_key
-   */
-  get_item_vector(item_key) {
-    const source = this.env.smart_sources.get(item_key) || this.env.smart_blocks.get(item_key);
-    return source?.vec || null;
-  }
+    // 2) Actually remove from the collection in-memory:
+    this.collection.delete_item(this.key);
 
-  /**
-   * Generate a name for the cluster from its members.
-   * Simple heuristic: take top few member names and join them.
-   */
-  generate_name() {
-    const items = this.member_keys.map(key => this.env.smart_sources.get(key) || this.env.smart_blocks.get(key))
-      .filter(item => item);
-
-    const names = items.map(it => it.name || it.key);
-    // Simple name: first 2-3 item names joined
-    this.data.name = names.slice(0, 3).join(", ") + (names.length > 3 ? "..." : "");
-  }
-
-  async save() {
-    await this.env.smart_clusters.data_adapter.save(this);
-  }
-
-  get member_keys() { return this.data.member_keys; }
-
-  set member_keys(keys) {
-    this.data.member_keys = keys;
-    this.data.size = keys.length;
+    // If you also want to mark it `deleted` for AJSON logs:
+    this.deleted = true;
+    this.queue_save();
   }
 }
