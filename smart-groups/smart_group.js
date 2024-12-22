@@ -33,9 +33,7 @@ export class SmartGroup extends SmartEntity {
    * @returns {SmartSource[]} Array of SmartSource instances
    */
   get members() {
-    return this.member_collection.filter(source => 
-      source.path.startsWith(this.data.path)
-    );
+    return this.member_collection.get_many(this.data.members);
   }
   get member_collection() {
     return this.env[this.member_collection_key];
@@ -45,14 +43,14 @@ export class SmartGroup extends SmartEntity {
   }
 
   async get_nearest_members() {
-    if(!this.median_vec) {
+    if(!this.group_vec) {
       console.log(`no median vec for directory: ${this.data.path}`);
       return [];
     }
     return this.vector_adapter.nearest_members();
   }
   async get_furthest_members() {
-    if(!this.median_vec) {
+    if(!this.group_vec) {
       console.log(`no median vec for directory: ${this.data.path}`);
       return [];
     }
@@ -66,6 +64,7 @@ export class SmartGroup extends SmartEntity {
     return this.entity_adapter.median_vec;
   }
   get vec() { return this.median_vec; }
+  get group_vec() { return this.median_vec; }
 
   /**
    * Gets the median vector of all contained blocks

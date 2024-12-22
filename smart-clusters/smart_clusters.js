@@ -56,6 +56,12 @@ export class SmartClusters extends SmartGroups {
         default: "mean",
         description: "Choose mean or median approach for computing cluster center."
       },
+      'max_cluster_size_percent': {
+        name: "Max Cluster Size (%)",
+        type: "number",
+        default: 0.3, // 30%
+        description: "Each cluster can only hold up to this fraction of total sources."
+      },
     };
   }
 }

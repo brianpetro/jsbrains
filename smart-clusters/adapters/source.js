@@ -1,265 +1,235 @@
 /**
- * @file source.js (Alternative “k-centers” style)
- * @description 
- *   An alternative clustering adapter that exclusively uses a “k-centers” approach, 
- *   aiming to minimize the maximum distance (or equivalently, maximize the minimum similarity).
+ * @file source_clusters.js
+ * @description Example of a stable k-center clustering adapter for SmartClusters.
  */
 
 import { ClusterCollectionAdapter, ClusterItemAdapter } from "./_adapter.js";
-import { cos_sim } from "smart-entities/cos_sim.js";  // or from your local cos_sim
+import { cos_sim } from "smart-entities/cos_sim.js";
 import { shuffle_array } from "../utils/shuffle_array.js";
 
 /**
- * @class SourceClustersAdapterKCenters
+ * @class SourceClustersAdapter
  * @extends ClusterCollectionAdapter
  * @description
- *  Builds clusters by scanning `env.smart_sources` for items with a `.vec`,
- *  using a k-centers approach. The cluster "center" is always the actual 
- *  member in that cluster that minimizes maximum distance to all other members 
- *  in the cluster (i.e. `nearest_member`).
+ * Forms k clusters from vectorized sources, using a k-center approach.
+ * - Each cluster gets a stable ID (e.g. "cluster_0", "cluster_1", etc.).
+ * - We keep a `center_source_key` on each cluster item. That is updated if needed (never rename the actual cluster key).
+ * - Respects `max_cluster_size_percent` to limit cluster size.
  */
 export class SourceClustersAdapter extends ClusterCollectionAdapter {
-
   /**
-   * Primary entrypoint: build the clusters from the `smart_sources`.
-   * 
-   * REQUIRED USER SETTINGS (in cluster `settings_config`):
-   *   - `clusters_ct`
-   *   - `max_iterations`
-   * 
-   * Optional: You could read from additional fields if desired, but here we only 
-   * use `clusters_ct` (the number of clusters) and `max_iterations`.
+   * Build clusters of sources. The user’s cluster settings are read from `this.collection.settings`.
    */
   async build_groups() {
-    console.log("build_groups");
-    // 1. Grab user config
+    // 1) Config from settings
     const {
-      clusters_ct = 5,
       max_iterations = 10,
-    } = this.collection.settings ?? {};  // or this.collection.settings_config
-
-    // 2. Filter out any sources that lack a vector
+      max_cluster_size_percent = 0.3,
+    } = this.collection.settings ?? {};
+    // 2) Collect all vectorized sources
     const sources = this.collection.env.smart_sources.filter(s => s?.vec);
-
-    if (sources.length === 0) {
-      console.warn("No sources with vectors found; skipping cluster build.");
+    let clusters_ct = 5;
+    if(!this.collection.settings?.clusters_ct) {
+      clusters_ct = Math.max(clusters_ct, Math.floor(sources.length/100));
+    }
+    console.log(`[SourceClustersAdapter] Building ${clusters_ct} clusters from ${sources.length} sources.`);
+    if (!sources.length) {
+      console.warn("No vectorized sources found; skipping cluster build.");
       return;
     }
+    const max_cluster_size = Math.max(
+      1,
+      Math.floor(max_cluster_size_percent * sources.length)
+    );
 
-    // 3. CLEAR existing clusters (or you can mark them deleted)
+    // 3) Remove existing clusters from memory
     this._clear_existing_clusters();
 
-    // 4. PICK initial cluster centers (k-centers style):
-    //    pick 1 random, then repeatedly pick the source that is furthest from all chosen centers
+    // 4) Pick initial cluster centers
     const centers = this._choose_initial_k_centers(sources, clusters_ct);
 
-    // 5. Create cluster items for each center
-    const clusterItems = await Promise.all(centers.map(async (centerSource, i) => {
-      return await this.collection.create_or_update({
-        key: centerSource.key,
-        center_source_key: centerSource.key,
-        name: `Cluster #${i + 1}`,
+    // 5) Create cluster items with stable IDs: "cluster_0", "cluster_1", etc.
+    const clusterItems = centers.map((src, i) => {
+      const stableKey = `cluster_${i + 1}`;
+      const item = this.collection.create_or_update({
+        key: stableKey,        // stable ID
+        center_source_key: src.key,
         members: [],
         number_of_members: 0,
         clustering_timestamp: Date.now(),
       });
-    }));
+      return item;
+    });
 
-    // 6. Refine clusters for up to max_iterations
-    for (let iter = 0; iter < max_iterations; iter++) {
-      let changed = false;
+    // 6) Iterate & refine
+    let changed = true;
+    for (let iter = 0; iter < max_iterations && changed; iter++) {
+      changed = false;
 
-      // 6a. Assign every source to the nearest center
-      //     We’ll track membership in a scratch map: clusterKey => arrayOfSourceKeys
-      const newMembershipMap = {};
-      clusterItems.forEach(ci => {
-        newMembershipMap[ci.key] = [];
-      });
+      // Build new membership arrays keyed by stable cluster ID
+      const membershipMap = Object.fromEntries(
+        clusterItems.map(ci => [ci.key, []])
+      );
 
+      // Assign each source
       for (const src of sources) {
-        // find cluster whose center yields the highest cos_sim
-        let bestCluster = null;
-        let bestSim = -Infinity;
-
-        for (const ci of clusterItems) {
-          const centerVec = this._get_center_vec(ci);
-          if (!centerVec) continue;
-          const sim = cos_sim(src.vec, centerVec);
-          if (sim > bestSim) {
-            bestSim = sim;
-            bestCluster = ci;
-          }
-        }
-
-        if (bestCluster) {
-          newMembershipMap[bestCluster.key].push(src.key);
-        }
+        const { bestClusterKey } = this._pick_best_cluster(
+          src, clusterItems, membershipMap, max_cluster_size
+        );
+        membershipMap[bestClusterKey].push(src.key);
       }
 
-      // 6b. For each cluster, pick the "nearest_member" that 
-      //     minimizes the maximum distance to all other members 
-      //     (or equivalently, maximizes min-sim).
+      // Recompute center
       for (const ci of clusterItems) {
-        const newMembers = newMembershipMap[ci.key] || [];
-        ci.data.members = newMembers;  // store membership
-        if (newMembers.length === 0) continue;
+        const newMembers = membershipMap[ci.key];
+        ci.data.members = newMembers;
+        if (!newMembers.length) continue;
 
-        // pick the new center by "nearest_member" logic
-        const newCenterKey = this._find_nearest_member(ci, newMembers);
+        // find best center among newMembers
+        const newCenterKey = this._find_nearest_member(newMembers);
         if (newCenterKey && newCenterKey !== ci.data.center_source_key) {
-          ci.data.key = newCenterKey;
           ci.data.center_source_key = newCenterKey;
           changed = true;
         }
       }
-
-      if (!changed) {
-        // no cluster center changed => stable
-        break;
-      }
     }
 
-    console.log("clusterItems", clusterItems.map(ci => ci.key));
-    // 7. Finalize cluster data
-    clusterItems.forEach(ci => {
-      ci.data.number_of_members = ci.data.members?.length ?? 0;
+    // 7) Finalize membership
+    for (const ci of clusterItems) {
+      ci.data.number_of_members = ci.data.members.length;
       ci.data.clustering_timestamp = Date.now();
-      this.collection.set(ci);
-      // Mark them for saving
       ci.queue_save();
-    });
-    console.log(Object.values(this.collection.items).length);
+    }
+
+    // Debug check: total assigned must match
+    const totalAssigned = clusterItems.reduce((sum, ci) => sum + ci.data.members.length, 0);
+    console.log(
+      `[SourceClustersAdapter] Assigned ${totalAssigned} sources among ${clusterItems.length} clusters. ` +
+      `We started with ${sources.length} vectorized sources.`
+    );
   }
 
   /**
-   * Private helper: Choose K centers using a standard k-center approach:
-   *  - pick 1 center at random
-   *  - pick each subsequent center by finding the source that is furthest from any existing center
+   * For each source, pick the cluster that has the highest cos_sim with that cluster’s center
+   * as long as it’s not “full” (under max_cluster_size).
+   * If all are full, pick whichever cluster has the fewest members.
    */
+  _pick_best_cluster(src, clusterItems, membershipMap, maxSize) {
+    let bestClusterKey = null;
+    let bestSim = -Infinity;
+
+    let fallbackKey = null;
+    let fallbackCount = Infinity;
+
+    for (const ci of clusterItems) {
+      const centerVec = this._get_center_vec(ci);
+      if (!centerVec) continue;
+
+      const sim = cos_sim(src.vec, centerVec);
+
+      const currCount = membershipMap[ci.key].length;
+      if (currCount < maxSize) {
+        // normal assignment
+        if (sim > bestSim) {
+          bestSim = sim;
+          bestClusterKey = ci.key;
+        }
+      }
+      // track the cluster with smallest membership for fallback
+      if (currCount < fallbackCount) {
+        fallbackCount = currCount;
+        fallbackKey = ci.key;
+      }
+    }
+
+    // If bestClusterKey is still null, fallback
+    if (!bestClusterKey && fallbackKey) {
+      bestClusterKey = fallbackKey;
+    }
+
+    if (!bestClusterKey) {
+      // Should not happen if we have at least one cluster
+      console.warn(`No cluster assigned for source ${src.key}?`);
+      bestClusterKey = clusterItems[0].key;
+    }
+    return { bestClusterKey };
+  }
+
+  // Remove them from memory so they won't linger
+  _clear_existing_clusters() {
+    for (const key of Object.keys(this.collection.items)) {
+      this.collection.delete_item(key);
+    }
+  }
+
+  // k-center “plus plus” approach: pick the first at random, then pick each subsequent
+  // with minimal similarity to existing picks
   _choose_initial_k_centers(sources, k) {
     if (k >= sources.length) return sources.slice(0, k);
 
-    const pickedCenters = [];
-    // pick the first random
+    const picked = [];
     const shuffled = shuffle_array([...sources]);
-    pickedCenters.push(shuffled[0]);
+    picked.push(shuffled[0]);
 
-    // pick the rest
-    while (pickedCenters.length < k) {
+    while (picked.length < k) {
       let bestCandidate = null;
-      let bestDist = -Infinity;
-
-      // for each source, compute distance to its nearest picked center
-      // we want the one that is furthest from *all* picked centers
+      let bestDist = Infinity;
       for (const s of sources) {
-        if (pickedCenters.includes(s)) continue;
-        // find the highest sim among the already-chosen centers
+        if (picked.includes(s)) continue;
         let nearestSim = -Infinity;
-        for (const c of pickedCenters) {
+        for (const c of picked) {
           const sim = cos_sim(s.vec, c.vec);
-          if (sim > nearestSim) {
-            nearestSim = sim;
-          }
+          if (sim > nearestSim) nearestSim = sim;
         }
-        // distance ~ 1 - sim, or we can just track sim
-        // we want to maximize the distance => minimize the sim
-        if (nearestSim < bestDist || bestDist < 0) {
-          // we are looking for the source with the minimal "nearestSim"
-          // so we actually want the smallest nearestSim
-        }
-        // Actually simpler: track `lowestSimSoFar` and pick the source whose `lowestSimSoFar` is smallest
-        if (bestCandidate === null) {
-          bestCandidate = s;
+        // pick the candidate with the lowest “bestSim” (i.e. far from all chosen)
+        if (nearestSim < bestDist) {
           bestDist = nearestSim;
-        } else if (nearestSim < bestDist) {
           bestCandidate = s;
-          bestDist = nearestSim;
         }
       }
-
-      if (bestCandidate) {
-        pickedCenters.push(bestCandidate);
-      } else {
-        // if none found, means all are accounted for
-        break;
-      }
+      if (!bestCandidate) break;
+      picked.push(bestCandidate);
     }
+    return picked;
+  }
 
-    return pickedCenters;
+  // Return the center’s vector from the cluster’s stored center_source_key
+  _get_center_vec(ci) {
+    const centerSrc = this.collection.env.smart_sources.get(ci.data.center_source_key);
+    return centerSrc?.vec || null;
   }
 
   /**
-   * Private helper: Clear existing clusters by removing items from the cluster collection.
+   * Among the cluster’s newMembers, pick the item with largest “worstSim” to all others.
+   * This ensures the chosen center is the “most central” in a k-center sense.
    */
-  _clear_existing_clusters() {
-    const cluster_keys = Object.keys(this.collection.items);
-    cluster_keys.forEach(k => {
-      this.collection.delete_item(k); 
-    });
-  }
-
-  /**
-   * Private helper: Return the cluster's current center vector.
-   * 
-   * @param {SmartCluster} cluster 
-   * @returns {number[] | null}
-   */
-  _get_center_vec(cluster) {
-    const centerSource = this.collection.env.smart_sources.get(cluster.data.center_source_key);
-    return centerSource?.vec || null;
-  }
-
-  /**
-   * Private helper: Among `memberKeys`, pick the key that yields the smallest maximum distance 
-   * (largest min-sim) to the other members in that cluster.
-   * 
-   * @param {SmartCluster} cluster 
-   * @param {string[]} memberKeys 
-   * @returns {string|null} chosen center source key
-   */
-  _find_nearest_member(cluster, memberKeys) {
-    // if only 1 member, that must be center
+  _find_nearest_member(memberKeys) {
     if (memberKeys.length === 1) return memberKeys[0];
 
-    let bestKey = cluster.data.center_source_key ?? null;
-    let bestScore = -Infinity;  // track the best "score"
-
-    // convert keys to source objects
     const sources = memberKeys
       .map(k => this.collection.env.smart_sources.get(k))
       .filter(s => s?.vec);
 
-    // for each candidate, measure the minimum cos_sim with others, or the average
-    // "k-center" typically uses “minimize the maximum distance”, i.e. 
-    // we measure the “worst-case similarity” from candidate to all others
-    for (const candidate of sources) {
+    let bestKey = sources[0]?.key;
+    let bestScore = -Infinity;
+    for (const cand of sources) {
       let worstSim = Infinity;
       for (const other of sources) {
-        if (other.key === candidate.key) continue;
-        const sim = cos_sim(candidate.vec, other.vec);
-        if (sim < worstSim) {
-          worstSim = sim;
-        }
+        if (other.key === cand.key) continue;
+        const sim = cos_sim(cand.vec, other.vec);
+        if (sim < worstSim) worstSim = sim;
       }
-      // we want to maximize worstSim
       if (worstSim > bestScore) {
         bestScore = worstSim;
-        bestKey = candidate.key;
+        bestKey = cand.key;
       }
     }
     return bestKey;
   }
 }
 
-/**
- * @class SourceClusterAdapterKCenters
- * @extends ClusterItemAdapter
- * @description
- *  If needed, override any per-cluster item logic. Typically we rely on `SmartCluster` 
- *  for "delete => reassign" etc.
- */
 export class SourceClusterAdapter extends ClusterItemAdapter {
-  // no additional logic needed for a minimal example
+  // no changes needed for the item-level
 }
 
 export default {

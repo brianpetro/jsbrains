@@ -17,7 +17,7 @@ import source_ajson_data_adapter from 'smart-sources/adapters/data/ajson_multi_f
 import block_ajson_data_adapter from 'smart-blocks/adapters/data/ajson_multi_file.js';
 import group_ajson_data_adapter from 'smart-groups/adapters/data/ajson_multi_file.js';
 
-import { SmartClusters, SmartCluster, source_cluster_adapter } from '../index.js';
+import { SmartClusters, SmartCluster, source_cluster_group_adapter } from '../index.js';
 import { SmartEmbedModel } from 'smart-embed-model';
 import { SmartEmbedTransformersAdapter } from 'smart-embed-model/adapters/transformers.js';
 
@@ -84,7 +84,7 @@ async function create_integration_env() {
         smart_clusters: {
           class: SmartClusters,
           data_adapter: group_ajson_data_adapter,
-          group_adapter: source_cluster_adapter
+          group_adapter: source_cluster_group_adapter
         },
       },
       item_types: {
@@ -154,6 +154,7 @@ test.serial("Integration: Sources loaded with embeddings, able to cluster", asyn
   // Now cluster them
   clusters.settings.clusters_ct = 3; // e.g., 3 clusters
   clusters.settings.max_iterations = 5;
+  clusters.settings.max_cluster_size_percent = 0.1;
   await clusters.build_groups();
 
   const clusterItems = Object.values(clusters.items);
@@ -165,6 +166,7 @@ test.serial("Integration: Sources loaded with embeddings, able to cluster", asyn
     const { members, number_of_members } = cluster.data;
     totalAssigned += members?.length ?? 0;
     t.is(members?.length, number_of_members, 'members array length matches number_of_members field');
+    console.log(`[SourceClustersAdapter] Cluster ${cluster.key} has ${members?.length} members.`);
   }
   t.is(totalAssigned, sourcesWithVec.length, 'All vectorized sources assigned to some cluster');
 

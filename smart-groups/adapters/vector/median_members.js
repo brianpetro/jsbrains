@@ -1,5 +1,8 @@
 import { DefaultEntitiesVectorAdapter, DefaultEntityVectorAdapter } from "smart-entities/adapters/default.js";
 import { sort_by_score_ascending, sort_by_score_descending } from "smart-entities/utils/sort_by_score.js";
+import { cos_sim } from "smart-entities/cos_sim.js";
+import { results_acc, furthest_acc } from "smart-entities/top_acc.js";
+
 
 export class MedianMemberVectorsAdapter extends DefaultEntitiesVectorAdapter {
 }
@@ -12,14 +15,30 @@ export class MedianMemberVectorAdapter extends DefaultEntityVectorAdapter {
     return this.item.member_collection;
   }
   async nearest_members(filter = {}) {
-    filter.key_starts_with = this.item.data.path;
-    const results = await this.member_collection.nearest(this.median_vec, filter);
-    return results.sort(sort_by_score_descending);
+    const {
+      limit = 50, // TODO: default configured in settings
+    } = filter;
+    const nearest = this.members
+      .reduce((acc, member) => {
+        if (!member.vec) return acc; // skip if no vec
+        const result = { item: member, score: cos_sim(this.item.group_vec, member.vec) };
+        results_acc(acc, result, limit); // update acc
+        return acc;
+      }, { min: 0, results: new Set() });
+    return Array.from(nearest.results).sort(sort_by_score_descending);
   }
   async furthest_members(filter = {}) {
-    filter.key_starts_with = this.item.data.path;
-    const results = await this.member_collection.furthest(this.median_vec, filter);
-    return results.sort(sort_by_score_ascending);
+    const {
+      limit = 50, // TODO: default configured in settings
+    } = filter;
+    const furthest = this.members
+      .reduce((acc, member) => {
+        if (!member.vec) return acc; // skip if no vec
+        const result = { item: member, score: cos_sim(this.item.group_vec, member.vec) };
+        furthest_acc(acc, result, limit); // update acc
+        return acc;
+      }, { min: 0, results: new Set() });
+    return Array.from(furthest.results).sort(sort_by_score_ascending);
   }
   get median_vec() {
     if (!this._median_vec) {

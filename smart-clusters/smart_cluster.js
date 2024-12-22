@@ -25,6 +25,8 @@ export class SmartCluster extends SmartGroup {
   get center_vec() {
     return this.center_source?.vec || null;
   }
+  get vec() { return this.center_vec; }
+  get group_vec() { return this.center_vec; }
 
   /**
    * cluster.center_source is a getter returning the source instance
