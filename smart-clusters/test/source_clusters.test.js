@@ -32,7 +32,7 @@ async function create_integration_env() {
   if (!fs.existsSync(testContentDir)) {
     if(fs.existsSync('test/test_content.js')) { 
       execSync('node test/test_content.js');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } else {
       throw new Error(
         `Missing test_content.js script. ` +
@@ -133,8 +133,9 @@ test.before(async (t) => {
 });
 
 test.after(async (t) => {
+  await new Promise(resolve => setTimeout(resolve, 2000)); // wait for final saves to ensure complete cleanup (should be removed in future)
   // Cleanup if you wish, or keep the data for debugging
-  fs.rmdirSync(path.join(process.cwd(), 'test', 'test-content'), { recursive: true });
+  fs.rmdirSync(path.join(process.cwd(), 'test', 'test-content'), { recursive: true, force: true });
 });
 
 test.serial("Integration: Sources loaded with embeddings, able to cluster", async (t) => {
