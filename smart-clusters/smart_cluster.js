@@ -14,10 +14,6 @@ export class SmartCluster extends SmartGroup {
     };
   }
 
-  get key() {
-    return this.center_source.key;
-  }
-
   /**
    * cluster.center_vec is a getter returning cluster.center_source.vec
    * @returns {number[]|null}
@@ -35,22 +31,6 @@ export class SmartCluster extends SmartGroup {
   get center_source() {
     if(!this.data.center_source_key) return null;
     return this.env.smart_sources.get(this.data.center_source_key);
-  }
-
-  /**
-   * Dynamically generate a cluster name from top members or use data.name if present.
-   * Example: "Cluster: (Note1, Note2, ...)"
-   */
-  get name() {
-    if(this.data.name) return this.data.name;
-    const membersList = (this.data.members || [])
-      .slice(0, 3)
-      .map(k => this.env.smart_sources.get(k)?.file_name || k)
-      .join(", ");
-    return `Cluster (${membersList}${this.data.members?.length>3 ? "..." : ""})`;
-  }
-  set name(val) {
-    this.data.name = val;
   }
 
   async delete() {
