@@ -1,5 +1,5 @@
 import { SmartGroup } from "smart-groups";
-import { cos_sim } from "../smart-entities/cos_sim.js";
+import { cos_sim } from "../smart-entities/utils/cos_sim.js";
 
 export class SmartCluster extends SmartGroup {
   static get defaults() {

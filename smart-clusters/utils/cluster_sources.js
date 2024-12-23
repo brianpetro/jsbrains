@@ -7,7 +7,7 @@
  * repeated distanceFn calls for the same item pairs.
  */
 
-import { cos_sim } from 'smart-entities/cos_sim.js';
+import { cos_sim } from 'smart-entities/utils/cos_sim.js';
 import { shuffle_array } from './shuffle_array.js';
 
 /**

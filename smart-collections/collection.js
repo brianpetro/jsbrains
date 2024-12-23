@@ -148,10 +148,10 @@ export class Collection {
     this.filter_opts = this.prepare_filter(filter_opts);
 
     const results = [];
-    const { limit } = this.filter_opts;
+    const { first_n } = this.filter_opts;
 
     for (const item of Object.values(this.items)) {
-      if (limit && results.length >= limit) break;
+      if (first_n && results.length >= first_n) break;
       if (item.filter(filter_opts)) results.push(item);
     }
     return results;

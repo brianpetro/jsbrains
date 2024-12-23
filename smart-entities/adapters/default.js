@@ -6,9 +6,9 @@
  */
 
 import { EntitiesVectorAdapter, EntityVectorAdapter } from "./_adapter.js";
-import { cos_sim } from "../cos_sim.js";
-import { results_acc, furthest_acc } from "../top_acc.js";
-
+import { cos_sim } from "../utils/cos_sim.js";
+import { results_acc, furthest_acc } from "../utils/results_acc.js";
+import { sort_by_score_ascending, sort_by_score_descending } from "../utils/sort_by_score.js";
 /**
  * @class DefaultEntitiesVectorAdapter
  * @extends EntitiesVectorAdapter
@@ -43,7 +43,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         results_acc(acc, result, limit); // update acc
         return acc;
       }, { min: 0, results: new Set() });
-    return Array.from(nearest.results);
+    return Array.from(nearest.results).sort(sort_by_score_descending);
   }
 
   /**
@@ -67,7 +67,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         furthest_acc(acc, result, limit); // update acc
         return acc;
       }, { max: 0, results: new Set() });
-    return Array.from(furthest.results);
+    return Array.from(furthest.results).sort(sort_by_score_ascending);
   }
 
   /**

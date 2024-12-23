@@ -21,7 +21,7 @@
 
 import { SmartEntity } from "./smart_entity.js";
 import { SmartEntities } from "./smart_entities.js";
-import { cos_sim } from "./cos_sim.js";
+import { cos_sim } from "./utils/cos_sim.js";
 
 export {
   SmartEntity,

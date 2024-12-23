@@ -268,15 +268,14 @@ export class SmartEntities extends Collection {
       ...(params.filter || {}),
     };
     const results = await hyp_vecs.reduce(async (acc_promise, embedding, i) => {
-    const acc = await acc_promise;
-    const results = await this.nearest(embedding.vec, filter);
-    results.forEach(result => {
+      const acc = await acc_promise;
+      const results = await this.nearest(embedding.vec, filter);
+      results.forEach(result => {
         if (!acc[result.item.path] || result.score > acc[result.item.path].score) {
           acc[result.item.path] = {
             key: result.item.key,
             score: result.score,
             item: result.item,
-            entity: result.item, // DEPRECATED: use item instead
             hypothetical_i: i,
           };
         } else {
@@ -287,6 +286,7 @@ export class SmartEntities extends Collection {
       return acc;
     }, Promise.resolve({}));
 
+    console.log(results);
     const top_k = Object.values(results)
       .sort(sort_by_score)
       .slice(0, limit)
@@ -353,16 +353,6 @@ export class SmartEntities extends Collection {
     await this.init();
     this.render_settings();
     await this.process_load_queue();
-  }
-
-  async render_lookup(container, opts={}) {
-    if(container) container.innerHTML = 'Loading lookup...';
-    const frag = await this.env.render_component('lookup', this, opts);
-    if(container) {
-      container.innerHTML = '';
-      container.appendChild(frag);
-    }
-    return frag;
   }
 
   get connections_filter_config() { return connections_filter_config; }

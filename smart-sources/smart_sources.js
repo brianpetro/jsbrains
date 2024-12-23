@@ -231,12 +231,14 @@ export class SmartSources extends SmartEntities {
     ;
     if(params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
     let results = await super.lookup(params);
-    if(this.env.smart_blocks?.settings?.embed_blocks) {
+    if(this.block_collection?.settings?.embed_blocks) {
+      console.log("lookup block_collection");
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
       ].sort(sort_by_score);
     }
+    console.log(results);
     return results.slice(0, limit);
   }
 
