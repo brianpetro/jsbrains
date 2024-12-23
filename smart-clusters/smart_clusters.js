@@ -12,8 +12,10 @@ export class SmartClusters extends SmartGroups {
 
   async init(){
     await super.init();
-    await this.create_or_update({key: 'orphaned'});
-    await this.process_load_queue(); 
+    const temp_cluster = await this.create_or_update({key: 'temp'});
+    await temp_cluster.load();
+    // TODO: remove temp cluster
+    temp_cluster.delete();
   }
 
   /**
