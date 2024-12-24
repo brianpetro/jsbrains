@@ -368,12 +368,6 @@ export class SmartSource extends SmartEntity {
     return [];
   }
 
-  /**
-   * Retrieves the embed input, either from cache or by generating it.
-   * @readonly
-   * @returns {string|Promise<string>} The embed input string or a promise resolving to it.
-   */
-  get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
 
   /**
    * Determines if the SmartSource is excluded from processing.

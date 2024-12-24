@@ -102,6 +102,13 @@ export class SmartEntity extends CollectionItem {
   async get_embed_input(content=null) { } // override in child class
 
   /**
+   * Retrieves the embed input, either from cache or by generating it.
+   * @readonly
+   * @returns {string|Promise<string>} The embed input string or a promise resolving to it.
+   */
+  get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
+
+  /**
    * Prepares filter options for finding connections based on parameters.
    * @param {Object} [params={}] - Parameters for finding connections.
    * @returns {Object} The prepared filter options.
@@ -213,13 +220,6 @@ export class SmartEntity extends CollectionItem {
   get embed_model() { return this.collection.embed_model; }
 
   /**
-   * Gets the number of tokens associated with the entity's embedding.
-   * @readonly
-   * @returns {number|undefined} The number of tokens, or undefined if not set.
-   */
-  get tokens() { return this.data.embeddings[this.embed_model_key]?.tokens; }
-
-  /**
    * Determines if the entity should be embedded.
    * @readonly
    * @returns {boolean} True if no vector is set, false otherwise.
@@ -233,13 +233,18 @@ export class SmartEntity extends CollectionItem {
   set error(error) { this.data.embeddings[this.embed_model_key].error = error; }
 
   /**
+   * Gets the number of tokens associated with the entity's embedding.
+   * @readonly
+   * @returns {number|undefined} The number of tokens, or undefined if not set.
+   */
+  get tokens() { return this.data.last_embed?.tokens; }
+  /**
    * Sets the number of tokens for the embedding.
    * @param {number} tokens - The number of tokens.
    */
   set tokens(tokens) {
-    if (!this.data.embeddings) this.data.embeddings = {};
-    if (!this.data.embeddings[this.embed_model_key]) this.data.embeddings[this.embed_model_key] = {};
-    this.data.embeddings[this.embed_model_key].tokens = tokens;
+    if (!this.data.last_embed) this.data.last_embed = {};
+    this.data.last_embed.tokens = tokens;
   }
 
   /**

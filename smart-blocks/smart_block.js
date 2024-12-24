@@ -233,13 +233,6 @@ export class SmartBlock extends SmartEntity {
   }
 
   /**
-   * Retrieves the embed input, either from cache or by generating it.
-   * @readonly
-   * @returns {string|Promise<string>} The embed input string or a promise resolving to it.
-   */
-  get embed_input() { return this._embed_input ? this._embed_input : this.get_embed_input(); }
-
-  /**
    * Determines if the block has valid line range information.
    * @readonly
    * @returns {boolean} `true` if the block has both start and end lines, `false` otherwise.
