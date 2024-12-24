@@ -33,7 +33,6 @@ import { SmartSources } from 'smart-sources/smart_sources.js';
 import { SmartSource } from 'smart-sources/smart_source.js';
 import { SmartBlocks } from 'smart-blocks/smart_blocks.js';
 import { SmartBlock } from 'smart-blocks/smart_block.js';
-import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { MarkdownSourceContentAdapter } from 'smart-sources/adapters/markdown_source.js';
 import { MarkdownBlockContentAdapter } from 'smart-blocks/adapters/markdown_block.js';
 import ajson_data_adapter from 'smart-sources/adapters/data/ajson_multi_file.js';
@@ -58,7 +57,6 @@ async function create_test_env() {
     env_path: env_path,
     modules: {
       smart_fs: { class: SmartFs, adapter: NodeFsSmartFsAdapter },
-      smart_settings: { class: SmartSettings },
     },
 
     collections: {

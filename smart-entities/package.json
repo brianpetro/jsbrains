@@ -25,7 +25,6 @@
     "smart-blocks": "file:../smart-blocks",
     "smart-environment": "file:../smart-environment",
     "smart-fs": "file:../smart-fs",
-    "smart-settings": "file:../smart-settings",
     "smart-sources": "file:../smart-sources"
   },
   "dependencies": {

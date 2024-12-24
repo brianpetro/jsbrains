@@ -30,8 +30,7 @@
     "ava": "^6.0.1",
     "smart-blocks": "file:../smart-blocks",
     "smart-environment": "file:../smart-environment",
-    "smart-fs": "file:../smart-fs",
-    "smart-settings": "file:../smart-settings"
+    "smart-fs": "file:../smart-fs"
   },
   "dependencies": {
     "smart-collections": "file:../smart-collections",

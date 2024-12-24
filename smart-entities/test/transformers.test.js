@@ -45,7 +45,6 @@ test.before(async (t) => {
       env_path: contentDir,
       modules: {
         smart_fs: { class: SmartFs, adapter: NodeFsSmartFsAdapter },
-        smart_settings: { class: SmartSettings },
         smart_embed_model: {
           class: SmartEmbedModel,
           adapters: {

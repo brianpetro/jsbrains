@@ -13,7 +13,6 @@ import { SmartEmbedModel } from '../../smart-embed-model-v1/smart_embed_model.js
 import { SmartEmbedTransformersAdapter } from '../../smart-embed-model-v1/adapters/transformers.js';
 import { SmartEmbedOpenAIAdapter } from '../../smart-embed-model-v1/adapters/openai.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
-import { SmartSettings } from '../../smart-settings/smart_settings.js';
 const __dirname = new URL('.', import.meta.url).pathname;
 
 class TestMain {
@@ -35,9 +34,6 @@ class TestMain {
         smart_fs: {
           class: SmartFs,
           adapter: SmartFsTestAdapter,
-        },
-        smart_settings: {
-          class: SmartSettings,
         },
       },
       collections: {

@@ -7,7 +7,6 @@ import { SmartEmbedTransformersAdapter } from '../../smart-embed-model-v1/adapte
 import { SmartEmbedOpenAIAdapter } from '../../smart-embed-model-v1/adapters/openai.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
-import { SmartSettings } from '../../smart-settings/smart_settings.js';
 import { SmartChatModel } from '../../smart-chat-model/smart_chat_model.js'; // Import SmartChatModel
 import { SmartTemplateEjsAdapter } from '../adapters/ejs.js';
 import { SmartTemplateMarkdownAdapter } from '../adapters/markdown.js';
@@ -75,9 +74,6 @@ class TestMain {
         smart_fs: {
           class: SmartFs,
           adapter: SmartFsTestAdapter,
-        },
-        smart_settings: {
-          class: SmartSettings,
         },
         smart_chat_model: {
           class: MockSmartChatModel, // Use the mocked SmartChatModel

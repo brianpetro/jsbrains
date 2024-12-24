@@ -20,6 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { render as settings_template } from './components/settings.js';
+import { SmartSettings } from 'smart-settings/smart_settings.js';
 
 /**
  * @class SmartEnv
@@ -75,7 +76,7 @@ export class SmartEnv {
     this.is_init = true;
     const main_key = this.init_main(main, main_env_opts);
     await this.fs.load_files(); // skips exclusions (smart_sources.fs respects exclusions); runs before smart_settings for detecting env_data_dir
-    await this.opts.modules.smart_settings.class.create(this);
+    await SmartSettings.create(this);
     await this.load_main(main_key);
     this.is_init = false;
     return main_key;

@@ -6,7 +6,6 @@ import { execSync } from 'child_process';
 import { SmartEnv } from 'smart-environment/smart_env.js';
 import { NodeFsSmartFsAdapter } from 'smart-fs/adapters/node_fs.js';
 import { SmartFs } from 'smart-fs/smart_fs.js';
-import { SmartSettings } from 'smart-settings/smart_settings.js';
 
 import { SmartSources, SmartSource } from 'smart-sources';
 import { MarkdownSourceContentAdapter } from 'smart-sources/adapters/markdown_source.js';
@@ -53,8 +52,6 @@ async function create_integration_env() {
       modules: {
         // minimal or real FS
         smart_fs: { class: SmartFs, adapter: NodeFsSmartFsAdapter },
-        // basic settings
-        smart_settings: { class: SmartSettings },
         // optional embed model
         smart_embed_model: {
           class: SmartEmbedModel,

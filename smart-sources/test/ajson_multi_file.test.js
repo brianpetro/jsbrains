@@ -2,7 +2,6 @@ import test from 'ava';
 import { SmartEnv } from '../../smart-environment/smart_env.js';
 import { SmartFs } from '../../smart-fs/smart_fs.js';
 import { NodeFsSmartFsAdapter } from '../../smart-fs/adapters/node_fs.js';
-import { SmartSettings } from '../../smart-settings/smart_settings.js';
 import { MarkdownSourceContentAdapter } from '../adapters/markdown_source.js';
 import { SmartSources } from '../smart_sources.js';
 import { SmartSource } from '../smart_source.js';
@@ -20,9 +19,6 @@ class TestMultiFileSourceMain {
     return {
       env_path: __dirname + 'test-content',
       modules: {
-        smart_settings: {
-          class: SmartSettings,
-        },
         smart_fs: {
           class: SmartFs,
           adapter: NodeFsSmartFsAdapter,

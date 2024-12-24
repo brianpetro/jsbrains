@@ -21,6 +21,7 @@
     "smart-change": "../smart-change",
     "smart-embed-model": "../smart-embed-model-v1",
     "smart-file-system": "../smart-fs",
+    "smart-settings": "../smart-settings",
     "smart-sources": "../smart-sources",
     "smart-view": "../smart-view"
   }
