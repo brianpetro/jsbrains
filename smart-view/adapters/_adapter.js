@@ -91,6 +91,7 @@ export class SmartViewAdapter {
       dropdown: this.render_dropdown_component,
       toggle: this.render_toggle_component,
       textarea: this.render_textarea_component,
+      textarea_array: this.render_textarea_array_component,
       button: this.render_button_component,
       remove: this.render_remove_component,
       folder: this.render_folder_select_component,
@@ -232,6 +233,19 @@ export class SmartViewAdapter {
   }
 
   render_textarea_component(elm, path, value, scope) {
+    const smart_setting = new this.setting_class(elm);
+    smart_setting.addTextArea(textarea => {
+      textarea.setPlaceholder(elm.dataset.placeholder || "");
+      textarea.setValue(value || "");
+      let debounceTimer;
+      textarea.onChange(async (value) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope), 2000);
+      });
+    });
+    return smart_setting;
+  }
+  render_textarea_array_component(elm, path, value, scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addTextArea(textarea => {
       textarea.setPlaceholder(elm.dataset.placeholder || "");
