@@ -235,7 +235,7 @@ export class SmartViewAdapter {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addTextArea(textarea => {
       textarea.setPlaceholder(elm.dataset.placeholder || "");
-      textarea.setValue(value || "");
+      textarea.setValue(Array.isArray(value) ? value.join("\n") : value || "");
       let debounceTimer;
       textarea.onChange(async (value) => {
         value = value.split("\n").map(v => v.trim()).filter(v => v);
