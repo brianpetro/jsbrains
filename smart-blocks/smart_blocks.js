@@ -1,7 +1,7 @@
 import { SmartEntities } from "smart-entities";
 import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
 import { get_line_range } from "smart-sources/utils/get_line_range.js";
-import { markdown_to_blocks } from "smart-sources/blocks/markdown_to_blocks.js";
+import { parse_blocks } from "smart-blocks/parsers/markdown.js";
 
 /**
  * @class SmartBlocks
@@ -18,14 +18,14 @@ export class SmartBlocks extends SmartEntities {
   /**
    * @method import_source
    * @description Imports blocks for a given source by parsing the content. Delegates parsing to a parser
-   * depending on the source.file_type (e.g., markdown_to_blocks for .md).
+   * depending on the source.file_type (e.g., parse_blocks for .md).
    * @async
    * @param {SmartSource} source The source whose blocks are to be imported.
    * @param {string} content The raw content of the source file.
    * @returns {Promise<void>}
    */
   async import_source(source, content) {
-    let blocks_obj = markdown_to_blocks(content);
+    let blocks_obj = parse_blocks(content);
     
     const blocks = [];
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {

@@ -1,4 +1,4 @@
-export function markdown_to_blocks(markdown) {
+export function parse_blocks(markdown) {
   const lines = markdown.split('\n');
   const result = {};
   const heading_stack = [];

@@ -1,5 +1,4 @@
 import { FileSourceContentAdapter } from "./_file.js";
-import { markdown_to_blocks } from "../blocks/markdown_to_blocks.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 
 /**

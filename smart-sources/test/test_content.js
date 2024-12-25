@@ -118,7 +118,7 @@ Content at the deepest heading level.
 // Integration test notes:
 // - Verify that up to six levels of headings are correctly identified as blocks.
 // - Check how block removal or updates propagate when dealing with deeply nested headings.
-// - Test that markdown_to_blocks does not break with extreme heading nesting.
+// - Test that parse_blocks does not break with extreme heading nesting.
 // - Validate that rewriting minimal files after import preserves heading structure.
 
 ///////////////////////////////////////////////

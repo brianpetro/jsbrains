@@ -1,5 +1,5 @@
 import test from 'ava';
-import { markdown_to_blocks } from "./markdown_to_blocks.js";
+import { parse_blocks } from "./markdown.js";
 
 test('convert markdown with complex heading structures to flat JS object', t => {
   const markdown = `# Top-Level Heading
@@ -87,7 +87,7 @@ In this case, \`#Another Top-Level Heading[2]\`. No \`#\` separates the heading 
     "#Another Top-Level Heading[2]#{1}": [53, 55]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -111,7 +111,7 @@ Thank you for reading.`;
     "#Conclusion#{1}": [8, 8]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -151,7 +151,7 @@ test('convert markdown with deeply nested headings to flat JS object', t => {
     "#Chapter 3": [19, 20]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -185,7 +185,7 @@ Overview detailed information.
     "#Overview[3]#Details#{1}": [14, 15]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -232,7 +232,7 @@ Final thoughts.`;
     "#Conclusion#{1}": [24, 24]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -258,7 +258,7 @@ Content under second occurrence of top-level heading.
     "#Heading[2]#{1}": [10, 11]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -275,7 +275,7 @@ Content under heading one
     "#Heading One#{1}": [4, 5]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -298,7 +298,7 @@ Content under heading one
     "#Heading One#{1}": [10, 11]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -318,7 +318,7 @@ Content under heading one
     "#Heading One#{1}": [5, 6]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -341,7 +341,7 @@ Some text
     "#Another Heading#{1}": [9, 10]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -355,7 +355,7 @@ Content under heading.
     "#\"Heading\"#{1}": [2, 3]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -370,7 +370,7 @@ Content under heading.
     "#": [1, 5]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -410,7 +410,7 @@ test('should handle nested list items with line break between items', t => {
     "#Heading####New Environment#{2}": [19, 25]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -448,7 +448,7 @@ Dolor Sit Amet
     "###Lorem Ipsum#{8}": [17, 20]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -474,6 +474,6 @@ Content under second occurrence of top-level heading.
     "#####Heading[2]#{1}": [10, 11]
   };
 
-  const result = markdown_to_blocks(markdown);
+  const result = parse_blocks(markdown);
   t.deepEqual(result, expected);
 });

@@ -4,7 +4,6 @@
  */
 
 import { BlockContentAdapter } from "./_adapter.js";
-import { markdown_to_blocks } from "../../smart-sources/blocks/markdown_to_blocks.js";
 
 /**
  * @class MarkdownBlockContentAdapter
