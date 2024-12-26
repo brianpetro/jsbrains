@@ -148,6 +148,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       // Update hash and stats
       batch.forEach(item => {
         item.embed_hash = item.read_hash;
+        item._queue_save = true;
       });
       this.embedded_total += batch.length;
       this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
@@ -160,6 +161,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         this.last_save_total = this.embedded_total;
         await this.collection.process_save_queue();
         if(this.collection.block_collection) {
+          console.log(`Saving ${this.collection.block_collection.collection_key} block collection`);
           await this.collection.block_collection.process_save_queue();
         }
       }
@@ -167,7 +169,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
     // Show completion notice
     this._show_embed_completion_notice(embed_queue.length);
-    this.collection.process_save_queue();
+    await this.collection.process_save_queue();
     if(this.collection.block_collection) {
       await this.collection.block_collection.process_save_queue();
     }

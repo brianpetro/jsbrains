@@ -66,6 +66,12 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    */
   async process_load_queue() {
     this.collection.notices?.show('loading', `Loading ${this.collection.collection_key}...`, { timeout: 0 });
+
+    // check if directory exists
+    if(!(await this.fs.exists(this.collection.data_dir))){
+      // create directory
+      await this.fs.mkdir(this.collection.data_dir);
+    }
   
     const load_queue = Object.values(this.collection.items).filter(item => item._queue_load);
     if (!load_queue.length) {
@@ -194,7 +200,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
         else await this.fs.remove(this.data_path);
       }
     } catch (e) {
-      // console.warn("Error loading item (queueing import)", this.item.key, this.data_path, e);
+      console.warn("Error loading item (queueing import)", this.item.key, this.data_path, e);
       this.item.queue_import();
     }
   }

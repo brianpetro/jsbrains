@@ -291,6 +291,7 @@ export class SmartSources extends SmartEntities {
     this.build_links_map();
     await this.process_embed_queue();
     await this.process_save_queue();
+    await this.block_collection?.process_save_queue();
   }
 
   /**

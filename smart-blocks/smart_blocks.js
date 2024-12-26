@@ -72,6 +72,7 @@ export class SmartBlocks extends SmartEntities {
 
 
 
+  get fs() { return this.env.smart_sources.fs; }
 
   /**
    * Retrieves the embedding model associated with the SmartSources collection.

@@ -47,6 +47,10 @@ export class AjsonMultiFileBlocksDataAdapter extends AjsonMultiFileCollectionDat
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
     this.collection.notices?.remove('saving');
   }
+  process_load_queue(){
+    // handled in sources
+    console.log(`Skipping loading ${this.collection.collection_key}...`);
+  }
 }
 
 
