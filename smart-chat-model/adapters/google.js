@@ -183,7 +183,7 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
       ]
     };
     if(this.tools) gemini_body.tools = this._transform_tools_to_gemini();
-    if(this._req.tool_choice) gemini_body.tool_config = this._transform_tool_choice_to_gemini();
+    if(gemini_body.tools && (this.tool_choice !== 'none')) gemini_body.tool_config = this._transform_tool_choice_to_gemini();
 
     return {
       url: streaming ? this.adapter.endpoint_streaming : this.adapter.endpoint,

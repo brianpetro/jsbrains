@@ -436,8 +436,11 @@ export class SmartChatModelRequestAdapter {
       temperature: this.temperature,
       stream: streaming,
       ...(this.tools && { tools: this._transform_tools_to_openai() }),
-      ...(this._req.tool_choice && { tool_choice: this._req.tool_choice }),
     };
+    if((body.tools?.length > 0) && this.tool_choice !== 'none'){
+      // no tool choice if no tools
+      body.tool_choice = this.tool_choice;
+    }
     // special handling for o1 models
     if(this.model.startsWith('o1-')){
       body.messages = body.messages.filter(m => m.role !== 'system'); // remove system messages (not supported by o1 models)

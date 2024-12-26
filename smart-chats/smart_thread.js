@@ -237,7 +237,8 @@ export class SmartThread extends SmartSource {
       request.tools = null;
     }
     if(this.last_message_is_tool){
-      request.tool_choice = 'none';
+      // request.tool_choice = 'none';
+      delete request.tool_choice;
     }
 
     // Set default AI model parameters
@@ -268,7 +269,7 @@ export class SmartThread extends SmartSource {
     const request = await this.to_request();
 
     // Use streaming if available and no immediate tool calls are requested
-    const should_stream = this.chat_model.can_stream && !request.tool_choice;
+    const should_stream = this.chat_model.can_stream && (!request.tool_choice || request.tool_choice === 'none');
     if (should_stream) {
       await this.chat_model.stream(request, {
         chunk: this.chunk_handler.bind(this),
