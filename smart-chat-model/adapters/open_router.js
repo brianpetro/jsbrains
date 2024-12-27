@@ -119,8 +119,18 @@ export class SmartChatModelOpenRouterRequestAdapter extends SmartChatModelReques
     // req.body = JSON.stringify(body);
     return req;
   }
-}
 
+  _get_openai_content(message) {
+    // if user message
+    if(message.role === 'user'){
+      // if content is an array and all parts are type 'text'
+      if(Array.isArray(message.content) && message.content.every(part => part.type === 'text')){
+        return message.content.map(part => part.text).join('\n');
+      }
+    }
+    return message.content;
+  }
+}
 /**
  * Response adapter for OpenRouter API
  * @class SmartChatModelOpenRouterResponseAdapter

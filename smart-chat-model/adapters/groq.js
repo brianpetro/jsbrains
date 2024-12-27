@@ -118,6 +118,7 @@ export class SmartChatModelGroqAdapter extends SmartChatModelApiAdapter {
 export class SmartChatModelGroqRequestAdapter extends SmartChatModelRequestAdapter {
   _get_openai_content(message) {
     if(['assistant', 'tool'].includes(message.role)){
+      // merge messages with array or null content into a single string
       if(Array.isArray(message.content)) {
         return message.content.map(part => {
           if (typeof part === 'string') return part;
