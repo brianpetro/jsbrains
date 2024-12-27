@@ -83,7 +83,7 @@ export class SmartThread extends SmartSource {
    * @returns {Promise<DocumentFragment>} The rendered thread interface.
    */
   async render(container = this.container, opts = {}) {
-    const frag = await thread_template.call(this.smart_view, this, opts);
+    const frag = await this.render_component('thread', opts);
     if (container) {
       container.empty();
       if (container.classList.contains('sc-thread')) {

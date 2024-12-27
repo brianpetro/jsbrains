@@ -30,6 +30,7 @@ export class SmartThreads extends SmartSources {
       .forEach(file => {
         const key = file.path.replace(this.source_dir + '/', '').replace('.' + file.extension, '');
         this.items[key] = new this.item_type(this.env, { path: file.path, key });
+        this.items[key].source_adapter.import();
       })
     ;
     this.notices?.remove('initial scan');
@@ -46,7 +47,8 @@ export class SmartThreads extends SmartSources {
   async render(container=this.container, opts={}) {
     if(Object.keys(opts).length > 0) this.render_opts = opts; // persist render options for future renders (not ideal, but required since declaring render_opts outside of this class)
     if(container && (!this.container || this.container !== container)) this.container = container;
-    const frag = await chat_template.call(this.smart_view, this, this.render_opts);
+    // const frag = await chat_template.call(this.smart_view, this, this.render_opts);
+    const frag = await this.render_component('chat', this.render_opts);
     container.innerHTML = '';
     container.appendChild(frag);
     return frag;

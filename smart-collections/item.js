@@ -250,6 +250,16 @@ export class CollectionItem {
   parse() { /* NO-OP by default */ }
 
   /**
+   * Helper function to render a component in the item scope
+   * @param {*} component_key 
+   * @param {*} opts 
+   * @returns 
+   */
+  async render_component(component_key, opts = {}) {
+    return await this.env.render_component(component_key, this, opts);
+  }
+
+  /**
    * Derives the collection key from the class name.
    * @returns {string}
    */

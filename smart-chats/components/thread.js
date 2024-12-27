@@ -88,7 +88,14 @@ export async function post_process(thread, frag, opts) {
   const chat_input = frag.querySelector('.sc-chat-form textarea');
   console.log('chat_input', chat_input);
   if (chat_input) {
-    chat_input.addEventListener('keydown', (e) => handle_chat_input_keydown.call(this, e, thread, chat_input, opts));
+    chat_input.addEventListener('keydown', async (e) => {
+      const is_mod = this.adapter.is_mod_event(e);
+      if (e.key === "Enter" && (is_mod || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        await send_message(chat_input, thread);
+        return;
+      }
+    });
     chat_input.addEventListener('keyup', (e) => handle_chat_input_keyup.call(this, e, chat_input));
   }
   
@@ -99,9 +106,8 @@ export async function post_process(thread, frag, opts) {
 
   // Send button
   const send_button = frag.querySelector('#sc-send-button');
-  send_button.addEventListener('click', () => {
-    thread.handle_message_from_user(chat_input.value);
-    chat_input.value = '';
+  send_button.addEventListener('click', async () => {
+    await send_message(chat_input, thread);
   });
   // Abort button
   const abort_button = frag.querySelector('#sc-abort-button');
@@ -146,22 +152,15 @@ export async function post_process(thread, frag, opts) {
   }
 
   return frag;
+
 }
 
-/**
- * Handles chat input keydown events
- * @private
- */
-function handle_chat_input_keydown(e, thread, chat_input, opts) {
-  const mod = this.adapter.is_mod_event(e);
-  if (e.key === "Enter" && mod) {
-    e.preventDefault();
-    thread.handle_message_from_user(chat_input.value);
-    chat_input.value = '';
-    return;
-  }
-  opts.handle_chat_input_keydown(e, chat_input);
 
+async function send_message(chat_input, thread) {
+  const message = chat_input.value;
+  chat_input.value = '';
+  await thread.handle_message_from_user(message);
+  await thread.save();
 }
 
 /**

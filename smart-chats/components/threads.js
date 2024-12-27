@@ -1,4 +1,7 @@
 /**
+ * @deprecated in favor of platform-specific container components
+ */
+/**
  * @module components/threads
  * @description Renders the main chat interface including threads list, active thread, and input area
  */
