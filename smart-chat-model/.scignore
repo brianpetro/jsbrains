@@ -2,3 +2,4 @@ dist/
 schemas/
 schema.js
 *.test.js
+adapters/
