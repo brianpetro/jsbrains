@@ -11,7 +11,11 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
    * @inheritdoc
    * Retrieves the Lucide icon for the given icon name.
    */
-  get_icon_html(icon_name) { return lucide[icon_name]; }
+  get_icon_html(icon_name) {
+    const pascal_case_icon_name = to_pascal_case(icon_name);
+    console.log(pascal_case_icon_name);
+    return lucide[icon_name] ?? lucide[to_pascal_case(icon_name)];
+  }
   /**
    * Check if the given event is a "mod" event, i.e., if a control or meta key is pressed.
    * This serves as a fallback behavior for environments without Obsidian's Keymap.
@@ -247,4 +251,9 @@ export class Setting {
   setName(name) { return this.set_name(name); }
   setDesc(description) { return this.set_desc(description); }
   setTooltip(tooltip) { return this.set_tooltip(tooltip); }
+}
+
+// convert lower-hyphenated-words to PascalCase
+function to_pascal_case(str) {
+  return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 }

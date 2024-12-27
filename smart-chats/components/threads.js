@@ -14,7 +14,7 @@ export function build_html(threads_collection, opts = {}) {
     { title: 'Open Conversation Note', icon: 'external-link' },
     { title: 'Chat History', icon: 'history' },
     { title: 'Chat Options', icon: 'sliders-horizontal', style: 'display: none;' },
-    { title: 'Chat Settings', icon: 'gear' },
+    { title: 'Chat Settings', icon: 'settings' },
     { title: 'New Chat', icon: 'plus' }
   ].map(btn => `
     <button title="${btn.title}" ${btn.style ? `style="${btn.style}"` : ''}>
