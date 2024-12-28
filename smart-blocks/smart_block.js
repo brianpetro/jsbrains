@@ -44,14 +44,6 @@ export class SmartBlock extends SmartEntity {
   }
 
   /**
-   * Queues the block for saving via the source.
-   * @returns {void}
-   */
-  queue_save() {
-    this._queue_save = true;
-  }
-
-  /**
    * Queues the entity for embedding.
    * @returns {void}
    */
