@@ -377,25 +377,6 @@ export class SmartBlock extends SmartEntity {
   get source() { return this.source_collection.get(this.source_key); }
 
   /**
-   * Retrieves the source adapter based on the file type.
-   * @readonly
-   * @returns {Object} The source adapter instance.
-   */
-  get source_adapter() {
-    if(this._source_adapter) return this._source_adapter;
-    if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
-    else this._source_adapter = new this.source_adapters["default"](this);
-    return this._source_adapter;
-  }
-
-  /**
-   * Retrieves the source adapters from the SmartSource.
-   * @readonly
-   * @returns {Object} An object mapping file extensions to adapter constructors.
-   */
-  get source_adapters() { return this.source.source_adapters; }
-
-  /**
    * Retrieves the SmartSources collection instance.
    * @readonly
    * @returns {SmartSources} The SmartSources collection.
@@ -412,20 +393,9 @@ export class SmartBlock extends SmartEntity {
   get is_canvas() { return this.source.is_canvas; }
   get is_excalidraw() { return this.source.is_excalidraw; }
   get mtime() { return this.source.mtime; }
-  get smart_change_adapter() { return this.source.smart_change_adapter; }
   
-  // COMPONENTS
-
-  /**
-   * Retrieves the component responsible for rendering the SmartBlock.
-   * @readonly
-   * @returns {Function} The render function for the source component.
-   */
-  // get component() { return render_source_component; }
-
 
   // DEPRECATED
-
   /**
    * @deprecated Use `source` instead.
    * @readonly

@@ -227,15 +227,6 @@ export class SmartSource extends SmartEntity {
     }
   }
 
-  /**
-   * @async
-   * @deprecated Use `update` instead.
-   * @param {string} content - The content to update.
-   * @returns {Promise<void>}
-   */
-  async _update(content) {
-    await this.source_adapter.update(content);
-  }
 
   /**
    * Reads the entire content of the source file.
@@ -255,14 +246,6 @@ export class SmartSource extends SmartEntity {
     }
   }
 
-  /**
-   * @async
-   * @deprecated Use `read` instead.
-   * @returns {Promise<string>} A promise that resolves with the content of the file.
-   */
-  async _read() {
-    return await this.source_adapter._read();
-  }
 
   /**
    * Removes the source file from the file system and deletes the entity.
@@ -281,12 +264,6 @@ export class SmartSource extends SmartEntity {
     }
   }
 
-  /**
-   * @async
-   * @deprecated Use `remove` instead.
-   * @returns {Promise<void>} A promise that resolves when the entity is destroyed.
-   */
-  async destroy() { await this.remove(); }
 
   /**
    * Moves the current source to a new location.
@@ -522,7 +499,6 @@ export class SmartSource extends SmartEntity {
   get should_embed() {
     return !this.vec || !this.embed_hash || (this.embed_hash !== this.read_hash);
   }
-  get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
   get source_adapters() { return this.collection.source_adapters; }
   get source_adapter() {
     if(this._source_adapter) return this._source_adapter;
@@ -573,7 +549,33 @@ export class SmartSource extends SmartEntity {
   }
 
   // DEPRECATED methods
-
+  /**
+   * @async
+   * @deprecated Use `read` instead.
+   * @returns {Promise<string>} A promise that resolves with the content of the file.
+   */
+  async _read() {
+    return await this.source_adapter._read();
+  }
+  /**
+   * @async
+   * @deprecated Use `remove` instead.
+   * @returns {Promise<void>} A promise that resolves when the entity is destroyed.
+   */
+  async destroy() { await this.remove(); }
+  /**
+   * @async
+   * @deprecated Use `update` instead.
+   * @param {string} content - The content to update.
+   * @returns {Promise<void>}
+   */
+  async _update(content) {
+    await this.source_adapter.update(content);
+  }
+  /**
+   * @deprecated in favor of new smart_changes collection
+   */
+  get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
   /**
    * @deprecated Use `source` instead.
    * @readonly
@@ -582,6 +584,5 @@ export class SmartSource extends SmartEntity {
   get t_file() {
     return this.fs.files[this.path];
   } 
-
 
 }
