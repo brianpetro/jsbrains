@@ -437,7 +437,7 @@ export class SmartChatModelRequestAdapter {
       stream: streaming,
       ...(this.tools && { tools: this._transform_tools_to_openai() }),
     };
-    if((body.tools?.length > 0) && this.tool_choice !== 'none'){
+    if((body.tools?.length > 0) && this.tool_choice && this.tool_choice !== 'none'){
       // no tool choice if no tools
       body.tool_choice = this.tool_choice;
     }
