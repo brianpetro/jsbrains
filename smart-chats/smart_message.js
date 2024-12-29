@@ -113,7 +113,7 @@ export class SmartMessage extends SmartBlock {
     } else if (this.tool_calls?.length > 0) {
       frag = await tool_calls_template.call(this.smart_view, this);
     } else if (this.role === 'tool') {
-      frag = await context_template.call(this.smart_view, this);
+      frag = await this.context_template.call(this.smart_view, this);
     } else {
       frag = await message_template.call(this.smart_view, this);
     }
@@ -129,6 +129,11 @@ export class SmartMessage extends SmartBlock {
     }
 
     return frag;
+  }
+
+  get context_template() {
+    return this.env.opts.components.lookup_context
+      || context_template;
   }
 
   /**
