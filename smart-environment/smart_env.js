@@ -33,7 +33,6 @@ export class SmartEnv {
   scope_name = 'smart_env';
   constructor(opts={}) {
     this.opts = opts;
-    this.global_ref = this;
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
@@ -47,6 +46,7 @@ export class SmartEnv {
      */
     this.main_opts = {};
   }
+
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
@@ -56,22 +56,36 @@ export class SmartEnv {
    * @throws {Error} If there's an error creating or updating the SmartEnv instance.
    */
   static async create(main, main_env_opts = {}) {
-    if (!main || typeof main !== 'object'){ // || typeof main.constructor !== 'function') {
+    if (!main || typeof main !== 'object') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
     main_env_opts = normalize_opts(main_env_opts);
-    let existing_env = main_env_opts.global_ref instanceof SmartEnv ? main_env_opts.global_ref : null;
-    let main_key = null;
+
+    // The 'global_ref' in main_env_opts is actually the global object (Node's `global` or the browser `window`).
+    // So we check if that global object has a .smart_env instance. If it does, we'll reuse it.
+    const global_obj = main_env_opts.global_ref 
+      || (typeof window !== 'undefined' ? window : global);
+
+    // If the global object has `smart_env` and it's an instance of SmartEnv, reuse that.
+    let existing_env = null;
+    if (global_obj.smart_env instanceof SmartEnv) {
+      existing_env = global_obj.smart_env;
+    }
+
+    let main_key;
     if (!existing_env) {
+      // No existing environment, create a new one
       main.env = new this(main_env_opts);
       main_key = await main.env.init(main, main_env_opts);
     } else {
+      // Reuse the existing environment
       main.env = existing_env;
       main_key = main.env.init_main(main, main_env_opts);
       await main.env.load_main(main_key);
     }
     return main.env;
   }
+
   async init(main, main_env_opts = {}) {
     this.is_init = true;
     const main_key = this.init_main(main, main_env_opts);
@@ -94,12 +108,18 @@ export class SmartEnv {
    */
   init_main(main, main_env_opts = {}) {
     const main_key = camel_case_to_snake_case(main.constructor.name);
+
+    // Only push if we haven’t seen it yet
+    if (!this.mains.includes(main_key)) {
+      this.mains.push(main_key);
+    }
+
     this[main_key] = main;
-    this.mains.push(main_key);
-    this.main_opts[main_key] = main_env_opts; // may be deprecated in favor of main_env_config
+    this.main_opts[main_key] = main_env_opts; 
     this.merge_options(main_env_opts);
     return main_key;
   }
+
   async load_main(main_key) {
     const main_env_opts = this.main_opts[main_key];
     const main = this[main_key];
