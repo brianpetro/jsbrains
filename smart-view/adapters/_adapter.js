@@ -97,6 +97,7 @@ export class SmartViewAdapter {
       folder: this.render_folder_select_component,
       "text-file": this.render_file_select_component,
       file: this.render_file_select_component,
+      slider: this.render_slider_component,
       html: this.render_html_component,
     };
   }
@@ -310,6 +311,23 @@ export class SmartViewAdapter {
       if (value) file_select.setValue(value);
       file_select.inputEl.closest('div').addEventListener("click", () => {
         this.handle_file_select(path, value, elm, scope);
+      });
+    });
+    return smart_setting;
+  }
+
+  render_slider_component(elm, path, value, scope) {
+    const smart_setting = new this.setting_class(elm);
+    smart_setting.addSlider(slider => {
+      const min = parseFloat(elm.dataset.min) || 0;
+      const max = parseFloat(elm.dataset.max) || 100;
+      const step = parseFloat(elm.dataset.step) || 1;
+      const currentValue = (typeof value !== 'undefined') ? parseFloat(value) : min;
+      slider.setLimits(min, max, step);
+      slider.setValue(currentValue);
+      slider.onChange(newVal => {
+        const numericVal = parseFloat(newVal);
+        this.handle_on_change(path, numericVal, elm, scope);
       });
     });
     return smart_setting;

@@ -196,6 +196,38 @@ export class Setting {
     });
     this.element.appendChild(this.container);
   }
+  add_slider(configurator) {
+    const controlContainer = this.container.querySelector('.control');
+    // Create a <input type="range"> element
+    const rangeInput = document.createElement('input');
+    rangeInput.type = 'range';
+    rangeInput.tabIndex = 0;
+    controlContainer.appendChild(rangeInput);
+
+    // Provide the standard configurator pattern
+    configurator({
+      inputEl: rangeInput,
+      /**
+       * Example usage: setLimits(min, max, step)
+       */
+      setLimits: (min, max, step = 1) => {
+        rangeInput.min = min;
+        rangeInput.max = max;
+        rangeInput.step = step;
+      },
+      setValue: (value) => {
+        rangeInput.value = value;
+      },
+      onChange: (callback) => {
+        // Use 'input' event to capture continuous slider changes
+        rangeInput.addEventListener('input', () => {
+          callback(rangeInput.value);
+        });
+      }
+    });
+
+    this.element.appendChild(this.container);
+  }
   set_name(name) {
     const nameElement = this.container.querySelector('.name');
     if (nameElement) {
