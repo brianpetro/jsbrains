@@ -67,19 +67,21 @@ export class SmartEnv {
       || (typeof window !== 'undefined' ? window : global);
 
     // If the global object has `smart_env` and it's an instance of SmartEnv, reuse that.
-    let existing_env = null;
-    if (global_obj.smart_env instanceof SmartEnv) {
-      existing_env = global_obj.smart_env;
+    let global_env = null;
+    const global_prop = main_env_opts.global_prop || 'smart_env';
+    if (global_obj[global_prop] instanceof SmartEnv) {
+      global_env = global_obj[global_prop];
     }
 
     let main_key;
-    if (!existing_env) {
+    if (!global_env) {
       // No existing environment, create a new one
       main.env = new this(main_env_opts);
+      main.env.global_env = main.env;
       main_key = await main.env.init(main, main_env_opts);
     } else {
       // Reuse the existing environment
-      main.env = existing_env;
+      main.env = global_env;
       main_key = main.env.init_main(main, main_env_opts);
       await main.env.load_main(main_key);
     }
@@ -184,7 +186,7 @@ export class SmartEnv {
     this.unload_opts(main_key);
     this[main_key] = null;
     this.mains = this.mains.filter(key => key !== main_key);
-    if(this.mains.length === 0) this.global_ref = null;
+    if(this.mains.length === 0) this.global_env = null;
   }
   unload_collections(main_key) {
     for(const key of Object.keys(this.collections)){
@@ -293,7 +295,9 @@ export class SmartEnv {
   }
   get global_prop() { return this.opts.global_prop ?? 'smart_env'; }
   get global_ref() { return this.opts.global_ref ?? (typeof window !== 'undefined' ? window : global) ?? {}; }
-  set global_ref(env) { this.global_ref[this.global_prop] = env; }
+  // set global_ref(env) { this.global_ref[this.global_prop] = env; }
+  get global_env() { return this.global_ref[this.global_prop]; }
+  set global_env(env) { this.global_ref[this.global_prop] = env; }
   get item_types() { return this.opts.item_types; }
   /**
    * @deprecated use component pattern instead

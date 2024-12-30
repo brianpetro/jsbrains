@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Implements Smart Environment best practices.",
-  "main": "main.js",
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "brianpetro/jsbrains"
