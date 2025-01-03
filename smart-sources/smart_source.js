@@ -58,7 +58,7 @@ export class SmartSource extends SmartEntity {
       if(err.code === "ENOENT"){
         console.log(`Smart Connections: Deleting ${this.path} data because it no longer exists on disk`);
         this.delete();
-      }else{
+      } else {
         console.warn("Smart Connections: Error during import: re-queueing import", err);
         this.queue_import();
       }
@@ -183,7 +183,7 @@ export class SmartSource extends SmartEntity {
     const lowercased_content = content.toLowerCase();
     const lowercased_path = this.path.toLowerCase();
 
-    const matching_keywords = lowercased_keywords.filter(keyword => 
+    const matching_keywords = lowercased_keywords.filter(keyword =>
       lowercased_path.includes(keyword) || lowercased_content.includes(keyword)
     );
 
@@ -217,16 +217,13 @@ export class SmartSource extends SmartEntity {
    */
   async update(full_content, opts = {}) {
     try {
-      // console.log('Updating source:', this.path);
       await this.source_adapter.update(full_content, opts);
       await this.import(); // Also queues embed
-      // console.log('Update completed');
     } catch (error) {
       console.error('Error during update:', error);
       throw error;
     }
   }
-
 
   /**
    * Reads the entire content of the source file.
@@ -236,16 +233,13 @@ export class SmartSource extends SmartEntity {
    */
   async read(opts = {}) {
     try {
-      // console.log('Reading source:', this.path);
       const content = await this.source_adapter.read(opts);
-      // console.log('Read completed');
       return content;
     } catch (error) {
       console.error('Error during read:', error);
       throw error;
     }
   }
-
 
   /**
    * Removes the source file from the file system and deletes the entity.
@@ -255,20 +249,17 @@ export class SmartSource extends SmartEntity {
    */
   async remove() {
     try {
-      // console.log('Removing source:', this.path);
       await this.source_adapter.remove();
-      // console.log('Remove completed');
     } catch (error) {
       console.error('Error during remove:', error);
       throw error;
     }
   }
 
-
   /**
    * Moves the current source to a new location.
    * Handles the destination as a string (new path) or entity (block or source).
-   * 
+   *
    * @async
    * @param {string|Object|SmartEntity} entity_ref - The destination path or entity to move to.
    * @throws {Error} If the entity reference is invalid.
@@ -276,9 +267,7 @@ export class SmartSource extends SmartEntity {
    */
   async move_to(entity_ref) {
     try {
-      // Log moving source
       await this.source_adapter.move_to(entity_ref);
-      // Log move completion
     } catch (error) {
       console.error('error_during_move:', error);
       throw error;
@@ -288,7 +277,7 @@ export class SmartSource extends SmartEntity {
   /**
    * Merges the given content into the current source.
    * Parses the content into blocks and either appends to existing blocks, replaces blocks, or replaces all content.
-   * 
+   *
    * @async
    * @param {string} content - The content to merge into the current source.
    * @param {Object} [opts={}] - Options object.
@@ -312,7 +301,6 @@ export class SmartSource extends SmartEntity {
    */
   on_load_error(err){
     super.on_load_error(err);
-    // If ENOENT
     if(err.code === "ENOENT"){
       this._queue_load = false; // Don't queue load again (re-queued by CollectionItem)
       this.queue_import();
@@ -333,18 +321,19 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {Array<Array<number>>} An array of vectors.
    */
-  get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); } // Filter out blocks without vec
+  get block_vecs() { return this.blocks.map(block => block.vec).filter(vec => vec); }
 
   /**
    * Retrieves all blocks associated with the SmartSource.
    * @readonly
    * @returns {Array<SmartBlock>} An array of SmartBlock instances.
+   * @description
+   * Uses block refs (Fastest) to get blocks without iterating over all blocks
    */
   get blocks() {
-    if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key)); // Fastest (no iterating over all blocks)
+    if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key));
     return [];
   }
-
 
   /**
    * Determines if the SmartSource is excluded from processing.
@@ -449,14 +438,14 @@ export class SmartSource extends SmartEntity {
    * @returns {boolean} `true` if the file is a canvas, `false` otherwise.
    */
   get is_canvas() { return this.path.endsWith("canvas"); }
-  
+
   /**
    * Determines if the SmartSource is an Excalidraw file.
    * @readonly
    * @returns {boolean} `true` if the file is Excalidraw, `false` otherwise.
    */
   get is_excalidraw() { return this.path.endsWith("excalidraw.md"); }
-  
+
   /**
    * Determines if the SmartSource is gone (i.e., the file no longer exists).
    * @readonly
@@ -495,6 +484,7 @@ export class SmartSource extends SmartEntity {
       })
       .filter(link_path => link_path);
   }
+
   get path() { return this.data.path; }
   get should_embed() {
     return !this.vec || !this.embed_hash || (this.embed_hash !== this.read_hash);
@@ -523,7 +513,12 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {Array<number>|null} The mean vector or `null` if no vectors are present.
    */
-  get mean_block_vec() { return this._mean_block_vec ? this._mean_block_vec : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0)).map(val => val / this.block_vecs.length); }
+  get mean_block_vec() {
+    return this._mean_block_vec
+      ? this._mean_block_vec
+      : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0))
+        .map(val => val / this.block_vecs.length);
+  }
 
   /**
    * Calculates the median vector of all blocks within the SmartSource.
@@ -557,12 +552,14 @@ export class SmartSource extends SmartEntity {
   async _read() {
     return await this.source_adapter._read();
   }
+
   /**
    * @async
    * @deprecated Use `remove` instead.
    * @returns {Promise<void>} A promise that resolves when the entity is destroyed.
    */
   async destroy() { await this.remove(); }
+
   /**
    * @async
    * @deprecated Use `update` instead.
@@ -572,10 +569,7 @@ export class SmartSource extends SmartEntity {
   async _update(content) {
     await this.source_adapter.update(content);
   }
-  /**
-   * @deprecated in favor of new smart_changes collection
-   */
-  get smart_change_adapter() { return this.env.settings.is_obsidian_vault ? "obsidian_markdown" : "markdown"; }
+
   /**
    * @deprecated Use `source` instead.
    * @readonly
@@ -583,6 +577,6 @@ export class SmartSource extends SmartEntity {
    */
   get t_file() {
     return this.fs.files[this.path];
-  } 
+  }
 
 }

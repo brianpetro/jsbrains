@@ -424,20 +424,6 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Retrieves the SmartChange instance if enabled and active.
-   * @readonly
-   * @returns {SmartChange|undefined} The SmartChange instance or undefined if not enabled.
-   */
-  get smart_change() {
-    if(!this.opts.smart_change) return; // Disabled at config level
-    if(typeof this.settings?.smart_change?.active !== 'undefined' && !this.settings.smart_change.active) return console.warn('smart_change disabled by settings');
-    if(!this._smart_change){
-      this._smart_change = new this.opts.smart_change.class(this.opts.smart_change);
-    }
-    return this._smart_change;
-  }
-
-  /**
    * Runs the load process by invoking superclass methods and rendering settings.
    * @async
    * @returns {Promise<void>}

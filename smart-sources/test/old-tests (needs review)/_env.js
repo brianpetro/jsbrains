@@ -61,8 +61,6 @@ class TestMain {
 export async function load_test_env(t) {
   const main = new TestMain();
   const env = await SmartEnv.create(main, main.smart_env_config);
-  env.smart_sources.settings.smart_change = {};
-  env.smart_sources.settings.smart_change.active = false;
   t.context.env = env;
   t.context.fs = env.smart_sources.fs;
 }

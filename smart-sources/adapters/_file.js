@@ -3,13 +3,13 @@ import { parse_blocks } from "smart-blocks/parsers/markdown.js";
 /**
  * @class FileSourceContentAdapter
  * @extends SourceContentAdapter
- * @classdesc 
- * A base class for source-level content operations using a file system.  
- * This adapter reads, writes, and removes source files on disk. It manages 
+ * @classdesc
+ * A base class for source-level content operations using a file system.
+ * This adapter reads, writes, and removes source files on disk. It manages
  * hashing and last-read timestamps to track changes.
- * 
- * **Intended Usage**:  
- * - Extend this adapter for various file types (Markdown, Text) that rely 
+ *
+ * **Intended Usage**:
+ * - Extend this adapter for various file types (Markdown, Text) that rely
  *   on a standard file system backend.
  * - Override methods as necessary for custom file handling logic.
  */
@@ -18,8 +18,8 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    * @name fs
    * @type {Object}
    * @readonly
-   * @description 
-   * Access the file system interface used by this adapter. Typically derived 
+   * @description
+   * Access the file system interface used by this adapter. Typically derived
    * from `this.item.collection.fs`.
    */
   get fs() {
@@ -30,7 +30,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    * @name file_path
    * @type {string}
    * @readonly
-   * @description 
+   * @description
    * The file path on disk corresponding to the source. Used for read/write operations.
    */
   get file_path() {
@@ -41,8 +41,8 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    * @async
    * @method create
    * @param {string|null} [content=null] Initial content for the new file.
-   * @description 
-   * Create a new file on disk. If content is not provided, attempts to use 
+   * @description
+   * Create a new file on disk. If content is not provided, attempts to use
    * `this.item.data.content` as fallback.
    */
   async create(content=null) {
@@ -54,7 +54,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    * @async
    * @method update
    * @param {string} content The full new content to write to the file.
-   * @description 
+   * @description
    * Overwrite the entire file content on disk.
    */
   async update(content) {
@@ -65,7 +65,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    * @async
    * @method read
    * @returns {Promise<string>} The content of the file.
-   * @description 
+   * @description
    * Read the file content from disk. Updates `last_read` hash and timestamp on the entity’s data.
    * If file is large or special handling is needed, override this method.
    */
@@ -82,13 +82,12 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    * @async
    * @method remove
    * @returns {Promise<void>}
-   * @description 
+   * @description
    * Delete the file from disk. After removal, the source item should also be deleted or updated accordingly.
    */
   async remove() {
     await this.fs.remove(this.file_path);
   }
-
 
   /**
    * TRANSFERRED FROM markdown.js (2024-12-13)
@@ -99,30 +98,30 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
     if (!new_path) {
       throw new Error("Invalid entity reference for move_to operation");
     }
-  
+
     const current_content = await this.read();
     const [target_source_key, ...headings] = new_path.split("#");
     const target_source = this.item.collection.get(target_source_key);
-  
+
     if (headings.length > 0) {
       const new_headings_content = this.construct_headings(headings);
       const new_content = `${new_headings_content}\n${current_content}`;
       await this._update(new_content);
     }
-  
+
     if (target_source) {
       await this.merge(current_content, { mode: 'append_blocks' });
     } else {
       await this.rename_and_import(target_source_key, current_content);
     }
-  
+
     if (this.item.key !== target_source_key) await this.remove();
   }
-  
+
   construct_headings(headings) {
     return headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
   }
-  
+
   async rename_and_import(target_source_key, content) {
     await this.fs.rename(this.file_path, target_source_key);
     const new_source = await this.item.collection.create_or_update({ path: target_source_key, content });
@@ -155,7 +154,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
       const changed_block = this.item.block_collection.get(block.key);
       if(mode === "replace_blocks"){
         await changed_block.update(block.content);
-      }else{
+      } else {
         await changed_block.append(block.content);
       }
     }
@@ -217,25 +216,25 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
       new_with_parent_blocks,
       changed_blocks,
       same_blocks,
-    }
+    };
   }
+
+  /**
+   * Append new content to the source file, placing it at the end of the file.
+   * @async
+   * @param {string} content - The content to append.
+   * @returns {Promise<void>}
+   */
   async append(content) {
-    if (this.smart_change) {
-      content = this.smart_change.wrap("content", {
-        before: "",
-        after: content,
-        adapter: this.item.smart_change_adapter
-      });
-    }
     const current_content = await this.read();
     const new_content = [
       current_content,
       "",
       content,
     ].join("\n").trim();
+
     await this.update(new_content);
   }
-
 }
 
 export default {

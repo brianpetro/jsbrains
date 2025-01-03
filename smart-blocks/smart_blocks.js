@@ -123,13 +123,6 @@ export class SmartBlocks extends SmartEntities {
   }
 
   /**
-   * Retrieves the SmartChange instance from SmartSources.
-   * @readonly
-   * @returns {SmartChange|undefined} The SmartChange instance or `undefined` if not enabled.
-   */
-  get smart_change() { return this.env.smart_sources.smart_change; }
-
-  /**
    * Retrieves the SmartSources collection instance.
    * @readonly
    * @returns {SmartSources} The SmartSources collection.

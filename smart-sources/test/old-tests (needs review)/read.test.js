@@ -1,7 +1,5 @@
 import test from 'ava';
 import { load_test_env } from './_env.js';
-import { SmartChange } from '../../smart-change/smart_change.js';
-import { DefaultAdapter } from '../../smart-change/adapters/default.js';
 import { increase_heading_depth } from '../../smart-sources/utils/increase_heading_depth.js';
 
 test.beforeEach(async t => {
@@ -27,33 +25,6 @@ test('SmartSource read - default behavior', async t => {
   }
 });
 
-test.serial('SmartSource read - with no_changes option', async t => {
-  const env = t.context.env;
-  env.smart_change = new SmartChange(env, {
-    adapters: {
-      default: new DefaultAdapter()
-    }
-  });
-  
-  const content_with_changes = `<<<<<<< HEAD
-# Original Heading
-=======
-# New Heading
->>>>>>>
-Some content`;
-
-  await t.context.fs.write('test_changes.md', content_with_changes);
-  const source = await env.smart_sources.create_or_update({ path: 'test_changes.md' });
-
-  const content_before = await source.read({ no_changes: 'before' });
-  t.is(content_before, '# Original Heading\nSome content', 'Should return content before changes');
-
-  const content_after = await source.read({ no_changes: 'after' });
-  t.is(content_after, '# New Heading\nSome content', 'Should return content after changes');
-
-  const content_with_changes_result = await source.read({ no_changes: false });
-  t.is(content_with_changes_result, content_with_changes, 'Should return content with change syntax');
-});
 
 test.serial('SmartSource read - with add_depth option', async t => {
   const env = t.context.env;
