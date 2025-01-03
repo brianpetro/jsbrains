@@ -1,16 +1,24 @@
-import { SmartBlocks } from "smart-sources";
+import { SmartBlocks } from 'smart-sources';
+import { SmartTemplateOutput } from './template_output.js';
 
 /**
  * @class SmartTemplateOutputs
  * @extends SmartBlocks
- * @classdesc Manages a collection of SmartTemplateOutput items. Each output is associated with a SmartTemplate and stores AI-generated responses.
- *
- * @example
- * const outputs = env.smart_template_outputs;
- * // list all outputs keys
- * console.log(outputs.keys);
+ * @classdesc Manages a collection of SmartTemplateOutput items. 
+ * Each output is associated with a SmartTemplate and stores AI-generated responses.
  */
 export class SmartTemplateOutputs extends SmartBlocks {
-  // Inherits all features from SmartBlocks
-  // Additional methods or overrides specific to template outputs can be added here.
+  /**
+   * Overriding item type
+   */
+  get item_type() {
+    return SmartTemplateOutput;
+  }
+
+  /**
+   * Possibly override init or process_save_queue if needed
+   */
+  async init() {
+    await super.init();
+  }
 }

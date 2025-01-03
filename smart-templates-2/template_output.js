@@ -10,6 +10,15 @@ import { SmartBlock } from "smart-sources";
  * const results = await output.lookup();
  */
 export class SmartTemplateOutput extends SmartBlock {
+  static get defaults() {
+    return {
+      data: {
+        template_key: null,
+        response: null,
+        opts: {}
+      },
+    };
+  }
   /**
    * Performs a lookup operation using the hypotheticals extracted from this output.
    * Typically involves semantic search against the environment's smart sources.
