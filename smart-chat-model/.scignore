@@ -1,5 +1,5 @@
 dist/
-schemas/
+schemas/*.json
 schema.js
 *.test.js
 adapters/
