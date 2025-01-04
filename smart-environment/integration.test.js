@@ -290,4 +290,38 @@ test.serial('SmartEnv unload_main() - only removes main-exclusive opts (integrat
   t.is(env.mains.length, 0, 'All mains are unloaded.');
   t.falsy(env.opts.unique_opt_main_two, 'unique_opt_main_two is removed.');
   t.falsy(env.opts.shared_opt, 'shared_opt is removed now that no main references it.');
+
+});
+
+test.serial('SmartEnv add_main & unload_main - reloading a main works', async (t) => {
+  clear_global_smart_env();
+
+  // 1) Create initial main
+  const main_one = new TheMain();
+  const env = await SmartEnv.create(main_one, main_one.smart_env_config);
+
+  t.is(env.mains.length, 1, 'One main in env after creation.');
+  t.truthy(env.the_collection, 'Env has the_collection from main_one config.');
+
+  // 2) Add second main
+  const main_two = new DiffMain();
+  await SmartEnv.create(main_two, main_two.smart_env_config); // merges existing
+  t.is(env.mains.length, 2, 'Now two mains present.');
+  t.truthy(env.diff_collection, 'diff_collection from main_two config.');
+  t.falsy(env.diff_collection.unloaded, 'diff_collection not unloaded yet.');
+  t.falsy(env.the_collection.unloaded, 'the_collection also not unloaded yet.');
+
+  // 3) Unload the second main
+  env.unload_main('diff_main');
+  t.is(env.mains.length, 1, 'Removes main_two from .mains.');
+  t.is(env['diff_main'], null, 'main_two property is nulled on env.');
+  t.true(env.diff_collection === null, 'diff_collection null');
+  t.falsy(env.the_collection.unloaded, 'the_collection belongs to main_one; stays loaded.');
+
+  // 4) Reload the second main
+  await SmartEnv.create(main_two, main_two.smart_env_config);
+  t.is(env.mains.length, 2, 'Now two mains present.');
+  t.truthy(env.diff_collection, 'diff_collection from main_two config.');
+  t.falsy(env.diff_collection.unloaded, 'diff_collection not unloaded yet.');
+  t.falsy(env.the_collection.unloaded, 'the_collection also not unloaded yet.');
 });
