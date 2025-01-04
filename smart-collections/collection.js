@@ -277,7 +277,7 @@ export class Collection {
     ;
     if(typeof adapter_module === 'function') return adapter_module; // backward compatibility
     if(typeof adapter_module?.collection === 'function') return adapter_module.collection;
-    throw new Error(`No adapter class found for ${this.collection_key} or smart_collections`);
+    throw new Error(`No '${type}' adapter class found for ${this.collection_key} or smart_collections`);
   }
 
   /**

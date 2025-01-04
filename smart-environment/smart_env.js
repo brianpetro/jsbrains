@@ -69,10 +69,9 @@ export class SmartEnv {
     // If the global object has `smart_env` and it's an instance of SmartEnv, reuse that.
     let global_env = null;
     const global_prop = main_env_opts.global_prop || 'smart_env';
-    if (global_obj[global_prop] instanceof SmartEnv) {
+    if (global_obj[global_prop]?.scope_name === 'smart_env') {
       global_env = global_obj[global_prop];
     }
-
     let main_key;
     if (!global_env) {
       // No existing environment, create a new one
