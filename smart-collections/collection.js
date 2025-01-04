@@ -465,6 +465,7 @@ export class Collection {
    */
   unload() {
     this.clear();
+    this.unloaded = true;
   }
 
   /**
