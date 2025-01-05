@@ -533,17 +533,32 @@ function camel_case_to_snake_case(str) {
 
 /**
  * @function deep_merge_no_overwrite
- * @description Deeply merges source into target only if target does not have the key.
+ * @description Deeply merges `source` into `target`, but only if `target` does not have that key.
+ *              Prevents infinite recursion by tracking visited objects in a WeakSet.
+ * @param {Object} target - The object to merge into.
+ * @param {Object} source - The object whose properties will be merged onto target.
+ * @param {WeakSet} [visited=new WeakSet()] - A set to track visited objects and avoid cycles.
+ * @returns {Object} Returns the mutated target object.
  */
-export function deep_merge_no_overwrite(target, source) {
+export function deep_merge_no_overwrite(target, source, visited = new WeakSet()) {
+  // Break if either is not a plain object
+  if (!is_plain_object(target) || !is_plain_object(source)) return target;
+
+  // If we've seen either object, skip to prevent infinite recursion
+  if (visited.has(target) || visited.has(source)) return target;
+  visited.add(target);
+  visited.add(source);
+
   for (const key in source) {
     if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
     if (is_plain_object(source[key])) {
       if (!is_plain_object(target[key])) {
         target[key] = {};
       }
-      deep_merge_no_overwrite(target[key], source[key]);
+      // Recursively merge objects
+      deep_merge_no_overwrite(target[key], source[key], visited);
     } else if (!Object.prototype.hasOwnProperty.call(target, key)) {
+      // Copy the key from source if it doesn't exist in target
       target[key] = source[key];
     }
   }
@@ -551,8 +566,11 @@ export function deep_merge_no_overwrite(target, source) {
 }
 
 /**
- * @function deep_remove
- * @description Classic deep merge but always overwriting target's keys with source.
+ * @function deep_merge
+ * @description Classic deep merge but overwriting target's keys with source if present.
+ * @param {Object} target - The object to merge into.
+ * @param {Object} source - The object whose properties will overwrite/merge into target.
+ * @returns {Object} The mutated target object.
  */
 export function deep_merge(target, source) {
   for (const key in source) {
@@ -584,9 +602,9 @@ function is_plain_object(o) {
  * @description Recursively removes from `target` any property that:
  *  - Exists in `removeSource`, and
  *  - Does NOT exist in any of the `keepSources`
- * 
- *  Skips classes, functions, arrays. Uses a visited set to avoid infinite recursion.
- * 
+ *
+ *  Skips classes, functions, arrays. Uses a visited set to avoid cyclical references.
+ *
  * @param {Object} target     - The main environment opts object.
  * @param {Object} removeSource  - The config object from the main being removed.
  * @param {Object[]} keepSources - The config objects of the remaining mains.
