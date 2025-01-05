@@ -21,57 +21,59 @@ class TheCollection extends Collection {}
 class TheCollectionItem extends CollectionItem {}
 
 class TheMain {
+  get smart_env_config() {
+    if(!this._smart_env_config){ // must be cached to allow proper unload_main()
+      this._smart_env_config = {
+        global_ref: global,
+        env_path: './test/vault',
+        collections: {
+          the_collection: {
+            class: TheCollection,
+            data_adapter: ajson_multi_file,
+          },
+        },
+        item_types: {
+          TheCollectionItem,
+        },
+        modules: {
+          smart_fs: {
+            class: SmartFs,
+            adapter: NodeFsSmartFsAdapter,
+          },
+        },
+      }
+    }
+    return this._smart_env_config;
+  }
   constructor(name = 'TheMain') {
     // this.name = name;
-    this.smart_env_config = {
-      // <-- Add this so Ava + Node environment share the same "singleton"
-      global_ref: global,
-
-      env_path: './test/vault',
-      collections: {
-        the_collection: {
-          class: TheCollection,
-          data_adapter: ajson_multi_file,
-        },
-      },
-      item_types: {
-        DiffCollectionItem,
-      },
-      modules: {
-        smart_fs: {
-          class: SmartFs,
-          adapter: NodeFsSmartFsAdapter,
-        },
-      },
-    };
   }
 }
 
 class DiffMain {
+  smart_env_config = {
+    global_ref: global, // ensures reuse of the same global environment
+    env_path: './test/vault',
+    collections: {
+      diff_collection: {
+        class: DiffCollection,
+        data_adapter: ajson_multi_file,
+      },
+    },
+    item_types: {
+      DiffCollectionItem,
+    },
+    modules: {
+      smart_fs: {
+        class: SmartFs,
+        adapter: NodeFsSmartFsAdapter,
+      },
+    },
+  };
   constructor(name = 'DiffMain') {
     // Store config in a real object property
-    this.smart_env_config = {
-      global_ref: global, // ensures reuse of the same global environment
-      env_path: './test/vault',
-      collections: {
-        diff_collection: {
-          class: DiffCollection,
-          data_adapter: ajson_multi_file,
-        },
-      },
-      item_types: {
-        TheCollectionItem,
-      },
-      modules: {
-        smart_fs: {
-          class: SmartFs,
-          adapter: NodeFsSmartFsAdapter,
-        },
-      },
-    };
   }
 }
-
 
 /**
  * Utility: clears any existing global SmartEnv references for a fresh environment.
@@ -290,7 +292,6 @@ test.serial('SmartEnv unload_main() - only removes main-exclusive opts (integrat
   t.is(env.mains.length, 0, 'All mains are unloaded.');
   t.falsy(env.opts.unique_opt_main_two, 'unique_opt_main_two is removed.');
   t.falsy(env.opts.shared_opt, 'shared_opt is removed now that no main references it.');
-
 });
 
 test.serial('SmartEnv add_main & unload_main - reloading a main works', async (t) => {
@@ -325,3 +326,76 @@ test.serial('SmartEnv add_main & unload_main - reloading a main works', async (t
   t.falsy(env.diff_collection.unloaded, 'diff_collection not unloaded yet.');
   t.falsy(env.the_collection.unloaded, 'the_collection also not unloaded yet.');
 });
+
+/**
+ * NEW TEST: Verifies that item_types specific to a single main are removed from opts when that main is unloaded.
+ */
+test.serial('SmartEnv unload_main() - item_types specific to a single main are removed from opts (integration)', async (t) => {
+  clear_global_smart_env();
+
+  // 1) Create mainOne with unique and shared item_types
+  const main_one = new TheMain();
+  class UniqueMainOneItemType extends CollectionItem {};
+  class SharedItemType extends CollectionItem {};
+  main_one.smart_env_config.item_types = {
+    ...main_one.smart_env_config.item_types,
+    UniqueMainOneItemType,
+    SharedItemType,
+  };
+
+  const env = await SmartEnv.create(main_one, main_one.smart_env_config);
+  t.is(env.mains.length, 1, 'Env has 1 main after mainOne creation.');
+  t.truthy(env.opts.item_types.UniqueMainOneItemType, 'UniqueMainOneItemType in env opts.');
+  t.truthy(env.opts.item_types.SharedItemType, 'SharedItemType in env opts.');
+
+  // 2) Add mainTwo that references its own unique item_type plus the shared one
+  const main_two = new DiffMain();
+  class UniqueMainTwoItemType extends CollectionItem {};
+  main_two.smart_env_config.item_types = {
+    ...main_two.smart_env_config.item_types,
+    UniqueMainTwoItemType,
+    SharedItemType,
+  };
+
+  await SmartEnv.create(main_two, main_two.smart_env_config);
+  t.is(env.mains.length, 2, 'Env has 2 mains after adding mainTwo.');
+  t.truthy(env.opts.item_types.UniqueMainTwoItemType, 'UniqueMainTwoItemType in env opts.');
+  t.truthy(env.opts.item_types.UniqueMainOneItemType, 'UniqueMainOneItemType still present.');
+  t.truthy(env.opts.item_types.SharedItemType, 'SharedItemType is present for both mains.');
+
+  // 3) Unload mainOne => remove item_types unique to mainOne
+  env.unload_main('the_main');
+  t.is(env.mains.length, 1, 'Only mainTwo remains after unloading mainOne.');
+  t.falsy(env.opts.item_types.UniqueMainOneItemType, 'UniqueMainOneItemType removed with mainOne.');
+  t.truthy(env.opts.item_types.UniqueMainTwoItemType, 'UniqueMainTwoItemType remains for mainTwo.');
+  t.truthy(env.opts.item_types.SharedItemType, 'SharedItemType remains (still used by mainTwo).');
+
+});
+
+
+test.serial("opts.collections should be removed from env.opts when a main is unloaded", async (t) => {
+  clear_global_smart_env();
+
+  const main_one = new TheMain();
+  const env = await SmartEnv.create(main_one, main_one.smart_env_config);
+  t.truthy(env.opts.collections.the_collection, 'the_collection exists in env.opts.');
+
+  const main_two = new DiffMain();
+  await SmartEnv.create(main_two, main_two.smart_env_config);
+  t.truthy(env.opts.collections.diff_collection, 'diff_collection exists in env.opts.');
+
+  env.unload_main('the_main');
+  t.falsy(env.opts.collections.the_collection, 'the_collection is removed from env.opts.');
+})
+
+test.serial("ensure smart_env_config in main is not overwritten by by opts from additional mains", async (t) => {
+  clear_global_smart_env();
+  const the_main = new TheMain();
+  const env = await SmartEnv.create(the_main, the_main.smart_env_config);
+  const diff_main = new DiffMain();
+  await SmartEnv.create(diff_main, diff_main.smart_env_config);
+  t.truthy(env.opts.collections.the_collection, 'the_collection exists in env.opts.');
+  t.truthy(env.opts.collections.diff_collection, 'diff_collection exists in env.opts.');
+  t.is(diff_main.smart_env_config.collections.the_collection, undefined, 'the_collection is not in main.smart_env_config.');
+  t.is(the_main.smart_env_config.collections.diff_collection, undefined, 'diff_collection is not in main.smart_env_config.');
+})

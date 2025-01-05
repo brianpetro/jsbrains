@@ -37,7 +37,7 @@ import { normalize_opts } from './utils/normalize_opts.js';
 export class SmartEnv {
   scope_name = 'smart_env';
   constructor(opts = {}) {
-    this.opts = opts;
+    this.set_opts(opts);
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
@@ -46,6 +46,15 @@ export class SmartEnv {
     this.is_init = true;
     this.mains = [];
     this._components = {};
+  }
+  set_opts(opts) {
+    this.opts = {};
+    // spread opts to avoid mutating the original object
+    this.opts.collections = { ...opts.collections };
+    this.opts.modules = { ...opts.modules };
+    this.opts.item_types = { ...opts.item_types };
+    this.opts.components = { ...opts.components };
+    this.opts.default_settings = { ...opts.default_settings };
   }
 
   /**
