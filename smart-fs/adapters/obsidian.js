@@ -7,6 +7,7 @@
  * @class
  * @classdesc Adapter for Obsidian vault file system operations compatible with SmartFs
  */
+import * as obsidian from 'obsidian';
 export class SmartFsObsidianAdapter {
   /**
    * Create an SmartFsObsidianAdapter instance
@@ -15,7 +16,7 @@ export class SmartFsObsidianAdapter {
    */
   constructor(smart_fs) {
     this.smart_fs = smart_fs;
-    this.obsidian = smart_fs.env.main.obsidian;
+    this.obsidian = smart_fs.env.main.obsidian || obsidian;
     this.obsidian_app = smart_fs.env.main.app;
     // scoped to env_path by default
     this.obsidian_adapter = smart_fs.env.main.app.vault.adapter;

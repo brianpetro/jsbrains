@@ -3,7 +3,8 @@ package.json
 components/
 README.md
 schema.js
-test/old-tests (needs review)/
+test/old-tests (needs review)
+test/**.md
 markdown.test.js
 sqlite.**
 *.sqlite
