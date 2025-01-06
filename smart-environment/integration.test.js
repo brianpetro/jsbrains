@@ -11,6 +11,7 @@ import { Collection } from '../smart-collections/collection.js';
 import { CollectionItem } from '../smart-collections/item.js';
 import ajson_multi_file from '../smart-collections/adapters/ajson_multi_file.js';
 
+import path from 'path';
 /**
  * Simple mock classes for verifying environment merges.
  */
@@ -25,7 +26,7 @@ class TheMain {
     if(!this._smart_env_config){ // must be cached to allow proper unload_main()
       this._smart_env_config = {
         global_ref: global,
-        env_path: './test/vault',
+        env_path: path.resolve('./test/vault'),
         collections: {
           the_collection: {
             class: TheCollection,
@@ -53,7 +54,7 @@ class TheMain {
 class DiffMain {
   smart_env_config = {
     global_ref: global, // ensures reuse of the same global environment
-    env_path: './test/vault',
+    env_path: path.resolve('./test/vault'),
     collections: {
       diff_collection: {
         class: DiffCollection,
@@ -110,7 +111,7 @@ test.serial('SmartEnv.create() - creates a new instance if none is in the global
   const env = await SmartEnv.create(the_main, the_main.smart_env_config);
 
   t.truthy(env, 'Should create a new SmartEnv instance if none is in the global ref.');
-  t.is(env.opts.env_path, './test/vault', 'env_path should match the config.');
+  t.is(env.opts.env_path, path.resolve('./test/vault'), 'env_path should match the config.');
   t.is(the_main.env, env, 'FakeMain instance "env" property should reference the newly created SmartEnv instance.');
   t.is(env.global_ref, global, 'Global ref should be set to Node global.');
   t.is(env.mains.length, 1, 'Should have exactly one main in the environment.');
@@ -157,7 +158,7 @@ test.serial('SmartEnv init_main() - adds a new main and merges its config', asyn
   t.is(main_key, 'the_main', 'init_main should return the snake_case key.');
   t.deepEqual(env.mains, ['the_main'], 'mains array should contain the new main key.');
   t.truthy(env.the_main, 'env should store a reference to the main object by key.');
-  t.is(env.opts.env_path, './test/vault', 'env_path merges from main’s config.');
+  t.is(env.opts.env_path, path.resolve('./test/vault'), 'env_path merges from main’s config.');
   t.truthy(env.the_collection, 'the_collection should be merged onto the environment.');
 });
 
@@ -198,7 +199,7 @@ test.serial('SmartEnv.create() - creates a new instance if none is in the global
   const env = await SmartEnv.create(main, main.smart_env_config);
 
   t.truthy(env, 'Should create a new SmartEnv instance if none is in global ref.');
-  t.is(env.opts.env_path, './test/vault', 'env_path matches the config.');
+  t.is(env.opts.env_path, path.resolve('./test/vault'), 'env_path matches the config.');
   t.is(main.env, env, 'FakeMain env property references the SmartEnv.');
   t.is(env.global_ref, global, 'Global ref should be Node global.');
   t.is(env.mains.length, 1, 'Exactly one main in the environment.');
