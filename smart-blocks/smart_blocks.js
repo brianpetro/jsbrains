@@ -1,7 +1,7 @@
 import { SmartEntities } from "smart-entities";
 import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
 import { get_line_range } from "smart-sources/utils/get_line_range.js";
-import { parse_blocks } from "smart-blocks/parsers/markdown.js";
+import { parse_blocks } from "./parsers/markdown.js";
 
 /**
  * @class SmartBlocks

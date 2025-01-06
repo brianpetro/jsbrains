@@ -26,6 +26,7 @@ import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 import { deep_remove_exclusive_props } from './utils/deep_remove_exclusive_props.js';
 import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
+import { deep_clone_config } from './utils/deep_clone_config.js';
 
 /**
  * @class SmartEnv
@@ -37,7 +38,9 @@ import { normalize_opts } from './utils/normalize_opts.js';
 export class SmartEnv {
   scope_name = 'smart_env';
   constructor(opts = {}) {
-    this.set_opts(opts);
+    this.opts = deep_clone_config(opts);
+    // must use original ref for global_ref
+    this.opts.global_ref = opts.global_ref;
     this.loading_collections = false;
     this.collections_loaded = false;
     this.smart_embed_active_models = {};
@@ -46,15 +49,6 @@ export class SmartEnv {
     this.is_init = true;
     this.mains = [];
     this._components = {};
-  }
-  set_opts(opts) {
-    this.opts = {};
-    // spread opts to avoid mutating the original object
-    this.opts.collections = { ...opts.collections };
-    this.opts.modules = { ...opts.modules };
-    this.opts.item_types = { ...opts.item_types };
-    this.opts.components = { ...opts.components };
-    this.opts.default_settings = { ...opts.default_settings };
   }
 
   /**
@@ -80,7 +74,7 @@ export class SmartEnv {
 
     // If the global object has `smart_env` and it's an instance of SmartEnv, reuse that.
     let global_env = null;
-    const global_prop = main_env_opts.global_prop || 'smart_env';
+    const global_prop = main_env_opts.global_prop ?? 'smart_env';
     if (global_obj[global_prop]?.scope_name === 'smart_env') {
       global_env = global_obj[global_prop];
     }
