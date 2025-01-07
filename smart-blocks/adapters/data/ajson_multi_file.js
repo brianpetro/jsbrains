@@ -17,8 +17,11 @@ export class AjsonMultiFileBlocksDataAdapter extends AjsonMultiFileCollectionDat
    * Replaces spaces, slashes, and dots with underscores.
    * @returns {string} safe file name
    */
+  // get_data_file_name(key) {
+  //   return super.get_data_file_name(key.split('#')[0]);
+  // }
   get_data_file_name(key) {
-    return super.get_data_file_name(key.split('#')[0]);
+    return key.split('#')[0].replace(/[\s\/\.]/g, '_').replace(".md", "");
   }
   /**
    * Process any queued save operations.
