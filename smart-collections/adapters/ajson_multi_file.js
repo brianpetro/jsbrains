@@ -143,7 +143,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    * @returns {string} safe file name
    */
   get_data_file_name(key) {
-    return key.replace(/[\s\/\.]/g, '_').replace(".md", "");
+    return key.split('#')[0].replace(/[\s\/\.]/g, '_').replace(".md", "");
   }
 
   /**
