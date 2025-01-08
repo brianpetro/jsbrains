@@ -24,7 +24,7 @@
  * }
  * ```
  */
-export function parse_blocks(markdown) {
+export function parse_blocks(markdown, start_index = 1) {
   const lines = markdown.split('\n');
 
   // The final result object mapping block-keys to line ranges: [start_line, end_line].
@@ -65,7 +65,7 @@ export function parse_blocks(markdown) {
   sub_block_counts[root_heading_key] = 0;
 
   for (let i = 0; i < lines.length; i++) {
-    const line_number = i + 1;
+    const line_number = i + start_index;
     const line = lines[i];
     const trimmed_line = line.trim();
 
@@ -333,27 +333,27 @@ export function parse_blocks(markdown) {
   while (heading_stack.length > 0) {
     const finished_heading = heading_stack.pop();
     if (heading_lines[finished_heading.key][1] === null) {
-      heading_lines[finished_heading.key][1] = total_lines;
+      heading_lines[finished_heading.key][1] = total_lines + start_index - 1;
     }
   }
 
   if (current_list_item) {
     if (heading_lines[current_list_item.key][1] === null) {
-      heading_lines[current_list_item.key][1] = total_lines;
+      heading_lines[current_list_item.key][1] = total_lines + start_index - 1;
     }
     current_list_item = null;
   }
 
   if (current_content_block) {
     if (heading_lines[current_content_block.key][1] === null) {
-      heading_lines[current_content_block.key][1] = total_lines;
+      heading_lines[current_content_block.key][1] = total_lines + start_index - 1;
     }
     current_content_block = null;
   }
 
   // If the root heading was opened but never closed, close it at the final line.
   if (heading_lines[root_heading_key] && heading_lines[root_heading_key][1] === null) {
-    heading_lines[root_heading_key][1] = total_lines;
+    heading_lines[root_heading_key][1] = total_lines + start_index - 1;
   }
 
   // Build the final result object from heading_lines.
