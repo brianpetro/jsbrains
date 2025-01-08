@@ -96,7 +96,9 @@ export function parse_blocks(markdown) {
       // Include the code block line as part of the content for whichever block is open.
       if (!current_content_block) {
         // Start a new content block (or sub-block) if not already within one.
-        const parent_key = heading_stack.length > 0 ? heading_stack[heading_stack.length - 1].key : root_heading_key;
+        const parent_key = heading_stack.length > 0
+          ? heading_stack[heading_stack.length - 1].key
+          : root_heading_key;
 
         if (parent_key === root_heading_key && !heading_lines[root_heading_key]) {
           // If no heading yet, root acts as heading for this code block.
@@ -107,7 +109,10 @@ export function parse_blocks(markdown) {
           // Directly under root heading
           current_content_block = { key: root_heading_key, start_line: line_number };
           // Possibly update the end line for the root heading key.
-          if (heading_lines[root_heading_key][1] === null || heading_lines[root_heading_key][1] < line_number) {
+          if (
+            heading_lines[root_heading_key][1] === null ||
+            heading_lines[root_heading_key][1] < line_number
+          ) {
             heading_lines[root_heading_key][1] = null; // Will set proper end later
           }
         } else {
@@ -226,8 +231,16 @@ export function parse_blocks(markdown) {
           current_list_item = null;
         }
 
-        // Close any open content block.
-        if (current_content_block) {
+        // IMPORTANT FIX:
+        // Do NOT close the root heading content block here. This ensures
+        // content prior to a heading remains open for multiple lines until
+        // we explicitly close it with a heading or at end-of-document.
+
+        // If the current content block is NOT the root heading, then close it.
+        if (
+          current_content_block &&
+          current_content_block.key !== root_heading_key
+        ) {
           if (heading_lines[current_content_block.key][1] === null) {
             heading_lines[current_content_block.key][1] = line_number - 1;
           }
@@ -235,7 +248,9 @@ export function parse_blocks(markdown) {
         }
 
         // Determine the parent heading key.
-        let parent_key = heading_stack.length > 0 ? heading_stack[heading_stack.length - 1].key : root_heading_key;
+        let parent_key = heading_stack.length > 0
+          ? heading_stack[heading_stack.length - 1].key
+          : root_heading_key;
 
         // If the parent is root, ensure the root heading range is initialized.
         if (parent_key === root_heading_key && !heading_lines[root_heading_key]) {
@@ -281,14 +296,19 @@ export function parse_blocks(markdown) {
       }
 
       // Determine the parent heading key (or use root if none).
-      let parent_key = heading_stack.length > 0 ? heading_stack[heading_stack.length - 1].key : root_heading_key;
+      let parent_key = heading_stack.length > 0
+        ? heading_stack[heading_stack.length - 1].key
+        : root_heading_key;
 
       // If content is under the root, make sure the root heading range is set.
       if (parent_key === root_heading_key) {
         if (!heading_lines[root_heading_key]) {
           heading_lines[root_heading_key] = [line_number, null];
         }
-        if (heading_lines[root_heading_key][1] === null || heading_lines[root_heading_key][1] < line_number) {
+        if (
+          heading_lines[root_heading_key][1] === null ||
+          heading_lines[root_heading_key][1] < line_number
+        ) {
           heading_lines[root_heading_key][1] = null; // Defer finalizing the end line
         }
         current_content_block = { key: root_heading_key, start_line: line_number };
@@ -306,7 +326,6 @@ export function parse_blocks(markdown) {
     }
 
     // Continue reading lines until something else (heading, list item, code block) closes this content block.
-    continue;
   }
 
   // After processing all lines, close any open headings, list items, or content blocks with the last line as their end.
