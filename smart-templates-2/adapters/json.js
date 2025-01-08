@@ -13,21 +13,32 @@ export class FileJsonTemplateSourceAdapter extends TemplateSourceAdapter {
 
   /**
    * @async
-   * @returns {Promise<Object>} Parsed JSON data from the file
-   * @description Reads and parses JSON data from the template file
+   * @method import
+   * @description Reads and parses JSON data, merges result into `this.item.data`.
+   * @returns {Promise<Object>} The parsed JSON object.
    */
-  async read() {
-    const data = await super.read();
-    return JSON.parse(data);
+  async import() {
+    const dataRaw = await this.read();
+    const parsed = JSON.parse(dataRaw);
+
+    // Merge into item.data (up to you how you store it)
+    Object.assign(this.item.data, parsed);
+
+    return parsed;
   }
 
   /**
+   * Write data object as JSON to the file
    * @async
    * @param {Object} data - The data to stringify and write
-   * @returns {Promise<void>} Promise that resolves when write is complete
-   * @description Stringifies and writes JSON data to the template file
+   * @returns {Promise<void>}
    */
   async write(data) {
-    return await super.write(JSON.stringify(data, null, 2));
+    const jsonStr = JSON.stringify(data, null, 2);
+    return super.write(jsonStr);
   }
 }
+
+export default {
+  item: FileJsonTemplateSourceAdapter
+};

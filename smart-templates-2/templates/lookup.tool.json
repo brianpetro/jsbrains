@@ -1,0 +1,41 @@
+{
+  "opts": {
+    "multiple_output": {
+      "hypotheticals": [
+        "1", 
+        "2", 
+        "3"
+      ]
+    }
+  },
+  "name": "lookup",
+  "tool": {
+    "type": "function",
+    "function": {
+      "name": "lookup",
+      "description": "Performs a semantic search of the user's data. Use this function to respond to queries like 'Based on my notes...' or any other request that requires surfacing relevant content.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "hypotheticals": {
+            "type": "object",
+            "description": "Short hypothetical notes predicted to be semantically similar to the notes necessary to fulfill the user's request. Provide at least three hypotheticals per request. The hypothetical notes may contain paragraphs, lists, or checklists in markdown format. Each hypothetical note should begin with breadcrumbs indicating the anticipated folder(s), file name, and relevant headings separated by ' > ' (no slashes). Example: PARENT FOLDER NAME > CHILD FOLDER NAME > FILE NAME > HEADING 1 > HEADING 2 > HEADING 3: HYPOTHETICAL NOTE CONTENTS.",
+            "properties": {
+              "1": {
+                "type": "string"
+              },
+              "2": {
+                "type": "string"
+              },
+              "3": {
+                "type": "string"
+              }
+            },
+            "required": ["1", "2", "3"]
+          }
+        },
+        "required": ["hypotheticals"]
+      }
+    }
+  }
+}
