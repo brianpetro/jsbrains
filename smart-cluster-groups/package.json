@@ -1,18 +1,18 @@
 {
-  "name": "smart-clusters",
+  "name": "smart-cluster-groups",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "version": "2.0.0",
   "type": "module",
-  "description": "Easy to manage clusters.",
+  "description": "Easy to manage cluster groups.",
   "main": "index.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
-    "clusters",
-    "collections",
-    "sources"
+    "cluster groups",
+    "groups",
+    "collections"
   ],
   "repository": {
     "type": "git",
@@ -24,11 +24,12 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "ava": "^6.0.1",
-    "smart-environment": "file:../smart-environment",
-    "smart-fs": "file:../smart-fs"
+    "smart-environment": "file:../../../jsbrains/smart-environment",
+    "smart-fs": "file:../../../jsbrains/smart-fs"
   },
   "dependencies": {
-    "smart-entities": "file:../smart-entities"
+    "smart-clusters": "file:../smart-clusters",
+    "smart-groups": "file:../smart-groups"
   },
   "ava": {
     "files": [

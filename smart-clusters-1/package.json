@@ -2,17 +2,16 @@
   "name": "smart-clusters",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "0.0.1",
   "type": "module",
-  "description": "Easy to manage clusters.",
+  "description": "Smart Clusters",
   "main": "index.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
-    "clusters",
-    "collections",
-    "sources"
+    "embeddings",
+    "clusters"
   ],
   "repository": {
     "type": "git",
@@ -22,13 +21,17 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "homepage": "https://jsbrains.org",
-  "devDependencies": {
-    "ava": "^6.0.1",
-    "smart-environment": "file:../smart-environment",
-    "smart-fs": "file:../smart-fs"
-  },
   "dependencies": {
-    "smart-entities": "file:../smart-entities"
+    "smart-groups": "file:../smart-groups"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "^3.2.1",
+    "ava": "^6.0.1",
+    "smart-blocks": "file:../smart-blocks",
+    "smart-embed-model": "file:../smart-embed-model",
+    "smart-environment": "file:../smart-environment",
+    "smart-fs": "file:../smart-fs",
+    "smart-sources": "file:../smart-sources"
   },
   "ava": {
     "files": [
