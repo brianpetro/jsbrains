@@ -22,6 +22,30 @@ export class ClusterGroups extends SmartGroups {
     super(env, opts);
   }
 
+  async create_group(center_keys) {
+    const timestamp = Date.now();
+    const clusters = [];
+    for(let i = 0; i < center_keys.length; i++) {
+      const center_key = center_keys[i];
+      const cluster = await this.env.clusters.create_or_update({
+        key: timestamp + '-' + i,
+        centers: {
+          [center_key]: {
+            weight: 1,
+          }
+        },
+      });
+      clusters.push(cluster);
+    }
+    await this.create_or_update({
+      key: timestamp,
+      clusters: clusters.reduce((acc, cluster) => {
+        acc[cluster.key] = { filters: {} };
+        return acc;
+      }, {}),
+    });
+  }
+
   /**
    * Overridden item constructor for cluster groups.
    */
