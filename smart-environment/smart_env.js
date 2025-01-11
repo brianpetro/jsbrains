@@ -195,6 +195,7 @@ export class SmartEnv {
   }
 
   unload_main(main_key) {
+    this._components = {}; // clear component cache
     this.unload_collections(main_key);
     this.unload_opts(main_key);
     this[main_key] = null;
