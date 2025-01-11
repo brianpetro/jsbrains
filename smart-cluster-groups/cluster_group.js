@@ -3,6 +3,7 @@
  ****************************************/
 import { SmartGroup } from 'smart-groups';
 import { Cluster } from 'smart-clusters';
+import { cos_sim } from '../smart-entities/utils/cos_sim.js';
 
 /**
  * @class ClusterGroup
@@ -10,10 +11,7 @@ import { Cluster } from 'smart-clusters';
  */
 export class ClusterGroup extends SmartGroup {
   init() {
-    super.init();
-    if (!this.data.key) {
-      this.data.key = Date.now(); // timestamp at creation
-    }
+    // muted
   }
 
   /**
@@ -42,35 +40,38 @@ export class ClusterGroup extends SmartGroup {
     });
   }
 
+  get clusters(){
+    return this.env.clusters.get_many(Object.keys(this.data.clusters));
+  }
+
   /**
    * get_snapshot example for user display
    */
-  get_snapshot(items) {
-    const snapshot = {
-      clusters: [],
-      members: [],
-      view: { ...this.data.filters }
-    };
-    if (!this.data.clusters) return snapshot;
-
-    // populate cluster list
-    snapshot.clusters = Object.keys(this.data.clusters).map(k => {
-      return { key: k, ...this.data.clusters[k] };
-    });
-
-    // optional membership details
-    (items || []).forEach(item => {
-      const row = { item };
-      snapshot.clusters.forEach(({ key: ckey }) => {
-        row[ckey] = {
-          score: 0,
-          state: (item.data.clusters && item.data.clusters[ckey]) || 0
+  async get_snapshot(items) {
+    if (!this.data.clusters) return { clusters: [], members: [], filters: { ...this.data.filters } };
+    items = items.filter(i => i.vec); // ensure items have vectors
+    const members = [];
+    for(let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const membership = {
+        item,
+        clusters: {}
+      };
+      for(let j = 0; j < this.clusters.length; j++) {
+        const cluster = this.clusters[j];
+        const sim = cos_sim(cluster.vec, item.vec);
+        membership.clusters[cluster.key] = {
+          score: sim,
         };
-      });
-      snapshot.members.push(row);
-    });
+      }
+      members.push(membership);
+    }
 
-    return snapshot;
+    return {
+      clusters: this.clusters,
+      members,
+      filters: { ...this.data.filters }
+    };
   }
 
 }

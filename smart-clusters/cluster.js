@@ -19,19 +19,20 @@ export class Cluster extends SmartEntity {
         key: null,
         center: {}, // e.g. { itemKey: { weight: number } }
         center_vec: null, // optional
-        members: {}       // e.g. { itemKey: { state: -1|0|1 } }
+        members: {},       // e.g. { itemKey: { state: -1|0|1 } }
+        filters: {}
       }
     };
   }
 
   init() {
-    super.init();
-    // If no key yet and we have a group, produce a stable key from group.key + murmur(JSON(center)).
-    if (!this.data.key && this.group) {
-      const group_key = this.group.key || 'unknown_group';
-      const center_str = JSON.stringify(this.data.center || {});
-      this.data.key = group_key + '#' + murmur(center_str);
-    }
+    // super.init();
+    // // If no key yet and we have a group, produce a stable key from group.key + murmur(JSON(center)).
+    // if (!this.data.key && this.group) {
+    //   const group_key = this.group.key || 'unknown_group';
+    //   const center_str = JSON.stringify(this.data.center || {});
+    //   this.data.key = group_key + '#' + murmur(center_str);
+    // }
   }
 
   /**
@@ -100,11 +101,19 @@ export class Cluster extends SmartEntity {
     return new_group;
   }
 
+  get centers(){
+    return this.env.smart_sources.get_many(Object.keys(this.data.center));
+  }
   get vec() {
-    return this.data.center_vec || [];
+    // TODO: add handling for multiple centers
+    return this.centers[0].vec;
   }
   set vec(value) {
     this.data.center_vec = value;
+  }
+
+  get filters(){
+    return this.data.filters;
   }
 
 }

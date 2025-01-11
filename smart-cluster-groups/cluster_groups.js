@@ -23,13 +23,14 @@ export class ClusterGroups extends SmartGroups {
   }
 
   async create_group(center_keys) {
+    console.log('create_group', center_keys);
     const timestamp = Date.now().toString();
     const clusters = [];
     for(let i = 0; i < center_keys.length; i++) {
       const center_key = center_keys[i];
       const cluster = await this.env.clusters.create_or_update({
         key: timestamp + '-' + i,
-        centers: {
+        center: {
           [center_key]: {
             weight: 1,
           }
