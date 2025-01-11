@@ -49,6 +49,7 @@ export class ClusterGroup extends SmartGroup {
    */
   async get_snapshot(items) {
     if (!this.data.clusters) return { clusters: [], members: [], filters: { ...this.data.filters } };
+    if(!items) items = Object.values(this.env.smart_sources.items);
     items = items.filter(i => i.vec); // ensure items have vectors
     const members = [];
     for(let i = 0; i < items.length; i++) {
