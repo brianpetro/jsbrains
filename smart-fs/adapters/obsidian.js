@@ -216,7 +216,7 @@ export class SmartFsObsidianAdapter {
    */
   async remove_dir(rel_path, recursive=false) {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
-    return await this.obsidian_adapter.rmdir(rel_path, { recursive });
+    return await this.obsidian_adapter.rmdir(rel_path, recursive);
   }
 
   /**
