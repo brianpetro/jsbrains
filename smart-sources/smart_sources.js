@@ -91,9 +91,9 @@ export class SmartSources extends SmartEntities {
     for(let i = 0; i < remove_sources.length; i++){
       const source = remove_sources[i];
       console.log(source.reason);
-      // const source_data_path = this.data_adapter.get_item_data_path(source.key);
-      // await this.data_fs.remove(source_data_path);
+      // Possibly remove from disk or environment
       // source.delete();
+      // Or we might do advanced pruning logic
     }
     
     this.notices?.remove('pruning sources');
@@ -103,7 +103,7 @@ export class SmartSources extends SmartEntities {
     // Identify blocks to remove
     const remove_smart_blocks = Object.values(this.block_collection.items)
       .filter(item => {
-        if(!item.vec) return false;
+        if(!item.vec) return false; // skip blocks that have no vec?
         if(item.is_gone) {
           item.reason = "is_gone";
           return true;
@@ -127,8 +127,7 @@ export class SmartSources extends SmartEntities {
     this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
     console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
     
-    await this.process_save_queue(true); // pass true to overwrite saved data
-    
+    await this.process_save_queue(true); // pass true => forcibly save all
     // Queue embedding for items with changed metadata
     const items_w_vec = Object.values(this.items).filter(item => item.vec);
     for (const item of items_w_vec) {
@@ -244,6 +243,7 @@ export class SmartSources extends SmartEntities {
 
   /**
    * Processes the load queue by loading items and optionally importing them.
+   * Called after a "re-load" from settings, or after environment init.
    * @async
    * @returns {Promise<void>}
    */
@@ -264,14 +264,7 @@ export class SmartSources extends SmartEntities {
   /**
    * @method process_source_import_queue
    * @description 
-   * Imports items (SmartSources or SmartBlocks) that have been flagged for import (_queue_import). 
-   * Import typically means reading the raw file content (e.g., .md) to update internal data structures.
-   * After import, items are often queued for embedding or saving.
-   * 
-   * Import vs Load:
-   * "import" usually means reading from the original source file (like .md) to build internal data structures.
-   * "load" often refers to retrieving already serialized data from AJSON or SQLite into memory.
-   * After loading, no file parsing is necessary since data is in a pre-processed form.
+   * Imports items (SmartSources or SmartBlocks) that have been flagged for import.
    */
   async process_source_import_queue(){
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
@@ -357,6 +350,35 @@ export class SmartSources extends SmartEntities {
    */
   get settings_config(){
     const _settings_config = {
+      "load": {
+        "name": "Load",
+        "description": "Load sources.",
+        "type": "button",
+        "callback": "run_load",
+        "conditional": () => !this.loaded && this.collection_key === 'smart_sources',
+      },
+      "re_import": {
+        "name": "Re-Import",
+        "description": "Re-import all sources.",
+        "type": "button",
+        "callback": "run_re_import",
+        "conditional": () => this.loaded && this.collection_key === 'smart_sources',
+      },
+      "prune": {
+        "name": "Prune",
+        "description": "Remove sources and blocks that are no longer needed.",
+        "type": "button",
+        "callback": "run_prune",
+        "conditional": () => this.loaded && this.collection_key === 'smart_sources',
+      },
+      "clear_all": {
+        "name": "Clear All",
+        "description": "Clear all data and reimport sources.",
+        "type": "button_with_confirm",
+        "callback": "run_clear_all",
+        "confirm": "Are you sure you want to clear all data and re-import?",
+        "conditional": () => this.loaded && this.collection_key === 'smart_sources',
+      },
       ...super.settings_config,
       "enable_image_adapter": {
         "name": "Image Adapter",
@@ -439,11 +461,15 @@ export class SmartSources extends SmartEntities {
    * @async
    * @returns {Promise<void>}
    */
-  async run_import(){
+  async run_re_import(){
     const start_time = Date.now();
     // Queue import for items with changed metadata
     Object.values(this.items).forEach(item => {
-      if (item.source_adapter.should_import) item.queue_import();
+      // if (item.source_adapter.should_import) item.queue_import();
+      item.data.last_import.at = 0; // Force re-import
+      item.queue_import();
+      item.queue_embed();
+      item.blocks.forEach(block => block.queue_embed());
     });
     await this.process_source_import_queue();
     const end_time = Date.now();
@@ -471,6 +497,8 @@ export class SmartSources extends SmartEntities {
    */
   async run_clear_all(){
     this.notices?.show('clearing all', "Clearing all data...", { timeout: 0 });
+    // Clear all data
+    await this.data_fs.remove_dir(this.data_dir, true);
     this.clear();
     this.block_collection.clear();
     this._fs = null;
@@ -481,7 +509,7 @@ export class SmartSources extends SmartEntities {
     Object.values(this.items).forEach(item => {
       item.queue_import();
       item.queue_embed();
-      item.loaded_at = Date.now() + 9999999999; // Prevent re-loading during import
+      item.loaded_at = Date.now() + 9999999999; // Prevent immediate reload
     });
     
     this.notices?.remove('clearing all');
@@ -490,9 +518,9 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Retrieves the patterns used to exclude files and folders from processing.
+   * Retrieves patterns for excluding files/folders from processing.
    * @readonly
-   * @returns {Array<string>} An array of exclusion patterns.
+   * @returns {Array<string>}
    */
   get excluded_patterns() {
     return [

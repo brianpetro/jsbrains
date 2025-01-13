@@ -27,7 +27,6 @@ export class SmartBlocks extends SmartEntities {
   async import_source(source, content) {
     let blocks_obj = parse_blocks(content);
     
-    const blocks = [];
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
       // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
       const block_key = source.key + sub_key;
@@ -186,7 +185,7 @@ export class SmartBlocks extends SmartEntities {
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */
-  async run_import() { throw "Not implemented: run_import"; }
+  async run_re_import() { throw "Not implemented: run_re_import"; }
 
   /**
    * @async
