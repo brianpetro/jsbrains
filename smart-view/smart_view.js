@@ -1,16 +1,28 @@
+/**
+ * @file smart_view.js
+ * @description
+ * Provides a high-level interface (SmartView) for rendering settings components and other UI in a modular, adapter-based pattern.
+ * This version includes an inline confirm method for "clear all" (or any destructive) actions.
+ */
+
 export class SmartView {
-  constructor(opts={}) {
+  /**
+   * @constructor
+   * @param {object} opts - Additional options or overrides for rendering.
+   */
+  constructor(opts = {}) {
     this.opts = opts;
     this._adapter = null;
   }
 
   /**
    * Renders all setting components within a container.
+   * @async
    * @param {HTMLElement} container - The container element.
    * @param {Object} opts - Additional options for rendering.
    * @returns {Promise<void>}
    */
-  async render_setting_components(container, opts={}) {
+  async render_setting_components(container, opts = {}) {
     const components = container.querySelectorAll(".setting-component");
     for (const component of components) {
       await this.render_setting_component(component, opts);
@@ -28,37 +40,51 @@ export class SmartView {
   }
 
   /**
-   * Gets the adapter instance.
+   * Gets the adapter instance used for rendering (e.g., Obsidian or Node, etc.).
    * @returns {Object} The adapter instance.
    */
   get adapter() {
-    if(!this._adapter) {
-      this._adapter = new this.opts.adapter(this);
+    if (!this._adapter) {
+      // By default, we rely on whatever adapter was set in `this.opts.adapter`
+      // If none, throw or fallback to a minimal adapter
+      if (!this.opts.adapter) {
+        throw new Error("No adapter provided to SmartView. Provide a 'smart_view.adapter' in env config.");
+      }
+      const AdapterClass = this.opts.adapter;
+      this._adapter = new AdapterClass(this);
     }
     return this._adapter;
   }
 
   /**
-   * Gets an icon (implemented in adapter).
-   * @param {string} icon_name - The name of the icon.
-   * @returns {string} The icon HTML.
+   * Gets an icon (implemented in the adapter).
+   * @param {string} icon_name - Name of the icon to get.
+   * @returns {string} The icon HTML string.
    */
-  get_icon_html(icon_name) { return this.adapter.get_icon_html(icon_name); }
+  get_icon_html(icon_name) {
+    return this.adapter.get_icon_html(icon_name);
+  }
 
   /**
    * Renders a single setting component (implemented in adapter).
-   * @param {HTMLElement} setting_elm - The setting element.
+   * @async
+   * @param {HTMLElement} setting_elm - The DOM element for the setting.
    * @param {Object} opts - Additional options for rendering.
    * @returns {Promise<*>}
    */
-  async render_setting_component(setting_elm, opts={}) { return await this.adapter.render_setting_component(setting_elm, opts); }
+  async render_setting_component(setting_elm, opts = {}) {
+    return await this.adapter.render_setting_component(setting_elm, opts);
+  }
 
   /**
    * Renders markdown content (implemented in adapter).
    * @param {string} markdown - The markdown content.
-   * @returns {Promise<*>}
+   * @param {object|null} scope - The scope to pass for rendering.
+   * @returns {Promise<DocumentFragment>}
    */
-  async render_markdown(markdown, scope=null) { return await this.adapter.render_markdown(markdown, scope); }
+  async render_markdown(markdown, scope = null) {
+    return await this.adapter.render_markdown(markdown, scope);
+  }
 
   /**
    * Gets a value from an object by path.
@@ -100,30 +126,33 @@ export class SmartView {
   }
 
   /**
-   * Renders HTML for a setting component based on its configuration.
-   * @param {Object} setting_config - The configuration object for the setting.
-   * @returns {string} The rendered HTML string.
+   * A convenience method to build a setting HTML snippet from a config object.
+   * @param {Object} setting_config
+   * @returns {string}
    */
   render_setting_html(setting_config) {
-    if(setting_config.type === 'html') return setting_config.value;
+    // Implementation detail: produce <div class="setting-component" data-...> from config
+    if (setting_config.type === 'html') {
+      // If the user wants to render raw HTML
+      return setting_config.value;
+    }
     const attributes = Object.entries(setting_config)
       .map(([attr, value]) => {
         if (attr.includes('class')) return ''; // ignore class attribute
-        if (typeof value === 'number') return `data-${attr.replace(/_/g, '-')}=${value}`;
-        return `data-${attr.replace(/_/g, '-')}="${value}"`;
+        if (typeof value === 'number') return `data-${attr.replace(/_/g, '-') }=${value}`;
+        return `data-${attr.replace(/_/g, '-') }="${value}"`;
       })
-      .join('\n')
-    ;
+      .join("\n");
     return `<div class="setting-component${setting_config.scope_class ? ` ${setting_config.scope_class}` : ''}"\ndata-setting="${setting_config.setting}"\n${attributes}\n></div>`;
   }
 
   /**
-   * Validates the setting config and determines if the setting should be rendered.
+   * Validates a setting config. Modify if you have advanced logic (like gating).
    * @param {Object} scope - The scope object.
-   * @param {Object} opts - The options object.
+   * @param {Object} opts - Additional options.
    * @param {string} setting_key - The key of the setting.
-   * @param {Object} setting_config - The config of the setting.
-   * @returns {boolean} True if the setting should be rendered, false otherwise.
+   * @param {Object} setting_config - The config for the setting.
+   * @returns {boolean} True if valid.
    */
   validate_setting(scope, opts, setting_key, setting_config) {
     /**
@@ -150,25 +179,32 @@ export class SmartView {
     overlay_container.style.backgroundColor = "var(--bold-color)";
     setTimeout(() => { overlay_container.style.backgroundColor = ""; }, 500);
   }
-
   /**
-   * Renders settings components based on the provided settings configuration.
-   * @param {Object} scope - The scope object.
-   * @param {Object} settings_config - The settings configuration object.
-   * @returns {Promise<DocumentFragment>} The rendered settings fragment.
+   * Renders settings from a config, returning a fragment.
+   * @async
+   * @param {Object} settings_config
+   * @param {Object} opts
+   * @returns {Promise<DocumentFragment>}
    */
-  async render_settings(settings_config, opts={}) {
+  async render_settings(settings_config, opts = {}) {
     const scope = opts.scope || {};
-    const html = Object.entries(settings_config).map(([setting_key, setting_config]) => {
-      if (!setting_config.setting) setting_config.setting = setting_key;
-      if(this.validate_setting(scope, opts, setting_key, setting_config)) return this.render_setting_html(setting_config);
-      return '';
-    }).join('\n');
+    const html = Object.entries(settings_config)
+      .map(([setting_key, setting_config]) => {
+        if (!setting_config.setting) {
+          setting_config.setting = setting_key;
+        }
+        if (this.validate_setting(scope, opts, setting_key, setting_config)) {
+          return this.render_setting_html(setting_config);
+        }
+        return '';
+      })
+      .join('\n');
     const frag = this.create_doc_fragment(`<div>${html}</div>`);
     return await this.render_setting_components(frag, opts);
   }
-}
 
+
+}
 
 function get_by_path(obj, path) {
   if(!path) return '';

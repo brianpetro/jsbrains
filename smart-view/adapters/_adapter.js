@@ -99,6 +99,7 @@ export class SmartViewAdapter {
       file: this.render_file_select_component,
       slider: this.render_slider_component,
       html: this.render_html_component,
+      button_with_confirm: this.render_button_with_confirm_component,
     };
   }
 
@@ -401,4 +402,44 @@ export class SmartViewAdapter {
     this.post_change(path, value, elm, scope);
   }
 
+  render_button_with_confirm_component(elm, path, value, scope) {
+    const smart_setting = new this.setting_class(elm);
+    smart_setting.addButton(button => {
+      button.setButtonText(elm.dataset.btnText || elm.dataset.name);
+      elm.appendChild(this.main.create_doc_fragment(`
+        <div class="sc-inline-confirm-row" style="
+          display: none;
+        ">
+          <span style="margin-right: 10px;">
+            ${elm.dataset.confirm || "Are you sure?"}
+          </span>
+          <span class="sc-inline-confirm-row-buttons">
+            <button class="sc-inline-confirm-yes">Yes</button>
+            <button class="sc-inline-confirm-cancel">Cancel</button>
+          </span>
+        </div>
+      `));
+      const confirm_row = elm.querySelector('.sc-inline-confirm-row');
+      const confirm_yes = confirm_row.querySelector('.sc-inline-confirm-yes');
+      const confirm_cancel = confirm_row.querySelector('.sc-inline-confirm-cancel');
+
+      button.onClick(async () => {
+        confirm_row.style.display = 'block';
+        elm.querySelector('.setting-item').style.display = 'none';
+      });
+      confirm_yes.addEventListener('click', async () => {
+        if (elm.dataset.href) this.open_url(elm.dataset.href);
+        if (elm.dataset.callback) {
+          const callback = this.main.get_by_path(scope, elm.dataset.callback);
+          if (callback) callback(path, value, elm, scope);
+        }
+        elm.querySelector('.setting-item').style.display = 'block';
+      });
+      confirm_cancel.addEventListener('click', () => {
+        confirm_row.style.display = 'none';
+        elm.querySelector('.setting-item').style.display = 'block';
+      });
+    });
+    return smart_setting;
+  }
 }
