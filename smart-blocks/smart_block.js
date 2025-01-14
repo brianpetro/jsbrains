@@ -249,7 +249,6 @@ export class SmartBlock extends SmartEntity {
     return false;
   }
 
-  get last_embed() { return this.data.last_embed; }
   get last_read() { return this.data.last_read; }
   
   /**

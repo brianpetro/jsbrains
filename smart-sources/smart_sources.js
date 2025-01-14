@@ -431,9 +431,9 @@ export class SmartSources extends SmartEntities {
       try{
         const embed_blocks = this.block_collection.settings.embed_blocks;
         this._embed_queue = Object.values(this.items).reduce((acc, item) => {
-          if(item._queue_embed && item.should_embed) acc.push(item);
+          if(item._queue_embed && item.should_embed && item.is_unembedded) acc.push(item);
           if(embed_blocks) item.blocks.forEach(block => {
-            if(block._queue_embed && block.should_embed) acc.push(block);
+            if(block._queue_embed && block.should_embed && block.is_unembedded) acc.push(block);
           });
           return acc;
         }, []);
@@ -466,7 +466,7 @@ export class SmartSources extends SmartEntities {
     // Queue import for items with changed metadata
     Object.values(this.items).forEach(item => {
       // if (item.source_adapter.should_import) item.queue_import();
-      item.data.last_import.at = 0; // Force re-import
+      if(item.data.last_import?.at) item.data.last_import.at = 0; // Force re-import
       item.queue_import();
       item.queue_embed();
       item.blocks.forEach(block => block.queue_embed());

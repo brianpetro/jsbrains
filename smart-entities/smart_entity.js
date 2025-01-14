@@ -171,10 +171,29 @@ export class SmartEntity extends CollectionItem {
     if(!this.data.last_read) this.data.last_read = {};
     this.data.last_read.hash = hash;
   }
-  get embed_hash() { return this.data.last_embed?.hash; }
+  get embedding_data() {
+    if(!this.data.embeddings[this.embed_model_key]){
+      this.data.embeddings[this.embed_model_key] = {};
+    }
+    return this.data.embeddings[this.embed_model_key];
+  }
+  get last_embed() {
+    if(!this.embedding_data.last_embed){
+      this.embedding_data.last_embed = {};
+
+      // temporary for backwards compatibility
+      if(this.data.last_embed){
+        this.embedding_data.last_embed = this.data.last_embed;
+        delete this.data.last_embed;
+        this.queue_save();
+      }
+    }
+    return this.embedding_data.last_embed;
+  }
+  get embed_hash() { return this.last_embed?.hash; }
   set embed_hash(hash) {
-    if(!this.data.last_embed) this.data.last_embed = {};
-    this.data.last_embed.hash = hash;
+    if(!this.embedding_data.last_embed) this.embedding_data.last_embed = {};
+    this.embedding_data.last_embed.hash = hash;
   }
 
   /**
@@ -237,14 +256,13 @@ export class SmartEntity extends CollectionItem {
    * @readonly
    * @returns {number|undefined} The number of tokens, or undefined if not set.
    */
-  get tokens() { return this.data.last_embed?.tokens; }
+  get tokens() { return this.last_embed?.tokens; }
   /**
    * Sets the number of tokens for the embedding.
    * @param {number} tokens - The number of tokens.
    */
   set tokens(tokens) {
-    if (!this.data.last_embed) this.data.last_embed = {};
-    this.data.last_embed.tokens = tokens;
+    this.last_embed.tokens = tokens;
   }
 
   /**
@@ -293,6 +311,12 @@ export class SmartEntity extends CollectionItem {
    * @returns {Function} The render function for the entity component.
    */
   get component() { return render_entity_component; }
+
+  get is_unembedded() {
+    if(!this.vec) return true;
+    if(!this.embed_hash || this.embed_hash !== this.read_hash) return true;
+    return false;
+  }
 
   // COMPONENTS 2024-11-27
   get connections_component() {
