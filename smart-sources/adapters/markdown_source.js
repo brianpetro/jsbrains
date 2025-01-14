@@ -65,7 +65,13 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     return true;
   }
 
+  /**
+   * @deprecated use outdated instead
+   */
   get should_import() {
+    return this.outdated;
+  }
+  get outdated() {
     try{
       if(!this.data.last_import){
         // temp for backwards compatibility 2024-12-12

@@ -470,6 +470,7 @@ export class SmartSource extends SmartEntity {
     return this.path.split("/").pop().replace(".md", "");
   }
 
+  get outdated() { return this.source_adapter.outdated; }
   /**
    * Retrieves the outlink paths from the SmartSource.
    * @readonly
