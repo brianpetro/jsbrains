@@ -72,7 +72,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
   async read() {
     const content = await this.fs.read(this.file_path);
     this.data.last_read = {
-      hash: await this.create_hash(content),
+      hash: await this.create_hash(content || ""),
       at: Date.now(),
     };
     return content;
