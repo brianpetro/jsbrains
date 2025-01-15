@@ -224,7 +224,7 @@ export class SmartViewAdapter {
   render_toggle_component(elm, path, value, scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addToggle(toggle => {
-      let checkbox_val = value ?? true;
+      let checkbox_val = value ?? false;
       if (typeof checkbox_val === 'string') {
         checkbox_val = checkbox_val.toLowerCase() === 'true';
       }
