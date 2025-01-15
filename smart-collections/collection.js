@@ -145,10 +145,10 @@ export class Collection {
     if (typeof filter_opts === 'function') {
       return Object.values(this.items).filter(filter_opts);
     }
-    this.filter_opts = this.prepare_filter(filter_opts);
+    filter_opts = this.prepare_filter(filter_opts);
 
     const results = [];
-    const { first_n } = this.filter_opts;
+    const { first_n } = filter_opts;
 
     for (const item of Object.values(this.items)) {
       if (first_n && results.length >= first_n) break;

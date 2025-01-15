@@ -230,12 +230,12 @@ export class SmartEntities extends Collection {
         else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
       }
       // exclude inlinks
-      if (exclude_inlinks && this.links?.[entity.path]) {
+      if (exclude_inlinks && entity?.inlinks?.length) {
         if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
-        opts.exclude_key_starts_with_any.push(...Object.keys(this.links?.[entity.path] || {}));
+        opts.exclude_key_starts_with_any.push(...entity.inlinks);
       }
       // exclude outlinks
-      if (exclude_outlinks) {
+      if (exclude_outlinks && entity?.outlinks?.length) {
         if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
         opts.exclude_key_starts_with_any.push(...entity.outlinks);
       }
