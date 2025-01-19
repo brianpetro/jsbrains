@@ -410,14 +410,14 @@ test('should handle nested list items with line break between items', t => {
 
 ##### New Environment
 
-- **Creating a New Environment**:
+1. **Creating a New Environment**:
 
 	- Open the **Smart Connect** app.
 	- If no environments are found, click the **New Environment** button.
 	- Click on the **Folder** field to select your Obsidian vault folder.
 	- The new environment will appear in the Smart Environments list.
 
-- **Renaming the Environment**:
+* **Renaming the Environment**:
 
 	- It's recommended to rename the environment to match your vault name for compatibility with Obsidian-specific features.
 		- Right-click on the new environment and select **Rename**.
@@ -528,21 +528,21 @@ Content under heading one
   t.deepEqual(result, expected);
 });
 
-test('opts.line_keys uses first 30 chars of line in block path key instead of {n} for list-item blocks', t => {
+test('opts.line_keys uses the first three longest words of line in block path key instead of {n} for list-item blocks', t => {
   const markdown = `# Heading
-- list item one
+- [ ] the longest list item one
   - sublist item one
 - list item two
   - sublist item two
-- list item three
+* non-sensical list item three has extremely sophisticated words
   - sublist item three
 `.trim();
   const result = parse_blocks(markdown, {line_keys: true});
   const expected = {
     "#Heading": [1, 7],
-    "#Heading#list item one": [2, 3],
+    "#Heading#longest list item": [2, 3],
     "#Heading#list item two": [4, 5],
-    "#Heading#list item three": [6, 7]
+    "#Heading#non-sensical extremely sophisticated": [6, 7]
   };
   t.deepEqual(result, expected);
 })

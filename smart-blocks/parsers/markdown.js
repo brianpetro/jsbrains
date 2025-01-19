@@ -221,7 +221,7 @@ export function parse_blocks(markdown, opts={}) {
     }
 
     // Check for top-level list items (no indentation, starting with "- ").
-    const list_match = line.match(/^(\s*)- (.+)$/);
+    const list_match = line.match(/^(\s*)([-*]|\d+\.) (.+)$/);
     if (list_match && !in_code_block) {
       const indentation = list_match[1].length;
       if (indentation === 0) {
@@ -263,9 +263,9 @@ export function parse_blocks(markdown, opts={}) {
 
         let key;
         if (line_keys) {
-          // Use the first 30 characters of the list item content in the key
-          let item_text = list_match[2].substring(0, 30).trim();
-          key = `${parent_key}#${item_text}`;
+          // Use the first three longest words of the list item content in the key (same order as in the line)
+          const words = get_longest_words_in_order(list_match[3], 3);
+          key = `${parent_key}#${words}`;
         } else {
           key = `${parent_key}#{${n}}`;
         }
@@ -364,4 +364,9 @@ export function parse_blocks(markdown, opts={}) {
   }
 
   return result;
+}
+
+export function get_longest_words_in_order(line, n=3) {
+  const words = line.split(/\s+/).sort((a, b) => b.length - a.length).slice(0, n);
+  return words.sort((a, b) => line.indexOf(a) - line.indexOf(b)).join(' ');
 }
