@@ -524,6 +524,25 @@ Content under heading one
     "#Heading One#{1}": [9, 10]
   };
 
-  const result = parse_blocks(markdown, 0);
+  const result = parse_blocks(markdown, {start_index: 0});
   t.deepEqual(result, expected);
 });
+
+test('opts.line_keys uses first 30 chars of line in block path key instead of {n} for list-item blocks', t => {
+  const markdown = `# Heading
+- list item one
+  - sublist item one
+- list item two
+  - sublist item two
+- list item three
+  - sublist item three
+`.trim();
+  const result = parse_blocks(markdown, {line_keys: true});
+  const expected = {
+    "#Heading": [1, 7],
+    "#Heading#list item one": [2, 3],
+    "#Heading#list item two": [4, 5],
+    "#Heading#list item three": [6, 7]
+  };
+  t.deepEqual(result, expected);
+})

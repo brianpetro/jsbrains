@@ -5,26 +5,29 @@
  * - Subheadings (nested headings are joined in the key with additional "#" characters)
  * - Frontmatter demarcated by "---" as a special heading: "#---frontmatter---"
  * - Code blocks delimited by triple backticks (```), which ignore headings found within
- * - Top-level list items treated as sub-blocks under their parent heading
+ * - Top-level list items treated as sub-blocks under their parent heading (customizable with `opts.line_keys`)
  *
  * The returned object keys reflect the path of headings (or list items) in the document, and
  * each value is an array of two numbers: the starting line and the ending line for that key's content.
  *
  * @function parse_blocks
  * @param {string} markdown - The complete Markdown text to parse.
+ * @param {Object} [opts={}] - Parsing options
+ * @param {number} [opts.start_index=1] - The line index to treat as line 1
+ * @param {boolean} [opts.line_keys=false] - If true, top-level list items get a key based on the line's first 30 characters instead of a sequence number
  * @returns {Object.<string, [number, number]>} A mapping of string keys (representing headings or sub-blocks)
  *   to an array of two numbers indicating the inclusive start and end line indices (1-based) in the Markdown text.
- * Example:
- * ```json
+ *
+ * @example
  * {
  *   "#Top-Level Heading": [1, 6],
- *   "#Top-Level Heading###Level 3 Heading (Skipping Level 2)": [3, 6],
+ *   "#Top-Level Heading##Level 3 Heading": [3, 6],
  *   "#Another Top-Level Heading": [7, 18],
  *   // ...
  * }
- * ```
  */
-export function parse_blocks(markdown, start_index = 1) {
+export function parse_blocks(markdown, opts={}) {
+  const { start_index = 1, line_keys = false } = opts;
   const lines = markdown.split('\n');
 
   // The final result object mapping block-keys to line ranges: [start_line, end_line].
@@ -221,7 +224,6 @@ export function parse_blocks(markdown, start_index = 1) {
     const list_match = line.match(/^(\s*)- (.+)$/);
     if (list_match && !in_code_block) {
       const indentation = list_match[1].length;
-      // Only consider unindented lines as top-level list items.
       if (indentation === 0) {
         // Close any currently open list item.
         if (current_list_item) {
@@ -230,11 +232,6 @@ export function parse_blocks(markdown, start_index = 1) {
           }
           current_list_item = null;
         }
-
-        // IMPORTANT FIX:
-        // Do NOT close the root heading content block here. This ensures
-        // content prior to a heading remains open for multiple lines until
-        // we explicitly close it with a heading or at end-of-document.
 
         // If the current content block is NOT the root heading, then close it.
         if (
@@ -264,8 +261,15 @@ export function parse_blocks(markdown, start_index = 1) {
         sub_block_counts[parent_key] += 1;
         const n = sub_block_counts[parent_key];
 
-        // Build a key representing this list item.
-        const key = `${parent_key}#{${n}}`;
+        let key;
+        if (line_keys) {
+          // Use the first 30 characters of the list item content in the key
+          let item_text = list_match[2].substring(0, 30).trim();
+          key = `${parent_key}#${item_text}`;
+        } else {
+          key = `${parent_key}#{${n}}`;
+        }
+
         heading_lines[key] = [line_number, null];
 
         // Mark this as the current list item.
@@ -285,7 +289,6 @@ export function parse_blocks(markdown, start_index = 1) {
     }
 
     // If none of the above conditions met, we're dealing with normal content lines.
-    // Create or continue a content block under the parent heading.
     if (!current_content_block) {
       // If there's a list item open, close it; this content isn't part of that list item.
       if (current_list_item) {
@@ -324,8 +327,7 @@ export function parse_blocks(markdown, start_index = 1) {
         current_content_block = { key, start_line: line_number };
       }
     }
-
-    // Continue reading lines until something else (heading, list item, code block) closes this content block.
+    // We continue reading lines until something else (heading, list item, code block) closes this content block.
   }
 
   // After processing all lines, close any open headings, list items, or content blocks with the last line as their end.
