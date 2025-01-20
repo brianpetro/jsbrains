@@ -264,7 +264,7 @@ export function parse_blocks(markdown, opts={}) {
         let key;
         if (line_keys) {
           // Use the first three longest words of the list item content in the key (same order as in the line)
-          const words = get_longest_words_in_order(list_match[3], 3);
+          const words = get_longest_words_in_order(list_match[3], 10);
           key = `${parent_key}#${words}`;
         } else {
           key = `${parent_key}#{${n}}`;
