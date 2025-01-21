@@ -9,7 +9,6 @@ export class ClusterGroup extends CollectionItem {
   static get defaults() {
     return {
       data: {
-        key: Date.now().toString(),
         clusters: {}
       }
     };

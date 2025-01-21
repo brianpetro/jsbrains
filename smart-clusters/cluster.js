@@ -246,8 +246,10 @@ export class Cluster extends CollectionItem {
           console.warn(`No vector found for center ${center_key}`);
           return null;
         })
-        .filter(Boolean);
+        .filter(Boolean)
+      ;
       if (center_vecs.length === 0) return undefined;
+      if (center_vecs.length === 1) return center_vecs[0];
       this.center_vec = compute_centroid(center_vecs);
     }
     return this.data.center_vec;
