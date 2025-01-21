@@ -54,7 +54,7 @@ export class ClusterGroup extends CollectionItem {
    * @method add_clusters
    * @description
    * Adds a cluster to the group.
-   * @param {Cluster} cluster - The cluster to add
+   * @param {Array<Cluster>} clusters - The clusters to add
    * @returns {Promise<ClusterGroup>} - The new cluster group
    */
   async add_clusters(clusters) {
@@ -74,7 +74,7 @@ export class ClusterGroup extends CollectionItem {
    * @method remove_clusters
    * @description
    * Removes a cluster from the group.
-   * @param {Cluster} cluster - The cluster to remove
+   * @param {Array<Cluster>} clusters - The clusters to remove
    * @returns {Promise<ClusterGroup>} - The new cluster group
    */
   async remove_clusters(clusters) {

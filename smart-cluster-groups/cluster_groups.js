@@ -15,7 +15,6 @@ export class ClusterGroups extends Collection {
   data_dir = 'clusters';
   async create_group(center_keys) {
     console.log('create_group', center_keys);
-    const timestamp = Date.now().toString();
     const clusters = [];
     for(let i = 0; i < center_keys.length; i++) {
       const center_key = center_keys[i];
