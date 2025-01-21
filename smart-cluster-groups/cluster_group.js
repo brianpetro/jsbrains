@@ -104,7 +104,7 @@ export class ClusterGroup extends CollectionItem {
       return acc;
     }, {});
     const clusters = Object.entries(this.data.clusters)
-      .filter(([key, value]) => !opts.remove_clusters.includes(key))
+      .filter(([key, value]) => !opts.remove_clusters?.includes(key))
       .reduce((acc, [key, value]) => {
         acc[key] = value;
         return acc;
