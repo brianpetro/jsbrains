@@ -28,7 +28,7 @@
     "smart-fs": "file:../smart-fs"
   },
   "dependencies": {
-    "smart-entities": "file:../smart-entities"
+    "smart-collections": "file:../smart-collections"
   },
   "ava": {
     "files": [

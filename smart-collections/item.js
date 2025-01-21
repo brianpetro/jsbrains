@@ -178,6 +178,19 @@ export class CollectionItem {
   }
 
   /**
+   * @method validate_item
+   * @description
+   * Validates an item or item key, ensuring it's an object with a .key property.
+   * @param {Object|string} item|item_key - The item or item key to validate
+   * @returns {Object} - The validated item
+   */
+  validate_item(item) {
+    if (typeof item === 'string') item = this.env.smart_sources.get(item);
+    if (!item) throw new Error('validate_item(): Item not found');
+    return item;
+  }
+
+  /**
    * Marks this item as deleted. This does not immediately remove it from memory,
    * but queues a save that will result in the item being removed from persistent storage.
    */

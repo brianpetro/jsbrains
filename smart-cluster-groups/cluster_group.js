@@ -1,17 +1,18 @@
-/****************************************
- * cluster_group.js (Updated)
- ****************************************/
-import { SmartGroup } from 'smart-groups';
-import { Cluster } from 'smart-clusters';
+import { CollectionItem } from 'smart-collections';
 import { cos_sim } from '../smart-entities/utils/cos_sim.js';
 
 /**
  * @class ClusterGroup
- * @extends SmartGroup
+ * @extends CollectionItem
  */
-export class ClusterGroup extends SmartGroup {
-  init() {
-    // muted
+export class ClusterGroup extends CollectionItem {
+  static get defaults() {
+    return {
+      data: {
+        key: Date.now().toString(),
+        clusters: {}
+      }
+    };
   }
 
   /**
@@ -30,15 +31,27 @@ export class ClusterGroup extends SmartGroup {
   }
 
   /**
-   * Creates a brand new ClusterGroup by copying 'data',
-   * but uses create_or_update from the group collection to do so.
+   * Creates a new cluster group by cloning this one
+   * @param {Object} opts
+   * @param {Array} [opts.remove_clusters] - Array of cluster keys to remove
+   * @param {Array} [opts.add_clusters] - Array of cluster keys to add
+   * @returns {Promise<ClusterGroup>}
    */
-  new_group_from_data(data) {
-    // Create a new item in the clusterGroups collection
-    return this.collection.create_or_update({
-      data
-    });
+  async clone(opts = {}) {
+    const new_clusters = (opts.add_clusters || []).reduce((acc, key) => {
+      acc[key] = { filters: {} };
+      return acc;
+    }, {});
+    const clusters = Object.entries(this.data.clusters)
+      .filter(([key, value]) => !opts.remove_clusters.includes(key))
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, new_clusters);
+    const new_group = await this.env.cluster_groups.create_or_update({ clusters });
+    return new_group;
   }
+  
 
   get clusters(){
     return this.env.clusters.get_many(Object.keys(this.data.clusters));

@@ -1,43 +1,59 @@
 /**
  * @file cluster.js
- * @description Implements the Cluster class based on the provided specs.
+ * @description Implements the Cluster class based on the provided specs,
+ *              overriding get_key to use sim_hash for the cluster key.
  */
-import { SmartEntity } from 'smart-entities';
+import { CollectionItem } from 'smart-collections';
 import { cos_sim } from 'smart-entities/utils/cos_sim.js';
-import { murmur_hash_32_alphanumeric as murmur } from './utils/create_hash.js';
+import { compute_centroid } from './utils/geom.js';
+import { sim_hash } from './utils/sim_hash.js';
 
 /**
  * @class Cluster
- * @extends SmartEntity
+ * @extends CollectionItem
  * @description
  * Represents a single cluster with a center (or multiple center items), plus membership info.
  */
-export class Cluster extends SmartEntity {
+export class Cluster extends CollectionItem {
   static get defaults() {
     return {
       data: {
         key: null,
-        center: {}, // e.g. { itemKey: { weight: number } }
-        center_vec: null, // optional
-        members: {},       // e.g. { itemKey: { state: -1|0|1 } }
-        filters: {}
+        sim_key: null,       // <--- store a stable sim-hash once created
+        center: {},          // e.g. { itemKey: { weight: number } }
+        center_vec: null,    // optional
+        members: {},         // e.g. { itemKey: { state: -1|0|1 } }
+        filters: {},
+        group_key: null
       }
     };
   }
 
+  /**
+   * Override get_key to use sim_hash of this.vec. 
+   * By default, we store the hash in this.data.sim_key the first time it's computed
+   * and reuse it to keep the key stable. If you want a live updated sim-hash key,
+   * remove that caching logic.
+   */
+  get_key() {
+    if (this.data.sim_key) return this.data.sim_key;
+    const vector = this.vec;
+    if(!vector) throw new Error('cluster.get_key(): No vector found for cluster');
+    const new_sim_hash = sim_hash(vector);
+    this.data.sim_key = new_sim_hash;
+    return new_sim_hash;
+  }
+
   init() {
-    // super.init();
-    // // If no key yet and we have a group, produce a stable key from group.key + murmur(JSON(center)).
-    // if (!this.data.key && this.group) {
-    //   const group_key = this.group.key || 'unknown_group';
-    //   const center_str = JSON.stringify(this.data.center || {});
-    //   this.data.key = group_key + '#' + murmur(center_str);
-    // }
+    if (!this.data.sim_key) {
+      // Access `this.key` so it gets set once, never changes.
+      const _unused = this.key; // triggers get_key() 
+    }
   }
 
   /**
    * @method add_member
-   * @param {Object} item A 'SmartEntity'-like object with .key, .vec
+   * @param {Object} item - A 'SmartEntity'-like object with .key, .vec
    * @returns {Object} membership summary
    */
   add_member(item) {
@@ -77,43 +93,103 @@ export class Cluster extends SmartEntity {
   /**
    * @method add_center
    * @description
-   * Creates a new cluster based on this one (adding 'item' as an additional center),
-   * then creates/returns a new group instance that references that new cluster.
+   * Creates a new cluster (adding 'item' as an additional center) and a new group
+   * that references that new cluster in place of this one.
+   * @param {Object|string} item|item_key - The item to become an additional center
+   * @returns {Object} - The newly created group (replacing this cluster with the new one)
    */
-  add_center(item) {
-    // 1) Copy this cluster's data
+  async add_center(item) {
+    item = this.validate_item(item);
     const new_data = JSON.parse(JSON.stringify(this.data));
     if (!new_data.center) new_data.center = {};
     new_data.center[item.key] = { weight: 1 };
 
-    // 2) Use create_or_update on our clusters collection instead of "new Cluster(...)" 
-    const cluster_collection = this.collection; // e.g. 'clusters' 
-    const new_cluster = cluster_collection.create_or_update({ data: new_data });
+    const new_cluster = this.collection.create_or_update({ data: new_data });
 
-    // 3) Copy the group data, remove old cluster reference, add new cluster reference
-    const old_group_data = JSON.parse(JSON.stringify(this.group.data));
-    if (old_group_data.clusters) delete old_group_data.clusters[this.key];
-    if (!old_group_data.clusters) old_group_data.clusters = {};
-    old_group_data.clusters[new_cluster.key] = { filters: {} };
-
-    // 4) Build a new group from the updated data
-    const new_group = this.group.new_group_from_data(old_group_data);
+    const new_group = await this.group.clone({
+      remove_clusters: [this.key],
+      add_clusters: [new_cluster.key]
+    });
     return new_group;
   }
 
-  get centers(){
-    return this.env.smart_sources.get_many(Object.keys(this.data.center));
+
+  /**
+   * @method remove_center
+   * @description
+   * Creates a new cluster with 'item' removed from center, then returns a new group
+   * that references this new cluster in place of the old one.
+   * @param {Object|string} item|item_key - The item to remove from center
+   * @returns {Object} - The newly created group
+   */
+  async remove_center(item) {
+    item = this.validate_item(item);
+    const new_data = JSON.parse(JSON.stringify(this.data));
+    if (new_data.center && new_data.center[item.key]) {
+      delete new_data.center[item.key];
+    }
+
+    const new_cluster = this.collection.create_or_update({ data: new_data });
+
+    const new_group = await this.group.clone({
+      remove_clusters: [this.key],
+      add_clusters: [new_cluster.key]
+    });
+    return new_group;
   }
+
+  /**
+   * @property centers
+   */
+  get centers() {
+    const center_keys = Object.keys(this.data.center || {});
+    return this.env.smart_sources.get_many(center_keys);
+  }
+
+  /**
+   * @property vec
+   * By spec, returns the centroid of all center items. 
+   */
   get vec() {
-    // TODO: add handling for multiple centers
-    return this.centers[0].vec;
+    if(!this.data.center_vec) {
+      const center_vecs = Object.entries(this.data.center || {})
+        .map(([center_key, center_info]) => {
+          // If center_info itself has a .vec, use it
+          if (Array.isArray(center_info.vec)) return center_info.vec;
+          // Otherwise try pulling the item from env
+          const item = this.env.smart_sources.get(center_key);
+          if (item && Array.isArray(item.vec)) return item.vec;
+          console.warn(`No vector found for center ${center_key}`);
+          return null;
+        })
+        .filter(Boolean);
+      if (center_vecs.length === 0) return undefined;
+      this.center_vec = compute_centroid(center_vecs);
+    }
+    return this.data.center_vec;
   }
+
   set vec(value) {
     this.data.center_vec = value;
   }
 
-  get filters(){
+
+  /**
+   * @property filters
+   * @description
+   * Returns the cluster-level filters (if any)
+   */
+  get filters() {
     return this.data.filters;
   }
 
+  get cluster_group_key() {
+    return Object.keys(this.data.cluster_groups).sort()[0];
+  }
+
+  get cluster_group() {
+    return this.env.cluster_groups.get(this.cluster_group_key);
+  }
+
 }
+

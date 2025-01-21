@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "smart-clusters": "file:../smart-clusters",
-    "smart-groups": "file:../smart-groups"
+    "smart-collections": "file:../smart-collections"
   },
   "ava": {
     "files": [
