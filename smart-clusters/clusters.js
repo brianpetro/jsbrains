@@ -13,4 +13,7 @@ import { Collection } from 'smart-collections';
  */
 export class Clusters extends Collection {
   data_dir = 'clusters';
+  find_by(data) {
+    return null;
+  }
 }
