@@ -259,8 +259,6 @@ export class Cluster extends CollectionItem {
     this.data.center_vec = value;
   }
 
-
-
   // BASE CLASS OVERRIDES
   /**
    * Override get_key to use sim_hash of this.vec. 
@@ -282,6 +280,20 @@ export class Cluster extends CollectionItem {
       // Access `this.key` so it gets set once, never changes.
       const _unused = this.key; // triggers get_key() 
     }
+    this.queue_save();
+  }
+
+  /**
+   * @override
+   * Queues this item for saving with debounce
+   */
+  queue_save() {
+    this._queue_save = true;
+    if (this.collection._save_timeout) clearTimeout(this.collection._save_timeout);
+    this.collection._save_timeout = setTimeout(() => {
+      this.collection.process_save_queue();
+    }, 1000); // 1 second debounce
+    console.log('queue_save', this.key);
   }
 }
 

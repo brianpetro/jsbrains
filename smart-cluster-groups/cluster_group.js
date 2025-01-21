@@ -127,4 +127,20 @@ export class ClusterGroup extends CollectionItem {
     return this.data.key;
   }
 
+  init() {
+    this.queue_save();
+  }
+
+  /**
+   * @override
+   * Queues this item for saving with debounce
+   */
+  queue_save() {
+    this._queue_save = true;
+    if (this.collection._save_timeout) clearTimeout(this.collection._save_timeout);
+    this.collection._save_timeout = setTimeout(() => {
+      this.collection.process_save_queue();
+    }, 1000); // 1 second debounce
+    console.log('queue_save', this.key);
+  }
 }

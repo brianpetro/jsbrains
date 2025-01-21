@@ -11,4 +11,6 @@ import { Collection } from 'smart-collections';
  * @classdesc
  * A collection of `Cluster` items. Manages creation, updates, and embedding logic if needed.
  */
-export class Clusters extends Collection {}
+export class Clusters extends Collection {
+  data_dir = 'clusters';
+}

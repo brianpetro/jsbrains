@@ -15,6 +15,7 @@ export class CollectionDataAdapter {
   constructor(collection) {
     /** @type {Object} */
     this.collection = collection;
+    this.env = collection.env;
   }
   /**
    * The class to use for item adapters.
