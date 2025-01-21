@@ -230,6 +230,15 @@ export class Cluster extends CollectionItem {
     return this.data.filters;
   }
 
+  get name() {
+    // get the key of the center item with highest cos_sim to this.vec
+    const center_keys = Object.keys(this.data.center || {});
+    const center_vecs = center_keys.map(key => this.env.smart_sources.get(key).vec);
+    const sim_scores = center_vecs.map(vec => cos_sim(this.vec, vec));
+    const max_sim_index = sim_scores.indexOf(Math.max(...sim_scores));
+    return center_keys[max_sim_index];
+  }
+
   /**
    * @property vec
    * By spec, returns the centroid of all center items. 
