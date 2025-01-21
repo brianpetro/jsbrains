@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "smart-clusters": "file:../smart-clusters",
-    "smart-collections": "file:../smart-collections"
+    "smart-collections": "file:../smart-collections",
+    "smart-entities": "file:../smart-entities"
   },
   "ava": {
     "files": [

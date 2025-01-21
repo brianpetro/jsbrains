@@ -1,5 +1,5 @@
 import { CollectionItem } from 'smart-collections';
-import { cos_sim } from '../smart-entities/utils/cos_sim.js';
+import { cos_sim } from 'smart-entities/utils/cos_sim.js';
 
 /**
  * @class ClusterGroup
@@ -15,50 +15,13 @@ export class ClusterGroup extends CollectionItem {
     };
   }
 
+  // API METHODS
   /**
-   * Adds or updates cluster reference in the group
-   */
-  add_cluster(cluster) {
-    const ck = cluster.key;
-    if (!this.data.clusters) this.data.clusters = {};
-    if (!this.data.clusters[ck]) {
-      this.data.clusters[ck] = { filters: {} };
-    } else {
-      // merge updated filter data or overrides
-      Object.assign(this.data.clusters[ck].filters, {});
-    }
-    return this;
-  }
-
-  /**
-   * Creates a new cluster group by cloning this one
-   * @param {Object} opts
-   * @param {Array} [opts.remove_clusters] - Array of cluster keys to remove
-   * @param {Array} [opts.add_clusters] - Array of cluster keys to add
-   * @returns {Promise<ClusterGroup>}
-   */
-  async clone(opts = {}) {
-    const new_clusters = (opts.add_clusters || []).reduce((acc, key) => {
-      acc[key] = { filters: {} };
-      return acc;
-    }, {});
-    const clusters = Object.entries(this.data.clusters)
-      .filter(([key, value]) => !opts.remove_clusters.includes(key))
-      .reduce((acc, [key, value]) => {
-        acc[key] = value;
-        return acc;
-      }, new_clusters);
-    const new_group = await this.env.cluster_groups.create_or_update({ clusters });
-    return new_group;
-  }
-  
-
-  get clusters(){
-    return this.env.clusters.get_many(Object.keys(this.data.clusters));
-  }
-
-  /**
-   * get_snapshot example for user display
+   * @method get_snapshot
+   * @description
+   * Returns a snapshot of the cluster group for user display.
+   * @param {Array} items - The items to include in the snapshot
+   * @returns {Promise<Object>} - The snapshot
    */
   async get_snapshot(items) {
     if (!this.data.clusters) return { clusters: [], members: [], filters: { ...this.data.filters } };
@@ -86,6 +49,83 @@ export class ClusterGroup extends CollectionItem {
       members,
       filters: { ...this.data.filters }
     };
+  }
+
+  /**
+   * @method add_clusters
+   * @description
+   * Adds a cluster to the group.
+   * @param {Cluster} cluster - The cluster to add
+   * @returns {Promise<ClusterGroup>} - The new cluster group
+   */
+  async add_clusters(clusters) {
+    return await this.clone({ add_clusters: clusters });
+  }
+  /**
+   * @method add_cluster
+   * @description
+   * Adds a cluster to the group.
+   * @param {Cluster} cluster - The cluster to add
+   * @returns {Promise<ClusterGroup>} - The new cluster group
+   */
+  async add_cluster(cluster) {
+    return await this.add_clusters([cluster.key]);
+  }
+  /**
+   * @method remove_clusters
+   * @description
+   * Removes a cluster from the group.
+   * @param {Cluster} cluster - The cluster to remove
+   * @returns {Promise<ClusterGroup>} - The new cluster group
+   */
+  async remove_clusters(clusters) {
+    return await this.clone({ remove_clusters: clusters });
+  }
+  /**
+   * @method remove_cluster
+   * @description
+   * Removes a cluster from the group.
+   * @param {Cluster} cluster - The cluster to remove
+   * @returns {Promise<ClusterGroup>} - The new cluster group
+   */
+  async remove_cluster(cluster) {
+    return await this.remove_clusters([cluster.key]);
+  }
+
+  /**
+   * Creates a new cluster group by cloning this one
+   * @param {Object} opts
+   * @param {Array} [opts.remove_clusters] - Array of cluster keys to remove
+   * @param {Array} [opts.add_clusters] - Array of cluster keys to add
+   * @returns {Promise<ClusterGroup>}
+   */
+  async clone(opts = {}) {
+    const new_clusters = (opts.add_clusters || []).reduce((acc, key) => {
+      acc[key] = { filters: {} };
+      return acc;
+    }, {});
+    const clusters = Object.entries(this.data.clusters)
+      .filter(([key, value]) => !opts.remove_clusters.includes(key))
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, new_clusters);
+    const new_group = await this.env.cluster_groups.create_or_update({ clusters });
+    return new_group;
+  }
+  
+  // GETTERS
+  get clusters(){
+    return this.env.clusters.get_many(Object.keys(this.data.clusters));
+  }
+
+  // BASE CLASS OVERRIDES
+  get_key() {
+    if(!this.data.key) this.data.key = [
+      Date.now().toString(),
+      ...Object.keys(this.data.clusters || {}).sort()
+    ].join('-');
+    return this.data.key;
   }
 
 }
