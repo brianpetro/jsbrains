@@ -233,6 +233,7 @@ export class Cluster extends CollectionItem {
   get name() {
     // get the key of the center item with highest cos_sim to this.vec
     const center_keys = Object.keys(this.data.center || {});
+    if(center_keys.length === 1) return center_keys[0];
     const center_vecs = center_keys.map(key => this.env.smart_sources.get(key).vec);
     const sim_scores = center_vecs.map(vec => cos_sim(this.vec, vec));
     const max_sim_index = sim_scores.indexOf(Math.max(...sim_scores));
