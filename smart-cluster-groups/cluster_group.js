@@ -9,7 +9,8 @@ export class ClusterGroup extends CollectionItem {
   static get defaults() {
     return {
       data: {
-        clusters: {}
+        clusters: {},
+        filters: {}
       }
     };
   }
@@ -142,5 +143,9 @@ export class ClusterGroup extends CollectionItem {
       this.collection.process_save_queue();
     }, 1000); // 1 second debounce
     console.log('queue_save', this.key);
+  }
+
+  get settings() {
+    return this.data.filters;
   }
 }
