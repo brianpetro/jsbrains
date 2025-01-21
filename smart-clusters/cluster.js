@@ -19,7 +19,7 @@ export class Cluster extends CollectionItem {
     return {
       data: {
         key: null,
-        sim_key: null,       // <--- store a stable sim-hash once created
+        key: null,       // <--- store a stable sim-hash once created
         center: {},          // e.g. { itemKey: { weight: number } }
         center_vec: null,    // optional
         members: {},         // e.g. { itemKey: { state: -1|0|1 } }
@@ -272,21 +272,21 @@ export class Cluster extends CollectionItem {
   // BASE CLASS OVERRIDES
   /**
    * Override get_key to use sim_hash of this.vec. 
-   * By default, we store the hash in this.data.sim_key the first time it's computed
+   * By default, we store the hash in this.data.key the first time it's computed
    * and reuse it to keep the key stable. If you want a live updated sim-hash key,
    * remove that caching logic.
    */
   get_key() {
-    if (this.data.sim_key) return this.data.sim_key;
+    if (this.data.key) return this.data.key;
     const vector = this.vec;
     if(!vector) throw new Error('cluster.get_key(): No vector found for cluster');
     const new_sim_hash = sim_hash(vector);
-    this.data.sim_key = new_sim_hash;
+    this.data.key = new_sim_hash;
     return new_sim_hash;
   }
 
   init() {
-    if (!this.data.sim_key) {
+    if (!this.data.key) {
       // Access `this.key` so it gets set once, never changes.
       const _unused = this.key; // triggers get_key() 
     }
