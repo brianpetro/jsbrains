@@ -100,6 +100,8 @@ export class ClusterGroup extends CollectionItem {
    * @returns {Promise<ClusterGroup>}
    */
   async clone(opts = {}) {
+    opts.add_clusters = opts.add_clusters.map(c => typeof c === 'string' ? c : c.key);
+    opts.remove_clusters = opts.remove_clusters.map(c => typeof c === 'string' ? c : c.key);
     const new_clusters = (opts.add_clusters || []).reduce((acc, key) => {
       acc[key] = { filters: {} };
       return acc;

@@ -19,7 +19,6 @@ export class Cluster extends CollectionItem {
     return {
       data: {
         key: null,
-        key: null,       // <--- store a stable sim-hash once created
         center: {},          // e.g. { itemKey: { weight: number } }
         center_vec: null,    // optional
         members: {},         // e.g. { itemKey: { state: -1|0|1 } }
