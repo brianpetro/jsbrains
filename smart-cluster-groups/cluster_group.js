@@ -36,6 +36,7 @@ export class ClusterGroup extends CollectionItem {
       };
       for(let j = 0; j < this.clusters.length; j++) {
         const cluster = this.clusters[j];
+        if(cluster.data.members[item.key]?.state === -1) continue;
         const sim = cos_sim(cluster.vec, item.vec);
         membership.clusters[cluster.key] = {
           score: sim,
