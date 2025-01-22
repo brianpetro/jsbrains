@@ -113,7 +113,8 @@ export class ClusterGroup extends CollectionItem {
         acc[key] = value;
         return acc;
       }, new_clusters);
-    const new_group = await this.env.cluster_groups.create_or_update({ ...this.data, clusters });
+    const new_data = { ...this.data, key: null, clusters };
+    const new_group = await this.env.cluster_groups.create_or_update(new_data);
     return new_group;
   }
   
