@@ -155,8 +155,18 @@ export class Cluster extends CollectionItem {
    * @returns {Promise<ClusterGroup>}
    */
   async #clone(opts = {}) {
-    const new_data = JSON.parse(JSON.stringify(this.data));
+    const new_data = {
+      ...JSON.parse(JSON.stringify(this.data || {})),
+      // filters: {}, // keep filters
+      // members: {}, // keep members
+      // center: {}, // keep centers (will be recomputed)
+      key: null,
+      center_vec: null,
+      group_key: null
+    };
     if(!new_data.center) new_data.center = {};
+    opts.remove_centers = opts.remove_centers?.map(center => typeof center === 'string' ? center : center.key) || [];
+    opts.add_centers = opts.add_centers?.map(center => typeof center === 'string' ? center : center.key) || [];
     if(opts.remove_centers) {
       for(let i = 0; i < opts.remove_centers.length; i++) {
         delete new_data.center[opts.remove_centers[i]];
@@ -167,7 +177,7 @@ export class Cluster extends CollectionItem {
         new_data.center[opts.add_centers[i]] = { weight: 1 };
       }
     }
-    const new_cluster = this.collection.create_or_update({ data: new_data });
+    const new_cluster = this.collection.create_or_update(new_data);
     return new_cluster;
   }
   /**
