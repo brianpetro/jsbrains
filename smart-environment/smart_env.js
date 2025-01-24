@@ -89,7 +89,7 @@ export class SmartEnv {
       // Reuse the existing environment
       main.env = global_env;
       main_key = main.env.init_main(main, main_env_opts);
-      await main.env.load_main(main_key);
+      await main.env.load_main(main_key, main_env_opts);
     }
     return main.env;
   }
@@ -99,7 +99,7 @@ export class SmartEnv {
     const main_key = this.init_main(main, main_env_opts);
     await this.fs.load_files(); // skips exclusions (smart_sources.fs respects exclusions); runs before smart_settings for detecting env_data_dir
     await SmartSettings.create(this);
-    await this.load_main(main_key);
+    await this.load_main(main_key, main_env_opts);
     this.is_init = false;
     return main_key;
   }
@@ -129,9 +129,9 @@ export class SmartEnv {
     return main_key;
   }
 
-  async load_main(main_key) {
+  async load_main(main_key, main_env_opts) {
     const main = this[main_key];
-    const main_env_opts = main.smart_env_config;
+    if(!main_env_opts) main_env_opts = main.smart_env_config;
     await this.init_collections(main_env_opts); // init so settings can be accessed
     await this.ready_to_load_collections(main);
     const main_collections = Object.keys(main_env_opts.collections || {}).reduce(
