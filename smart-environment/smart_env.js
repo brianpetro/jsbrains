@@ -51,6 +51,17 @@ export class SmartEnv {
     this._components = {};
   }
 
+  static wait_for(opts = {}) {
+    return new Promise((resolve) => {
+      const interval = setInterval(() => {
+        if (window.smart_env && window.smart_env.collections_loaded) {
+          clearInterval(interval);
+          resolve(window.smart_env);
+        }
+      }, 100);
+    });
+  }
+
   /**
    * Creates or updates a SmartEnv instance.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
@@ -146,7 +157,7 @@ export class SmartEnv {
   }
 
   async init_collections(config = this.opts) {
-    for (const key of Object.keys(config.collections)) {
+    for (const key of Object.keys(config.collections || {})) {
       const _class = config.collections[key]?.class; // should always use `class` property since normalize_opts added ?? opts.collections[key];
       if (typeof _class?.init !== 'function') continue; // skip if not a class or no init
       await _class.init(this, { ...config.collections[key] });
@@ -155,7 +166,7 @@ export class SmartEnv {
 
   async load_collections(collections = this.collections) {
     this.loading_collections = true;
-    for (const key of Object.keys(collections)) {
+    for (const key of Object.keys(collections || {})) {
       if(this.is_init && (this.opts.prevent_load_on_init || collections[key].opts.prevent_load_on_init)) continue;
       if (typeof collections[key]?.process_load_queue === 'function') {
         await collections[key].process_load_queue();
