@@ -229,10 +229,10 @@ export const transformers_models = {
   "Xenova/jina-embeddings-v2-base-zh": {
     "id": "Xenova/jina-embeddings-v2-base-zh",
     "batch_size": 1,
-    "dims": 512,
+    "dims": 768,
     "max_tokens": 8192,
     "name": "Jina-v2-base-zh-8K",
-    "description": "Local, 8,192 tokens, 512 dim, Chinese/English bilingual",
+    "description": "Local, 8,192 tokens, 768 dim, Chinese/English bilingual",
     "adapter": "transformers"
   },
   "Xenova/jina-embeddings-v2-small-en": {
