@@ -7,8 +7,8 @@ export const smart_env_config = {
   env_data_dir: '.smart-env',
   env_path: '/path/to/env',
   collections: {
-    smart_sources: {
-      class: SmartSources,
+    smart_sources: { // <--- stable collection_key to override with sub-classes
+      class: SmartSources, // may override with import (ex. MySources extends SmartSources)
       data_adapter: AjsonMultiFileCollectionDataAdapter,
       source_adapters: {
         "md": MarkdownSourceContentAdapter,
