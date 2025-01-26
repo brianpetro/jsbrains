@@ -46,6 +46,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   async load() {
     await this.load_transformers();
     this.loaded = true;
+    this.set_state('loaded');
   }
 
   /**
@@ -54,13 +55,14 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    */
   async unload() {
     if (this.pipeline) {
-      if (this.pipeline.destroy) await this.pipeline.destroy();
+      if (this.pipeline.destroy) this.pipeline.destroy();
       this.pipeline = null;
     }
     if (this.tokenizer) {
       this.tokenizer = null;
     }
     this.loaded = false;
+    this.set_state('unloaded');
   }
 
   /**

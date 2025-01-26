@@ -34,6 +34,14 @@ async function process_message(data) {
         }
         result = { model_loaded: true };
         break;
+      case 'unload':
+        console.log('unload', params);
+        if(model) {
+          await model.unload();
+          model = null;
+        }
+        result = { model_unloaded: true };
+        break;
       case 'embed_batch':
         if (!model) throw new Error('Model not loaded');
         // wait until finished processing previous message

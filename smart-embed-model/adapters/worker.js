@@ -25,19 +25,21 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedMessageAdapter {
         this.worker_id = `smart_embed_worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
+    get global_key() {
+        return `smart_embed_worker_${this.model.model_key}`;
+    }
     /**
      * Initialize worker and load model
      * @returns {Promise<void>}
      */
     async load() {
-        const global_key = `smart_embed_worker_${this.model.model_key}`;
         
-        if (!this.model[global_key]) {
-            this.model[global_key] = new Worker(this.worker_url, { type: 'module' });
-            console.log('new worker created', this.model[global_key]);
+        if (!this.model[this.global_key]) {
+            this.model[this.global_key] = new Worker(this.worker_url, { type: 'module' });
+            console.log('new worker created', this.model[this.global_key]);
         }
         
-        this.worker = this.model[global_key];
+        this.worker = this.model[this.global_key];
         console.log('worker', this.worker);
         console.log('worker_url', this.worker_url);
 
@@ -58,6 +60,16 @@ export class SmartEmbedWorkerAdapter extends SmartEmbedMessageAdapter {
             check_model_loaded();
         });
         console.log('model loaded');
+        this.set_state('loaded');
+    }
+    async unload(){
+        this._send_message('unload', { worker_id: this.worker_id });
+        console.log('unload worker', this.worker);
+        if(this.worker){
+            this.worker.terminate();
+            this.worker = null;
+        }
+        this.set_state('unloaded');
     }
 
     /**

@@ -161,7 +161,7 @@ export class SmartModel {
    */
   async load() {
     this.set_state('loading');
-    if (!this.adapter?.loaded) {
+    if (!this.adapter?.is_loaded) {
       await this.invoke_adapter_method('load');
     }
     this.set_state('loaded');
@@ -173,7 +173,7 @@ export class SmartModel {
    * @returns {Promise<void>}
    */
   async unload() {
-    if (this.adapter?.loaded) {
+    if (this.adapter?.is_loaded) {
       this.set_state('unloading');
       await this.invoke_adapter_method('unload');
       this.set_state('unloaded');

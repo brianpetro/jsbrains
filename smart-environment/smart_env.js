@@ -205,23 +205,27 @@ export class SmartEnv {
     return true;
   }
 
-  unload_main(main_key) {
+  unload_main(main_key, unload_config=null) {
+    console.log('unload_main', main_key);
     this._components = {}; // clear component cache
-    this.unload_collections(main_key);
-    this.unload_opts(main_key);
+    this.unload_collections(main_key, unload_config);
+    if(this.mains.length > 1) this.unload_opts(main_key, unload_config);
+    else this.opts = {};
     this[main_key] = null;
     this.mains = this.mains.filter((key) => key !== main_key);
     if (this.mains.length === 0) this.global_env = null;
   }
 
-  unload_collections(main_key) {
-    const main_config = this[main_key]?.smart_env_config;
-    if (!main_config) return;
-    for (const ckey of Object.keys(main_config.collections || {})) {
+  unload_collections(main_key, unload_config=null) {
+    console.log('unload_collections', main_key);
+    if (!unload_config) unload_config = this[main_key]?.smart_env_config;
+    if (!unload_config) return;
+    for (const ckey of Object.keys(unload_config.collections || {})) {
       if (!this[ckey]) continue;
       this[ckey].unload?.();
       this[ckey] = null;
     }
+    this.collections_loaded = false;
   }
 
   /**
@@ -229,14 +233,14 @@ export class SmartEnv {
    * Skips classes/functions, arrays, etc. Only plain objects are deeply iterated.
    * @param {string} main_key - The main key being unloaded.
    */
-  unload_opts(main_key) {
-    const remove_config = this[main_key]?.smart_env_config;
-    if (!remove_config) return;
+  unload_opts(main_key, unload_config=null) {
+    if (!unload_config) unload_config = this[main_key]?.smart_env_config;
+    if (!unload_config) return;
     const keep_configs = this.mains
       .filter((m) => m !== main_key)
       .map((m) => this[m]?.smart_env_config)
       .filter(Boolean);
-    deep_remove_exclusive_props(this.opts, remove_config, keep_configs);
+    deep_remove_exclusive_props(this.opts, unload_config, keep_configs);
   }
 
   save() {
