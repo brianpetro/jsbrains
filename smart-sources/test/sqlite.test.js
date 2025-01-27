@@ -172,8 +172,7 @@ test.serial('Update and delete sources, verify SQLite updates', async t => {
   // Delete source_to_delete.md
   const source_to_delete = sources.get('source_to_delete.md');
   t.truthy(source_to_delete, 'source_to_delete.md should exist before deletion');
-  sources.delete_many(['source_to_delete.md']);
-  source_to_delete.queue_save();
+  source_to_delete.delete();
   await sources.process_save_queue();
 
   // Verify deletion persists

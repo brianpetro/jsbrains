@@ -232,24 +232,6 @@ export class Collection {
   }
 
   /**
-   * Deletes an item by key from the collection (does not save deletion, just removes from memory).
-   * @param {string} key
-   */
-  delete_item(key) {
-    delete this.items[key];
-  }
-
-  /**
-   * Deletes multiple items by their keys. Internally calls `item.delete()` which queues a save.
-   * @param {string[]} keys
-   */
-  delete_many(keys = []) {
-    keys.forEach((key) => {
-      if (this.items[key]) this.items[key].delete();
-    });
-  }
-
-  /**
    * @returns {string} The collection key, can be overridden by opts.custom_collection_key
    */
   get collection_key() {

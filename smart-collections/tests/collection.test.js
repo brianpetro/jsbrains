@@ -63,14 +63,6 @@ function create_env_and_collection(itemType = CollectionItem) {
       return null;
     }
 
-    // Adjust delete_many to actually remove items from memory to match test expectation.
-    delete_many(keys = []) {
-      keys.forEach((key) => {
-        if (this.items[key]) {
-          delete this.items[key]; // Directly remove from memory
-        }
-      });
-    }
   }
 
   const collection = new TestItems(env);
@@ -210,25 +202,7 @@ test('update_many should update multiple items', t => {
   t.is(collection.get('um2').data.foo, 'new', 'Should update item data');
 });
 
-test('delete_item should remove an item by key', t => {
-  const { collection } = create_env_and_collection();
-  
-  collection.create_or_update({ key: 'del1', foo: 'bar' });
-  t.truthy(collection.get('del1'), 'Item should exist');
-  collection.delete_item('del1');
-  t.is(collection.get('del1'), undefined, 'Item should be removed');
-});
 
-test('delete_many should remove multiple items', t => {
-  const { collection } = create_env_and_collection();
-  
-  collection.create_or_update({ key: 'dm1' });
-  collection.create_or_update({ key: 'dm2' });
-  collection.delete_many(['dm1','dm2']);
-  
-  t.is(collection.get('dm1'), undefined, 'Item dm1 should be removed');
-  t.is(collection.get('dm2'), undefined, 'Item dm2 should be removed');
-});
 
 test('clear should remove all items', t => {
   const { collection } = create_env_and_collection();

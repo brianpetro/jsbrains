@@ -124,6 +124,12 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
         });
       }));
     }
+    const deleted_items = Object.values(this.collection.items).filter(item => item.deleted);
+    if(deleted_items.length){
+      deleted_items.forEach(item => {
+        delete this.collection.items[item.key];
+      });
+    }
   
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
     this.collection.notices?.remove('saving');
