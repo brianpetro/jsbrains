@@ -21,6 +21,38 @@ import {
 } from './ajson_multi_file.js';
 
 /**
+ * ---- NEW / COPIED FROM ajson_multi_file.js ----
+ * Map for legacy class names => new collection keys.
+ */
+const class_to_collection_key = {
+  'SmartSource': 'smart_sources',
+  'SmartNote': 'smart_sources', // DEPRECATED
+  'SmartBlock': 'smart_blocks',
+  'SmartDirectory': 'smart_directories',
+};
+
+/**
+ * ---- NEW / COPIED FROM ajson_multi_file.js ----
+ * Parse a line key like "SmartNote:someKey" to unify class names => real collection keys.
+ */
+function _parse_ajson_key(ajson_key) {
+  let changed = false;
+  let [collection_key, ...item_key] = ajson_key.split(':');
+
+  // If it's a legacy class name, map it to a modern collection key
+  if (class_to_collection_key[collection_key]) {
+    collection_key = class_to_collection_key[collection_key];
+    changed = true;
+  }
+
+  return {
+    collection_key,
+    item_key: item_key.join(':'),
+    changed
+  };
+}
+
+/**
  * @class AjsonSingleFileCollectionDataAdapter
  * @extends AjsonMultiFileCollectionDataAdapter
  * @description
@@ -41,9 +73,9 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
   }
 
   /**
-   * Override process_load_queue to parse the entire single-file .ajson once, 
+   * Override process_load_queue to parse the entire single-file .ajson once,
    * distributing final states to items.
-   * 
+   *
    * @async
    * @returns {Promise<void>}
    */
@@ -60,7 +92,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
       // no .ajson file => nothing to load
       for (const item of Object.values(this.collection.items)) {
         if (item._queue_load) {
-          // If no file, item might need import. 
+          // If no file, item might need import.
           item.queue_import?.();
         }
       }
@@ -104,9 +136,9 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
 
   /**
    * Helper to parse single-file .ajson content, distributing states to items.
-   * 
-   * @param {string} raw 
-   * @returns {{ rewrite: boolean, file_data: string[] }}
+   *
+   * @param {string} raw
+   * @returns {{ rewrite: boolean, file_data: string }}
    */
   parse_single_file_ajson(raw) {
     let rewrite = false;
@@ -120,21 +152,35 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
       // Expect something like: `"collection_key:item_key": {...},`
       if (!line.endsWith(',')) {
         // Attempt to fix trailing comma error
-        // or skip. We'll fix it automatically by rewriting.
         rewrite = true;
       }
       const trimmed = line.replace(/,$/, ''); // remove trailing comma
       const combined = '{' + trimmed + '}';
 
       try {
-        const obj = JSON.parse(combined); // e.g. { "collection_key:item_key": { ...data... } }
+        const obj = JSON.parse(combined); // e.g. { "collection_key:item_key": {...} }
         const [fullKey, value] = Object.entries(obj)[0];
+
+        // ---- NEW: unify possible legacy class name => real collection key
+        let { collection_key, item_key, changed } = _parse_ajson_key(fullKey);
+        const newKey = `${collection_key}:${item_key}`;
+
         if (!value) {
           // null => deleted => remove from data_map
-          delete data_map[fullKey];
+          delete data_map[newKey]; // ensure final is removed
+          if (changed || newKey !== fullKey) {
+            // remove the old key if it existed
+            delete data_map[fullKey];
+          }
           rewrite = true;
         } else {
-          data_map[fullKey] = value;
+          // store or overwrite
+          data_map[newKey] = value;
+          // if legacy rewriting is needed, remove old
+          if (changed || newKey !== fullKey) {
+            delete data_map[fullKey];
+            rewrite = true;
+          }
         }
       } catch (err) {
         console.warn('parse error for line: ', line, err);
@@ -146,16 +192,13 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
     // Now update actual items in memory
     // or create them if they don't exist
     for (const [ajson_key, val] of Object.entries(data_map)) {
-      // ajson_key is "collection_key:item_key"
+      // ajson_key is e.g. "smart_sources:someKey"
       const [collection_key, ...rest] = ajson_key.split(':');
       const item_key = rest.join(':');
 
-      // If we have a legacy mapping logic from the multi-file code, we can reuse
-      // but let's assume direct matching for single-file
       const collection = this.collection.env[collection_key];
       if (!collection) continue;
 
-      // If item does not exist, create it
       let item = collection.get(item_key);
       if (!item) {
         const ItemClass = collection.item_type;
@@ -166,7 +209,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
       }
       item.loaded_at = Date.now();
       item._queue_load = false;
-      if (!val.key) val.key = item_key; 
+      if (!val.key) val.key = item_key;
     }
 
     // rewrite if lines needed fixing or if line_count > final entry count
@@ -189,7 +232,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
   /**
    * Override process_save_queue for single-file approach.
    * We'll simply call save_item for each queued item, which appends a line to the same `.ajson`.
-   * 
+   *
    * @async
    * @returns {Promise<void>}
    */
@@ -209,6 +252,12 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
           item.queue_save();
         });
       }));
+    }
+    const deleted_items = Object.values(this.collection.items).filter(item => item.deleted);
+    if(deleted_items.length){
+      deleted_items.forEach(item => {
+        delete this.collection.items[item.key];
+      });
     }
 
     console.log(`Saved (single-file) ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
@@ -232,7 +281,7 @@ export class AjsonSingleFileItemDataAdapter extends AjsonMultiFileItemDataAdapte
   }
 
   /**
-   * Load logic: 
+   * Load logic:
    * In single-file mode, we typically rely on the collection's `process_load_queue()`
    * to parse the entire file. This direct `load()` will do a naive re-parse as well
    * if used individually.
