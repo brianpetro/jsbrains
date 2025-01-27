@@ -147,30 +147,6 @@ export class SmartView {
   }
 
   /**
-   * Validates a setting config. Modify if you have advanced logic (like gating).
-   * @param {Object} scope - The scope object.
-   * @param {Object} opts - Additional options.
-   * @param {string} setting_key - The key of the setting.
-   * @param {Object} setting_config - The config for the setting.
-   * @returns {boolean} True if valid.
-   */
-  validate_setting(scope, opts, setting_key, setting_config) {
-    /**
-     * if settings_keys is provided, skip setting if not in settings_keys
-     */
-    if (opts.settings_keys && !opts.settings_keys.includes(setting_key)) return false;
-    /**
-     * Conditional rendering
-     * @name settings_config.conditional
-     * @type {function}
-     * @param {object} scope - The scope object.
-     * @returns {boolean} - True if the setting should be rendered, false otherwise.
-     */
-    if (typeof setting_config.conditional === 'function' && !setting_config.conditional(scope)) return false;
-    return true;
-  }
-
-  /**
    * Handles the smooth transition effect when opening overlays.
    * @param {HTMLElement} overlay_container - The overlay container element.
    */
@@ -187,22 +163,18 @@ export class SmartView {
    * @returns {Promise<DocumentFragment>}
    */
   async render_settings(settings_config, opts = {}) {
-    const scope = opts.scope || {};
     const html = Object.entries(settings_config)
       .map(([setting_key, setting_config]) => {
         if (!setting_config.setting) {
           setting_config.setting = setting_key;
         }
-        if (this.validate_setting(scope, opts, setting_key, setting_config)) {
-          return this.render_setting_html(setting_config);
-        }
-        return '';
+        return this.render_setting_html(setting_config);
       })
-      .join('\n');
+      .join('\n')
+    ;
     const frag = this.create_doc_fragment(`<div>${html}</div>`);
     return await this.render_setting_components(frag, opts);
   }
-
 
 }
 

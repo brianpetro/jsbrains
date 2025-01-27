@@ -77,18 +77,18 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
    * @returns {Object} Settings configuration object
    */
   get settings_config() {
-    return {
-      ...super.settings_config,
-      "[CHAT_ADAPTER].image_resolution": {
+    const config = super.settings_config;
+    if(this.adapter?.model_config?.multimodal){
+      config['[CHAT_ADAPTER].image_resolution'] = { 
         name: 'Image Resolution',
         type: "dropdown",
         description: "Select the image resolution for the chat model.",
         option_1: 'low',
         option_2: 'high',
         default: 'low',
-        conditional: (_this) => _this.adapter?.model_config?.multimodal,
-      },
-    };
+      };
+    }
+    return config;
   }
 }
 
