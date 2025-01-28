@@ -183,7 +183,6 @@ test('Processing settings_config with conditional settings excludes irrelevant s
         },
         setting_two: {
           type: 'number',
-          conditional: (model) => model.is_loaded,
         },
       });
     }
@@ -231,7 +230,6 @@ test('Processing settings_config with conditional settings includes relevant set
         },
         setting_two: {
           type: 'number',
-          conditional: (model) => model.is_loaded,
         },
       });
     }

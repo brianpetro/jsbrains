@@ -1,8 +1,7 @@
 export async function build_html(scope, opts = {}) {
   const env_settings_html = Object.entries(scope.settings_config).map(([setting_key, setting_config]) => {
     if (!setting_config.setting) setting_config.setting = setting_key;
-    if(this.validate_setting(scope, opts, setting_key, setting_config)) return this.render_setting_html(setting_config);
-    return '';
+    return this.render_setting_html(setting_config);
   }).join('\n');
   const env_collections_containers_html = Object.entries(scope.collections).map(([collection_key, collection]) => {
     return `<div data-smart-settings="${collection_key}"></div>`;

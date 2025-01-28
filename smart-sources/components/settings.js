@@ -1,8 +1,7 @@
 export async function build_html(sources_collection, opts={}){
   const settings_html = Object.entries(sources_collection.settings_config).map(([setting_key, setting_config]) => {
     if (!setting_config.setting) setting_config.setting = setting_key;
-    if(this.validate_setting(sources_collection, opts, setting_key, setting_config)) return this.render_setting_html(setting_config);
-    return '';
+    return this.render_setting_html(setting_config);
   }).join('\n');
   const html = `<div class="source-settings">
     ${settings_header_html(sources_collection, opts)}
