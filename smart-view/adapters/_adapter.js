@@ -434,6 +434,7 @@ export class SmartViewAdapter {
           if (callback) callback(path, value, elm, scope);
         }
         elm.querySelector('.setting-item').style.display = 'block';
+        confirm_row.style.display = 'none';
       });
       confirm_cancel.addEventListener('click', () => {
         confirm_row.style.display = 'none';
