@@ -739,7 +739,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
@@ -816,6 +816,9 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       });
     } catch (err) {
       console.error("error_processing_batch", err);
+      this.pipeline.dispose();
+      this.pipeline = null;
+      await this.load();
       return Promise.all(batch_inputs.map(async (item) => {
         try {
           const result = await this.pipeline(item.embed_input, { pooling: "mean", normalize: true });
