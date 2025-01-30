@@ -158,6 +158,9 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
       });
     } catch (err) {
       console.error("error_processing_batch", err);
+      this.pipeline.dispose();
+      this.pipeline = null;
+      await this.load();
       return Promise.all(batch_inputs.map(async (item) => {
         try {
           const result = await this.pipeline(item.embed_input, { pooling: 'mean', normalize: true });
