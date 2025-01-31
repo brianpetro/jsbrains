@@ -1,8 +1,9 @@
 /**
  * @file smart_view.js
  * @description
- * Provides a high-level interface (SmartView) for rendering settings components and other UI in a modular, adapter-based pattern.
- * This version includes an inline confirm method for "clear all" (or any destructive) actions.
+ * Provides a high-level interface (SmartView) for rendering settings components and other UI 
+ * in a modular, adapter-based pattern. This version includes add_settings_listeners for 
+ * automatically binding data-smart-setting inputs to scope.settings.
  */
 
 export class SmartView {
@@ -45,8 +46,7 @@ export class SmartView {
    */
   get adapter() {
     if (!this._adapter) {
-      // By default, we rely on whatever adapter was set in `this.opts.adapter`
-      // If none, throw or fallback to a minimal adapter
+      // By default, we rely on whatever adapter was set in `this.opts.adapter`.
       if (!this.opts.adapter) {
         throw new Error("No adapter provided to SmartView. Provide a 'smart_view.adapter' in env config.");
       }
@@ -92,7 +92,9 @@ export class SmartView {
    * @param {string} path - The path to the value.
    * @returns {*}
    */
-  get_by_path(obj, path) { return get_by_path(obj, path); }
+  get_by_path(obj, path) { 
+    return get_by_path(obj, path); 
+  }
 
   /**
    * Sets a value in an object by path.
@@ -100,14 +102,18 @@ export class SmartView {
    * @param {string} path - The path to set the value.
    * @param {*} value - The value to set.
    */
-  set_by_path(obj, path, value) { set_by_path(obj, path, value); }
+  set_by_path(obj, path, value) { 
+    set_by_path(obj, path, value); 
+  }
 
   /**
    * Deletes a value from an object by path.
    * @param {Object} obj - The object to modify.
    * @param {string} path - The path to delete.
    */
-  delete_by_path(obj, path) { delete_by_path(obj, path); }
+  delete_by_path(obj, path) { 
+    delete_by_path(obj, path); 
+  }
 
   /**
    * Escapes HTML special characters in a string.
@@ -115,7 +121,7 @@ export class SmartView {
    * @returns {string} The escaped string.
    */
   escape_html(str) {
-    if(typeof str !== 'string') return str;
+    if (typeof str !== 'string') return str;
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -131,19 +137,21 @@ export class SmartView {
    * @returns {string}
    */
   render_setting_html(setting_config) {
-    // Implementation detail: produce <div class="setting-component" data-...> from config
     if (setting_config.type === 'html') {
       // If the user wants to render raw HTML
       return setting_config.value;
     }
     const attributes = Object.entries(setting_config)
       .map(([attr, value]) => {
-        if (attr.includes('class')) return ''; // ignore class attribute
+        if (attr.includes('class')) return '';
         if (typeof value === 'number') return `data-${attr.replace(/_/g, '-') }=${value}`;
         return `data-${attr.replace(/_/g, '-') }="${value}"`;
       })
-      .join("\n");
-    return `<div class="setting-component${setting_config.scope_class ? ` ${setting_config.scope_class}` : ''}"\ndata-setting="${setting_config.setting}"\n${attributes}\n></div>`;
+      .join('\n')
+    ;
+    return `<div class="setting-component${setting_config.scope_class ? ' ' + setting_config.scope_class : ''}"\n` +
+      `data-setting="${setting_config.setting}"\n` +
+      `${attributes}\n></div>`;
   }
 
   /**
@@ -151,10 +159,13 @@ export class SmartView {
    * @param {HTMLElement} overlay_container - The overlay container element.
    */
   on_open_overlay(overlay_container) {
-    overlay_container.style.transition = "background-color 0.5s ease-in-out";
-    overlay_container.style.backgroundColor = "var(--bold-color)";
-    setTimeout(() => { overlay_container.style.backgroundColor = ""; }, 500);
+    overlay_container.style.transition = 'background-color 0.5s ease-in-out';
+    overlay_container.style.backgroundColor = 'var(--bold-color)';
+    setTimeout(() => {
+      overlay_container.style.backgroundColor = '';
+    }, 500);
   }
+
   /**
    * Renders settings from a config, returning a fragment.
    * @async
@@ -170,25 +181,85 @@ export class SmartView {
         }
         return this.render_setting_html(setting_config);
       })
-      .join('\n')
-    ;
+      .join('\n');
     const frag = this.create_doc_fragment(`<div>${html}</div>`);
     return await this.render_setting_components(frag, opts);
   }
 
+  /**
+   * @function add_settings_listeners
+   * @description
+   * Scans the given container for elements that have `data-smart-setting` and attaches
+   * a 'change' event listener. On change, it updates the corresponding path in `scope.settings`.
+   * 
+   * @param {Object} scope - An object containing a `settings` property, where new values will be stored.
+   * @param {HTMLElement} [container=document] - The DOM element to scan. Defaults to the entire document.
+   */
+  add_settings_listeners(scope, container = document) {
+    const elements = container.querySelectorAll('[data-smart-setting]');
+    
+    elements.forEach(elm => {
+      const path = elm.dataset.smartSetting;
+      if (!path) return;
+
+      // Attach one listener if not already attached:
+      if (!elm.dataset.listenerAttached) {
+        elm.dataset.listenerAttached = 'true';
+        elm.addEventListener('change', () => {
+          let newValue;
+          
+          // Determine element type
+          if (elm instanceof HTMLInputElement) {
+            if (elm.type === 'checkbox') {
+              newValue = elm.checked;
+            } else if (elm.type === 'radio') {
+              if (elm.checked) {
+                newValue = elm.value;
+              } else {
+                // If not checked, we do not change the setting
+                // unless we want to unset it. Skipping is safer.
+                return;
+              }
+            } else {
+              newValue = elm.value;
+            }
+          } else if (elm instanceof HTMLSelectElement || elm instanceof HTMLTextAreaElement) {
+            newValue = elm.value;
+          } else {
+            // Fallback for other elements
+            newValue = elm.value ?? elm.textContent;
+          }
+
+          this.set_by_path(scope.settings, path, newValue);
+        });
+      }
+    });
+  }
 }
 
+/**
+ * Recursively gets a value from `obj` by a dot-notation string `path`.
+ * @param {Object} obj 
+ * @param {string} path 
+ * @returns {*}
+ */
 function get_by_path(obj, path) {
-  if(!path) return '';
+  if (!path) return '';
   const keys = path.split('.');
   const finalKey = keys.pop();
   const instance = keys.reduce((acc, key) => acc && acc[key], obj);
-  // Check if the last key is a method and bind to the correct instance
   if (instance && typeof instance[finalKey] === 'function') {
     return instance[finalKey].bind(instance);
   }
   return instance ? instance[finalKey] : undefined;
 }
+
+/**
+ * Recursively sets a value in `obj` at the dot-notation string `path`.
+ * @param {Object} obj 
+ * @param {string} path 
+ * @param {*} value 
+ */
 function set_by_path(obj, path, value) {
   const keys = path.split('.');
   const final_key = keys.pop();
@@ -200,9 +271,17 @@ function set_by_path(obj, path, value) {
   }, obj);
   target[final_key] = value;
 }
+
+/**
+ * Recursively deletes a value in `obj` at the dot-notation string `path`.
+ * @param {Object} obj 
+ * @param {string} path 
+ */
 function delete_by_path(obj, path) {
   const keys = path.split('.');
   const finalKey = keys.pop();
   const instance = keys.reduce((acc, key) => acc && acc[key], obj);
-  delete instance[finalKey];
+  if (instance) {
+    delete instance[finalKey];
+  }
 }
