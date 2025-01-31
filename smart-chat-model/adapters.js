@@ -1,4 +1,5 @@
 import { SmartChatModelAnthropicAdapter } from './adapters/anthropic.js';
+import { SmartChatModelAzureAdapter } from './adapters/azure.js';
 import { SmartChatModelOpenaiAdapter } from './adapters/openai.js';
 import { SmartChatModelGeminiAdapter } from './adapters/google.js';
 import { SmartChatModelCohereAdapter } from './adapters/cohere.js';
@@ -9,6 +10,7 @@ import { SmartChatModelLmStudioAdapter } from './adapters/lm_studio.js';
 import { SmartChatModelGroqAdapter } from './adapters/groq.js';
 export {
   SmartChatModelAnthropicAdapter,
+  SmartChatModelAzureAdapter,
   SmartChatModelOpenaiAdapter,
   SmartChatModelGeminiAdapter,
   SmartChatModelCohereAdapter,
@@ -18,6 +20,7 @@ export {
   SmartChatModelLmStudioAdapter,
   SmartChatModelGroqAdapter,
   SmartChatModelAnthropicAdapter as anthropic,
+  SmartChatModelAzureAdapter as azure,
   SmartChatModelOpenaiAdapter as openai,
   SmartChatModelGeminiAdapter as gemini,
   SmartChatModelCohereAdapter as cohere,
