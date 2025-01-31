@@ -63,7 +63,9 @@ export class SmartViewAdapter {
    * @param {HTMLElement} elm - The HTML element associated with the setting.
    * @param {object} scope - The current scope containing settings and actions.
    */
-  pre_change(path, value, elm) { console.warn("pre_change() not implemented"); }
+  pre_change(path, value, elm) {
+    // console.warn("pre_change() not implemented");
+  }
   /**
    * Performs actions after a setting is changed, such as updating UI elements.
    * @abstract
@@ -72,7 +74,9 @@ export class SmartViewAdapter {
    * @param {HTMLElement} elm - The HTML element associated with the setting.
    * @param {object} changed - Additional information about the change.
    */
-  post_change(path, value, elm) { console.warn("post_change() not implemented"); }
+  post_change(path, value, elm) {
+    // console.warn("post_change() not implemented");
+  }
   /**
    * Reverts a setting to its previous value in case of validation failure or error.
    * @abstract
