@@ -5,7 +5,7 @@ let model = null;
 
 async function process_message(data) {
   const { method, params, id, iframe_id } = data;
-  console.log('iframe message', JSON.stringify(data, null, 2));
+  // console.log('iframe message', JSON.stringify(data, null, 2));
   try {
     let result;
     switch (method) {
