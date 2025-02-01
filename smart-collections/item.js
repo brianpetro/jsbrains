@@ -1,6 +1,7 @@
 import { create_uid, deep_merge } from './utils/helpers.js';
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 import { deep_equal } from "./utils/deep_equal.js";
+import { camel_case_to_snake_case } from '../smart-environment/utils/camel_case_to_snake_case.js';
 
 /**
  * @class CollectionItem
