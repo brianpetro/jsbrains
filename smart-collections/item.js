@@ -259,6 +259,18 @@ export class CollectionItem {
     return await this.env.render_component(component_key, this, opts);
   }
 
+  get actions() {
+    if(!this._actions) {
+      this._actions = Object.entries(this.env.opts.items[this.item_type_key].actions || {}).reduce((acc, [k,v]) => {
+        acc[k] = v.bind(this);
+        return acc;
+      }, {});
+    }
+    return this._actions;
+  }
+
+
+
   /**
    * Derives the collection key from the class name.
    * @returns {string}
@@ -288,6 +300,11 @@ export class CollectionItem {
   get key() {
     return this.data?.key || this.get_key();
   }
+
+  get item_type_key() {
+    return camel_case_to_snake_case(this.constructor.name);
+  }
+
 
   /**
    * A simple reference object for this item.

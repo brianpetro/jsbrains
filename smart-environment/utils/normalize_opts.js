@@ -31,5 +31,19 @@ export function normalize_opts(opts) {
       delete opts.modules[key];
     }
   });
+  // item_types
+  /** @deprecated use opts.items instead */
+  if (!opts.item_types) opts.item_types = {};
+  if (!opts.items) opts.items = {};
+  Object.entries(opts.item_types).forEach(([key, val]) => {
+    if (typeof val === 'function') {
+      const new_key = camel_case_to_snake_case(key);
+      opts.items[new_key] = {
+        class: val,
+        actions: {},
+        ...(opts.items[new_key] || {})
+      };
+    }
+  });
   return opts;
 }
