@@ -183,52 +183,46 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   _show_embed_progress_notice(embed_queue_length) {
     if (this.embedded_total - this.last_notice_embedded_total < 100) return;
     this.last_notice_embedded_total = this.embedded_total;
-    const pause_btn = { text: "Pause", callback: this.halt_embed_queue_processing.bind(this), stay_open: true };
-    this.notices?.show('embedding_progress',
-      [
-        `Making Smart Connections...`,
-        `Embedding progress: ${this.embedded_total} / ${embed_queue_length}`,
-        `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
-      ],
-      {
-        timeout: 0,
-        button: pause_btn
-      }
-    );
+    this.notices?.show('embedding_progress', {
+      progress: this.embedded_total,
+      total: embed_queue_length,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key
+    });
   }
   /**
    * Displays the embedding completion notice.
+
    * @private
    * @returns {void}
    */
   _show_embed_completion_notice() {
     this.notices?.remove('embedding_progress');
-    this.notices?.show('embedding_complete', [
-      `Embedding complete.`,
-      `${this.embedded_total} entities embedded.`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
-    ], { timeout: 10000 });
+    this.notices?.show('embedding_complete', {
+      total_embeddings: this.embedded_total,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key
+    });
   }
   /**
    * Halts the embed queue processing.
+
    * @param {string|null} msg - Optional message.
    */
   halt_embed_queue_processing(msg=null) {
     this.is_queue_halted = true;
     console.log("Embed queue processing halted");
     this.notices?.remove('embedding_progress');
-    this.notices?.show('embedding_paused', [
-      msg || `Embedding paused.`,
-      `Progress: ${this.embedded_total} / ${this.collection._embed_queue.length}`,
-      `${this._calculate_embed_tokens_per_second()} tokens/sec using ${this.collection.embed_model_key}`
-    ],
-      {
-        timeout: 0,
-        button: { text: "Resume", callback: () => this.resume_embed_queue_processing(100) }
-      });
+    this.notices?.show('embedding_paused', {
+      progress: this.embedded_total,
+      total: this.collection._embed_queue.length,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key
+    });
   }
   /**
    * Resumes the embed queue processing after a delay.
+
    * @param {number} [delay=0] - The delay in milliseconds before resuming.
    * @returns {void}
    */

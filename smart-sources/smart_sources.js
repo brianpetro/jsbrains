@@ -28,10 +28,10 @@ export class SmartSources extends SmartEntities {
    */
   async init() {
     await super.init();
-    this.notices?.show('initial scan', "Starting initial scan...", { timeout: 0 });
+    this.notices?.show('initial_scan');
     await this.init_items();
-    this.notices?.remove('initial scan');
-    this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    this.notices?.remove('initial_scan');
+    this.notices?.show('done_initial_scan');
   }
 
   /**
@@ -47,8 +47,8 @@ export class SmartSources extends SmartEntities {
     Object.values(this.fs.files)
       .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
       .forEach(file => this.init_file_path(file.path));
-    this.notices?.remove('initial scan');
-    this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    this.notices?.remove('initial_scan');
+    this.notices?.show('done_initial_scan');
   }
 
   /**
@@ -67,8 +67,9 @@ export class SmartSources extends SmartEntities {
    */
   async prune() {
     await this.fs.refresh(); // Refresh source files in case they have changed
-    this.notices?.show('pruning sources', "Pruning sources...", { timeout: 0 });
+    this.notices?.show('pruning_collection', { collection_key: this.collection_key });
     
+
     // Identify sources to remove
     const remove_sources = Object.values(this.items)
       .filter(item => {
@@ -97,9 +98,10 @@ export class SmartSources extends SmartEntities {
     }
     
     this.notices?.remove('pruning sources');
-    this.notices?.show('pruned sources', `Pruned ${remove_sources.length} sources`, { timeout: 5000 });
-    this.notices?.show('pruning blocks', "Pruning blocks...", { timeout: 0 });
-    
+    this.notices?.show('done_pruning_collection', { collection_key: this.collection_key, count: remove_sources.length });
+    this.notices?.show('pruning_collection', { collection_key: this.block_collection.collection_key });
+
+
     // Identify blocks to remove
     const remove_smart_blocks = Object.values(this.block_collection.items)
       .filter(item => {
@@ -123,8 +125,8 @@ export class SmartSources extends SmartEntities {
       else item.remove_embeddings();
     }
     
-    this.notices?.remove('pruning blocks');
-    this.notices?.show('pruned blocks', `Pruned ${remove_smart_blocks.length} blocks`, { timeout: 5000 });
+    this.notices?.remove('pruning_collection');
+    this.notices?.show('done_pruning_collection', { collection_key: this.block_collection.collection_key, count: remove_smart_blocks.length });
     console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
     
     await this.process_save_queue(true); // pass true => forcibly save all
@@ -273,14 +275,23 @@ export class SmartSources extends SmartEntities {
       const time_start = Date.now();
       // Import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
-        this.notices?.show('import progress', [`Importing...`, `Progress: ${i} / ${import_queue.length} files`], { timeout: 0 });
+        this.notices?.show('import_progress', {
+          progress: i,
+          total: import_queue.length,
+        });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
-      this.notices?.remove('import progress');
-      this.notices?.show('done import', [`Processed import queue in ${Date.now() - time_start}ms`], { timeout: 3000 });
+      this.notices?.remove('import_progress');
+
+      this.notices?.show('done_import', {
+        count: import_queue.length,
+        time_in_seconds: (Date.now() - time_start) / 1000
+      });
+
     } else {
-      this.notices?.show('no import queue', ["No items in import queue"]);
+      this.notices?.show('no_import_queue');
     }
+
     this.build_links_map();
     await this.process_embed_queue();
     await this.process_save_queue();
@@ -496,13 +507,15 @@ export class SmartSources extends SmartEntities {
    * @returns {Promise<void>}
    */
   async run_clear_all(){
-    this.notices?.show('clearing all', "Clearing all data...", { timeout: 0 });
+    this.notices?.show('clearing_all');
     // Clear all data
     await this.data_fs.remove_dir(this.data_dir, true);
     this.clear();
     this.block_collection.clear();
     this._fs = null;
+
     await this.fs.init();
+
     await this.init_items();
     this._excluded_headings = null;
     
@@ -512,9 +525,10 @@ export class SmartSources extends SmartEntities {
       item.loaded_at = Date.now() + 9999999999; // Prevent immediate reload
     });
     
-    this.notices?.remove('clearing all');
-    this.notices?.show('cleared all', "All data cleared and reimported", { timeout: 3000 });
+    this.notices?.remove('clearing_all');
+    this.notices?.show('done_clearing_all');
     await this.process_source_import_queue();
+
   }
 
   /**

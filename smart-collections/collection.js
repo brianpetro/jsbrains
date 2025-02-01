@@ -458,11 +458,12 @@ export class Collection {
     this.loaded = null;
     this.load_time_ms = null;
     Object.values(this.items).forEach((item) => item.queue_load());
-    this.notices?.show(`loading ${this.collection_key}`, `Loading ${this.collection_key}...`, { timeout: 0 });
+    this.notices?.show("loading_collection", { collection_key: this.collection_key });
     await this.process_load_queue();
-    this.notices?.remove(`loading ${this.collection_key}`);
-    this.notices?.show('done loading', `${this.collection_key} loaded`, { timeout: 3000 });
+    this.notices?.remove("loading_collection");
+    this.notices?.show("done_loading_collection", { collection_key: this.collection_key });
     this.render_settings();
+
   }
   /**
    * Helper function to render a component in the collection scope

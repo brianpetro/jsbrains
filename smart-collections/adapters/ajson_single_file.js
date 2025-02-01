@@ -80,7 +80,8 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
    * @returns {Promise<void>}
    */
   async process_load_queue() {
-    this.collection.notices?.show('loading', `Loading ${this.collection.collection_key} (single-file)`, { timeout: 0 });
+    this.collection.notices?.show('loading_collection', { collection_key: this.collection.collection_key });
+
 
     // Ensure directory exists
     if (!(await this.fs.exists(this.collection.data_dir))) {
@@ -96,7 +97,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
           item.queue_import?.();
         }
       }
-      this.collection.notices?.remove('loading');
+      this.collection.notices?.remove('loading_collection');
       return;
     }
 
@@ -109,7 +110,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
           item.queue_import?.();
         }
       }
-      this.collection.notices?.remove('loading');
+      this.collection.notices?.remove('loading_collection');
       return;
     }
 
@@ -131,7 +132,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
       item.loaded_at = Date.now();
     }
 
-    this.collection.notices?.remove('loading');
+    this.collection.notices?.remove('loading_collection');
   }
 
   /**
@@ -237,7 +238,8 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
    * @returns {Promise<void>}
    */
   async process_save_queue() {
-    this.collection.notices?.show('saving', `Saving ${this.collection.collection_key} (single-file)`, { timeout: 0 });
+    this.collection.notices?.show('saving_collection', { collection_key: this.collection.collection_key });
+
 
     const save_queue = Object.values(this.collection.items).filter(item => item._queue_save);
     const time_start = Date.now();
@@ -261,7 +263,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
     }
 
     console.log(`Saved (single-file) ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
-    this.collection.notices?.remove('saving');
+    this.collection.notices?.remove('saving_collection');
   }
 }
 
