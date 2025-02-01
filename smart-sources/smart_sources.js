@@ -28,10 +28,11 @@ export class SmartSources extends SmartEntities {
    */
   async init() {
     await super.init();
-    this.notices?.show('initial_scan');
+    this.notices?.show('initial_scan', { collection_key: this.collection_key });
     await this.init_items();
     this.notices?.remove('initial_scan');
-    this.notices?.show('done_initial_scan');
+    this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
+
   }
 
   /**
@@ -48,7 +49,7 @@ export class SmartSources extends SmartEntities {
       .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
       .forEach(file => this.init_file_path(file.path));
     this.notices?.remove('initial_scan');
-    this.notices?.show('done_initial_scan');
+    this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
   }
 
   /**

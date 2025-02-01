@@ -33,8 +33,9 @@ export class SmartThreads extends SmartSources {
         this.items[key].source_adapter.import();
       })
     ;
-    this.notices?.remove('initial scan');
-    this.notices?.show('done initial scan', "Initial scan complete", { timeout: 3000 });
+    this.notices?.remove('initial_scan');
+    this.notices?.show('done_initial_scan', { collection_key: this.collection_key, timeout: 3000 });
+
   }
 
   /**
