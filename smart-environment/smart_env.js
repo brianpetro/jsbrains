@@ -225,7 +225,7 @@ export class SmartEnv {
       this[ckey].unload?.();
       this[ckey] = null;
     }
-    this.collections_loaded = false;
+    // this.collections_loaded = false;
   }
 
   /**

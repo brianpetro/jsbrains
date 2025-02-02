@@ -12,7 +12,7 @@ import { Collection } from 'smart-collections';
  * Manages multiple cluster-group definitions and merges, etc.
  */
 export class ClusterGroups extends Collection {
-  data_dir = 'clusters';
+  data_dir = 'cluster_groups';
   async create_group(center_keys) {
     console.log('create_group', center_keys);
     const clusters = [];
