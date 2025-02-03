@@ -12,6 +12,17 @@ export class SourceContentAdapter {
   // HELPER METHODS
   get data() { return this.item.data; }
   async create_hash(content) { return await create_hash(content); }
+  get settings(){
+    return this.item.env.settings.smart_sources[this.adapter_key];
+  }
+  get adapter_key(){
+    return to_snake(this.constructor.name);
+  }
+
+}
+
+function to_snake(str){
+  return str[0].toLowerCase() + str.slice(1).replace(/([A-Z])/g, '_$1').toLowerCase();
 }
 
 export default {
