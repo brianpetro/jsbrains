@@ -36,6 +36,7 @@ export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
    */
   async load() {
     this.model.model_loaded = true;
+    this.set_state('loaded');
     return;
   }
 

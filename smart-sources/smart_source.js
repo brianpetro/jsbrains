@@ -495,9 +495,13 @@ export class SmartSource extends SmartEntity {
   get source_adapter() {
     if(this._source_adapter) return this._source_adapter;
     if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
-    else this._source_adapter = new this.source_adapters["default"](this);
+    else {
+      // console.log("No source adapter found for", this.file_type, this.source_adapters);
+      this._source_adapter = new this.source_adapters["default"](this);
+    }
     return this._source_adapter;
   }
+
 
   // COMPONENTS
 

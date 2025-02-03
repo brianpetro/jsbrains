@@ -325,10 +325,10 @@ export class SmartModel {
   process_settings_config(_settings_config, prefix = null) {
     return Object.entries(_settings_config)
       .reduce((acc, [key, val]) => {
-        if (val.conditional) {
-          if (!val.conditional(this)) return acc;
-          delete val.conditional; // remove conditional to prevent re-checking downstream
-        }
+        // if (val.conditional) {
+        //   if (!val.conditional(this)) return acc;
+        //   delete val.conditional; // remove conditional to prevent re-checking downstream
+        // }
         const new_key = (prefix ? prefix + "." : "") + this.process_setting_key(key);
         acc[new_key] = val;
         return acc;

@@ -126,6 +126,7 @@ export class SmartRankModel extends SmartModel {
       // Add adapter-specific settings here
       ...(this.adapter.settings_config || {}),
     };
+    // console.log("adapter Name", this.adapter_name);
     return this.process_settings_config(_settings_config);
   }
 

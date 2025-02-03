@@ -37,6 +37,16 @@ export class SmartRankModelApiAdapter extends SmartRankAdapter {
     }
     return this._http_adapter;
   }
+  /**
+   * Load the adapter
+   * @async
+   * @returns {Promise<void>}
+   */
+  async load() {
+    this.model.model_loaded = true;
+    if(this.api_key) this.set_state('loaded');
+    return;
+  }
 
   /**
    * Make an API request with retry logic
