@@ -150,6 +150,10 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
    * @throws {Error} If the block cannot be found.
    */
   _extract_block(source_content) {
+    if(!source_content){
+      console.warn(`BLOCK NOT FOUND: ${this.item.key} has no source content.`);
+      return "";
+    }
     const { line_start, line_end } = this.item;
     if (!line_start || !line_end) {
       throw new Error(`BLOCK NOT FOUND: ${this.item.key} has invalid line references.`);
