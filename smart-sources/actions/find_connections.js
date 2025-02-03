@@ -11,7 +11,7 @@ import { find_connections as entities_find_connections } from "smart-entities/ac
 export async function find_connections(params={}) {
   let connections;
   if(this.block_collection.settings.embed_blocks && params.exclude_source_connections) connections = [];
-  else connections = await entities_find_connections(params);
+  else connections = await entities_find_connections.call(this, params);
   const filter_opts = this.prepare_find_connections_filter_opts(params);
   const limit = params.filter?.limit
     || params.limit // DEPRECATED: for backwards compatibility

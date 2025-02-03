@@ -1,6 +1,6 @@
 import test from 'ava';
 import { load_test_env } from './_env.js';
-import test_data from './_data.json' assert { type: "json" };
+import test_data from './_data.json' with { type: "json" };
 
 test.beforeEach(async t => { 
   await load_test_env(t);

@@ -4,7 +4,7 @@ import {
   SmartEmbedModelResponseAdapter,
 } from "./_api.js";
 import { Tiktoken } from "js-tiktoken/lite";
-import cl100k_base from "../cl100k_base.json" assert { type: "json" };
+import cl100k_base from "../cl100k_base.json" with { type: "json" };
 
 /**
  * Adapter for OpenAI's embedding API

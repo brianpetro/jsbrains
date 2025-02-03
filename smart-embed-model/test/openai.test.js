@@ -1,7 +1,7 @@
 import test from 'ava';
 import { SmartEmbedModel } from '../smart_embed_model.js';
 import { SmartEmbedOpenAIAdapter } from '../adapters/openai.js';
-import expected from './openai.json' assert { type: 'json' };
+import expected from './openai.json' with { type: 'json' };
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });

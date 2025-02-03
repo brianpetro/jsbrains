@@ -1,7 +1,8 @@
 import test from 'ava';
 import { SmartEmbedModel } from '../smart_embed_model.js';
 import { SmartEmbedTransformersAdapter } from '../adapters/transformers.js';
-import expected from './transformers.json' assert { type: 'json' };
+import expected from './transformers.json' with { type: 'json' };
+
 
 // Mock the transformers pipeline
 class MockSmartEmbedTransformersAdapter extends SmartEmbedTransformersAdapter {
