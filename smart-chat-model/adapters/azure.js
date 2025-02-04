@@ -21,7 +21,7 @@ export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
     api_key_header: "api-key",
     azure_resource_name: "",
     azure_deployment_name: "",
-    azure_api_version: "2023-05-15",
+    azure_api_version: "2024-10-01-preview",
     default_model: "gpt-35-turbo",
     signup_url: "https://learn.microsoft.com/azure/cognitive-services/openai/quickstart?tabs=command-line",
     models_endpoint: "https://{azure_resource_name}.openai.azure.com/openai/deployments?api-version={azure_api_version}",
@@ -49,11 +49,12 @@ export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
       "[CHAT_ADAPTER].azure_api_version": {
         name: 'Azure API Version',
         type: "text",
-        description: "The API version for Azure OpenAI (e.g. '2023-05-15').",
-        default: "2023-05-15",
+        description: "The API version for Azure OpenAI (e.g. '2024-10-01-preview').",
+        default: "2024-10-01-preview",
       },
     };
   }
+
 
   /**
    * Build the endpoint dynamically based on Azure settings.

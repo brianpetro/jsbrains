@@ -154,9 +154,13 @@ export class SmartEntities extends Collection {
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
   async nearest(vec, filter = {}) {
-    if (!vec) return console.warn("nearest: no vec");
+    if (!vec) {
+      console.warn("nearest: no vec");
+      return [];
+    }
     return await this.entities_vector_adapter.nearest(vec, filter);
   }
+
 
   /**
    * Finds the furthest entities from a vector using the default adapter.

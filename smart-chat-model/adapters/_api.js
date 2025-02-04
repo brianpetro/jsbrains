@@ -442,7 +442,7 @@ export class SmartChatModelRequestAdapter {
       body.tool_choice = this.tool_choice;
     }
     // special handling for o1 models
-    if(this.model.startsWith('o1-')){
+    if(this.model?.startsWith('o1-')){
       body.messages = body.messages.filter(m => m.role !== 'system'); // remove system messages (not supported by o1 models)
       delete body.temperature; // not supported by o1 models
     }

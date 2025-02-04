@@ -277,10 +277,6 @@ var SmartModel = class {
    */
   process_settings_config(_settings_config, prefix = null) {
     return Object.entries(_settings_config).reduce((acc, [key, val]) => {
-      if (val.conditional) {
-        if (!val.conditional(this)) return acc;
-        delete val.conditional;
-      }
       const new_key = (prefix ? prefix + "." : "") + this.process_setting_key(key);
       acc[new_key] = val;
       return acc;
@@ -816,7 +812,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       });
     } catch (err) {
       console.error("error_processing_batch", err);
-      this.pipeline.dispose();
+      this.pipeline?.dispose();
       this.pipeline = null;
       await this.load();
       return Promise.all(batch_inputs.map(async (item) => {
