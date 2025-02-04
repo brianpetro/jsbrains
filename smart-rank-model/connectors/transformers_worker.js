@@ -118,7 +118,7 @@ var SmartModel = class {
    */
   async load() {
     this.set_state("loading");
-    if (!this.adapter?.loaded) {
+    if (!this.adapter?.is_loaded) {
       await this.invoke_adapter_method("load");
     }
     this.set_state("loaded");
@@ -129,7 +129,7 @@ var SmartModel = class {
    * @returns {Promise<void>}
    */
   async unload() {
-    if (this.adapter?.loaded) {
+    if (this.adapter?.is_loaded) {
       this.set_state("unloading");
       await this.invoke_adapter_method("unload");
       this.set_state("unloaded");
@@ -277,10 +277,6 @@ var SmartModel = class {
    */
   process_settings_config(_settings_config, prefix = null) {
     return Object.entries(_settings_config).reduce((acc, [key, val]) => {
-      if (val.conditional) {
-        if (!val.conditional(this)) return acc;
-        delete val.conditional;
-      }
       const new_key = (prefix ? prefix + "." : "") + this.process_setting_key(key);
       acc[new_key] = val;
       return acc;
@@ -296,6 +292,7 @@ var SmartModel = class {
     return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
   re_render_settings() {
+    console.log("re_render_settings", this.opts);
     if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
     else console.warn("re_render_settings is not a function (must be passed in model opts)");
   }
@@ -348,37 +345,6 @@ __publicField(SmartModel, "defaults", {
   // override in sub-class if needed
 });
 
-// models.json
-var models_default = {
-  "cohere-rerank-english-v3.0": {
-    adapter: "cohere",
-    model_name: "rerank-english-v3.0",
-    model_description: "Cohere Rerank English v3.0",
-    model_version: "3.0",
-    endpoint: "https://api.cohere.ai/v1/rerank",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    api_key_header: "Authorization"
-  },
-  "jinaai/jina-reranker-v1-tiny-en": {
-    adapter: "transformers",
-    model_key: "jinaai/jina-reranker-v1-tiny-en"
-  },
-  "jinaai/jina-reranker-v1-turbo-en": {
-    adapter: "transformers",
-    model_key: "jinaai/jina-reranker-v1-turbo-en"
-  },
-  "mixedbread-ai/mxbai-rerank-xsmall-v1": {
-    adapter: "transformers",
-    model_key: "mixedbread-ai/mxbai-rerank-xsmall-v1"
-  },
-  "Xenova/bge-reranker-base": {
-    adapter: "transformers",
-    model_key: "Xenova/bge-reranker-base"
-  }
-};
-
 // smart_rank_model.js
 var SmartRankModel = class extends SmartModel {
   /**
@@ -424,13 +390,6 @@ var SmartRankModel = class extends SmartModel {
     return await this.invoke_adapter_method("rank", query, documents, options);
   }
   /**
-   * Get available ranking models.
-   * @returns {Object} Map of ranking models.
-   */
-  get models() {
-    return models_default;
-  }
-  /**
    * Get the default model key.
    * @returns {string} Default model key.
    */
@@ -456,23 +415,17 @@ var SmartRankModel = class extends SmartModel {
     };
     return this.process_settings_config(_settings_config);
   }
-  /**
-   * Reload ranking model.
-   */
-  reload_model() {
-    if (this.adapter && typeof this.adapter.load === "function") {
-      this.adapter.load();
-    }
-  }
 };
 /**
  * Default configurations for SmartRankModel.
  * @type {Object}
  */
 __publicField(SmartRankModel, "defaults", {
-  adapter: "transformers",
-  // Default to transformers adapter
-  model_key: "jinaai/jina-reranker-v1-tiny-en"
+  adapter: "cohere",
+  model_key: "rerank-v3.5"
+  // LOCAL RERANKER CURRENTLY TOO SLOW FOR DEFAULT
+  // adapter: 'transformers', // Default to transformers adapter
+  // model_key: 'jinaai/jina-reranker-v1-tiny-en',
 });
 
 // ../smart-model/adapters/_adapter.js
@@ -672,6 +625,14 @@ var transformers_models = {
     model_key: "Xenova/bge-reranker-base"
   }
 };
+var transformers_settings_config = {
+  use_gpu: {
+    name: "Use GPU",
+    description: "Use GPU for ranking (faster, may not work on all systems)",
+    type: "toggle",
+    default: true
+  }
+};
 var SmartRankTransformersAdapter = class extends SmartRankAdapter {
   /**
    * Create transformers adapter instance
@@ -735,6 +696,9 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
   }
   get models() {
     return transformers_models;
+  }
+  get settings_config() {
+    return transformers_settings_config;
   }
 };
 __publicField(SmartRankTransformersAdapter, "defaults", transformers_defaults);

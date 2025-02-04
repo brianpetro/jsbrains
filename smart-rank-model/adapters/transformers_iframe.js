@@ -1,6 +1,6 @@
 import { SmartRankIframeAdapter } from "./iframe.js";
 import { transformers_connector } from "../connectors/transformers_iframe.js";
-import { transformers_defaults, transformers_models } from "./transformers.js";
+import { transformers_defaults, transformers_models, transformers_settings_config } from "./transformers.js";
 
 /**
  * Adapter for running transformer-based ranking models in an iframe
@@ -33,5 +33,8 @@ export class SmartRankTransformersIframeAdapter extends SmartRankIframeAdapter {
   }
   get models() {
     return transformers_models;
+  }
+  get settings_config() {
+    return transformers_settings_config;
   }
 }

@@ -35,6 +35,17 @@ export const transformers_models = {
   },
 };
 
+export const transformers_settings_config = {
+  use_gpu: {
+    name: 'Use GPU',
+    description: 'Use GPU for ranking (faster, may not work on all systems)',
+    type: 'toggle',
+    default: true,
+  },
+};
+
+
+
 /**
  * Adapter for local transformer-based ranking models
  * Uses @huggingface/transformers for model loading and inference
@@ -134,6 +145,10 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
 
   get models() {
     return transformers_models;
+  }
+
+  get settings_config() {
+    return transformers_settings_config;
   }
 
 }

@@ -71,6 +71,8 @@ export class SmartRankMessageAdapter extends SmartRankAdapter {
     if (result?.model_loaded) {
       console.log('model loaded');
       this.model.model_loaded = true;
+      this.model.set_state('loaded');
+      this.set_state('loaded');
     }
 
     if (this.message_queue[id]) {

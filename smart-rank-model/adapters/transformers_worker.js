@@ -1,5 +1,5 @@
 import { SmartRankWorkerAdapter } from "./worker.js";
-import { transformers_defaults } from "./transformers.js";
+import { transformers_defaults, transformers_settings_config } from "./transformers.js";
 
 /**
  * Adapter for running transformer-based ranking models in a Web Worker
@@ -18,5 +18,8 @@ export class SmartRankTransformersWorkerAdapter extends SmartRankWorkerAdapter {
     super(model);
     // Set connector URL to the worker script
     this.connector = "../connectors/transformers_worker.js";
+  }
+  get settings_config() {
+    return transformers_settings_config;
   }
 }
