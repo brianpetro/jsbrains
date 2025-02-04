@@ -655,7 +655,7 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
     const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2");
     env.allowLocalModels = false;
     const pipeline_opts = {
-      // quantized: true,
+      quantized: true
     };
     if (this.model.opts.use_gpu) {
       console.log("[Transformers] Using GPU");
@@ -684,7 +684,6 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
       await this.load();
     }
     const { top_k = void 0, return_documents = false } = options;
-    documents = documents.slice(0, 10);
     console.log("tokenizing", query, documents);
     const inputs = this.tokenizer(
       new Array(documents.length).fill(query),
