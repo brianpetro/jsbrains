@@ -1,3 +1,9 @@
+/**
+ * @file adapters/transformers.js
+ * @description Adapter for local transformer-based ranking models
+ * @module SmartRankTransformersAdapter
+ */
+
 import { SmartRankAdapter } from "./_adapter.js";
 
 /**
@@ -37,6 +43,7 @@ export const transformers_models = {
 
 export const transformers_settings_config = {
   use_gpu: {
+    setting: 'use_gpu',
     name: 'Use GPU',
     description: 'Use GPU for ranking (faster, may not work on all systems)',
     type: 'toggle',
@@ -44,14 +51,12 @@ export const transformers_settings_config = {
   },
 };
 
-
-
 /**
  * Adapter for local transformer-based ranking models
  * Uses @huggingface/transformers for model loading and inference
  * @class SmartRankTransformersAdapter
  * @extends SmartRankAdapter
- * 
+ *
  * @example
  * ```javascript
  * const model = await SmartRankModel.load(env, {
@@ -90,10 +95,11 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
     const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import('@huggingface/transformers');
     env.allowLocalModels = false;
     const pipeline_opts = {
-      quantized: true,
+      // quantized: true,
     };
 
     if (this.model.opts.use_gpu) {
+    // if (false) {
       console.log("[Transformers] Using GPU");
       pipeline_opts.device = 'webgpu';
       // pipeline_opts.dtype = 'fp32';
@@ -102,9 +108,11 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
       // env.backends.onnx.wasm.numThreads = 8; // breaks on windows
     }
 
-    this.model_instance = await AutoModelForSequenceClassification.from_pretrained(this.model.model_key, pipeline_opts);
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model.model_key);
-    console.log('TransformersAdapter initialized');
+    this.model_instance = await AutoModelForSequenceClassification.from_pretrained(this.model.model_key, pipeline_opts);
+    console.log('TransformersAdapter initialized', this.model.model_key);
+    this.model.model_loaded = true;
+    this.set_state('loaded');
   }
 
   /**
@@ -114,23 +122,30 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
    * @param {Object} [options={}] - Additional ranking options
    * @param {number} [options.top_k] - Limit the number of returned documents
    * @param {boolean} [options.return_documents=false] - Whether to include original documents in results
-   * @returns {Promise<Array<Object>>} Ranked documents with properties like {index, score, text}
+   * @returns {Promise<Array<Object>>} Ranked documents: [{index, score, text?}, ...]
    */
   async rank(query, documents, options = {}) {
     console.log('TransformersAdapter ranking');
-    console.log(documents);
+    if (!this.model_instance || !this.tokenizer) {
+      await this.load();
+    }
     const { top_k = undefined, return_documents = false } = options;
-    if (!this.model_instance || !this.tokenizer) await this.load();
+    // documents = documents.slice(0, 10); // test with fewer documents
 
-    console.log("tokenizing");
+    console.log("tokenizing", query, documents);
     const inputs = this.tokenizer(
       new Array(documents.length).fill(query),
       { text_pair: documents, padding: true, truncation: true }
     );
-    console.log("running model");
+    console.log("inputs", inputs);
     const { logits } = await this.model_instance(inputs);
-    console.log("done");
-    return logits
+    console.log("done", logits);
+
+
+
+    console.log("logits.data", logits.data);
+    // Convert logits to probabilities via sigmoid
+    const results = logits
       .sigmoid()
       .tolist()
       .map(([score], i) => ({
@@ -139,7 +154,11 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
         ...(return_documents ? { text: documents[i] } : {})
       }))
       .sort((a, b) => b.score - a.score)
-      .slice(0, top_k);
+      .slice(0, top_k)
+    ;
+
+    console.log(results);
+    return results;
   }
 
 
@@ -148,7 +167,9 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
   }
 
   get settings_config() {
-    return transformers_settings_config;
+    return {
+      ...(super.settings_config || {}),
+      ...transformers_settings_config,
+    };
   }
-
 }

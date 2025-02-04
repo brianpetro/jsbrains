@@ -35,6 +35,9 @@ export class SmartRankTransformersIframeAdapter extends SmartRankIframeAdapter {
     return transformers_models;
   }
   get settings_config() {
-    return transformers_settings_config;
+    return {
+      ...(super.settings_config || {}),
+      ...transformers_settings_config,
+    };
   }
 }

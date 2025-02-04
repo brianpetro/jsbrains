@@ -627,6 +627,7 @@ var transformers_models = {
 };
 var transformers_settings_config = {
   use_gpu: {
+    setting: "use_gpu",
     name: "Use GPU",
     description: "Use GPU for ranking (faster, may not work on all systems)",
     type: "toggle",
@@ -654,7 +655,7 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
     const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2");
     env.allowLocalModels = false;
     const pipeline_opts = {
-      quantized: true
+      // quantized: true,
     };
     if (this.model.opts.use_gpu) {
       console.log("[Transformers] Using GPU");
@@ -662,9 +663,11 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
     } else {
       console.log("[Transformers] Using CPU");
     }
-    this.model_instance = await AutoModelForSequenceClassification.from_pretrained(this.model.model_key, pipeline_opts);
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model.model_key);
-    console.log("TransformersAdapter initialized");
+    this.model_instance = await AutoModelForSequenceClassification.from_pretrained(this.model.model_key, pipeline_opts);
+    console.log("TransformersAdapter initialized", this.model.model_key);
+    this.model.model_loaded = true;
+    this.set_state("loaded");
   }
   /**
    * Rank documents based on a query
@@ -673,32 +676,40 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
    * @param {Object} [options={}] - Additional ranking options
    * @param {number} [options.top_k] - Limit the number of returned documents
    * @param {boolean} [options.return_documents=false] - Whether to include original documents in results
-   * @returns {Promise<Array<Object>>} Ranked documents with properties like {index, score, text}
+   * @returns {Promise<Array<Object>>} Ranked documents: [{index, score, text?}, ...]
    */
   async rank(query, documents, options = {}) {
     console.log("TransformersAdapter ranking");
-    console.log(documents);
+    if (!this.model_instance || !this.tokenizer) {
+      await this.load();
+    }
     const { top_k = void 0, return_documents = false } = options;
-    if (!this.model_instance || !this.tokenizer) await this.load();
-    console.log("tokenizing");
+    documents = documents.slice(0, 10);
+    console.log("tokenizing", query, documents);
     const inputs = this.tokenizer(
       new Array(documents.length).fill(query),
       { text_pair: documents, padding: true, truncation: true }
     );
-    console.log("running model");
+    console.log("inputs", inputs);
     const { logits } = await this.model_instance(inputs);
-    console.log("done");
-    return logits.sigmoid().tolist().map(([score], i) => ({
+    console.log("done", logits);
+    console.log("logits.data", logits.data);
+    const results = logits.sigmoid().tolist().map(([score], i) => ({
       index: i,
       score,
       ...return_documents ? { text: documents[i] } : {}
     })).sort((a, b) => b.score - a.score).slice(0, top_k);
+    console.log(results);
+    return results;
   }
   get models() {
     return transformers_models;
   }
   get settings_config() {
-    return transformers_settings_config;
+    return {
+      ...super.settings_config || {},
+      ...transformers_settings_config
+    };
   }
 };
 __publicField(SmartRankTransformersAdapter, "defaults", transformers_defaults);

@@ -20,6 +20,9 @@ export class SmartRankTransformersWorkerAdapter extends SmartRankWorkerAdapter {
     this.connector = "../connectors/transformers_worker.js";
   }
   get settings_config() {
-    return transformers_settings_config;
+    return {
+      ...(super.settings_config || {}),
+      ...transformers_settings_config,
+    };
   }
 }
