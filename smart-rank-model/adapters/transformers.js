@@ -95,11 +95,10 @@ export class SmartRankTransformersAdapter extends SmartRankAdapter {
     const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import('@huggingface/transformers');
     env.allowLocalModels = false;
     const pipeline_opts = {
-      // quantized: true,
+      quantized: true,
     };
 
     if (this.model.opts.use_gpu) {
-    // if (false) {
       console.log("[Transformers] Using GPU");
       pipeline_opts.device = 'webgpu';
       // pipeline_opts.dtype = 'fp32';
