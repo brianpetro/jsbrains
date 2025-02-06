@@ -19,7 +19,7 @@ import {
   AjsonMultiFileCollectionDataAdapter,
   AjsonMultiFileItemDataAdapter
 } from './ajson_multi_file.js';
-
+import { ajson_merge } from '../utils/ajson_merge.js';
 /**
  * ---- NEW / COPIED FROM ajson_multi_file.js ----
  * Map for legacy class names => new collection keys.
@@ -206,11 +206,12 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
         item = new ItemClass(this.env, val);
         collection.set(item);
       } else {
-        item.data = val;
+        item.data = ajson_merge(item.data, val); // merge to prevent overwriting data made pre-load
       }
       item.loaded_at = Date.now();
       item._queue_load = false;
       if (!val.key) val.key = item_key;
+
     }
 
     // rewrite if lines needed fixing or if line_count > final entry count
