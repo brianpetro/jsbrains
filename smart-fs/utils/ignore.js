@@ -92,7 +92,7 @@ export function load_ignore_patterns(start_dir) {
  */
 function expand_pattern(line) {
   // If the line has wildcard, keep it
-  if (/[/*?]/.test(line)) {
+  if (line.includes('*')) {
     return [line];
   }
 
