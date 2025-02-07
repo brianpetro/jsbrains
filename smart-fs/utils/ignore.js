@@ -68,7 +68,8 @@ export function load_ignore_patterns(start_dir) {
             // Skip blank lines or comment lines
             continue;
           }
-          patterns.push(line);
+          const expanded = expand_pattern(line);
+          patterns.push(...expanded);
         }
       }
     }
@@ -79,8 +80,31 @@ export function load_ignore_patterns(start_dir) {
     }
     current_dir = parent_dir;
   }
-
   return patterns;
+}
+
+/**
+ * Given a single line from a .gitignore/.scignore,
+ * if it is a bare name (no slash/wildcard), interpret it as
+ * [ "node_modules", "node_modules/**" ].
+ * if node_modules/ then also add node_modules/**
+ * Otherwise, keep it as-is.
+ */
+function expand_pattern(line) {
+  // If the line has wildcard, keep it
+  if (/[/*?]/.test(line)) {
+    return [line];
+  }
+
+  // If it ends with a slash, treat it as a directory
+  if (line.endsWith('/')) {
+    const base = line.slice(0, -1); // Remove trailing slash
+    return [base, base + '/**'];
+  }
+
+  // Otherwise (bare word):
+  // e.g. "node_modules" => [ "node_modules", "node_modules/**" ]
+  return [line, line + '/**'];
 }
 
 /**
