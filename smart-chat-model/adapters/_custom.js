@@ -3,9 +3,9 @@ import {
   SmartChatModelRequestAdapter,
   SmartChatModelResponseAdapter
 } from './_api.js';
-import { 
-  SmartChatModelAnthropicRequestAdapter, 
-  SmartChatModelAnthropicResponseAdapter 
+import {
+  SmartChatModelAnthropicRequestAdapter,
+  SmartChatModelAnthropicResponseAdapter
 } from './anthropic.js';
 import {
   SmartChatModelGeminiRequestAdapter,
@@ -102,7 +102,6 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
     const port = this.adapter_config.port ? `:${this.adapter_config.port}` : '';
     let path = this.adapter_config.path || '';
     if (path && !path.startsWith('/')) path = `/${path}`;
-
     return `${protocol}://${hostname}${port}${path}`;
   }
 
@@ -119,7 +118,7 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
   get settings_config() {
     return {
       /**
-       * Select which specialized request/response adapter 
+       * Select which specialized request/response adapter
        * you'd like to use for your custom endpoint.
        */
       '[CHAT_ADAPTER].api_adapter': {
@@ -130,7 +129,6 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
         options_callback: 'adapter.get_adapters_as_options',
         default: 'openai'
       },
-
       '[CHAT_ADAPTER].id': {
         name: 'Model Name',
         type: 'text',
@@ -183,10 +181,20 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
   validate_get_models_params() {
     return true;
   }
+  /**
+   * Unlike most API-based adapters, we do NOT force the user to have model_key set.
+   * So we override validate_config() to skip the "No model selected" error.
+   * Since this is a custom adapter, the onus is on the user to configure it correctly.
+   * @override
+   * @returns {Object} { valid: boolean, message: string }
+   */
+  validate_config() {
+    return { valid: true, message: "Configuration is valid." };
+  }
 }
 
 /**
- * Default request adapter if user chooses 'openai', but they can override 
+ * Default request adapter if user chooses 'openai', but they can override
  * with other sub-adapter logic if 'api_adapter' is different.
  * @class SmartChatModelCustomRequestAdapter
  * @extends SmartChatModelRequestAdapter
