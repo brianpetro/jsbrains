@@ -53,12 +53,21 @@ export class SmartEnv {
 
   static wait_for(opts = {}) {
     return new Promise((resolve) => {
-      const interval = setInterval(() => {
-        if (window.smart_env && window.smart_env.collections_loaded) {
-          clearInterval(interval);
-          resolve(window.smart_env);
-        }
-      }, 100);
+      if (opts.main) {
+        const interval = setInterval(() => {
+          if (window.smart_env && window.smart_env.mains.includes(opts.main)) {
+            clearInterval(interval);
+            resolve(window.smart_env);
+          }
+        }, 1000);
+      } else {
+        const interval = setInterval(() => {
+          if (window.smart_env && window.smart_env.collections_loaded) {
+            clearInterval(interval);
+            resolve(window.smart_env);
+          }
+        }, 100);
+      }
     });
   }
 
