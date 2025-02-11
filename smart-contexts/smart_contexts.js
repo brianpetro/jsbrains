@@ -46,11 +46,11 @@ export class SmartContexts extends Collection {
 
   get settings_config() {
     return {
-      link_depth: {
-        name: 'Link depth',
-        description: 'Number of links to follow from the start item.',
-        type: 'number',
-      },
+      // link_depth: {
+      //   name: 'Link depth',
+      //   description: 'Number of links to follow from the start item.',
+      //   type: 'number',
+      // },
       inlinks: {
         name: 'In-links',
         description: 'Whether to include in-links when including links (includes out-links by default).',
