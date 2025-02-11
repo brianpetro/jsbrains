@@ -597,7 +597,7 @@ export class SmartSources extends SmartEntities {
    * @returns {number} The total number of files.
    */
   get total_files() {
-    return this.env.fs.file_paths
+    return this.fs.file_paths
       .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
       .length;
   }
