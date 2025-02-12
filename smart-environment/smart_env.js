@@ -220,7 +220,7 @@ export class SmartEnv {
       this.mains.push(main_key);
     }
     this[main_key] = main;
-    this.merge_options(main_env_opts);
+    this.opts = this.merge_options(this.opts, main_env_opts);
     return main_key;
   }
 
@@ -279,30 +279,33 @@ export class SmartEnv {
   }
 
   /**
-   * Merges provided options into the SmartEnv instance, performing a deep merge for objects.
-   * @param {Object} opts
+   * Merges provided options into the target object, performing a deep merge for objects.
+   * @param {Object} target - The target object to merge into
+   * @param {Object} incoming - The incoming object to merge from
+   * @returns {Object} The mutated target object
    */
-  merge_options(opts) {
-    for (const [key, value] of Object.entries(opts)) {
+  merge_options(target, incoming) {
+    for (const [key, value] of Object.entries(incoming)) {
       if (key === 'global_ref') continue;
       if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
-          this.opts[key] = [...(this.opts[key] || []), ...value];
+          target[key] = [...(target[key] || []), ...value];
         } else {
-          if (!this.opts[key]) this.opts[key] = {};
-          deep_merge_no_overwrite(this.opts[key], value);
+          if (!target[key]) target[key] = {};
+          deep_merge_no_overwrite(target[key], value);
         }
       } else {
-        if (this.opts[key] !== undefined) {
+        if (target[key] !== undefined) {
           console.warn(
             `SmartEnv: Overwriting existing property ${key} with ${
               this.mains[this.mains.length - 1]
             } smart_env_config`
           );
         }
-        this.opts[key] = value;
+        target[key] = value;
       }
     }
+    return target;
   }
 
   /**
