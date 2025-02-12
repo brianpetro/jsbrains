@@ -1,2 +1,71 @@
-utils/
-♻️/
+# Node modules and dependencies
+**/node_modules/
+**/package-lock.json
+**/package.json
+
+# Test files (excluded globally)
+**/*.test.js
+**/test
+**/tests
+
+# Configuration files (excluding JSON and similar config files)
+**/*.json
+**/**/*.json
+*.json
+#  /**/*.config.js
+**/.env
+**/.env.*
+**/.gitignore
+**/.npmrc
+
+# Documentation (non-code content)
+# /**/*.md
+**/docs/
+**/documentation/
+
+# IDE and editor files
+**/.vscode/
+**/*.swp
+**/.DS_Store
+
+# Build and cache directories
+**/dist/**
+**/build/**
+**/connectors/**
+**/.cache/**
+**/coverage/**
+
+# Assets and static files
+assets
+**/assets/**
+**/public/**
+**/static/**
+
+# Temporary files
+**/*.log
+**/*.tmp
+**/*.temp
+
+# Git related directories
+.git
+.github
+**/.git
+**/.github
+
+# misc
+**/♻️/**
+**/*.performance.js
+**/schema.js
+**/utils/**
+**/*.example.md
+
+
+# projects needing update
+smart-templates
+smart-templates-2
+
+# READMEs
+**/*.md
+
+# adapters
+**/adapters/**
