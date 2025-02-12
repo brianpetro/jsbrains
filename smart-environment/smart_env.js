@@ -27,6 +27,7 @@ import { deep_remove_exclusive_props } from './utils/deep_remove_exclusive_props
 import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
+import { merge_options } from './utils/merge_options.js';
 
 /**
  * @class SmartEnv
@@ -285,27 +286,7 @@ export class SmartEnv {
    * @returns {Object} The mutated target object
    */
   merge_options(target, incoming) {
-    for (const [key, value] of Object.entries(incoming)) {
-      if (key === 'global_ref') continue;
-      if (typeof value === 'object' && value !== null) {
-        if (Array.isArray(value)) {
-          target[key] = [...(target[key] || []), ...value];
-        } else {
-          if (!target[key]) target[key] = {};
-          deep_merge_no_overwrite(target[key], value);
-        }
-      } else {
-        if (target[key] !== undefined) {
-          console.warn(
-            `SmartEnv: Overwriting existing property ${key} with ${
-              this.mains[this.mains.length - 1]
-            } smart_env_config`
-          );
-        }
-        target[key] = value;
-      }
-    }
-    return target;
+    return merge_options(target, incoming);
   }
 
   /**

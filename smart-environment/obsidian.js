@@ -1,24 +1,28 @@
 import { SmartEnv as BaseSmartEnv } from './smart_env.js';
 import { SmartFs } from 'smart-file-system';
 import { SmartFsObsidianAdapter } from 'smart-file-system/adapters/obsidian.js';
+import { SmartView } from 'smart-view';
+import { SmartViewObsidianAdapter } from 'smart-view/adapters/obsidian.js';
+import { merge_options } from './utils/merge_options.js';
+
+
+const OBSIDIAN_DEFAULTS = {
+  env_path: '',
+  modules: {
+    smart_fs: {
+      class: SmartFs,
+      adapter: SmartFsObsidianAdapter,
+    },
+    smart_view: {
+      class: SmartView,
+      adapter: SmartViewObsidianAdapter,
+    },
+  }
+};
 
 export class SmartEnv extends BaseSmartEnv {
-  get fs() {
-    if (!this.smart_fs) {
-      this.smart_fs = new SmartFs(this, {
-        adapter: SmartFsObsidianAdapter,
-        fs_path: this.opts.env_path || '',
-      });
-    }
-    return this.smart_fs;
-  }
-  get data_fs() {
-    if (!this._fs) {
-      this._fs = new SmartFs(this, {
-        adapter: SmartFsObsidianAdapter,
-        fs_path: this.data_fs_path,
-      });
-    }
-    return this._fs;
+  constructor(opts = {}) {
+    opts = merge_options(opts, OBSIDIAN_DEFAULTS);
+    super(opts);
   }
 }
