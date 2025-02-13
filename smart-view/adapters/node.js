@@ -157,23 +157,46 @@ export class Setting {
     this.element.appendChild(this.container);
   }
   add_folder_select(configurator) {
+    // Get the control container from the setting-item container.
     const container = this.container.querySelector('.control');
+    
+    // Create a wrapping container for the folder select components.
     const folder_select = document.createElement('div');
     folder_select.classList.add('folder-select');
-    container.appendChild(folder_select);
-    const currentFolder = document.createElement('span');
-    // currentFolder.type = 'text';
-    currentFolder.classList.add('current');
-    container.appendChild(currentFolder);
+
+    // Create a read-only visible input to display the folder path.
+    const current_folder = document.createElement('span');
+    current_folder.classList.add('current');
+
+    // Create a hidden input to store the folder path for change detection.
+    const hidden_input = document.createElement('input');
+    hidden_input.type = 'hidden';
+    hidden_input.classList.add('hidden-path');
+
+    // Create the browse button for selecting a folder.
     const browse_btn = document.createElement('button');
     browse_btn.textContent = 'Browse';
     browse_btn.classList.add('browse-button');
-    container.appendChild(browse_btn);
+
+    // Append the visible input, hidden input, and button to the folder_select container.
+    folder_select.appendChild(current_folder);
+    folder_select.appendChild(hidden_input);
+    folder_select.appendChild(browse_btn);
+    
+    // Append the folder_select container to the main control container.
+    container.appendChild(folder_select);
+    
+    // Provide configurator with both the hidden and visible elements along with utility functions.
     configurator({
-      inputEl: currentFolder,
-      setPlaceholder: (placeholder) => currentFolder.placeholder = placeholder,
-      setValue: (value) => currentFolder.innerText = value,
+      inputEl: folder_select,       // Hidden input is used for change detection.
+      setPlaceholder: (placeholder) => { current_folder.placeholder = placeholder; },
+      setValue: (value) => {
+        current_folder.innerText = value;
+        hidden_input.value = value;
+      },
+      getValue: () => hidden_input.value
     });
+    
     this.element.appendChild(this.container);
   }
   add_file_select(configurator) {
