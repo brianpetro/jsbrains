@@ -41,7 +41,7 @@ async function build_transformers_worker_connector() {
     });
 
     const connector = result.outputFiles[0].text
-      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2')
+      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3')
     ;
     writeFileSync(join(__dirname, '../connectors/transformers_worker.js'), connector);
     console.log('Build worker completed successfully.');

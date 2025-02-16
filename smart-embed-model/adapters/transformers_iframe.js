@@ -33,7 +33,7 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
       this.use_gpu = false;
     }
     else this.connector = this.connector
-      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2')
+      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3')
     ;
   }
 
