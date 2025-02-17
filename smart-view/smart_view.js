@@ -235,6 +235,19 @@ export class SmartView {
       }
     });
   }
+  apply_style_sheet(sheet) {
+    if ('adoptedStyleSheets' in Document.prototype) {
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    } else {
+      // Fallback: Create a <style> tag and insert the CSS text.
+      const styleEl = document.createElement('style');
+      // If the sheet has cssRules, serialize them to text:
+      if (sheet.cssRules) {
+        styleEl.textContent = Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+      }
+      document.head.appendChild(styleEl);
+    }
+  }
 }
 
 /**
