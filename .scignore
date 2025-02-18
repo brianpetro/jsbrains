@@ -4,9 +4,9 @@
 **/package.json
 
 # Test files (excluded globally)
-**/*.test.js
-**/test
-**/tests
+# **/*.test.js
+# **/test
+# **/tests
 
 # Configuration files (excluding JSON and similar config files)
 **/*.json

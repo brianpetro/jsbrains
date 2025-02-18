@@ -1,9 +1,10 @@
 /**
- * smart_contexts.js
- * 
- * @fileoverview
- * Provides the SmartContexts collection class and its updated implementation 
- * based on the latest specs, including the new 'respect_exclusions' logic.
+ * @file smart_contexts.js
+ *
+ * @description
+ * Provides the SmartContexts collection class. Extends `Collection` from smart-collections,
+ * manages multiple SmartContext items, merges default settings, and includes logic
+ * for backward compatibility with older settings fields (e.g., before_context -> templates[-1].before).
  */
 
 import { Collection } from 'smart-collections';
@@ -12,13 +13,13 @@ import { SmartContext } from './smart_context.js';
 /**
  * @class SmartContexts
  * @extends Collection
- * @classdesc Manages a collection of SmartContext items, each representing a set of 
- * references or data relevant to a specific use-case. Handles link_depth, 
- * inlinks, excluded_headings, and context-building logic.
+ * @classdesc
+ * Manages a collection of SmartContext items, each representing a set of references
+ * or data relevant to a specific use case (e.g., building a textual context for AI).
  */
 export class SmartContexts extends Collection {
   /**
-   * Default settings for SmartContexts. Matches updated specs fields.
+   * Default settings for all SmartContext items in this collection.
    * @readonly
    */
   get default_settings() {
@@ -26,13 +27,38 @@ export class SmartContexts extends Collection {
       link_depth: 0,
       inlinks: false,
       excluded_headings: [],
-      before_context: '',
-      after_context: '',
-      before_item: '',
-      after_item: '',
-      before_link: '',
-      after_link: '',
+      max_len: 0, // 0 means no enforced limit
+      templates: {
+        '-1': { before: '', after: '' },
+        '0': { before: '', after: '' },
+        '1': { before: '', after: '' },
+        '2': { before: '', after: '' }
+      }
     };
+  }
+
+  /**
+   * Runs after the collection is constructed or loaded. Ensures backwards
+   * compatibility with older fields like `before_context`, `after_context`, etc.
+   */
+  async init() {
+    // TEMP: for backwards compatibility 2025-02-18
+    // copy old settings to new format
+    Object.entries(this.settings).forEach(([key, value]) => {
+      if (key === 'before_context') {
+        this.settings.templates['-1'].before = value;
+      } else if (key === 'after_context') {
+        this.settings.templates['-1'].after = value;
+      } else if (key === 'before_item') {
+        this.settings.templates['0'].before = value;
+      } else if (key === 'after_item') {
+        this.settings.templates['0'].after = value;
+      } else if (key === 'before_link') {
+        this.settings.templates['1'].before = value;
+      } else if (key === 'after_link') {
+        this.settings.templates['1'].after = value;
+      }
+    });
   }
 
   /**
@@ -43,23 +69,21 @@ export class SmartContexts extends Collection {
     return SmartContext;
   }
 
-
+  /**
+   * Renders a settings configuration for this collection.
+   * Extend or override to provide dynamic settings or additional fields.
+   */
   get settings_config() {
     return {
-      // link_depth: {
-      //   name: 'Link depth',
-      //   description: 'Number of links to follow from the start item.',
-      //   type: 'number',
-      // },
       inlinks: {
         name: 'In-links',
-        description: 'Whether to include in-links when including links (includes out-links by default).',
-        type: 'toggle',
+        description: 'Include inbound links from other items?',
+        type: 'toggle'
       },
       excluded_headings: {
         name: 'Excluded headings',
-        description: 'Glob patterns or headings to exclude from the final output. Separate each pattern with a newline.',
-        type: 'textarea_array',
+        description: 'Headings/patterns to exclude; use newline to separate multiple patterns.',
+        type: 'textarea_array'
       },
       context_explanation: {
         type: 'html',
@@ -77,14 +101,16 @@ export class SmartContexts extends Collection {
         `
       },
       before_context: {
+        setting: 'templates.-1.before',
         name: 'Before context',
-        description: 'Text inserted at the top of the final compiled text.',
-        type: 'textarea',
+        description: 'Text inserted at the top of the final output.',
+        type: 'textarea'
       },
       after_context: {
+        setting: 'templates.-1.after',
         name: 'After context',
-        description: 'Text inserted at the bottom of the final compiled text.',
-        type: 'textarea',
+        description: 'Text inserted at the bottom of the final output.',
+        type: 'textarea'
       },
       item_explanation: {
         type: 'html',
@@ -104,21 +130,26 @@ export class SmartContexts extends Collection {
         `
       },
       before_item: {
-        name: 'Before each item',
-        description: 'Text inserted before each item.',
-        type: 'textarea',
+        setting: 'templates.0.before',
+        name: 'Before each primary item',
+        description: 'Text inserted before each depth=0 item.',
+        type: 'textarea'
       },
       after_item: {
-        name: 'After each item',
-        description: 'Text inserted after each item.',
-        type: 'textarea',
+        setting: 'templates.0.after',
+        name: 'After each primary item',
+        description: 'Text inserted after each depth=0 item.',
+        type: 'textarea'
       },
       link_explanation: {
         type: 'html',
         value: `
           <div class="setting-explanation">
             <h5>Link Templates</h5>
-            <span>Included once for each link (before_link and after_link). <i>Note: links are treated similar to items but are aggregated after all items.</i></span>
+            <span>Inserted before/after each link-based item (depth=1,2,...). 
+                  Typically used to separate these items from the primary content.
+                  <i>Note: links are treated similar to items but are aggregated after all items.</i>
+            </span>
             <br>
             <br>
             <span>Available variables:</span>
@@ -133,15 +164,17 @@ export class SmartContexts extends Collection {
         `
       },
       before_link: {
-        name: 'Before each link',
-        description: 'Text inserted before each link item.',
-        type: 'textarea',
+        setting: 'templates.1.before',
+        name: 'Before link item',
+        description: 'Text inserted before each depth=1 link item.',
+        type: 'textarea'
       },
       after_link: {
-        name: 'After each link',
-        description: 'Text inserted after each link item.',
-        type: 'textarea',
-      },
+        setting: 'templates.1.after',
+        name: 'After link item',
+        description: 'Text inserted after each depth=1 link item.',
+        type: 'textarea'
+      }
     };
   }
 }

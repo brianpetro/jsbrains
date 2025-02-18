@@ -1,61 +1,39 @@
 /**
  * @file respect_exclusions.js
  * @description
- * Removes lines/sections matching the excluded_headings patterns from each item’s content
- * before building the final context.
+ * Removes lines/sections matching the excluded_headings patterns from each item’s content.
+ * Exclusion logic operates by finding headings in markdown and removing that heading + subsequent lines
+ * until the next heading.
  */
 
 import { parse_blocks } from 'smart-blocks/parsers/markdown.js';
 import { match_glob } from 'smart-file-system/utils/match_glob.js';
 
 /**
- * respect_exclusions(opts)
- * - For each item in `opts.items`, parses the content, finds headings, excludes them if matched.
- * - Also optionally processes `opts.links` if that’s required (rare).
- * - Mutates `opts.items{}` (and `opts.links{}` if needed).
- * 
- * @async
+ * respect_exclusions(context_snapshot={}, opts={})
+ * @param {Object} context_snapshot
  * @param {Object} opts
- * @property {string[]} [opts.excluded_headings=[]] - patterns for headings to exclude
- * @property {Record<string,string>} [opts.items] - items to process
- * @property {Record<string,[string,string]>} [opts.links] - links to process
- * @returns {Promise<void>} modifies `opts.items` in-place
+ * @property {string[]} [opts.excluded_headings=[]]
  */
-export async function respect_exclusions(opts) {
+export async function respect_exclusions(context_snapshot = {}, opts = {}) {
   const excluded_list = (opts.excluded_headings || []).map(h => h.trim()).filter(Boolean);
   if (!excluded_list.length) return;
 
-  // For each item in opts.items, parse the content, find headings, exclude matched ones.
-  for (const [item_path, item_content] of Object.entries(opts.items || {})) {
-    const [new_content, exclusions] = strip_excluded_headings(item_content, excluded_list);
-    opts.items[item_path] = new_content;
-    exclusions.forEach(h => {
-      if(!opts.exclusions) opts.exclusions = {};
-      if(!opts.exclusions[h]) opts.exclusions[h] = 0;
-      opts.exclusions[h]++;
-    });
+  for(const [depth, context_items] of Object.entries(context_snapshot.items)) {
+    for (const [item_key, item_content] of Object.entries(context_items || {})) {
+      const [new_content, exclusions] = strip_excluded_headings(item_content, excluded_list);
+      context_snapshot.items[depth][item_key] = new_content;
+      if (exclusions.length) {
+        if(!context_snapshot.exclusions) context_snapshot.exclusions = {};
+        for (const h of exclusions) {
+          if(!context_snapshot.exclusions[h]) context_snapshot.exclusions[h] = 0;
+          context_snapshot.exclusions[h]++;
+        }
+      }
+    }
   }
-
-  // Optionally process links if they also contain headings. Usually links are short, but shown here if needed.
-  for (const [link_key, link_obj] of Object.entries(opts.links || {})) {
-    const {content} = link_obj;
-    const [new_link_content, exclusions] = strip_excluded_headings(content, excluded_list);
-    opts.links[link_key].content = new_link_content;
-    exclusions.forEach(h => {
-      if(!opts.exclusions) opts.exclusions = {};
-      if(!opts.exclusions[h]) opts.exclusions[h] = 0;
-      opts.exclusions[h]++;
-    });
-  }
-  return opts;
 }
 
-/**
- * strip_excluded_headings
- * @param {string} content - The raw content
- * @param {string[]} excluded_list - The array of heading patterns to exclude
- * @returns {string} The content with matched headings and their sections removed
- */
 function strip_excluded_headings(content, excluded_list) {
   const blocks_map = parse_blocks(content);
   if (!Object.keys(blocks_map).length) return [content, []];
@@ -64,26 +42,28 @@ function strip_excluded_headings(content, excluded_list) {
   let lines = content.split('\n');
   let remove_line_ranges = [];
 
-  // For each block, if heading matches an excluded pattern, we mark lines for removal
   for (const [block_key, line_range] of Object.entries(blocks_map)) {
-    // block_key looks like "#Heading" or "#Top#Sub" etc. We only consider the final heading portion
+    // block_key might be "stuff.md# Secret" or just "# Secret" etc. if your parser includes the filename
     const splitted = block_key.split('#').filter(Boolean);
     if (!splitted.length) continue;
-    const last_heading = splitted[splitted.length - 1];
+    // *** Trim the heading to handle leading spaces ***
+    const last_heading = splitted[splitted.length - 1].trim();
 
-    // Check if last_heading matches any excluded pattern
     for (const pattern of excluded_list) {
       if (match_glob(pattern, last_heading, { case_sensitive: false })) {
-        remove_line_ranges.push({ start: line_range[0] - 1, end: line_range[1] - 1 });
+        // remove from line_range[0]..line_range[1]
+        remove_line_ranges.push({
+          start: line_range[0] - 1,
+          end: line_range[1] - 1
+        });
         exclusions.push(pattern);
-        break; // no need to check further patterns
+        break;
       }
     }
   }
 
   if (!remove_line_ranges.length) return [content, []];
 
-  // Merge intervals
   remove_line_ranges.sort((a, b) => a.start - b.start);
   let merged = [];
   let current = remove_line_ranges[0];
@@ -97,20 +77,54 @@ function strip_excluded_headings(content, excluded_list) {
   }
   merged.push(current);
 
-  // Remove lines
   const new_lines = [];
   let prev_idx = 0;
   for (const interval of merged) {
-    // push lines from prev_idx up to interval.start
     for (let i = prev_idx; i < interval.start; i++) {
       if (i < lines.length) new_lines.push(lines[i]);
     }
     prev_idx = interval.end + 1;
   }
-  // push remainder
   for (let i = prev_idx; i < lines.length; i++) {
     new_lines.push(lines[i]);
   }
 
   return [new_lines.join('\n'), exclusions];
+}
+
+/**
+ * Loads ignore patterns from a .scignore or .gitignore file in the given directory (if present).
+ * @param {string} directory_path - The absolute path of the directory to check for .scignore or .gitignore.
+ * @returns {string[]} - An array of patterns found in the ignore file (if any).
+ */
+export async function load_ignore_patterns(smart_fs, directory_path) {
+  // Priority: .scignore > .gitignore
+  const sc_file = directory_path + smart_fs.sep + '.scignore';
+  if (await smart_fs.exists(sc_file)) {
+    const ignore_content = await smart_fs.read(sc_file);
+    return parse_ignore_file(ignore_content);
+  }
+  const gi_file = directory_path + smart_fs.sep + '.gitignore';
+  if (await smart_fs.exists(gi_file)) {
+    const ignore_content = await smart_fs.read(gi_file);
+    return parse_ignore_file(ignore_content);
+  }
+  return [];
+}
+
+/**
+ * Reads a .scignore or .gitignore file and parses lines into patterns.
+ * @param {string} file_path
+ * @returns {string[]}
+ */
+function parse_ignore_file(content) {
+  try {
+    return content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#'));
+  } catch (err) {
+    // If we can't read for some reason, treat as no patterns
+    return [];
+  }
 }
