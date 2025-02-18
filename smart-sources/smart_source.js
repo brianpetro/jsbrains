@@ -386,7 +386,7 @@ export class SmartSource extends SmartEntity {
    * @returns {string} The file type in lowercase.
    */
   get file_type() {
-    return this.data.path?.split(".").pop().toLowerCase()
+    return this.path?.split(".").pop().toLowerCase()
       || this.source_adapters.default.extension
     ;
   }
@@ -487,7 +487,7 @@ export class SmartSource extends SmartEntity {
       .filter(link_path => link_path);
   }
 
-  get path() { return this.data.path; }
+  get path() { return this.data.path || this.data.key; }
   get should_embed() {
     return !this.vec || !this.embed_hash || (this.embed_hash !== this.read_hash);
   }

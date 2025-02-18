@@ -252,7 +252,7 @@ export class SmartSources extends SmartEntities {
    */
   async process_load_queue(){
     await super.process_load_queue();
-    if(this.collection_key === 'smart_sources'){ // Excludes sub-classes
+    if(this.collection_key === 'smart_sources' && this.env.smart_blocks){ // Excludes sub-classes
       Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // Sets _queue_embed if no vec
     }
     if(this.block_collection){
