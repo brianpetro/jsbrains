@@ -358,6 +358,10 @@ class SmartFs {
     return this.fs_path + this.sep + rel_path.replace('/', this.sep);
   }
 
+  get base_path() {
+    return this.use_adapter('get_base_path');
+  }
+
 }
 
 export { SmartFs };

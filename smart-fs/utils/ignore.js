@@ -1,19 +1,15 @@
 /**
- * @file ignore_utility.js
+ * @file ignore.js
  * @description
- * A utility to load .gitignore / .scignore patterns from directories and check if
- * a file path should be ignored. It also provides a helper for detecting whether
- * a given path is a text file.
+ * A utility to load .gitignore / .scignore patterns via a SmartFs instance,
+ * and check if a file path should be ignored. It also provides a helper
+ * function to detect "text files" by extension.
  */
 
-import fs from 'fs';
-import path from 'path';
 import { match_glob } from './match_glob.js';
 
 /**
- * An array of recognized text file extensions.
- * Add or remove items here to customize what counts as a "text file."
- * @type {string[]}
+ * An array of recognized text file extensions for is_text_file().
  */
 const TEXT_FILE_EXTENSIONS = [
   '.asm', '.bat', '.c', '.cfg', '.clj', '.conf', '.cpp', '.cs', '.css', '.csv',
@@ -24,102 +20,222 @@ const TEXT_FILE_EXTENSIONS = [
   '.rb', '.rs', '.sass', '.scala', '.scheme', '.scss', '.sh', '.sql', '.svelte',
   '.swift', '.tcl', '.tex', '.tpl', '.ts', '.tsx', '.twig', '.txt', '.vb', '.vue',
   '.xml', '.yaml', '.yml',
-  '.canvas' // For Obsidian-like usage, if desired
+  '.canvas'
 ];
 
 /**
  * Determine if a file is considered a "text file" by extension.
- * @param {string} file_path - Absolute or relative file path.
+ * @param {string} file_path - Relative or absolute file path.
  * @returns {boolean}
  */
 export function is_text_file(file_path) {
-  const ext = path.extname(file_path).toLowerCase();
+  const last_dot_index = file_path.lastIndexOf('.');
+  if (last_dot_index === -1) {
+    return false;
+  }
+  const ext = file_path.substring(last_dot_index).toLowerCase();
   return TEXT_FILE_EXTENSIONS.includes(ext);
 }
 
 /**
- * Recursively loads all ignore patterns from .gitignore or .scignore files
- * found in the directory or any ancestor directories, until reaching the file system root.
- *
- * - Blank lines and comment lines (# comment) are skipped.
- * - Every other line is treated as a glob pattern for `match_glob`.
- *
- * @param {string} start_dir - The directory where we start looking for ignore files.
- * @returns {string[]} An array of glob patterns loaded from the found ignore files.
+ * Return the parent folder of 'path_str' given 'sep'. If already top-level or empty, return ''.
+ * @param {string} path_str 
+ * @param {string} sep 
+ * @returns {string}
  */
-export function load_ignore_patterns(start_dir) {
+function get_parent_folder(path_str, sep) {
+  if (!path_str) return '';
+  const parts = path_str.split(sep).filter(Boolean);
+  if (parts.length <= 1) {
+    return '';
+  }
+  parts.pop();
+  return parts.join(sep);
+}
+
+/**
+ * Join segments using 'sep', ignoring empty or '.' segments so that
+ * e.g. join_path('/', '.', '.gitignore') => '.gitignore'.
+ * @param {string} sep
+ * @param {...string} segments
+ * @returns {string}
+ */
+function join_path(sep, ...segments) {
+  const filtered = segments
+    .map(s => s.trim())
+    .filter(s => s && s !== '.');
+  return filtered.join(sep);
+}
+
+/**
+ * Load ignore patterns by traveling upward from 'start_dir' until we can no longer ascend.
+ *
+ * @param {Object} smart_fs - The SmartFs instance to use for file checks and reads.
+ * @param {string} start_dir - Starting directory (relative to the SmartFs root).
+ * @param {boolean} [include_parents=false] - Whether to include ignore patterns from parent dirs.
+ * @returns {Promise<string[]>} Accumulated ignore patterns.
+ */
+export async function load_ignore_patterns_smart(smart_fs, start_dir='', include_parents=false) {
   const patterns = [];
-  let current_dir = start_dir;
+  let current_dir = start_dir.trim();
 
   while (true) {
-    // If there's no valid directory left, stop
-    if (!current_dir || current_dir.trim() === '' || current_dir === path.parse(current_dir).root) {
-      break;
-    }
-
-    // Collect patterns from .scignore and .gitignore if present
-    for (const ignore_name of ['.scignore', '.gitignore']) {
-      const candidate_path = path.join(current_dir, ignore_name);
-      if (fs.existsSync(candidate_path) && fs.statSync(candidate_path).isFile()) {
-        const lines = fs.readFileSync(candidate_path, 'utf8').split('\n');
-        for (let line of lines) {
-          line = line.trim();
-          if (!line || line.startsWith('#')) {
-            // Skip blank lines or comment lines
-            continue;
-          }
-          const expanded = expand_pattern(line);
-          patterns.push(...expanded);
-        }
+    await load_ignore_in_directory(smart_fs, current_dir, patterns);
+    if (!include_parents) break;
+    const parent = get_parent_folder(current_dir, smart_fs.sep);
+    if (!parent || parent === current_dir) {
+      if (parent === '') {
+        await load_ignore_in_directory(smart_fs, '', patterns);
       }
-    }
-
-    const parent_dir = path.dirname(current_dir);
-    if (!parent_dir || parent_dir === current_dir) {
       break;
     }
-    current_dir = parent_dir;
+    current_dir = parent;
   }
+
   return patterns;
 }
 
 /**
- * Given a single line from a .gitignore/.scignore,
- * if it is a bare name (no slash/wildcard), interpret it as
- * [ "node_modules", "node_modules/**" ].
- * if node_modules/ then also add node_modules/**
- * Otherwise, keep it as-is.
+ * Look for .scignore / .gitignore in the given directory and parse them into 'patterns'.
+ * @param {Object} smart_fs
+ * @param {string} dir_path
+ * @param {string[]} patterns
  */
-function expand_pattern(line) {
-  // If the line has wildcard, keep it
-  if (line.includes('*')) {
-    return [line];
-  }
+async function load_ignore_in_directory(smart_fs, dir_path, patterns) {
+  for (const ignore_name of ['.scignore', '.gitignore']) {
+    const candidate_path = join_path(smart_fs.sep, dir_path, ignore_name);
+    const exists = await smart_fs.exists(candidate_path);
+    if (!exists) continue;
 
-  // If it ends with a slash, treat it as a directory
-  if (line.endsWith('/')) {
-    const base = line.slice(0, -1); // Remove trailing slash
-    return [base, base + '/**'];
+    const content = await smart_fs.read(candidate_path, 'utf-8');
+    if (content && typeof content === 'string') {
+      const lines = content.split('\n');
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) {
+          continue;
+        }
+        const expanded = expand_pattern(line);
+        for (const p of expanded) {
+          if (!patterns.includes(p)) {
+            patterns.push(p);
+          }
+        }
+      }
+    }
   }
-
-  // Otherwise (bare word):
-  // e.g. "node_modules" => [ "node_modules", "node_modules/**" ]
-  return [line, line + '/**'];
 }
 
 /**
- * Checks if a given relative path is ignored by any of the provided glob patterns.
- *
- * @param {string} relative_path - The path (relative to wherever you want) to test.
- * @param {string[]} patterns - An array of ignore patterns loaded by load_ignore_patterns().
- * @returns {boolean} True if any pattern matches the path, otherwise false.
+ * Expand one line from .gitignore-like files into one or more patterns that match_glob can handle.
+ * 
+ * - For a bare name (no slash, no leading '/'), we provide a literal match plus subfolder matches.
+ * - For a wildcard with no slash (e.g. "*.log"), we add top-level plus subfolder expansions.
+ * - A trailing slash is treated as a folder pattern.
+ * 
+ * @param {string} line
+ * @returns {string[]}
+ */
+function expand_pattern(line) {
+  const rooted = line.startsWith('/');
+  let pattern = rooted ? line.slice(1) : line;
+
+  // trailing slash => folder
+  const is_dir = pattern.endsWith('/');
+  if (is_dir) {
+    pattern = pattern.slice(0, -1);
+  }
+  if (!pattern) {
+    // if line was "/" or something empty after trimming
+    return [];
+  }
+
+  // no slash in the pattern => special expansions
+  const has_slash = pattern.includes('/');
+  const has_star = pattern.includes('*');
+
+  // we store expansions in an array but skip duplicates
+  const expansions = [];
+
+  // Directory expansions (like "foo/") => also match subfolders
+  if (is_dir) {
+    if (rooted) {
+      // e.g. "/foo/"
+      expansions.push(`/${pattern}`);
+      expansions.push(`/${pattern}/**`);
+      return expansions;
+    } else if (!has_slash) {
+      // e.g. "foo/" => top-level + subfolders
+      expansions.push(pattern);
+      expansions.push(`${pattern}/**`);
+      expansions.push(`**/${pattern}`);
+      expansions.push(`**/${pattern}/**`);
+      return expansions;
+    } else {
+      // e.g. "some/folder/"
+      expansions.push(pattern);
+      expansions.push(`${pattern}/**`);
+      if (!rooted) {
+        expansions.push(`**/${pattern}`);
+        expansions.push(`**/${pattern}/**`);
+      }
+      return expansions;
+    }
+  }
+
+  // If not a folder pattern, handle normal expansions:
+  if (!rooted && !has_slash) {
+    // e.g. "foo", or "*.log"
+    if (has_star) {
+      // e.g. "*.log" => we want to match top-level AND subfolders
+      expansions.push(pattern);
+      expansions.push(`**/${pattern}`);
+    } else {
+      // e.g. "foo"
+      expansions.push(pattern);
+      expansions.push(`${pattern}/**`);
+      expansions.push(`**/${pattern}`);
+      expansions.push(`**/${pattern}/**`);
+    }
+    return expansions;
+  }
+
+  // If there's a leading slash but not trailing slash
+  if (rooted) {
+    // e.g. "/foo" or "/some/folder"
+    expansions.push(`/${pattern}`);
+    // If it had a wildcard, we keep the same pattern repeated so we don't lose it
+    if (has_star) {
+      expansions.push(`/${pattern}`);
+    }
+    return expansions;
+  }
+
+  // If it's not rooted but has slash => e.g. "some/folder", or "some/*.log"
+  expansions.push(pattern);
+  // Also add a "**/" version if we want to match subfolders from root
+  expansions.push(`**/${pattern}`);
+  return expansions;
+}
+
+/**
+ * Check if 'relative_path' should be ignored given an array of .gitignore-style patterns.
+ * This method expands each raw pattern again so that e.g. 'foo' => 'foo', '**\/foo', etc.
+ * 
+ * @param {string} relative_path
+ * @param {string[]} patterns
+ * @returns {boolean}
  */
 export function should_ignore(relative_path, patterns) {
-  for (const pattern of patterns) {
-    // If the path matches the pattern, we ignore it
-    // We’ll assume standard (case-sensitive) matching for typical .gitignore usage
-    if (match_glob(pattern, relative_path, { case_sensitive: true })) {
-      return true;
+  for (const raw_pattern of patterns) {
+    // Expand each pattern again here, so that
+    // a bare 'foo' in patterns can match direct 'foo'
+    // or 'folder/foo'.
+    const expanded_patterns = expand_pattern(raw_pattern);
+    for (const pat of expanded_patterns) {
+      if (match_glob(pat, relative_path, { case_sensitive: true })) {
+        return true;
+      }
     }
   }
   return false;

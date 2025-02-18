@@ -298,4 +298,8 @@ export class NodeFsSmartFsAdapter {
   }
 
   get sep() { return path.sep; }
+
+  get_base_path() {
+    return path.resolve(this.smart_fs.fs_path);
+  }
 }

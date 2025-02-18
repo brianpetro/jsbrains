@@ -42,6 +42,7 @@ export class SmartFsObsidianAdapter {
             ctime: tfile.stat.ctime,
             mtime: tfile.stat.mtime,
             size: tfile.stat.size,
+            isDirectory: () => tfile instanceof this.obsidian.TFolder,
           };
         }
         return null;
@@ -244,6 +245,10 @@ export class SmartFsObsidianAdapter {
 
   get_link_target_path(link_path, file_path) {
     return this.obsidian_app.metadataCache.getFirstLinkpathDest(link_path, file_path)?.path;
+  }
+
+  get_absolute_path() {
+    return this.obsidian_adapter.basePath;
   }
 
 }
