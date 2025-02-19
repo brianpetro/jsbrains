@@ -216,7 +216,6 @@ export function expand_pattern(line) {
   // Also add a "**/" version if we want to match subfolders from root
   expansions.push(`**/${pattern}`);
   // .gitignore patterns should not be expanded
-  expansions.push(`**/.git/**`);
   return expansions;
 }
 
@@ -229,6 +228,12 @@ export function expand_pattern(line) {
  * @returns {boolean}
  */
 export function should_ignore(relative_path, patterns, aggregator=[]) {
+  relative_path = relative_path.replace(/\\/g, '/');
+  patterns.push(`**/.git/**`);
+  patterns.push(`.git/**`);
+  patterns.push(`**/node_modules/**`);
+  patterns.push(`node_modules/**`);
+  patterns.push(`package-lock.json`);
   for (const raw_pattern of patterns) {
     // Expand each pattern again here, so that
     // a bare 'foo' in patterns can match direct 'foo'

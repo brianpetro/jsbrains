@@ -1,166 +1,292 @@
 ---
 sync external: ../jsbrains/smart-contexts/specs.md
 ---
-## Purpose
-`SmartContexts` manages one or more `SmartContext` items. Each `SmartContext` references files, blocks, folders, or other sources to build a text-based “context.” This compiled context (plus metadata) can be used for AI prompts, user workflows, or other processing.
-`SmartContexts` extends `Collection` from **smart-collections**, and `SmartContext` extends `CollectionItem`. This ensures built-in creation, update, and storage capabilities.
 
-## Data Structures
-### `SmartContexts` Collection
-**Role**
-Manages multiple `SmartContext` items. Each item organizes references (files, blocks, folders, etc.) plus local compile rules.
-**Storage**
-Inherits from `Collection`. Stores each `SmartContext` keyed by `item.data.key` (if present) or auto-generated.
-**Settings** (in `this.settings`)
-Default behaviors for all `SmartContext` items:
-- `link_depth` (number, default=0)
-	How many link-hops to follow from each depth of items.
-- `inlinks` (boolean, default=false)
-	If true, includes inbound links.
-- `excluded_headings[]` (array of string patterns)
-	Headings or patterns to skip in final context.
-- `max_len` (number, optional)
-	Character limit for compiled output:
-	- The code should handle skipping or truncating items to respect this limit.
-	- In practice, this includes two phases:
-		1. **Snapshot phase**: building or skipping items up to `max_len`.
-		2. **Compile phase**: re-check or re-truncate if needed.
-	- Priority is to include **primary** items first (depth=0), then secondary (depth=1), etc.
-	- Possibly includes “shortest items first” if partial constraints apply.
-- `templates` (object)
-	Maps integer depths (`-1`, `0`, `1`, `2`, …) to a `{ before: '', after: '' }` object.
-	- `templates[-1]` wraps the entire compiled output (before everything, after everything).
-	- `templates[0]` wraps each depth-0 (primary) item.
-	- `templates[1]` wraps each depth-1 (secondary) item, etc.
-Example:
+# Smart Contexts API Specification
+
+This document describes the primary **SmartContexts** and **SmartContext** classes and their methods, along with relevant utilities. It has been updated to match the current code structure in `smart-contexts`.
+
+## Classes
+
+### `SmartContexts` (Collection)
+
+- Inherits from `Collection` in `smart-collections`.
+- Stores multiple `SmartContext` items, each identified by `item.data.key`.
+- **Settings**:
+    - `link_depth` (number)
+    - `inlinks` (boolean) – note that code uses `opts.include_inlinks` for inbound linking logic
+    - `excluded_headings[]` (array of strings)
+    - `max_len` (number)
+    - `templates` (object)
+      Maps integer depths (`-1`, `0`, `1`, `2`, …) to a `{ before: '', after: '' }` object.
+      - `templates[-1]` wraps the entire compiled output (before everything, after everything).
+      - `templates[0]` wraps each depth-0 (primary) item.
+      - `templates[1]` wraps each depth-1 (secondary) item, etc.
+
 ```js
 {
   link_depth: 0,
   inlinks: false,
   excluded_headings: [],
-	max_len: 10000,
+  max_len: 0,
   templates: {
-    '-1': { before: 'All-Start\n', after: '\nAll-End' },
-		'0': { before: '[PRIMARY:', after: ':END_PRIMARY]' },
-		'1': { before: '[SECONDARY:', after: ':END_SECONDARY]' }
+    '-1': { before: '', after: '' },
+    '0': { before: '', after: '' },
+    '1': { before: '', after: '' },
+    // etc.
   }
 }
 ```
-### `SmartContext` Item
-Represents one context bundle (with local settings and references).
-- **Key Fields** (`item.data`):
-	- `key`: Unique context identifier (if none, auto-hashed).
-	- `context_items{}`:
-	Primary references (files, blocks, or folders) at depth=0. Example:
-	```js
-	{
-		'notes/example.md': true,
-		'docs/README.md': true
-	}
-	```
-	- `context_opts{}` (optional):
-	Local overrides for `link_depth`, `excluded_headings`, `templates`, `max_len`, etc. These override collection-level defaults if set.
-### `context_opts{}`
-Used by a single item or passed to `get_snapshot(opts={})` or `compile(context_snapshot, opts={})`.
-Can include:
-- `max_len`
-- `link_depth`
-- `inlinks`
-- `excluded_headings`
-- `templates`
-	Has integer keys for item-depth and a `-1` key for wrapping the entire output:
-	```js
-	{
-	'-1': { before: '...', after: '...' },
-	'0': { before: '...', after: '...' },
-	'1': { before: '...', after: '...' }
-	}
-	```
-### `context_snapshot{}`
-A staged object from `get_snapshot()`. Organizes resolved items (and possibly links) by depth:
-```js
+
+### `SmartContext` (CollectionItem)
+
+Represents a single context definition. Holds:
+
+- `data.context_items {}`: references to files/folders for depth=0
+- `data.context_opts {}`: local overrides, e.g. `link_depth`, `max_len`, `excluded_headings`, `templates`, etc.
+
+Key methods:
+
+1. **`get_snapshot(opts = {})`**
+    
+    - Gathers items up to `link_depth`, possibly including inbound links if `inlinks`/`include_inlinks` is set.
+    - Returns a `context_snapshot` object with this shape:
+        - `items[depth][path] = { ref, path, content, char_count, exclusions, excluded_char_count }`
+        - `skipped_items[]`, `truncated_items[]`, `missing_items[]` (though skipping/truncation at snapshot-level is minimal; main truncation may happen in `compile`)
+        - `char_count` is set or incremented as applicable
+    - Internally calls utilities such as `strip_excluded_headings`.
+2. **`compile(opts = {})`**
+    
+    - Obtains a snapshot by calling `get_snapshot(opts)`.
+    - Runs `compile_snapshot(snapshot, merged_opts)`.
+    - Returns:
+        
+        ```js
+        {
+          context: 'final string',
+          stats: {
+            char_count,        // final character count after (optional) top-level wrap
+            depth_count,       // how many depth layers are present
+            truncated_items,   // array of items that were partially truncated
+            skipped_items      // array of items skipped (often when template alone exceeded max_len)
+          }
+        }
+        ```
+        
+    - Enforces `max_len` again at compile-time:
+        - If item text + templates exceed `max_len`, item might be skipped.
+        - Or partial truncation of item content if the template fits but the content is too large.
+        - Finally, tries to wrap the entire output with `templates[-1]`; if that also fits, it is included.
+
+## Utilities
+
+### `get_snapshot(ctx_item, opts)`
+
+Found in `utils/get_snapshot.js`. It:
+
+1. Builds an initial `snapshot = { items: {}, truncated_items: [], skipped_items: [], missing_items: [], char_count: 0 }`.
+2. Iterates from depth = 0 to `opts.link_depth`, collecting items:
+    - For each key at the current depth, calls `ctx_item.get_ref(key)`.
+    - If none found, adds `key` to `missing_items`.
+    - Otherwise reads file content, strips excluded headings, and places the result in `snapshot.items[depth][path]`.
+    - Codeblock expansions: if that file's content has ```smart-context code blocks, references in them are added at the same depth.
+3. If `opts.include_inlinks` is true, merges in inbound links at the next depth.
+4. Moves outlinks to the next depth (depth+1).
+5. Returns the final snapshot object.
+
+### `compile_snapshot(context_snapshot, merged_opts)`
+
+In `utils/compiler.js`:
+
+1. Sorts depths from lowest to highest.
+2. Iterates over each `depth`, building "chunks."  
+    For each item:
+    
+    ```js
+    {
+      path,
+      before_tpl, // e.g. replace_vars( templates[depth].before, placeholders )
+      item_text, 
+      after_tpl
+    }
+    ```
+    
+3. Applies `max_len` checks:
+    - If `template_len` alone exceeds `max_len`, skip the item entirely.
+    - Else, if text too large, partially truncate it.
+    - Else include it fully.
+    - Tracks `skipped_items` and `truncated_items`.
+4. Joins all chunks. Then tries top-level wrap from `templates[-1]`. If it fits, includes it. Otherwise, it is skipped.
+5. Returns:
+    
+    ```js
+    {
+      context: final_context_string.trim(),
+      stats: {
+        char_count,
+        depth_count,
+        truncated_items,
+        skipped_items
+      }
+    }
+    ```
+    
+    Note that `char_count` is the final length (with a small +2 offset if top-level wrap was included).
+
+### `respect_exclusions(opts)`
+
+In `utils/respect_exclusions.js`, though the code also uses `strip_excluded_headings` directly.  
+Removes headings (and subsequent lines) matching patterns in `excluded_headings`.  
+Used by `get_snapshot` or as a direct utility.
+
+---
+
+## Typical Flow
+
+1. **`ctxItem.get_snapshot(opts)`**  
+    Creates a `context_snapshot`:
+    
+    ```js
+    {
+      items: {
+        0: { 'file.md': { ref, path, content, ... }, ... },
+        1: { 'linked.md': { ... } },
+        ...
+      },
+      missing_items: [...],
+      skipped_items: [...],
+      truncated_items: [...],
+      char_count: 0
+    }
+    ```
+    
+2. **`ctxItem.compile(opts)`**  
+    Internally calls `get_snapshot(opts)`, then runs `compile_snapshot(...)`. Returns:
+    
+    ```js
+    {
+      context: 'final compiled text',
+      stats: {
+        char_count,
+        depth_count,
+        skipped_items: [...],
+        truncated_items: [...]
+      }
+    }
+    ```
+    
+
+---
+
+## Codeblock Expansions
+
+If a file’s content includes code blocks labeled with ```smart-context, each line in that code block is treated as an additional path or folder reference at the same depth. This allows a file to dynamically pull in more references.
+
+## Folder References
+
+When a path in `context_items` (or from a code block) is a folder, the snapshot logic expands that folder, adding its subfiles at the same depth. Hidden files or those excluded by ignore patterns (like `.scignore`) may be skipped.
+
+## `max_len` Behavior Recap
+
+- Minimal or no skipping is done in `get_snapshot`, though future code may add partial logic there.
+- Main enforcement occurs in the compiler:
+    - Template must fit or the item is skipped.
+    - If template fits but the content is too big, partial truncation occurs.
+    - Finally, tries wrapping the entire string with `templates[-1]`.
+
+---
+
+# Smart Contexts Data Specification
+
+## `context_item.data.context_items` (Object)
+
+Keys are paths (files/folders) or references, values are booleans (or future usage) indicating inclusion at depth=0.
+
+Example:
+
+```json
 {
-  items: {
-    0: { 'notes/example.md': 'Content from file...', ... },
-    1: { 'docs/README.md': 'Secondary content...', ... },
-    2: { ... }
-  },
-	truncated_items: [], // e.g. [ 'notes/very_large.md' ]
-	skipped_items: [],   // e.g. [ 'anotherHugeFile.md' ]
-	total_char_count: 12345
-	// additional metadata
+  "notes/example.md": true,
+  "docs/README.md": true,
+  "some/folder": true
 }
 ```
 
-## Methods
-### `get_snapshot(opts={})`
-Builds a `context_snapshot{}` by:
-1. Merging `opts` with the item’s `data.context_opts` and then with the collection’s `this.settings`.
-2. Resolving `this.data.context_items{}` at depth=0 (expanding folders if needed).
-3. Following links up to `link_depth` (depth=1..n), possibly including inbound links if `inlinks=true`.
-4. Respecting `excluded_headings` to omit matching headings/sections.
-5. Checking `max_len`. If set:
-   - Use a depth-based approach (include depth=0 first, then depth=1, etc.).
-   - If required, skip or partially truncate items to obey the limit.
-   - Potentially prioritize **shortest items first** within a given depth if that is configured (some implementations might rely on the original order or do a size-based sort).
-6. Returns a `context_snapshot{ items: {0: {...}, 1: {...}}, truncated_items:[], skipped_items:[], ... }`.
-### `compile(opts={})`
-1. get_snapshot(opts)
-2. Merges `opts` with the existing context options and defaults.
-3. Optionally re-checks `max_len` (secondary check) to ensure final output remains within the limit.
-   - Could skip or truncate further if needed.
-4. Applies templates for each depth `templates[d].before/after`.
-5. Wraps entire output with `templates[-1]` if present.
-6. Returns an object:
-   ```js
-   {
-     context: 'final string here',
-     stats: { final_length, depth_count, truncated_items, skipped_items }
-   }
-   ```
-### `respect_exclusions(opts={})`
-Removes heading/section content matching patterns in `excluded_headings`.
-Operates on `opts.items`, possibly on `opts.links` if applicable.
-### `process_items(merged)`, `process_links(merged)`
-Internal methods used by `get_snapshot()`:
-- `process_items(merged)`:
-  Loads or reads depth=0 items from `context_items{}`. May also expand folders into individual files if that is enabled.
-- `process_links(merged)`:
-  Follows outlinks (and inlinks if `inlinks=true`) up to `link_depth`, storing them at `depth=1`, `depth=2`, etc.
+## `context_opts` (Object)
 
-## Depth-Based Handling
-- **Depth 0**: Items explicitly in `context_items{}`.
-- **Depth i+1**: Items discovered from links at the previous depth.
-- If `max_len` is set, we skip or truncate items if adding them would exceed the limit.
-- Optionally apply size-based sorting at each depth.
+Local overrides or user-supplied.  
+May include:
+
+- `link_depth` (number)
+- `max_len` (number)
+- `inlinks` (boolean) or `include_inlinks` in code
+- `excluded_headings[]` (array of strings)
+- `templates` (object)
+    - integer keys => `{ before: '', after: '' }`
+    - `-1` => top-level wrap
+
+## `context_snapshot` (Object)
+
+Returned by `get_snapshot()`. Current code shapes it like:
+
+```json
+{
+  "items": {
+    "0": {
+      "notes/example.md": {
+        "ref": { /* reference object from env, containing outlinks, inlinks, etc. */ },
+        "path": "notes/example.md",
+        "content": "file content after heading exclusions...",
+        "char_count": 123,
+        "exclusions": [],            // which patterns got excluded, if any
+        "excluded_char_count": 45    // how many chars were removed
+      }
+    },
+    "1": {
+      "another.md": { /* similar shape */ }
+    }
+  },
+  "skipped_items": [],
+  "truncated_items": [],
+  "missing_items": [],
+  "char_count": 0
+}
+```
+
+- **`items[depth]`**: each key is the file/folder path, value is an object with the file’s `content` plus metadata.
+- **`missing_items[]`**: references that could not be found in `ctx_item.get_ref(key)`.
+- **`skipped_items[]`**: rarely populated at snapshot-phase in the current code (more in compile-phase).
+- **`truncated_items[]`**: same note; the compiler does the main truncation.
+- **`char_count`**: a numeric tally that may be incremented.
+
+## Final compiled result
+
+From `compile(context_snapshot, opts)` =>
+
+```json
+{
+  "context": "final compiled string",
+  "stats": {
+    "char_count": 321,             // length after possible wrap
+    "depth_count": 2,              // how many depth layers were processed
+    "truncated_items": ["bigFile.md"],
+    "skipped_items": ["hugeFile.md"]
+  }
+}
+```
+
+---
+
+## Notes on Codeblock and Folder Expansion
+
+- **Codeblock** expansions: If `content` contains a fenced block with ```smart-context, lines inside are treated as additional references at the same depth.
+- **Folder** expansions: If a path is a folder, subfiles appear at the same depth. Hidden/excluded files can be omitted.
+
+---
 
 ## Example Flow
 
-```
-SmartContext -> get_snapshot(context_opts)
-  (1) merges settings => merged
-  (2) process_items -> loads depth=0
-  (3) process_links -> depth=1..N
-  (4) returns context_snapshot
-context_snapshot -> compile(context_snapshot, context_opts)
-  (1) merges settings => merged
-  (2) re-checks max_len if needed (may skip or truncate more)
-  (3) applies templates per depth
-  (4) wraps entire output with templates[-1]
-  (5) returns { context, stats }
-```
-
-## Folder References
-If a `context_items` key points to a folder:
-- On depth=0, that folder can be expanded into all contained files (or a subset if partial).
-- Treated as though those files were individually listed in `context_items{}`.
-
-## `max_len` Behavior
-- Phase 1 (Snapshot):
-  - Start from depth=0, adding items (possibly smallest first) until near or at the limit.
-  - Then proceed with depth=1, etc.
-  - Possibly skip or partially truncate items.
-  - Record any truncated/skipped in the snapshot metadata.
-- Phase 2 (Compile):
-  - Another check ensures final text stays within `max_len`. If needed, the last chunk might be truncated or a deep item might be dropped.
-  - This “double-check” can help if templates or additional text push the total over the limit.
+1. Create or retrieve a `SmartContext` item with `context_items = { 'docs/intro.md': true }`.
+2. Call `get_snapshot({ link_depth: 1, inlinks: false, excluded_headings: ['Draft'] })`.
+3. The code reads `docs/intro.md`, finds any codeblock references or outlinks, places them at the appropriate depth, and returns a snapshot with `items[0]` and `items[1]`.
+4. Then `compile(snapshot, { max_len: 10000, templates: ... })` does final trimming and returns `{ context, stats }`.

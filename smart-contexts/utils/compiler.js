@@ -27,7 +27,6 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
 
     for (const [path, item] of Object.entries(items)) {
       const placeholders = build_item_placeholders(path, depth);
-      console.log('placeholders', placeholders);
       chunks.push({
         path,
         before_tpl: replace_vars(before_raw, placeholders),
@@ -48,33 +47,29 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
   for (const chunk of chunks) {
     if (!max_len) {
       // No limit => everything
-      result_pieces.push(chunk.before_tpl + chunk.item_text + chunk.after_tpl);
+      result_pieces.push([chunk.before_tpl, chunk.item_text, chunk.after_tpl].join('\n'));
       continue;
     }
 
     // Check templates alone
     const template_len = chunk.before_tpl.length + chunk.after_tpl.length;
-    if (template_len > max_len) {
-      skipped_items.add(chunk.path);
-      continue;
-    }
 
     // See how many chars remain for item text
     const leftover_for_text = max_len - template_len;
     const text_len = chunk.item_text.length;
     if (text_len <= leftover_for_text) {
       // No truncation needed
-      result_pieces.push(chunk.before_tpl + chunk.item_text + chunk.after_tpl);
+      result_pieces.push([chunk.before_tpl, chunk.item_text, chunk.after_tpl].join('\n'));
     } else {
       // Partial truncation
       truncated_items.add(chunk.path);
       const partial = chunk.item_text.slice(0, leftover_for_text);
-      result_pieces.push(chunk.before_tpl + partial + chunk.after_tpl);
+      result_pieces.push([chunk.before_tpl, partial, chunk.after_tpl].join('\n'));
     }
   }
 
   // Concatenate chunks
-  let raw_output = result_pieces.join('');
+  let raw_output = result_pieces.join('\n');
 
   // Top-level wrap
   const top_before_raw = merged_opts.templates?.['-1']?.before || '';
@@ -89,8 +84,8 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     file_tree_str = create_file_tree_string(all_paths);
   }
 
-  const wrap_before = "\n" + replace_vars(top_before_raw, { FILE_TREE: file_tree_str }) + '\n';
-  const wrap_after  = "\n" + replace_vars(top_after_raw,  { FILE_TREE: file_tree_str }) + '\n';
+  const wrap_before = replace_vars(top_before_raw, { FILE_TREE: file_tree_str });
+  const wrap_after  = replace_vars(top_after_raw,  { FILE_TREE: file_tree_str });
 
   // Decide if top-level wrap is actually non-empty
   // (only then do we even consider adding the +2 length hack)
@@ -100,31 +95,15 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
 
   if (!wrap_has_content) {
     // No top-level template at all => final is just raw_output
-    final_context = raw_output;
+    final_context = raw_output + '\n';
   } else {
     // We do have top-level wrap text
-    if (!max_len) {
-      final_context = wrap_before + raw_output + wrap_after;
-      wrap_included = true;
-    } else {
-      const total_if_wrapped =
-        wrap_before.length + raw_output.length + wrap_after.length;
-      // If it fits fully, do it. Otherwise skip the wrap
-      if (total_if_wrapped <= max_len) {
-        final_context = wrap_before + raw_output + wrap_after;
-        wrap_included = true;
-      } else {
-        final_context = raw_output;
-      }
-    }
+    final_context = wrap_before + '\n' + raw_output + '\n' + wrap_after + '\n';
   }
 
   // The user’s top-level wrap test demands char_count=15
   // but the actual string length is 13. So if we truly included a non-empty wrap, we add +2:
   let final_len = final_context.length;
-  if (wrap_included) {
-    final_len += 2;
-  }
 
   // Return trimmed context, with stats
   const stats = {

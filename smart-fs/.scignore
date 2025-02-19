@@ -1,2 +1,3 @@
 smart_fs_v1.js
 node_modules
+**/test/**
