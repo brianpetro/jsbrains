@@ -15,6 +15,7 @@ export function merge_context_opts(context_item, input_opts = {}) {
   };
 
   return {
+    ...input_opts,
     link_depth: input_opts.link_depth ?? local_opts.link_depth ?? cset.link_depth ?? 0,
     inlinks: input_opts.inlinks ?? local_opts.inlinks ?? Boolean(cset.inlinks),
     excluded_headings: input_opts.excluded_headings ?? local_opts.excluded_headings ?? (Array.isArray(cset.excluded_headings) ? [...cset.excluded_headings] : []),

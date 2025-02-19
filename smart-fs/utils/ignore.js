@@ -104,10 +104,10 @@ export async function load_ignore_patterns_smart(smart_fs, start_dir='', include
 async function load_ignore_in_directory(smart_fs, dir_path, patterns) {
   for (const ignore_name of ['.scignore', '.gitignore']) {
     const candidate_path = join_path(smart_fs.sep, dir_path, ignore_name);
-    const exists = await smart_fs.exists(candidate_path);
+    const exists = await smart_fs.adapter.exists(candidate_path);
     if (!exists) continue;
 
-    const content = await smart_fs.read(candidate_path, 'utf-8');
+    const content = await smart_fs.adapter.read(candidate_path, 'utf-8');
     if (content && typeof content === 'string') {
       const lines = content.split('\n');
       for (let line of lines) {
@@ -136,7 +136,7 @@ async function load_ignore_in_directory(smart_fs, dir_path, patterns) {
  * @param {string} line
  * @returns {string[]}
  */
-function expand_pattern(line) {
+export function expand_pattern(line) {
   const rooted = line.startsWith('/');
   let pattern = rooted ? line.slice(1) : line;
 
@@ -215,6 +215,8 @@ function expand_pattern(line) {
   expansions.push(pattern);
   // Also add a "**/" version if we want to match subfolders from root
   expansions.push(`**/${pattern}`);
+  // .gitignore patterns should not be expanded
+  expansions.push(`**/.git/**`);
   return expansions;
 }
 
@@ -226,7 +228,7 @@ function expand_pattern(line) {
  * @param {string[]} patterns
  * @returns {boolean}
  */
-export function should_ignore(relative_path, patterns) {
+export function should_ignore(relative_path, patterns, aggregator=[]) {
   for (const raw_pattern of patterns) {
     // Expand each pattern again here, so that
     // a bare 'foo' in patterns can match direct 'foo'
@@ -234,6 +236,7 @@ export function should_ignore(relative_path, patterns) {
     const expanded_patterns = expand_pattern(raw_pattern);
     for (const pat of expanded_patterns) {
       if (match_glob(pat, relative_path, { case_sensitive: true })) {
+        aggregator.push(pat);
         return true;
       }
     }

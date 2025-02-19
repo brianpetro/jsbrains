@@ -34,7 +34,7 @@ export async function respect_exclusions(context_snapshot = {}, opts = {}) {
   }
 }
 
-function strip_excluded_headings(content, excluded_list) {
+export function strip_excluded_headings(content, excluded_list) {
   const blocks_map = parse_blocks(content, { start_index: 0 });
   if (!Object.keys(blocks_map).length) return [content, []];
 

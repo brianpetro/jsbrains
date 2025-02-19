@@ -11,6 +11,7 @@
  */
 
 export async function compile_snapshot(context_snapshot, merged_opts) {
+  console.log('context_snapshot', context_snapshot);
   const depths = Object.keys(context_snapshot.items)
     .map(d => parseInt(d, 10))
     .sort((a, b) => a - b);
@@ -24,12 +25,13 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     const before_raw = merged_opts.templates?.[depth]?.before || '';
     const after_raw  = merged_opts.templates?.[depth]?.after  || '';
 
-    for (const [path, content] of Object.entries(items)) {
+    for (const [path, item] of Object.entries(items)) {
       const placeholders = build_item_placeholders(path, depth);
+      console.log('placeholders', placeholders);
       chunks.push({
         path,
         before_tpl: replace_vars(before_raw, placeholders),
-        item_text: content,
+        item_text: item.content,
         after_tpl: replace_vars(after_raw, placeholders)
       });
       all_paths.push(path);
@@ -87,8 +89,8 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     file_tree_str = create_file_tree_string(all_paths);
   }
 
-  const wrap_before = replace_vars(top_before_raw, { FILE_TREE: file_tree_str });
-  const wrap_after  = replace_vars(top_after_raw,  { FILE_TREE: file_tree_str });
+  const wrap_before = replace_vars(top_before_raw, { FILE_TREE: file_tree_str }) + '\n';
+  const wrap_after  = "\n" + replace_vars(top_after_raw,  { FILE_TREE: file_tree_str });
 
   // Decide if top-level wrap is actually non-empty
   // (only then do we even consider adding the +2 length hack)

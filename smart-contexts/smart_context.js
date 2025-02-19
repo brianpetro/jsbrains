@@ -8,7 +8,8 @@
  */
 
 import { CollectionItem } from 'smart-collections';
-import { build_snapshot } from './utils/snapshot.js';
+// import { build_snapshot } from './utils/snapshot.js';
+import { get_snapshot } from './utils/get_snapshot.js';
 import { compile_snapshot } from './utils/compiler.js';
 import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 import { merge_context_opts } from './utils/merge_context_opts.js';
@@ -38,7 +39,7 @@ export class SmartContext extends CollectionItem {
   async get_snapshot(opts = {}) {
     const merged_opts = merge_context_opts(this, opts);
     // Only method allowed to pass the item directly to the utils
-    return build_snapshot(this, merged_opts);
+    return await get_snapshot(this, merged_opts);
   }
 
   /**
@@ -53,7 +54,7 @@ export class SmartContext extends CollectionItem {
     // We pass only the snapshot + merged options (not the item itself).
     // The specs require the compiler not to accept a context_item instance.
     const merged_opts = merge_context_opts(this, opts);
-    return compile_snapshot(context_snapshot, merged_opts);
+    return await compile_snapshot(context_snapshot, merged_opts);
   }
 
   get_ref(key) {
