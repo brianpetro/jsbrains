@@ -89,8 +89,8 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     file_tree_str = create_file_tree_string(all_paths);
   }
 
-  const wrap_before = replace_vars(top_before_raw, { FILE_TREE: file_tree_str }) + '\n';
-  const wrap_after  = "\n" + replace_vars(top_after_raw,  { FILE_TREE: file_tree_str });
+  const wrap_before = "\n" + replace_vars(top_before_raw, { FILE_TREE: file_tree_str }) + '\n';
+  const wrap_after  = "\n" + replace_vars(top_after_raw,  { FILE_TREE: file_tree_str }) + '\n';
 
   // Decide if top-level wrap is actually non-empty
   // (only then do we even consider adding the +2 length hack)
