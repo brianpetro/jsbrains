@@ -44,6 +44,21 @@ export async function get_snapshot(ctx_item, opts) {
 async function process_depth(snapshot, curr_depth_keys, ctx_item, opts) {
   console.log('curr_depth_keys', curr_depth_keys);
   const curr_depth_items = (curr_depth_keys ?? []).map(key => ctx_item.get_ref(key)).filter(Boolean);
+  const curr_depth_non_item_keys = curr_depth_keys.filter(key => !ctx_item.get_ref(key));
+  // check if is folder
+  for (const key of curr_depth_non_item_keys) {
+    const smart_fs = ctx_item.env.smart_sources.fs;
+    const files = await smart_fs.list_files_recursive(key);
+    for (const file of files) {
+      if (is_already_in_snapshot(file.path, snapshot)) {
+        continue;
+      }
+      const item = ctx_item.get_ref(file.path);
+      if(item) {
+        curr_depth_items.push(item);
+      }
+    }
+  }
   const curr_depth = {};
   for (const item of curr_depth_items) {
     if (is_already_in_snapshot(item.path, snapshot)) {
