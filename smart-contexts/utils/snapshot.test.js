@@ -17,8 +17,9 @@ import { SmartBlocks, SmartBlock } from 'smart-blocks';
 import { MarkdownBlockContentAdapter } from 'smart-blocks/adapters/markdown_block.js';
 import { SmartContexts } from '../smart_contexts.js';
 import ajson_data_adapter from 'smart-sources/adapters/data/ajson_multi_file.js';
-import { SmartFsTestAdapter } from '../../smart-fs/adapters/_test.js';
-import { SmartFs } from '../../smart-fs/smart_fs.js';
+import { SmartFsTestAdapter } from 'smart-file-system/adapters/_test.js';
+import { NodeFsSmartFsAdapter } from 'smart-file-system/adapters/node_fs.js';
+import { SmartFs } from 'smart-file-system/smart_fs.js';
 
 /**
  * A simple test Main class that yields a well-defined smart_env_config.
@@ -29,7 +30,7 @@ class TestMain {
   get settings() { return {}; }
   get smart_env_config() {
     return {
-      env_path: '/Users/brian/Documents/jsbrains/smart-sources/test/test-content',
+      env_path: '/Users/brian/Documents/jsbrains/smart-contexts/test/test-content',
       modules: {
         smart_fs: {
           class: SmartFs,
@@ -606,4 +607,94 @@ test.serial('Repeated or incomplete code blocks are handled gracefully', async t
   t.truthy(depth0['secondRef.md'], 'secondRef included from second codeblock');
   t.truthy(depth0['thirdRef.md'], 'thirdRef included from second codeblock');
   t.falsy(depth0['incompleteRef.md'], 'incompleteRef not captured, missing closing backticks => skip');
+});
+
+
+import path from 'path';
+import fs from 'fs';
+/**
+ * This test verifies that an external folder reference in a codeblock is expanded
+ * similarly to how a normal context folder is expanded, while also respecting
+ * ignore patterns (e.g., hidden files).
+ *
+ * We place some subfiles in a local test folder using node fs, then reference that
+ * folder inside a ```smart-context code block. We expect each subfile to appear at
+ * the same snapshot depth as the original codeblock reference.
+ */
+test('Codeblock referencing an external folder: subfiles are expanded with ignoring', async t => {
+  // 1) Create a local test folder on the real filesystem
+  const testFolder = 'test_external_folder';
+  const subA = path.join(testFolder, 'subA.txt');
+  const subHidden = path.join(testFolder, '.hiddenfile');
+  const subDir = path.join(testFolder, 'deep');
+  const subDeepFile = path.join(testFolder, 'deep', 'nest.txt');
+  const scignore = path.join(testFolder, '.scignore');
+
+  // Clean up if existing
+  try {
+    fs.rmSync(testFolder, { recursive: true, force: true });
+  } catch (_err) { /* ignore */ }
+  fs.mkdirSync(testFolder);
+  fs.writeFileSync(subA, 'Content A');
+  fs.writeFileSync(subHidden, 'Secret Hidden Content');
+  fs.mkdirSync(subDir);
+  fs.writeFileSync(subDeepFile, 'Nested file');
+  fs.writeFileSync(scignore, '.hiddenfile');
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  // 2) Create a codeblock reference that references the folder
+  const mainFile = `
+    # MyDoc
+    \`\`\`smart-context
+    ../../${testFolder}
+    \`\`\`
+    # End
+  `;
+
+  // 3) Provide minimal environment
+  const env = await SmartEnv.create({}, {
+    env_path: '/Users/brian/Documents/jsbrains/smart-contexts/test/test-content',
+    modules: {
+      smart_fs: {
+        class: SmartFs,
+        adapter: NodeFsSmartFsAdapter
+      }
+    },
+    collections: {
+      smart_contexts: { class: SmartContexts }
+    }
+  });
+
+  // Write 'myDoc.md' to in-memory test FS
+  await env.smart_sources.fs.write('myDoc.md', mainFile);
+  await env.smart_sources.fs.load_files();
+  await env.smart_sources.init_file_path('myDoc.md');
+  Object.values(env.smart_sources.items).forEach(item => item.queue_import());
+  await env.smart_sources.process_source_import_queue();
+
+  // Create the SmartContext referencing 'myDoc.md'
+  const scItem = await env.smart_contexts.create_or_update({
+    key: 'testExternalFolder',
+    context_items: {
+      'myDoc.md': true
+    }
+  });
+
+  // 4) Build snapshot; link_depth=0, so we only see codeblock expansions at depth=0
+  const snapshot = await build_snapshot(scItem, {
+    link_depth: 0,
+    max_len: 0,
+    // Provide an example exclude to show hidden files are omitted or patterns are tested
+    excluded_headings: [],
+  });
+  console.log(snapshot);
+
+  // 5) Confirm expansions
+  t.truthy(snapshot.items[0]['myDoc.md'], 'Original doc is included');
+  t.truthy(snapshot.items[0][`${testFolder}/subA.txt`], 'Sub-file subA included');
+  t.truthy(snapshot.items[0][`${testFolder}/deep/nest.txt`], 'Nested file is included');
+  // For the hidden file, the new logic should skip it if we decide hidden => excluded
+  t.falsy(snapshot.items[0][`${testFolder}/.hiddenfile`], 'Hidden file not expanded (excluded)');
+
+  // Tidy real FS folder
+  fs.rmSync(testFolder, { recursive: true, force: true });
 });

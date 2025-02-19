@@ -175,7 +175,7 @@ export class SmartFsTestAdapter {
 
   async stat(rel_path) {
     if (!(rel_path in this.files)) {
-      // console.log("stat", rel_path, this.files);
+      console.log("stat", rel_path, this.files);
       throw new Error(`File not found: ${rel_path}`);
     }
     const is_directory = this.files[rel_path] === '[DIRECTORY]';
@@ -217,6 +217,6 @@ export class SmartFsTestAdapter {
   }
 
   get_base_path() {
-    return '';
+    return this.smart_fs.fs_path;
   }
 }

@@ -1,399 +1,558 @@
-/**
+/*******************************************************
  * @file snapshot.js
  * @description
- * Provides a functional approach to building a context_snapshot from a SmartContext item:
- *   - Merging user options with local and collection defaults
- *   - Handling folder references
- *   - Gathering items in ascending size order for each depth
- *   - If an item contains ```smart-context code blocks```, the referenced paths are added at the same depth
- *   - For the very first item in a snapshot, if it's bigger than max_len, partially truncate
- *   - Once something is included, subsequent items that don't fit are skipped
- *   - Respects exclusions (excluded_headings, etc.)
- */
-import fs from 'fs'; // for external codeblock references
+ * Builds a context_snapshot from a SmartContext instance:
+ *   1) Depth=0 items come from context_items{} in the SmartContext.
+ *      - Expand any folder references into files, sort by ascending file size.
+ *      - Parse ```smart-context code blocks to gather additional paths at the same depth.
+ *      - Respect ignore patterns (.gitignore, .scignore) to skip unwanted files/folders.
+ *      - Enforce max_len if set:
+ *          - The first item that exceeds leftover space is partially truncated;
+ *          - Subsequent oversized items are skipped entirely.
+ *   2) For each depth=1..link_depth:
+ *      - Collect outlinks (and inlinks if inlinks=true) from items at the previous depth.
+ *      - Expand them (folder → files, codeblocks, ignoring duplicates).
+ *      - Sort by ascending size, apply partial truncation or skip logic for max_len.
+ *   3) Respect heading-based exclusions from merged_opts.excluded_headings by removing
+ *      matching sections from the final snapshot items (via respect_exclusions).
+ *   4) Return the final snapshot:
+ *      {
+ *        items: {
+ *          0: { path: "content", ... },
+ *          1: { path: "content", ... },
+ *          ...
+ *        },
+ *        truncated_items: [],
+ *        skipped_items: [],
+ *        missing_items: [],
+ *        char_count: Number (total content length after truncation/exclusions),
+ *        exclusions: { headingPattern: count, ... } (optional, if any were removed)
+ *      }
+ *******************************************************/
+
+import fs from 'fs';
+import path from 'path';
 import { respect_exclusions } from './respect_exclusions.js';
+import { load_ignore_patterns_smart, should_ignore } from 'smart-file-system/utils/ignore.js';
 
 /**
  * build_snapshot
+ * Main orchestration for building a context snapshot from a SmartContext item.
+ *
  * @async
  * @param {SmartContext} ctx_item - The SmartContext instance
- * @param {Object} merged_opts - Already-merged user + item + collection opts
+ * @param {Object} merged_opts - Merged user + item + collection options
+ * @property {number} [merged_opts.link_depth=0] - Depth of link traversal
+ * @property {boolean} [merged_opts.inlinks=false] - Whether to include inbound links
+ * @property {string[]} [merged_opts.excluded_headings=[]] - Patterns to remove heading sections
+ * @property {number} [merged_opts.max_len=0] - If > 0, limit total snapshot content length
  * @returns {Promise<object>} context_snapshot
  */
 export async function build_snapshot(ctx_item, merged_opts) {
-  const snapshot = {
-    items: {},
-    truncated_items: [],
-    skipped_items: [],
-    char_count: 0,
-    missing_items: []
-  };
+  // 1) Load ignore patterns from .gitignore/.scignore if available
+  const ignore_patterns = await load_ignore_patterns_smart(
+    ctx_item.env?.smart_fs,
+    '',
+    true
+  );
 
-  // Depth 0
-  await process_items_at_depth_zero(ctx_item, merged_opts, snapshot);
+  // 2) Create the initial empty snapshot
+  const initial_snapshot = create_empty_snapshot();
 
-  // Depth 1..link_depth
-  if (merged_opts.link_depth > 0) {
-    await process_links(ctx_item, merged_opts, snapshot);
-  }
+  // 3) Gather depth=0 items
+  let snapshot = await gather_depth_zero_items(
+    ctx_item,
+    merged_opts,
+    initial_snapshot,
+    ignore_patterns
+  );
 
-  // Remove empty depth=0 if no items were actually added
-  if (
-    snapshot.items.hasOwnProperty('0') &&
-    Object.keys(snapshot.items[0]).length === 0
-  ) {
-    delete snapshot.items[0];
-  }
+  // 4) Traverse link depths (1..N), if requested
+  snapshot = await gather_link_depth_items(ctx_item, merged_opts, snapshot, ignore_patterns);
 
-  if (Object.keys(snapshot.items).length === 0) {
-    snapshot.items = {};
-  }
+  // 5) Remove empty depth=0 if no items were inserted
+  snapshot = remove_empty_depth_zero(snapshot);
 
-  // Apply heading/section exclusions
-  await respect_exclusions_on_snapshot(snapshot, merged_opts);
+  // 6) Apply heading/section exclusions from merged_opts.excluded_headings
+  snapshot = await apply_exclusions(snapshot, merged_opts);
 
   return snapshot;
 }
 
 /**
- * process_items_at_depth_zero
- * Gathers items from ctx_item.data.context_items, 
- * sorts them by content length ascending, then adds or truncates/skips
- * based on the 'first item partial' vs. 'subsequent skip' rule.
- */
-async function process_items_at_depth_zero(ctx_item, merged_opts, snapshot) {
-  const context_items = ctx_item.data.context_items || {};
-  let expansions = [];
-
-  // Expand folders (if any) or treat single paths
-  for (const [path_or_key, flag] of Object.entries(context_items)) {
-    if (!flag) continue;
-    const sub = await expand_path_or_folder(ctx_item, path_or_key);
-    expansions.push(...sub);
-  }
-
-  // Now read content for each item (plus any smart-context codeblock references)
-  const with_lengths = await gather_items_with_lengths(expansions, ctx_item, merged_opts, snapshot);
-
-  // Sort ascending by length
-  with_lengths.sort((a, b) => a.length - b.length);
-
-  snapshot.items[0] = {};
-  const depth0 = snapshot.items[0];
-  let has_added_any_item = false;
-
-  for (const itemObj of with_lengths) {
-    // Check max_len
-    if (merged_opts.max_len > 0 && snapshot.char_count >= merged_opts.max_len) {
-      snapshot.skipped_items.push(itemObj.path);
-      continue;
-    }
-
-    const leftover = merged_opts.max_len
-      ? merged_opts.max_len - snapshot.char_count
-      : 0;
-
-    let content_to_add = itemObj.content_str;
-    if (merged_opts.max_len > 0) {
-      // If no item has been added yet, we allow partial truncation
-      if (!has_added_any_item) {
-        if (content_to_add.length > leftover) {
-          // partial
-          content_to_add = content_to_add.slice(0, leftover);
-          snapshot.truncated_items.push(itemObj.path);
-        }
-        depth0[itemObj.path] = content_to_add;
-        snapshot.char_count += content_to_add.length;
-        has_added_any_item = true;
-      } else {
-        // Already included something => skip if doesn't fit fully
-        if (itemObj.length > leftover) {
-          snapshot.skipped_items.push(itemObj.path);
-        } else {
-          depth0[itemObj.path] = content_to_add;
-          snapshot.char_count += content_to_add.length;
-        }
-      }
-    } else {
-      // no max_len => no skipping or truncation
-      depth0[itemObj.path] = content_to_add;
-      snapshot.char_count += content_to_add.length;
-      has_added_any_item = true;
-    }
-  }
-
-  // If none got added, depth0 remains empty => cleaned up above
-}
-
-/**
- * process_links => depth=1..n
- * For each depth, gather outlinks (and possibly inlinks), measure size ascending.
- * The same partial vs skip logic applies. If the entire snapshot is still empty,
- * the first item can be partially truncated. Otherwise, skip if it doesn't fit.
- */
-async function process_links(ctx_item, merged_opts, snapshot) {
-  for (let depth = 1; depth <= merged_opts.link_depth; depth++) {
-    snapshot.items[depth] = {};
-    const prev_depth_obj = snapshot.items[depth - 1] || {};
-    const prev_keys = Object.keys(prev_depth_obj);
-    if (prev_keys.length === 0) {
-      // no items from previous depth => no links to follow
-      delete snapshot.items[depth];
-      continue;
-    }
-
-    let all_candidates = [];
-    for (const prev_key of prev_keys) {
-      const item_ref = await ctx_item.get_ref(prev_key);
-      if (!item_ref) continue;
-
-      const outlinks = item_ref.outlinks || [];
-      const inlinks = merged_opts.inlinks ? (item_ref.inlinks || []) : [];
-      const combined = [...outlinks, ...inlinks];
-
-      for (const link_key of combined) {
-        if (already_in_snapshot(link_key, snapshot)) continue;
-        all_candidates.push(link_key);
-      }
-    }
-
-    // Expand each link => read content => plus any codeblock lines
-    const expansions = [];
-    for (const linkKey of all_candidates) {
-      const sub = await expand_path_or_folder(ctx_item, linkKey);
-      expansions.push(...sub);
-    }
-
-    const with_lengths = await gather_items_with_lengths(expansions, ctx_item, merged_opts, snapshot);
-    with_lengths.sort((a, b) => a.length - b.length);
-
-    const depth_obj = snapshot.items[depth];
-    let has_added_any_item = Object.values(snapshot.items)
-      .some(v => Object.keys(v).length > 0);
-
-    for (const itemObj of with_lengths) {
-      if (merged_opts.max_len > 0 && snapshot.char_count >= merged_opts.max_len) {
-        snapshot.skipped_items.push(itemObj.path);
-        continue;
-      }
-      const leftover = merged_opts.max_len
-        ? merged_opts.max_len - snapshot.char_count
-        : 0;
-
-      let content_to_add = itemObj.content_str;
-      if (merged_opts.max_len > 0) {
-        if (!has_added_any_item) {
-          // partial if first item in entire snapshot
-          if (content_to_add.length > leftover) {
-            content_to_add = content_to_add.slice(0, leftover);
-            snapshot.truncated_items.push(itemObj.path);
-          }
-          depth_obj[itemObj.path] = content_to_add;
-          snapshot.char_count += content_to_add.length;
-          has_added_any_item = true;
-        } else {
-          // skip if doesn't fit
-          if (itemObj.length > leftover) {
-            snapshot.skipped_items.push(itemObj.path);
-          } else {
-            depth_obj[itemObj.path] = content_to_add;
-            snapshot.char_count += content_to_add.length;
-          }
-        }
-      } else {
-        // no limit => add fully
-        depth_obj[itemObj.path] = content_to_add;
-        snapshot.char_count += content_to_add.length;
-        has_added_any_item = true;
-      }
-    }
-
-    if (Object.keys(snapshot.items[depth]).length === 0) {
-      delete snapshot.items[depth];
-    }
-  }
-}
-
-/**
- * Gathers item expansions => read content => parse 'smart-context' codeblocks => 
- * add them as expansions at the same depth => returns array with { path, content_str, length }.
+ * create_empty_snapshot
+ * Produces the initial snapshot object with default arrays/values.
  *
- * **IMPORTANT FIX**: We must check `already_in_snapshot` with the actual snapshot,
- * instead of accidentally passing the SmartContext item.
+ * @returns {object}
  */
-async function gather_items_with_lengths(expansions, ctx_item, merged_opts, snapshot) {
+function create_empty_snapshot() {
+  return {
+    items: {},
+    truncated_items: [],
+    skipped_items: [],
+    missing_items: [],
+    char_count: 0
+  };
+}
+
+/**
+ * gather_depth_zero_items
+ * Expands the SmartContext.data.context_items at depth=0.
+ *   - Folders are expanded to files.
+ *   - Each file is read and scanned for ```smart-context references.
+ *   - Sort by ascending file size, then insert them at depth=0 respecting partial truncation.
+ *
+ * @async
+ * @param {SmartContext} ctx_item
+ * @param {Object} merged_opts
+ * @param {Object} snapshot
+ * @param {string[]} ignore_patterns
+ * @returns {Promise<object>} Updated snapshot
+ */
+async function gather_depth_zero_items(ctx_item, merged_opts, snapshot, ignore_patterns) {
+  const context_items = ctx_item.data?.context_items || {};
+
+  // Expand each item (folder → all files, single file → itself)
+  const expansions = [];
+  for (const [path_or_key, flag] of Object.entries(context_items)) {
+    if (!flag) continue; // skip false/undefined
+    const expanded = await expand_path_or_folder(ctx_item, path_or_key, false, ignore_patterns);
+    expansions.push(...expanded);
+  }
+
+  // Retrieve content, codeblock expansions, measure length
+  const items_with_lengths = await gather_items_with_lengths(
+    expansions,
+    ctx_item,
+    merged_opts,
+    snapshot,
+    ignore_patterns
+  );
+  // Sort by ascending size
+  items_with_lengths.sort((a, b) => a.length - b.length);
+
+  // Insert them at depth=0 with partial truncation logic
+  const updated_snapshot = insert_items_at_depth(
+    snapshot,
+    items_with_lengths,
+    0,
+    merged_opts
+  );
+
+  return updated_snapshot;
+}
+
+/**
+ * gather_link_depth_items
+ * Repeats expansions for link_depth≥1, collecting outlinks (and inlinks if inlinks=true)
+ * from the previous depth.
+ *
+ * @async
+ * @param {SmartContext} ctx_item
+ * @param {Object} merged_opts
+ * @param {Object} snapshot
+ * @param {string[]} ignore_patterns
+ * @returns {Promise<object>} Updated snapshot
+ */
+async function gather_link_depth_items(ctx_item, merged_opts, snapshot, ignore_patterns) {
+  const max_depth = merged_opts.link_depth || 0;
+  if (max_depth <= 0) {
+    return snapshot;
+  }
+
+  let updated_snapshot = snapshot;
+
+  for (let depth = 1; depth <= max_depth; depth++) {
+    const prev_depth_obj = updated_snapshot.items[depth - 1] || {};
+    const prev_keys = Object.keys(prev_depth_obj);
+    if (!prev_keys.length) {
+      break; // no items in the previous depth => no further links
+    }
+
+    // Collect link candidates from outlinks/inlinks
+    const link_candidates = await collect_depth_candidates(
+      ctx_item,
+      merged_opts,
+      prev_keys,
+      updated_snapshot
+    );
+    if (!link_candidates.length) {
+      break;
+    }
+
+    // Expand those candidate paths (folders → files, codeblocks, ignoring duplicates)
+    const expansions = [];
+    for (const link_key of link_candidates) {
+      const sub_expanded = await expand_path_or_folder(
+        ctx_item,
+        link_key,
+        false,
+        ignore_patterns
+      );
+      expansions.push(...sub_expanded);
+    }
+
+    // gather items with content + length
+    const items_with_lengths = await gather_items_with_lengths(
+      expansions,
+      ctx_item,
+      merged_opts,
+      updated_snapshot,
+      ignore_patterns
+    );
+    items_with_lengths.sort((a, b) => a.length - b.length);
+
+    // Insert them at snapshot.items[depth]
+    updated_snapshot = insert_items_at_depth(
+      updated_snapshot,
+      items_with_lengths,
+      depth,
+      merged_opts
+    );
+
+    // If that depth ended up empty, remove it
+    if (!updated_snapshot.items[depth] || !Object.keys(updated_snapshot.items[depth]).length) {
+      const { [depth]: _, ...rest } = updated_snapshot.items;
+      updated_snapshot.items = rest;
+    }
+  }
+
+  return updated_snapshot;
+}
+
+/**
+ * collect_depth_candidates
+ * Gathers outlinks (and inlinks if inlinks=true) from the given set of item paths.
+ * Filters out any link_keys already in the snapshot.
+ *
+ * @async
+ * @param {SmartContext} ctx_item
+ * @param {Object} merged_opts
+ * @param {string[]} prev_depth_keys
+ * @param {Object} snapshot
+ * @returns {Promise<string[]>} Unique link keys not yet in snapshot
+ */
+async function collect_depth_candidates(ctx_item, merged_opts, prev_depth_keys, snapshot) {
+  const candidates = [];
+  for (const pkey of prev_depth_keys) {
+    const ref = await ctx_item.get_ref(pkey);
+    if (!ref) continue;
+    const outlinks = Array.isArray(ref.outlinks) ? ref.outlinks : [];
+    const inlinks = merged_opts.inlinks ? (Array.isArray(ref.inlinks) ? ref.inlinks : []) : [];
+    const combined = outlinks.concat(inlinks);
+
+    for (const link_key of combined) {
+      if (!already_in_snapshot(link_key, snapshot)) {
+        candidates.push(link_key);
+      }
+    }
+  }
+  return candidates;
+}
+
+/**
+ * remove_empty_depth_zero
+ * If depth=0 has no items, remove it from the snapshot.
+ *
+ * @param {Object} snapshot
+ * @returns {Object} Possibly updated snapshot
+ */
+function remove_empty_depth_zero(snapshot) {
+  const depth0 = snapshot.items[0];
+  if (!depth0 || !Object.keys(depth0).length) {
+    const { 0: _, ...rest } = snapshot.items;
+    return { ...snapshot, items: rest };
+  }
+  return snapshot;
+}
+
+/**
+ * apply_exclusions
+ * Invokes respect_exclusions to remove heading-based sections from snapshot items.
+ *
+ * @async
+ * @param {Object} snapshot
+ * @param {Object} merged_opts
+ * @property {string[]} [merged_opts.excluded_headings=[]]
+ * @returns {Promise<object>} Updated snapshot with excluded headings removed
+ */
+async function apply_exclusions(snapshot, merged_opts) {
+  const excluded_list = merged_opts.excluded_headings || [];
+  if (!excluded_list.length) {
+    return snapshot;
+  }
+
+  // We'll clone to pass into respect_exclusions, which mutates the given object
+  const cloned = JSON.parse(JSON.stringify(snapshot));
+  await respect_exclusions(cloned, { excluded_headings: excluded_list });
+  return cloned;
+}
+
+/**
+ * expand_path_or_folder
+ * Given a path_key that may be a folder or file, expand it:
+ *  - If it's a folder, list files recursively.
+ *  - If it's a file, return it directly.
+ *  - Filter out any that match ignore_patterns.
+ *
+ * @async
+ * @param {SmartContext} ctx_item
+ * @param {string} path_or_key
+ * @param {boolean} external - If true, use Node fallback only
+ * @param {string[]} ignore_patterns
+ * @returns {Promise<Array<{ path: string }>>}
+ */
+async function expand_path_or_folder(ctx_item, path_or_key, external, ignore_patterns) {
+  // 1) Attempt environment FS if not external
+  if (!external) {
+    const expansions_env = await try_expand_with_fs(ctx_item, path_or_key, false, ignore_patterns);
+    if (expansions_env) return expansions_env;
+  }
+  // 2) Fallback to Node fs
+  const expansions_node = await try_expand_with_fs(ctx_item, path_or_key, true, ignore_patterns);
+  return expansions_node || [];
+}
+
+/**
+ * try_expand_with_fs
+ * Check if the path is a directory or file, using either the environment's FS or Node fs.
+ * Return an array of expansions: { path: <string> }
+ *
+ * @async
+ * @param {SmartContext} ctx_item
+ * @param {string} path_or_key
+ * @param {boolean} use_node_fs
+ * @param {string[]} ignore_patterns
+ * @returns {Promise<Array<{ path: string }> | null>}
+ */
+async function try_expand_with_fs(ctx_item, path_or_key, use_node_fs, ignore_patterns) {
+  const system_fs = use_node_fs ? create_node_fs_shim() : get_environment_fs(ctx_item);
+  if (!system_fs) return null;
+
+  const stat_obj = await system_fs.stat(path_or_key);
+  if (!stat_obj) return null;
+
+  if (stat_obj.isDirectory()) {
+    // expand directory
+    const files = await system_fs.list_files_recursive(path_or_key);
+    // filter out ignored
+    const valid = files.filter(f => !should_ignore(f.path, ignore_patterns));
+    return valid.map(f => ({ path: f.path }));
+  }
+  // Single file
+  if (should_ignore(path_or_key, ignore_patterns)) {
+    return [];
+  }
+  return [{ path: path_or_key }];
+}
+
+/**
+ * get_environment_fs
+ * Return the environment's smart_fs if it exposes stat / list_files_recursive, else null.
+ *
+ * @param {SmartContext} ctx_item
+ * @returns {Object|null}
+ */
+function get_environment_fs(ctx_item) {
+  const env_fs = ctx_item?.env?.smart_fs;
+  if (!env_fs) return null;
+  if (typeof env_fs.stat !== 'function' || typeof env_fs.list_files_recursive !== 'function') {
+    return null;
+  }
+  return env_fs;
+}
+
+/**
+ * create_node_fs_shim
+ * Provide an object implementing stat() and list_files_recursive() using Node's built-in fs.
+ *
+ * @returns {Object}
+ */
+function create_node_fs_shim() {
+  return {
+    async stat(p) {
+      try {
+        const st = fs.statSync(p);
+        return {
+          isDirectory: () => st.isDirectory(),
+          isFile: () => st.isFile()
+        };
+      } catch {
+        return null;
+      }
+    },
+    async list_files_recursive(dir_path) {
+      try {
+        return get_recursive_node_files(dir_path);
+      } catch {
+        return [];
+      }
+    },
+    sep: '/'
+  };
+}
+
+/**
+ * get_recursive_node_files
+ * Recursively gather all file paths under a directory using Node fs.
+ *
+ * @param {string} dir_path
+ * @returns {Array<{ path: string }>}
+ */
+function get_recursive_node_files(dir_path) {
+  const results = [];
+  const listing = fs.readdirSync(dir_path, { withFileTypes: true });
+  for (const entry of listing) {
+    const full_path = path.join(dir_path, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...get_recursive_node_files(full_path));
+    } else {
+      results.push({ path: full_path });
+    }
+  }
+  return results;
+}
+
+/**
+ * gather_items_with_lengths
+ * For each expansion => read content, parse ```smart-context code blocks,
+ * gather newly referenced paths, measure length, and return array of { path, content_str, length }.
+ * Skips items that cannot be read, adding them to snapshot.missing_items.
+ *
+ * @async
+ * @param {Array<{ path:string }>} expansions
+ * @param {SmartContext} ctx_item
+ * @param {Object} merged_opts
+ * @param {Object} snapshot
+ * @param {string[]} ignore_patterns
+ * @returns {Promise<Array<{ path:string, content_str:string, length:number }>>}
+ */
+async function gather_items_with_lengths(expansions, ctx_item, merged_opts, snapshot, ignore_patterns) {
   const results = [];
 
-  for (const candidate of expansions) {
-    let content = await candidate.contentFn();
+  for (let i = 0; i < expansions.length; i++) {
+    const candidate = expansions[i];
+    const content = await read_content_for(ctx_item, candidate.path);
     if (content === false) {
+      // track missing
       snapshot.missing_items.push(candidate.path);
       continue;
     }
-    if (content == null) continue;
     if (typeof content !== 'string') {
-      console.log("content is not a string", content, candidate.path);
+      // skip weird content
       continue;
     }
-    const base_path = ctx_item.env?.smart_sources?.fs?.base_path || '';
-    const codeblock_refs = parse_smart_context_codeblock_lines(content, base_path);
-    for (const codeblock_ref of codeblock_refs) {
-      const alreadyInExp = expansions.some(e => e.path === codeblock_ref.path) 
-        || results.some(r => r.path === codeblock_ref.path)
-        || already_in_snapshot(codeblock_ref.path, snapshot);
 
-      if (!alreadyInExp) {
-        const sub = await expand_path_or_folder(ctx_item, codeblock_ref.path, true);
-        expansions.push(...sub);
+    // parse codeblock lines for references
+    const base_path = ctx_item.env?.smart_fs?.base_path || '';
+    const codeblock_refs = parse_smart_context_codeblock_lines(content, base_path);
+    for (const ref_obj of codeblock_refs) {
+      // expand only if not in expansions or results or snapshot
+      const found_expansion = expansions.some(e => e.path === ref_obj.path);
+      const found_result = results.some(r => r.path === ref_obj.path);
+      const found_snapshot = already_in_snapshot(ref_obj.path, snapshot);
+
+      if (!found_expansion && !found_result && !found_snapshot) {
+        // expand codeblock reference
+        const sub_expanded = await expand_path_or_folder(
+          ctx_item,
+          ref_obj.path,
+          ref_obj.external,
+          ignore_patterns
+        );
+        expansions.push(...sub_expanded);
       }
     }
 
-
+    // add the item to results
     results.push({
       path: candidate.path,
       content_str: content,
       length: content.length
     });
   }
-  return results;
-}
 
-/**
- * After building, run respect_exclusions
- * If parse_blocks returns no blocks, fallback to a simple line-based heading removal.
- */
-async function respect_exclusions_on_snapshot(snapshot, merged_opts) {
-  const ex_heads = merged_opts.excluded_headings || [];
-  if (!ex_heads.length) return;
-  await respect_exclusions(snapshot, { excluded_headings: ex_heads });
-}
-
-/**
- * Expand path or treat as single file. Uses `env.smart_fs` if available.
- * If the path is a folder, returns sub-files. If path is a file, returns single item.
- */
-async function expand_path_or_folder(ctx_item, path_or_key, external=false) {
-  const _fs = external ? fs : ctx_item.env?.smart_sources?.fs || ctx_item.env?.smart_fs;
-  const results = [];
-  if (!external && (!_fs || typeof _fs.stat !== 'function' || typeof _fs.list_files_recursive !== 'function')) {
-    console.log("no fs or no list_files_recursive", _fs);
-    // fallback => treat everything as a file
-    results.push({
-      path: path_or_key,
-      contentFn: () => read_content_for(ctx_item, path_or_key, external)
-    });
-    return results;
-  }
-
-  try {
-    const st = await _fs.stat(path_or_key);
-    console.log("stat", st);
-    if (st.isDirectory()) {
-      // gather direct children
-      const files = external
-        ? await get_recursive_files(path_or_key)
-        : await _fs.list_files_recursive(path_or_key);
-      console.log("files", files);
-      for (const file of files) {
-        if (file.isFile()) {
-          results.push({
-            path: file.path,
-            contentFn: () => read_content_for(ctx_item, file.path, external)
-          });
-        }
-      }
-      return results;
-    }
-  } catch (e) {
-    // ignore => treat as file
-    // console.log("error", e);
-  }
-
-  // fallback: treat as file
-  results.push({
-    path: path_or_key,
-    contentFn: () => read_content_for(ctx_item, path_or_key, external)
-  });
-  return results;
-}
-
-async function get_recursive_files(path) {
-  const files = fs.readdirSync(path);
-  const results = [];
-  for (const file of files) {
-    const filePath = path.join(path, file);
-    const stat = fs.statSync(filePath);
-    if (stat.isDirectory()) {
-      results.push(...get_recursive_files(filePath));
-    } else {
-      results.push({
-        path: filePath,
-        isFile: () => true
-      });
-    }
-  }
-  console.log("get_recursive_files", results);
   return results;
 }
 
 /**
  * read_content_for
- * Reads content from either a known item reference or from the file system.
+ * 1) If there's a recognized item with .read() method, use it
+ * 2) Else environment FS read
+ * 3) Else Node fs read
+ *
+ * @async
+ * @param {SmartContext} ctx_item
+ * @param {string} the_path
+ * @returns {Promise<string|false>}
  */
-async function read_content_for(ctx_item, key, external=false) {
-  // If there's a recognized item reference that can read itself:
-  const ref = ctx_item.get_ref?.(key);
-  if (ref && typeof ref.read === 'function') {
-    return (await ref.read()) || '';
-  }
-
-  // Otherwise use the environment's smart_fs
-  const _fs = external ? fs : ctx_item.env?.smart_sources?.fs || ctx_item.env?.smart_fs;
-  if (_fs && typeof _fs.read === 'function') {
-    try {
-      if (await _fs.exists(key)) {
-        return (await _fs.read(key)) || '';
-      }
-      return false;
-    } catch (err) {
-      // file read error => skip
-      console.log("file read error", key);
-      return '';
+async function read_content_for(ctx_item, the_path) {
+  // 1) recognized item (like a SmartSource) with .read()
+  if (typeof ctx_item.get_ref === 'function') {
+    const maybe_ref = ctx_item.get_ref(the_path);
+    if (maybe_ref && typeof maybe_ref.read === 'function') {
+      const out = await maybe_ref.read();
+      return out || '';
     }
   }
-  return '';
+
+  // 2) environment FS
+  const env_fs = get_environment_fs(ctx_item);
+  if (env_fs && typeof env_fs.read === 'function') {
+    try {
+      if (await env_fs.exists(the_path)) {
+        const data = await env_fs.read(the_path);
+        return data || '';
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3) fallback to Node fs
+  try {
+    if (fs.existsSync(the_path)) {
+      return fs.readFileSync(the_path, 'utf8') || '';
+    }
+  } catch {
+    // ignore
+  }
+
+  return false;
 }
 
 /**
  * parse_smart_context_codeblock_lines
- * Looks for ```smart-context ...``` blocks in the file content, returning each line inside them.
+ * Scans the content for ```smart-context code blocks and returns each non-empty line as a path reference.
+ * If a line starts with '../', treat it as external referencing an absolute path join.
+ *
+ * @param {string} content
+ * @param {string} root_path
+ * @returns {Array<{ path:string, external:boolean }>}
  */
 export function parse_smart_context_codeblock_lines(content, root_path) {
   const lines = content.split('\n');
-  let inside = false;
+  let inside_block = false;
   const results = [];
 
   for (const line of lines) {
     const trimmed = line.trimStart();
     if (trimmed.startsWith('```smart-context')) {
-      inside = true;
+      inside_block = true;
       continue;
     }
-    if (inside && trimmed.startsWith('```')) {
-      inside = false;
+    if (inside_block && trimmed.startsWith('```')) {
+      inside_block = false;
       continue;
     }
-    if (inside) {
-      // Each non-empty line is presumably a path reference
-      const ref = trimmed;
-      // count level_ups (../)
-      const level_ups = (ref.match(/\.\.\//g) || []).length;
-      const path = root_path.split('/').slice(0, -level_ups).join('/') + '/' + ref.replace(/\.\.\//g, '');
-      if (ref) {
-        results.push({
-          path: path,
-          external: true
-        });
+    if (inside_block) {
+      if (!trimmed) continue;
+      if (trimmed.startsWith('../')) {
+        // external path
+        const absolute_path = path.join(root_path, trimmed);
+        results.push({ path: absolute_path, external: true });
+      } else {
+        results.push({ path: trimmed, external: false });
       }
     }
   }
@@ -401,10 +560,126 @@ export function parse_smart_context_codeblock_lines(content, root_path) {
 }
 
 /**
- * Returns true if link_key is found among snapshot.items[*]
+ * already_in_snapshot
+ * Checks if link_key is present at any depth in snapshot.items.
+ *
+ * @param {string} link_key
+ * @param {object} snapshot
+ * @returns {boolean}
  */
-function already_in_snapshot(link_key, snapshot) {
-  // The old bug was accidentally passing ctx_item instead of snapshot.
-  // We must pass snapshot so we can do:
-  return Object.values(snapshot.items).some(obj => (link_key in obj));
+export function already_in_snapshot(link_key, snapshot) {
+  return Object.values(snapshot.items).some(depth_obj => link_key in depth_obj);
+}
+
+/**
+ * insert_items_at_depth
+ * Takes an array of {path, content_str, length} and inserts them into snapshot.items[depth].
+ * Respects merged_opts.max_len so that:
+ *   - The first item that doesn't fit is partially truncated,
+ *   - All subsequent items that don't fit are fully skipped.
+ *
+ * @param {Object} snapshot
+ * @param {Array} items_with_lengths
+ * @param {number} depth
+ * @param {Object} merged_opts
+ * @returns {Object} Updated snapshot
+ */
+function insert_items_at_depth(snapshot, items_with_lengths, depth, merged_opts) {
+  const new_snapshot = clone_snapshot_shallow(snapshot);
+  if (!new_snapshot.items[depth]) {
+    new_snapshot.items[depth] = {};
+  }
+
+  const max_len = merged_opts.max_len || 0;
+  let has_added_any_item = snapshot_has_any_items(new_snapshot);
+
+  for (const item of items_with_lengths) {
+    if (reached_limit(new_snapshot.char_count, max_len)) {
+      new_snapshot.skipped_items.push(item.path);
+      continue;
+    }
+
+    const leftover = leftover_chars(new_snapshot.char_count, max_len);
+    let content = item.content_str;
+
+    if (max_len > 0) {
+      if (!has_added_any_item) {
+        // The first item that doesn't fully fit => partial truncation
+        if (content.length > leftover) {
+          content = content.slice(0, leftover);
+          new_snapshot.truncated_items.push(item.path);
+        }
+        new_snapshot.items[depth][item.path] = content;
+        new_snapshot.char_count += content.length;
+        has_added_any_item = true;
+      } else {
+        // skip if not enough leftover
+        if (item.length > leftover) {
+          new_snapshot.skipped_items.push(item.path);
+        } else {
+          new_snapshot.items[depth][item.path] = content;
+          new_snapshot.char_count += content.length;
+        }
+      }
+    } else {
+      // no limit => just add
+      new_snapshot.items[depth][item.path] = content;
+      new_snapshot.char_count += content.length;
+      has_added_any_item = true;
+    }
+  }
+
+  return new_snapshot;
+}
+
+/**
+ * clone_snapshot_shallow
+ * Returns a shallow copy of the snapshot so we can modify items, truncated_items, etc.
+ *
+ * @param {Object} snapshot
+ * @returns {Object} Shallow clone
+ */
+function clone_snapshot_shallow(snapshot) {
+  return {
+    ...snapshot,
+    items: { ...snapshot.items },
+    truncated_items: [...snapshot.truncated_items],
+    skipped_items: [...snapshot.skipped_items],
+    missing_items: [...snapshot.missing_items]
+  };
+}
+
+/**
+ * snapshot_has_any_items
+ * True if the snapshot already has at least one item at any depth.
+ *
+ * @param {Object} snapshot
+ * @returns {boolean}
+ */
+function snapshot_has_any_items(snapshot) {
+  return Object.values(snapshot.items).some(obj => Object.keys(obj).length > 0);
+}
+
+/**
+ * leftover_chars
+ * @param {number} current_count
+ * @param {number} max_len
+ * @returns {number} leftover
+ */
+function leftover_chars(current_count, max_len) {
+  if (!max_len || max_len <= 0) return 0;
+  return Math.max(0, max_len - current_count);
+}
+
+/**
+ * reached_limit
+ * True if we've already reached or exceeded the max_len in the snapshot.
+ *
+ * @param {number} current_count
+ * @param {number} max_len
+ * @returns {boolean}
+ */
+function reached_limit(current_count, max_len) {
+  if (!max_len || max_len <= 0) return false;
+  return current_count >= max_len;
 }
