@@ -104,14 +104,14 @@ Builds a `context_snapshot{}` by:
    - If required, skip or partially truncate items to obey the limit.
    - Potentially prioritize **shortest items first** within a given depth if that is configured (some implementations might rely on the original order or do a size-based sort).
 6. Returns a `context_snapshot{ items: {0: {...}, 1: {...}}, truncated_items:[], skipped_items:[], ... }`.
-### `compile(context_snapshot={}, opts={})`
-Given a `context_snapshot` and optional overrides:
-1. Merges `opts` with the existing context options and defaults.
-2. Optionally re-checks `max_len` (secondary check) to ensure final output remains within the limit.
+### `compile(opts={})`
+1. get_snapshot(opts)
+2. Merges `opts` with the existing context options and defaults.
+3. Optionally re-checks `max_len` (secondary check) to ensure final output remains within the limit.
    - Could skip or truncate further if needed.
-3. Applies templates for each depth `templates[d].before/after`.
-4. Wraps entire output with `templates[-1]` if present.
-5. Returns an object:
+4. Applies templates for each depth `templates[d].before/after`.
+5. Wraps entire output with `templates[-1]` if present.
+6. Returns an object:
    ```js
    {
      context: 'final string here',

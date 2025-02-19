@@ -46,6 +46,7 @@ export class SmartFsTestAdapter {
       current_path += (current_path ? this.sep : '') + part;
       if (!(current_path in this.files) || opts.recursive) {
         this.files[current_path] = '[DIRECTORY]';
+        this.smart_fs.folders[current_path] = true;
       } else if (!opts.recursive) {
         throw new Error(`Directory already exists: ${current_path}`);
       }
@@ -174,6 +175,7 @@ export class SmartFsTestAdapter {
 
   async stat(rel_path) {
     if (!(rel_path in this.files)) {
+      // console.log("stat", rel_path, this.files);
       throw new Error(`File not found: ${rel_path}`);
     }
     const is_directory = this.files[rel_path] === '[DIRECTORY]';
@@ -200,10 +202,17 @@ export class SmartFsTestAdapter {
       await this.mkdir(dir_path, { recursive: true });
     }
     this.files[rel_path] = content;
+    this.smart_fs.files[rel_path] = {
+      path: rel_path,
+      extension: rel_path.split('.').pop().toLowerCase(),
+      name: rel_path.split('/').pop(),
+      basename: rel_path.split('/').pop().split('.').shift(),
+      type: 'file',
+    };
   }
 
   get_link_target_path(link_target, source_path) {
     // Simple implementation for testing purposes
-    return Object.keys(this.files).find(path => path.endsWith(link_target));
+    return Object.keys(this.files).find(path => path.includes(link_target));
   }
 }

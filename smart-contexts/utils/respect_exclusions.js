@@ -18,10 +18,11 @@ import { match_glob } from 'smart-file-system/utils/match_glob.js';
 export async function respect_exclusions(context_snapshot = {}, opts = {}) {
   const excluded_list = (opts.excluded_headings || []).map(h => h.trim()).filter(Boolean);
   if (!excluded_list.length) return;
-
-  for(const [depth, context_items] of Object.entries(context_snapshot.items)) {
+  for(const [depth, context_items] of Object.entries(context_snapshot.items || {})) {
     for (const [item_key, item_content] of Object.entries(context_items || {})) {
-      const [new_content, exclusions] = strip_excluded_headings(item_content, excluded_list);
+      const [new_content, exclusions, removed_char_count] = strip_excluded_headings(item_content, excluded_list);
+      console.log({removed_char_count});
+      context_snapshot.total_char_count -= removed_char_count;
       context_snapshot.items[depth][item_key] = new_content;
       if (exclusions.length) {
         if(!context_snapshot.exclusions) context_snapshot.exclusions = {};
@@ -35,12 +36,11 @@ export async function respect_exclusions(context_snapshot = {}, opts = {}) {
 }
 
 function strip_excluded_headings(content, excluded_list) {
-  const blocks_map = parse_blocks(content);
+  const blocks_map = parse_blocks(content, { start_index: 0 });
   if (!Object.keys(blocks_map).length) return [content, []];
 
   const exclusions = [];
   let lines = content.split('\n');
-  let remove_line_ranges = [];
 
   for (const [block_key, line_range] of Object.entries(blocks_map)) {
     // block_key might be "stuff.md# Secret" or just "# Secret" etc. if your parser includes the filename
@@ -51,45 +51,19 @@ function strip_excluded_headings(content, excluded_list) {
 
     for (const pattern of excluded_list) {
       if (match_glob(pattern, last_heading, { case_sensitive: false })) {
-        // remove from line_range[0]..line_range[1]
-        remove_line_ranges.push({
-          start: line_range[0] - 1,
-          end: line_range[1] - 1
-        });
+        for(let i = line_range[0]; i <= line_range[1]; i++) {
+          lines[i] = null;
+        }
         exclusions.push(pattern);
         break;
       }
     }
   }
 
-  if (!remove_line_ranges.length) return [content, []];
-
-  remove_line_ranges.sort((a, b) => a.start - b.start);
-  let merged = [];
-  let current = remove_line_ranges[0];
-  for (let i = 1; i < remove_line_ranges.length; i++) {
-    if (remove_line_ranges[i].start <= current.end + 1) {
-      current.end = Math.max(current.end, remove_line_ranges[i].end);
-    } else {
-      merged.push(current);
-      current = remove_line_ranges[i];
-    }
-  }
-  merged.push(current);
-
-  const new_lines = [];
-  let prev_idx = 0;
-  for (const interval of merged) {
-    for (let i = prev_idx; i < interval.start; i++) {
-      if (i < lines.length) new_lines.push(lines[i]);
-    }
-    prev_idx = interval.end + 1;
-  }
-  for (let i = prev_idx; i < lines.length; i++) {
-    new_lines.push(lines[i]);
-  }
-
-  return [new_lines.join('\n'), exclusions];
+  lines = lines.filter(Boolean);
+  const new_content = lines.join('\n');
+  const removed_char_count = content.length - new_content.length;
+  return [new_content, exclusions, removed_char_count];
 }
 
 /**

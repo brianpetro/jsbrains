@@ -43,17 +43,13 @@ export class SmartContext extends CollectionItem {
 
   /**
    * compile
-   * Given a context_snapshot (optional) and local overrides, returns final { context, stats }.
    * Re-checks `max_len` if needed for final output.
    * @async
-   * @param {object} [context_snapshot={}]
    * @param {object} [opts={}]
    * @returns {Promise<{context: string, stats: object}>}
    */
-  async compile(context_snapshot = {}, opts = {}) {
-    if (!context_snapshot || !Object.keys(context_snapshot).length) {
-      context_snapshot = await this.get_snapshot(opts);
-    }
+  async compile(opts = {}) {
+    const context_snapshot = await this.get_snapshot(opts);
     // We pass only the snapshot + merged options (not the item itself).
     // The specs require the compiler not to accept a context_item instance.
     const merged_opts = merge_context_opts(this, opts);
