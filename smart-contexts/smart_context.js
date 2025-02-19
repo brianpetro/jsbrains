@@ -10,7 +10,7 @@
 import { CollectionItem } from 'smart-collections';
 import { build_snapshot } from './utils/snapshot.js';
 import { compile_snapshot } from './utils/compiler.js';
-import { murmur_hash_32_alphanumeric } from '../../advanced-env/smart-utils/create_hash.js';
+import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 import { merge_context_opts } from './utils/merge_context_opts.js';
 
 export class SmartContext extends CollectionItem {

@@ -21,8 +21,7 @@ export async function respect_exclusions(context_snapshot = {}, opts = {}) {
   for(const [depth, context_items] of Object.entries(context_snapshot.items || {})) {
     for (const [item_key, item_content] of Object.entries(context_items || {})) {
       const [new_content, exclusions, removed_char_count] = strip_excluded_headings(item_content, excluded_list);
-      console.log({removed_char_count});
-      context_snapshot.total_char_count -= removed_char_count;
+      context_snapshot.char_count -= removed_char_count;
       context_snapshot.items[depth][item_key] = new_content;
       if (exclusions.length) {
         if(!context_snapshot.exclusions) context_snapshot.exclusions = {};

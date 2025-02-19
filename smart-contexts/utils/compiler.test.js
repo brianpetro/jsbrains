@@ -10,7 +10,7 @@ function snapshot_with_items(depth_items_map) {
     items: depth_items_map,
     truncated_items: [],
     skipped_items: [],
-    total_char_count: 0
+    char_count: 0
   };
 }
 
@@ -38,7 +38,7 @@ test('Only item content is truncated, template is fully included or chunk is ski
   const { context, stats } = await compile_snapshot(context_snapshot, merged_opts);
   t.is(stats.skipped_items.length, 0, 'No chunk skipped');
   t.is(stats.truncated_items.length, 0, 'No chunk truncated');
-  t.is(stats.final_length, 36, 'Check final length = 36 (two sets of templates + item content)');
+  t.is(stats.char_count, 36, 'Check final length = 36 (two sets of templates + item content)');
   t.is(
     context,
     '[BFR]AAAAAA[AFT][BFR]BBBBBBBBBB[AFT]',
@@ -92,7 +92,7 @@ test('Partially truncate item content if template fits but item is too large', a
   t.deepEqual(stats.skipped_items, []);
   t.deepEqual(stats.truncated_items, ['bigItem.md']);
   t.is(context, '[B]ABCD[A]', 'Truncate item text to 4 leftover chars');
-  t.is(stats.final_length, 10, '3 chars + 4 + 3 = 10 total');
+  t.is(stats.char_count, 10, '3 chars + 4 + 3 = 10 total');
 });
 
 
@@ -122,7 +122,7 @@ test('Top-level wrap is all-or-nothing: skip if not enough space', async t => {
 
   const { context, stats } = await compile_snapshot(context_snapshot, merged_opts);
   t.is(context, '<Hello>', 'We never included top-level wrap');
-  t.is(stats.final_length, 7);
+  t.is(stats.char_count, 7);
   t.deepEqual(stats.truncated_items, [], 'No truncation');
   t.deepEqual(stats.skipped_items, [], 'No chunk skipped either');
 });
@@ -149,7 +149,7 @@ test('If we can fit top-level wrap, include it fully (no partial)', async t => {
   // length=7
   // top-level => '<<1' + chunk + '2>>' => total=7+8=15
   t.is(context, '<<1[12345]2>>');
-  t.is(stats.final_length, 15);
+  t.is(stats.char_count, 15);
   t.deepEqual(stats.skipped_items, []);
   t.deepEqual(stats.truncated_items, []);
 });
@@ -171,7 +171,7 @@ test('replace_vars should still apply in templates', async t => {
   };
   const { context, stats } = await compile_snapshot(context_snapshot, merged_opts);
   t.is(
-    stats.final_length,
+    stats.char_count,
     context.trim().length,
     'We count length with or without the trailing newline'
   );

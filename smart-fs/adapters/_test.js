@@ -215,4 +215,8 @@ export class SmartFsTestAdapter {
     // Simple implementation for testing purposes
     return Object.keys(this.files).find(path => path.includes(link_target));
   }
+
+  get_base_path() {
+    return '';
+  }
 }

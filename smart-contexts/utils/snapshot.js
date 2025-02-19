@@ -10,7 +10,7 @@
  *   - Once something is included, subsequent items that don't fit are skipped
  *   - Respects exclusions (excluded_headings, etc.)
  */
-
+import fs from 'fs'; // for external codeblock references
 import { respect_exclusions } from './respect_exclusions.js';
 
 /**
@@ -25,7 +25,7 @@ export async function build_snapshot(ctx_item, merged_opts) {
     items: {},
     truncated_items: [],
     skipped_items: [],
-    total_char_count: 0,
+    char_count: 0,
     missing_items: []
   };
 
@@ -84,13 +84,13 @@ async function process_items_at_depth_zero(ctx_item, merged_opts, snapshot) {
 
   for (const itemObj of with_lengths) {
     // Check max_len
-    if (merged_opts.max_len > 0 && snapshot.total_char_count >= merged_opts.max_len) {
+    if (merged_opts.max_len > 0 && snapshot.char_count >= merged_opts.max_len) {
       snapshot.skipped_items.push(itemObj.path);
       continue;
     }
 
     const leftover = merged_opts.max_len
-      ? merged_opts.max_len - snapshot.total_char_count
+      ? merged_opts.max_len - snapshot.char_count
       : 0;
 
     let content_to_add = itemObj.content_str;
@@ -103,7 +103,7 @@ async function process_items_at_depth_zero(ctx_item, merged_opts, snapshot) {
           snapshot.truncated_items.push(itemObj.path);
         }
         depth0[itemObj.path] = content_to_add;
-        snapshot.total_char_count += content_to_add.length;
+        snapshot.char_count += content_to_add.length;
         has_added_any_item = true;
       } else {
         // Already included something => skip if doesn't fit fully
@@ -111,13 +111,13 @@ async function process_items_at_depth_zero(ctx_item, merged_opts, snapshot) {
           snapshot.skipped_items.push(itemObj.path);
         } else {
           depth0[itemObj.path] = content_to_add;
-          snapshot.total_char_count += content_to_add.length;
+          snapshot.char_count += content_to_add.length;
         }
       }
     } else {
       // no max_len => no skipping or truncation
       depth0[itemObj.path] = content_to_add;
-      snapshot.total_char_count += content_to_add.length;
+      snapshot.char_count += content_to_add.length;
       has_added_any_item = true;
     }
   }
@@ -172,12 +172,12 @@ async function process_links(ctx_item, merged_opts, snapshot) {
       .some(v => Object.keys(v).length > 0);
 
     for (const itemObj of with_lengths) {
-      if (merged_opts.max_len > 0 && snapshot.total_char_count >= merged_opts.max_len) {
+      if (merged_opts.max_len > 0 && snapshot.char_count >= merged_opts.max_len) {
         snapshot.skipped_items.push(itemObj.path);
         continue;
       }
       const leftover = merged_opts.max_len
-        ? merged_opts.max_len - snapshot.total_char_count
+        ? merged_opts.max_len - snapshot.char_count
         : 0;
 
       let content_to_add = itemObj.content_str;
@@ -189,7 +189,7 @@ async function process_links(ctx_item, merged_opts, snapshot) {
             snapshot.truncated_items.push(itemObj.path);
           }
           depth_obj[itemObj.path] = content_to_add;
-          snapshot.total_char_count += content_to_add.length;
+          snapshot.char_count += content_to_add.length;
           has_added_any_item = true;
         } else {
           // skip if doesn't fit
@@ -197,13 +197,13 @@ async function process_links(ctx_item, merged_opts, snapshot) {
             snapshot.skipped_items.push(itemObj.path);
           } else {
             depth_obj[itemObj.path] = content_to_add;
-            snapshot.total_char_count += content_to_add.length;
+            snapshot.char_count += content_to_add.length;
           }
         }
       } else {
         // no limit => add fully
         depth_obj[itemObj.path] = content_to_add;
-        snapshot.total_char_count += content_to_add.length;
+        snapshot.char_count += content_to_add.length;
         has_added_any_item = true;
       }
     }
@@ -230,22 +230,24 @@ async function gather_items_with_lengths(expansions, ctx_item, merged_opts, snap
       snapshot.missing_items.push(candidate.path);
       continue;
     }
-
-    const codeblock_refs = parse_smart_context_codeblock_lines(content, (ctx_item.env?.smart_fs?.fs_path || ''));
-
-    // Add codeblock references as expansions at the same depth
-    for (const code_path of codeblock_refs) {
-      const alreadyInExp = expansions.some(e => e.path === code_path) 
-        || results.some(r => r.path === code_path)
-        || already_in_snapshot(code_path, snapshot); // <--- FIX: pass snapshot
+    if (content == null) continue;
+    if (typeof content !== 'string') {
+      console.log("content is not a string", content, candidate.path);
+      continue;
+    }
+    const base_path = ctx_item.env?.smart_sources?.fs?.base_path || '';
+    const codeblock_refs = parse_smart_context_codeblock_lines(content, base_path);
+    for (const codeblock_ref of codeblock_refs) {
+      const alreadyInExp = expansions.some(e => e.path === codeblock_ref.path) 
+        || results.some(r => r.path === codeblock_ref.path)
+        || already_in_snapshot(codeblock_ref.path, snapshot);
 
       if (!alreadyInExp) {
-        expansions.push({
-          path: code_path,
-          contentFn: () => read_content_for(ctx_item, code_path)
-        });
+        const sub = await expand_path_or_folder(ctx_item, codeblock_ref.path, true);
+        expansions.push(...sub);
       }
     }
+
 
     results.push({
       path: candidate.path,
@@ -270,29 +272,33 @@ async function respect_exclusions_on_snapshot(snapshot, merged_opts) {
  * Expand path or treat as single file. Uses `env.smart_fs` if available.
  * If the path is a folder, returns sub-files. If path is a file, returns single item.
  */
-async function expand_path_or_folder(ctx_item, path_or_key) {
-  const fs = ctx_item.env?.smart_sources?.fs || ctx_item.env?.smart_fs;
+async function expand_path_or_folder(ctx_item, path_or_key, external=false) {
+  const _fs = external ? fs : ctx_item.env?.smart_sources?.fs || ctx_item.env?.smart_fs;
   const results = [];
-  if (!fs || typeof fs.stat !== 'function' || typeof fs.list_files_recursive !== 'function') {
-    console.log("no fs or no list_files_recursive", fs);
+  if (!external && (!_fs || typeof _fs.stat !== 'function' || typeof _fs.list_files_recursive !== 'function')) {
+    console.log("no fs or no list_files_recursive", _fs);
     // fallback => treat everything as a file
     results.push({
       path: path_or_key,
-      contentFn: () => read_content_for(ctx_item, path_or_key)
+      contentFn: () => read_content_for(ctx_item, path_or_key, external)
     });
     return results;
   }
 
   try {
-    const st = await fs.stat(path_or_key);
+    const st = await _fs.stat(path_or_key);
+    console.log("stat", st);
     if (st.isDirectory()) {
       // gather direct children
-      const items = await fs.list_files_recursive(path_or_key);
-      for (const item of items) {
-        if (item.type === 'file') {
+      const files = external
+        ? await get_recursive_files(path_or_key)
+        : await _fs.list_files_recursive(path_or_key);
+      console.log("files", files);
+      for (const file of files) {
+        if (file.isFile()) {
           results.push({
-            path: item.path,
-            contentFn: () => read_content_for(ctx_item, item.path)
+            path: file.path,
+            contentFn: () => read_content_for(ctx_item, file.path, external)
           });
         }
       }
@@ -306,8 +312,27 @@ async function expand_path_or_folder(ctx_item, path_or_key) {
   // fallback: treat as file
   results.push({
     path: path_or_key,
-    contentFn: () => read_content_for(ctx_item, path_or_key)
+    contentFn: () => read_content_for(ctx_item, path_or_key, external)
   });
+  return results;
+}
+
+async function get_recursive_files(path) {
+  const files = fs.readdirSync(path);
+  const results = [];
+  for (const file of files) {
+    const filePath = path.join(path, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      results.push(...get_recursive_files(filePath));
+    } else {
+      results.push({
+        path: filePath,
+        isFile: () => true
+      });
+    }
+  }
+  console.log("get_recursive_files", results);
   return results;
 }
 
@@ -315,7 +340,7 @@ async function expand_path_or_folder(ctx_item, path_or_key) {
  * read_content_for
  * Reads content from either a known item reference or from the file system.
  */
-async function read_content_for(ctx_item, key) {
+async function read_content_for(ctx_item, key, external=false) {
   // If there's a recognized item reference that can read itself:
   const ref = ctx_item.get_ref?.(key);
   if (ref && typeof ref.read === 'function') {
@@ -323,15 +348,16 @@ async function read_content_for(ctx_item, key) {
   }
 
   // Otherwise use the environment's smart_fs
-  const fs = ctx_item.env?.smart_fs;
-  if (fs && typeof fs.read === 'function') {
+  const _fs = external ? fs : ctx_item.env?.smart_sources?.fs || ctx_item.env?.smart_fs;
+  if (_fs && typeof _fs.read === 'function') {
     try {
-      if (await fs.exists(key)) {
-        return (await fs.read(key)) || '';
+      if (await _fs.exists(key)) {
+        return (await _fs.read(key)) || '';
       }
       return false;
     } catch (err) {
       // file read error => skip
+      console.log("file read error", key);
       return '';
     }
   }
@@ -360,8 +386,14 @@ export function parse_smart_context_codeblock_lines(content, root_path) {
     if (inside) {
       // Each non-empty line is presumably a path reference
       const ref = trimmed;
+      // count level_ups (../)
+      const level_ups = (ref.match(/\.\.\//g) || []).length;
+      const path = root_path.split('/').slice(0, -level_ups).join('/') + '/' + ref.replace(/\.\.\//g, '');
       if (ref) {
-        results.push(ref);
+        results.push({
+          path: path,
+          external: true
+        });
       }
     }
   }

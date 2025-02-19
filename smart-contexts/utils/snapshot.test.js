@@ -249,7 +249,7 @@ test.serial('integration: build_snapshot with actual SmartEnv items', async t =>
     'non-excluded heading is present'
   );
   t.is(
-    snapshot.total_char_count,
+    snapshot.char_count,
     Object.values(snapshot.items[0]).reduce((acc, content) => acc + content.length, 0)
   );
 });

@@ -44,19 +44,29 @@ export class SmartContexts extends Collection {
   async init() {
     // TEMP: for backwards compatibility 2025-02-18
     // copy old settings to new format
+    if (!this.settings.templates) this.settings.templates = {};
+    if (!this.settings.templates['-1']) this.settings.templates['-1'] = {};
+    if (!this.settings.templates['0']) this.settings.templates['0'] = {};
+    if (!this.settings.templates['1']) this.settings.templates['1'] = {};
     Object.entries(this.settings).forEach(([key, value]) => {
-      if (key === 'before_context') {
+      if (key === 'before_context' && value) {
         this.settings.templates['-1'].before = value;
-      } else if (key === 'after_context') {
+        delete this.settings.before_context;
+      } else if (key === 'after_context' && value) {
         this.settings.templates['-1'].after = value;
-      } else if (key === 'before_item') {
+        delete this.settings.after_context;
+      } else if (key === 'before_item' && value) {
         this.settings.templates['0'].before = value;
-      } else if (key === 'after_item') {
+        delete this.settings.before_item;
+      } else if (key === 'after_item' && value) {
         this.settings.templates['0'].after = value;
-      } else if (key === 'before_link') {
+        delete this.settings.after_item;
+      } else if (key === 'before_link' && value) {
         this.settings.templates['1'].before = value;
-      } else if (key === 'after_link') {
+        delete this.settings.before_link;
+      } else if (key === 'after_link' && value) {
         this.settings.templates['1'].after = value;
+        delete this.settings.after_link;
       }
     });
   }
@@ -125,6 +135,7 @@ export class SmartContexts extends Collection {
               <li><code>{{ITEM_PATH}}</code> - Full path of the item</li>
               <li><code>{{ITEM_NAME}}</code> - Filename of the item</li>
               <li><code>{{ITEM_EXT}}</code> - File extension</li>
+              <li><code>{{ITEM_DEPTH}}</code> - Depth level of the item</li>
             </ul>
           </div>
         `
@@ -154,11 +165,10 @@ export class SmartContexts extends Collection {
             <br>
             <span>Available variables:</span>
             <ul>
-              <li><code>{{LINK_PATH}}</code> - Full path of the linked file</li>
-              <li><code>{{LINK_NAME}}</code> - Filename of the linked file</li>
-              <li><code>{{LINK_TYPE}}</code> - Type of link (IN-LINK/OUT-LINK)</li>
-              <li><code>{{LINK_DEPTH}}</code> - Depth level of the link</li>
-              <li><code>{{LINK_EXT}}</code> - File extension</li>
+              <li><code>{{ITEM_PATH}}</code> - Full path of the linked file</li>
+              <li><code>{{ITEM_NAME}}</code> - Filename of the linked file</li>
+              <li><code>{{ITEM_EXT}}</code> - File extension</li>
+              <li><code>{{ITEM_DEPTH}}</code> - Depth level of the link</li>
             </ul>
           </div>
         `

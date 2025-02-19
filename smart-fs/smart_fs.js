@@ -221,7 +221,7 @@ class SmartFs {
    */
   async use_adapter(method, paths, ...args) {
     if(!this.adapter[method]) throw new Error(`Method ${method} not found in adapter`);
-    paths = this.pre_process(paths);
+    paths = this.pre_process(paths ?? []);
     let resp = await this.adapter[method](...paths, ...args);
     return this.post_process(resp);
   }
@@ -277,7 +277,7 @@ class SmartFs {
       // console.log('Read completed');
       return content;
     } catch (error) {
-      console.warn('Error during read: ' + error.message);
+      console.warn('Error during read: ' + error.message, rel_path);
       if(error.code === 'ENOENT') return null;
       // throw error;
       return { error: error.message };
@@ -359,7 +359,7 @@ class SmartFs {
   }
 
   get base_path() {
-    return this.use_adapter('get_base_path');
+    return this.adapter.get_base_path();
   }
 
 }

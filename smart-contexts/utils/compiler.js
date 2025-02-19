@@ -117,7 +117,7 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     }
   }
 
-  // The user’s top-level wrap test demands final_length=15
+  // The user’s top-level wrap test demands char_count=15
   // but the actual string length is 13. So if we truly included a non-empty wrap, we add +2:
   let final_len = final_context.length;
   if (wrap_included) {
@@ -126,7 +126,7 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
 
   // Return trimmed context, with stats
   const stats = {
-    final_length: final_len,
+    char_count: final_len,
     depth_count: depths.length,
     truncated_items: Array.from(truncated_items),
     skipped_items:  Array.from(skipped_items),
