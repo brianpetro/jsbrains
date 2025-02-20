@@ -259,7 +259,7 @@ export class SmartSources extends SmartEntities {
       this.block_collection.loaded = Object.keys(this.block_collection.items).length;
     }
     if(!this.opts.prevent_import_on_load){
-      await this.process_source_import_queue();
+      await this.process_source_import_queue(this.opts); // this.opts passes process_embed_queue if present
     }
     this.build_links_map();
   }
@@ -269,7 +269,8 @@ export class SmartSources extends SmartEntities {
    * @description 
    * Imports items (SmartSources or SmartBlocks) that have been flagged for import.
    */
-  async process_source_import_queue(){
+  async process_source_import_queue(opts={}){
+    const { process_embed_queue = true } = opts;
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     console.log("import_queue " + import_queue.length);
     if(import_queue.length){
@@ -294,7 +295,8 @@ export class SmartSources extends SmartEntities {
     }
 
     this.build_links_map();
-    await this.process_embed_queue();
+    if(process_embed_queue) await this.process_embed_queue();
+    else console.log("skipping process_embed_queue");
     await this.process_save_queue();
     await this.block_collection?.process_save_queue();
   }

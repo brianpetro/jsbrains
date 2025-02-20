@@ -3,6 +3,8 @@ import { SmartFs } from 'smart-file-system';
 import { SmartFsObsidianAdapter } from 'smart-file-system/adapters/obsidian.js';
 import { SmartView } from 'smart-view';
 import { SmartViewObsidianAdapter } from 'smart-view/adapters/obsidian.js';
+// import { SmartNotices } from "../../sc-obsidian/src/smart_notices.js";
+// import { Notice } from "obsidian";
 import { merge_options } from './utils/merge_options.js';
 
 
@@ -17,6 +19,10 @@ const OBSIDIAN_DEFAULTS = {
       class: SmartView,
       adapter: SmartViewObsidianAdapter,
     },
+    // smart_notices: {
+    //   class: SmartNotices,
+    //   adapter: Notice,
+    // },
   }
 };
 

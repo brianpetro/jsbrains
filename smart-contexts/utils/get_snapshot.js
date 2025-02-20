@@ -16,20 +16,20 @@ export async function get_snapshot(ctx_item, opts) {
     snapshot.items[depth] = curr_depth;
     if (depth !== max_depth) {
       keys_at_depth[depth + 1] = Object.keys(Object.values(curr_depth).reduce((acc, i) => {
-        if(opts.include_inlinks) {
+        if(opts.inlinks) {
           i.ref.inlinks.forEach(inlink => {
             if(!is_already_in_snapshot(inlink.path, snapshot)) {
-              acc[inlink.path] = inlink;
+              acc[inlink] = true;
             }
           });
         }
         i.ref.outlinks.forEach(outlink => {
           if(!is_already_in_snapshot(outlink.path, snapshot)) {
-            acc[outlink.path] = outlink;
+            acc[outlink] = true;
           }
         });
         return acc;
-      }, snapshot.items[depth] ?? {}));
+      }, {}));
     }
   }
   if(opts.items) {
@@ -61,7 +61,7 @@ async function process_depth(snapshot, curr_depth_keys, ctx_item, opts) {
   }
   const curr_depth = {};
   for (const item of curr_depth_items) {
-    if (is_already_in_snapshot(item.path, snapshot)) {
+    if (is_already_in_snapshot(item.key, snapshot)) {
       continue;
     }
     const content = await item.read();

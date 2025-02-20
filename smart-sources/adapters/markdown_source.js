@@ -42,7 +42,8 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     if(this.item.block_collection){
       await this.item.block_collection.import_source(this.item, content);
     }
-
+    // Queue saving
+    this.item.queue_save();
     // Queue embedding
     this.item.queue_embed();
   }
