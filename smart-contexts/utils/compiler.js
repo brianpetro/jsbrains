@@ -7,7 +7,19 @@
  *   - Otherwise truncate only item-text as needed to fit into max_len.
  *   - Concatenate all items.
  *   - Finally, optionally apply top-level wrap (templates[-1]) if it still fits; skip otherwise.
- *   - The user’s test suite has a 2-character discrepancy in the top-level wrap length check, so we add +2 only when a non-empty top-level template is actually used.
+ *
+ * Enhanced File Tree Logic:
+ *   - We still build a nested structure from all file paths.
+ *   - After building, we call `compress_single_child_dirs(...)` to collapse
+ *     directories with only one child. For example:
+ *       docs/
+ *         subdir/
+ *           single.md
+ *     becomes:
+ *       docs/subdir/
+ *         single.md
+ *
+ *   - The final ASCII tree output is then created via `build_tree_string(...)`.
  */
 
 export async function compile_snapshot(context_snapshot, merged_opts) {
@@ -37,7 +49,6 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     }
   }
 
-  // Start from any existing truncated/skipped sets
   const skipped_items = new Set(context_snapshot.skipped_items || []);
   const truncated_items = new Set(context_snapshot.truncated_items || []);
   const max_len = merged_opts.max_len || 0;
@@ -47,24 +58,26 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
   for (const chunk of chunks) {
     if (!max_len) {
       // No limit => everything
-      result_pieces.push([chunk.before_tpl, chunk.item_text, chunk.after_tpl].join('\n'));
+      const joined = [chunk.before_tpl, chunk.item_text, chunk.after_tpl].join('\n');
+      result_pieces.push(joined);
       continue;
     }
 
     // Check templates alone
     const template_len = chunk.before_tpl.length + chunk.after_tpl.length;
-
-    // See how many chars remain for item text
     const leftover_for_text = max_len - template_len;
     const text_len = chunk.item_text.length;
+
     if (text_len <= leftover_for_text) {
       // No truncation needed
-      result_pieces.push([chunk.before_tpl, chunk.item_text, chunk.after_tpl].join('\n'));
+      const joined = [chunk.before_tpl, chunk.item_text, chunk.after_tpl].join('\n');
+      result_pieces.push(joined);
     } else {
       // Partial truncation
       truncated_items.add(chunk.path);
       const partial = chunk.item_text.slice(0, leftover_for_text);
-      result_pieces.push([chunk.before_tpl, partial, chunk.after_tpl].join('\n'));
+      const joined = [chunk.before_tpl, partial, chunk.after_tpl].join('\n');
+      result_pieces.push(joined);
     }
   }
 
@@ -87,23 +100,18 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
   const wrap_before = replace_vars(top_before_raw, { FILE_TREE: file_tree_str });
   const wrap_after  = replace_vars(top_after_raw,  { FILE_TREE: file_tree_str });
 
-  // Decide if top-level wrap is actually non-empty
-  // (only then do we even consider adding the +2 length hack)
   let final_context = '';
-  let wrap_included = false;
   const wrap_has_content = (wrap_before.length > 0 || wrap_after.length > 0);
 
   if (!wrap_has_content) {
-    // No top-level template at all => final is just raw_output
+    // No top-level template => final is just raw_output + newline
     final_context = raw_output + '\n';
   } else {
     // We do have top-level wrap text
     final_context = wrap_before + '\n' + raw_output + '\n' + wrap_after + '\n';
   }
 
-  // The user’s top-level wrap test demands char_count=15
-  // but the actual string length is 13. So if we truly included a non-empty wrap, we add +2:
-  let final_len = final_context.length;
+  const final_len = final_context.length;
 
   // Return trimmed context, with stats
   const stats = {
@@ -121,7 +129,10 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
 
 
 /**
- * Build placeholders for each chunk: ITEM_PATH, ITEM_NAME, ITEM_EXT, ITEM_DEPTH.
+ * Build placeholders for each chunk: {{ITEM_PATH}}, {{ITEM_NAME}}, {{ITEM_EXT}}, {{ITEM_DEPTH}}.
+ * @param {string} path
+ * @param {number} depth
+ * @returns {object}
  */
 function build_item_placeholders(path, depth) {
   const name = path.substring(path.lastIndexOf('/') + 1);
@@ -135,9 +146,12 @@ function build_item_placeholders(path, depth) {
   };
 }
 
+
 /**
- * replace_vars
- * Replaces {{KEY}} in a string with the provided replacements.
+ * Replaces {{KEY}} in a string with the provided replacements object.
+ * @param {string} template
+ * @param {object} replacements
+ * @returns {string}
  */
 function replace_vars(template, replacements) {
   if (!template) return '';
@@ -149,10 +163,15 @@ function replace_vars(template, replacements) {
   return out;
 }
 
+
 /**
- * Create a directory/file tree string for {{FILE_TREE}} placeholders.
+ * Creates a directory/file tree string for {{FILE_TREE}} placeholders.
+ * Incorporates single-child directory compression for cleaner output.
+ * @param {string[]} all_paths
+ * @returns {string}
  */
 function create_file_tree_string(all_paths) {
+  // Build a nested object structure
   const root = {};
   for (const p of all_paths) {
     let cursor = root;
@@ -160,16 +179,74 @@ function create_file_tree_string(all_paths) {
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       if (i === parts.length - 1) {
+        // Final part => file
         cursor[part] = null;
       } else {
+        // Directory
         if (!cursor[part]) cursor[part] = {};
         cursor = cursor[part];
       }
     }
   }
+
+  // Compress any single-child directory chains
+  compress_single_child_dirs(root);
+
+  // Then convert to ASCII tree
   return build_tree_string(root);
 }
 
+
+/**
+ * Recursively compress single-child directories within the tree.
+ * @param {object} node - The current portion of the tree (key -> subnode).
+ */
+function compress_single_child_dirs(node) {
+  if (!node || typeof node !== 'object') return;
+
+  const keys = Object.keys(node);
+  for (const k of keys) {
+    const child = node[k];
+    if (child && typeof child === 'object') {
+      // Count children of `child`
+      const childKeys = Object.keys(child);
+      if (childKeys.length === 1) {
+        // Only one subnode => compress
+        const subKey = childKeys[0];
+        const subChild = child[subKey];
+        // Form new combined name if subKey is a directory
+        // If subChild !== null => it's a directory
+        if (subChild !== null) {
+          // Combine "k" + "/" + subKey
+          const combined = k + '/' + subKey;
+          // Move that subChild up
+          node[combined] = subChild;
+          delete node[k];
+          // Recurse deeper on the newly created node
+          compress_single_child_dirs(node[combined]);
+        } else {
+          // subChild === null means child is a single file
+          // => do not combine
+          // but we can still rename "k + '/' + subKey" if we want a slash
+          // Typically though, that suggests a "folder" containing one file
+          // We'll skip that to keep file name on a separate leaf.
+        }
+      } else {
+        // Recurse on the child as is
+        compress_single_child_dirs(child);
+      }
+    }
+  }
+}
+
+
+/**
+ * Recursively builds an ASCII tree from a node object,
+ * sorting directories first, then files, in alphabetical order.
+ * @param {object|null} node
+ * @param {string} prefix
+ * @returns {string}
+ */
 function build_tree_string(node, prefix = '') {
   let res = '';
   const entries = Object.entries(node).sort((a, b) => {
@@ -183,11 +260,15 @@ function build_tree_string(node, prefix = '') {
   entries.forEach(([name, subnode], idx) => {
     const is_last = (idx === entries.length - 1);
     const connector = is_last ? '└── ' : '├── ';
+
     if (subnode === null) {
+      // File
       res += prefix + connector + name + '\n';
     } else {
+      // Directory
       res += prefix + connector + name + '/\n';
-      res += build_tree_string(subnode, prefix + (is_last ? '    ' : '│   '));
+      const next_prefix = prefix + (is_last ? '    ' : '│   ');
+      res += build_tree_string(subnode, next_prefix);
     }
   });
   return res;
