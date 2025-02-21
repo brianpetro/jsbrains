@@ -58,3 +58,28 @@ test('is_plain_object checks for simple object types', (t) => {
   t.false(is_plain_object(null), 'null returns false');
   t.false(is_plain_object(new Date()), 'Date object returns false');
 });
+
+test('deep_merge_no_overwrite handles deeply nested objects', (t) => {
+  const target = {
+    a: {
+      b: {
+        c: {
+          d: 'existing',
+        },
+      },
+    },
+  };
+  const source = {
+    a: {
+      b: {
+        c: {
+          e: 'new',
+        },
+      },
+    },
+  };
+
+  deep_merge_no_overwrite(target, source);
+  t.is(target.a.b.c.d, 'existing', 'existing key d remains');
+  t.is(target.a.b.c.e, 'new', 'new key e merged');
+});

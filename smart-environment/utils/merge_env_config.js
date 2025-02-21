@@ -1,6 +1,6 @@
 import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
 
-export function merge_options(target, incoming) {
+export function merge_env_config(target, incoming) {
   for (const [key, value] of Object.entries(incoming)) {
     if (key === 'global_ref') continue;
     if (typeof value === 'object' && value !== null) {
