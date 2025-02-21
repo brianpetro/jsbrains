@@ -20,6 +20,7 @@ export function normalize_opts(opts) {
       opts.collections[new_key] = opts.collections[key];
       delete opts.collections[key];
     }
+    if(!opts.collections[new_key].collection_key) opts.collections[new_key].collection_key = new_key;
   });
   Object.entries(opts.modules).forEach(([key, val]) => {
     if (typeof val === 'function') {

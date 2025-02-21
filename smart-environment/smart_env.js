@@ -50,19 +50,10 @@ export class SmartEnv {
   constructor(opts = {}) {
     this.state = 'init';
     this._components = {};
+    this.collections = {};
     this.load_timeout = setTimeout(() => {
       this.load();
     }, 5000);
-  }
-  get collections(){
-    return Object.entries(this)
-      .reduce((acc, [key, value]) => {
-        if(value instanceof Collection){
-          acc[key] = value.state || 'init';
-        }
-        return acc;
-      }, {})
-    ;
   }
   /** @deprecated access `this.state` and `collection.state` directly instead */
   get collections_loaded(){
@@ -96,12 +87,6 @@ export class SmartEnv {
     return this.global_ref.smart_env;
   }
   static set global_env(env) {
-    this.global_ref.smart_env = env;
-  }
-  get global_env() {
-    return this.global_ref.smart_env;
-  }
-  set global_env(env) {
     this.global_ref.smart_env = env;
   }
   /** @deprecated Use this.main_class_name instead of this.main/this.plugin */
@@ -202,6 +187,7 @@ export class SmartEnv {
   async load() {
     await this.init_collections();
     for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
+      this[main_key] = main;
       await this.ready_to_load_collections(main);
     }
     await this.load_collections();
@@ -216,6 +202,7 @@ export class SmartEnv {
       const _class = config.collections[key]?.class;
       if (typeof _class?.init !== 'function') continue; // skip if not a class or no init
       await _class.init(this, { ...config.collections[key] });
+      this.collections[key] = 'init';
     }
   }
   /**
@@ -234,9 +221,10 @@ export class SmartEnv {
    */
   async load_collections(collections = this.collections) {
     for (const key of Object.keys(collections || {})) {
-      if (typeof collections[key]?.process_load_queue === 'function') {
-        await collections[key].process_load_queue();
+      if (typeof this[key]?.process_load_queue === 'function') {
+        await this[key].process_load_queue();
       }
+      this.collections[key] = 'loaded';
     }
   }
 
