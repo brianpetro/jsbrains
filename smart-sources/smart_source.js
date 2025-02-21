@@ -386,7 +386,7 @@ export class SmartSource extends SmartEntity {
    * @returns {string} The file type in lowercase.
    */
   get file_type() {
-    return this.path?.split(".").pop().toLowerCase()
+    return this.data.path?.split(".").pop().toLowerCase()
       || this.source_adapters.default.extension
     ;
   }

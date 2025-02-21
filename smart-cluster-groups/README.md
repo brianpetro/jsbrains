@@ -21,7 +21,7 @@ Similar to other collections:
 ```js
 env.item_types.ClusterGroup = ClusterGroup;
 env.collections.cluster_groups = new ClusterGroups(env, {
-  custom_collection_key: 'cluster_groups'
+  collection_key: 'cluster_groups'
 });
 ```
 

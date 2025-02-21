@@ -276,14 +276,18 @@ export class CollectionItem {
    * @returns {string}
    */
   static get collection_key() {
-    return collection_instance_name_from(this.name);
+    let name = this.name;
+    if (name.match(/\d$/)) name = name.slice(0, -1);
+    return collection_instance_name_from(name);
   }
 
   /**
    * @returns {string} The collection key for this item.
    */
   get collection_key() {
-    return collection_instance_name_from(this.constructor.name);
+    let name = this.constructor.name;
+    if (name.match(/\d$/)) name = name.slice(0, -1);
+    return collection_instance_name_from(name);
   }
 
   /**
@@ -302,7 +306,9 @@ export class CollectionItem {
   }
 
   get item_type_key() {
-    return camel_case_to_snake_case(this.constructor.name);
+    let name = this.constructor.name;
+    if (name.match(/\d$/)) name = name.slice(0, -1);
+    return camel_case_to_snake_case(name);
   }
 
 

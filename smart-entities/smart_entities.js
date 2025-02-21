@@ -43,7 +43,7 @@ export class SmartEntities extends Collection {
     await super.init();
     await this.load_smart_embed();
     if (!this.embed_model) {
-      console.log(`SmartEmbed not loaded for ${this.collection_key}. Continuing without embedding capabilities.`);
+      console.log(`SmartEmbed not loaded for **${this.collection_key}**. Continuing without embedding capabilities.`);
     }
   }
 

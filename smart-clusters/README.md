@@ -30,7 +30,7 @@ import { Cluster, Clusters } from 'smart-clusters';
 ```js
 env.item_types.Cluster = Cluster;
 env.collections.clusters = new Clusters(env, {
-  custom_collection_key: 'clusters'
+  collection_key: 'clusters'
 });
 ```
 

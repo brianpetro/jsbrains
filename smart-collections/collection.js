@@ -24,14 +24,14 @@ export class Collection {
    *
    * @param {Object} env - The environment context containing configurations and adapters.
    * @param {Object} [opts={}] - Optional configuration.
-   * @param {string} [opts.custom_collection_key] - Custom key to override default collection name.
+   * @param {string} [opts.collection_key] - Custom key to override default collection name.
    * @param {string} [opts.data_dir] - Custom data directory path.
    * @param {boolean} [opts.prevent_load_on_init] - Whether to prevent loading items on initialization.
    */
   constructor(env, opts = {}) {
     this.env = env;
     this.opts = opts;
-    if (opts.custom_collection_key) this.collection_key = opts.custom_collection_key;
+    if (opts.collection_key) this.collection_key = opts.collection_key;
     this.env[this.collection_key] = this;
     this.config = this.env.config;
     this.items = {};
@@ -59,7 +59,10 @@ export class Collection {
    * @returns {string}
    */
   static get collection_key() {
-    return this.name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+    let name = this.name;
+    // if ends with number, remove it
+    if (name.match(/\d$/)) name = name.slice(0, -1);
+    return name.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
   }
 
   /**
@@ -232,13 +235,13 @@ export class Collection {
   }
 
   /**
-   * @returns {string} The collection key, can be overridden by opts.custom_collection_key
+   * @returns {string} The collection key, can be overridden by opts.collection_key
    */
   get collection_key() {
     return this._collection_key ? this._collection_key : this.constructor.collection_key;
   }
+  set collection_key(key) { this._collection_key = key; }
 
-  set collection_key(name) { this._collection_key = name; }
 
   /**
    * Lazily initializes and returns the data adapter instance for this collection.
@@ -279,7 +282,9 @@ export class Collection {
    * @returns {string}
    */
   get item_class_name() {
-    const name = this.constructor.name;
+    let name = this.constructor.name;
+    // if ends with number, remove it
+    if (name.match(/\d$/)) name = name.slice(0, -1);
     if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; 
     else if (name.endsWith('s')) return name.slice(0, -1);
     return name + "Item";

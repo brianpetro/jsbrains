@@ -32,7 +32,7 @@ export class SmartTemplates extends SmartSources {
     const templates_collection_opts = {
       ...opts,
       adapter_class: env.opts.collections.smart_templates.data_adapter,
-      custom_collection_key: 'smart_templates',
+      collection_key: 'smart_templates',
     };
     if(env.opts.env_path) templates_collection_opts.env_path = env.opts.env_path;
     env.smart_templates = new opts.collections.smart_templates(env, templates_collection_opts);
