@@ -48,7 +48,7 @@ async function process_depth(snapshot, curr_depth_keys, ctx_item, opts) {
   // check if is folder
   for (const key of curr_depth_non_item_keys) {
     const smart_fs = ctx_item.env.smart_sources.fs;
-    const files = await smart_fs.list_files_recursive(key);
+    const files = await smart_fs.adapter.list_files_recursive(key);
     for (const file of files) {
       if (is_already_in_snapshot(file.path, snapshot)) {
         continue;
