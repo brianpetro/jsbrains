@@ -27,7 +27,8 @@ import { deep_remove_exclusive_props } from './utils/deep_remove_exclusive_props
 import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
-import { merge_options } from './utils/merge_options.js';
+import { merge_env_config } from './utils/merge_env_config.js';
+import { Collection } from 'smart-collections';
 
 /**
  * @class SmartEnv
@@ -42,24 +43,94 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 1;
-
+  static version = 2;
   scope_name = 'smart_env';
-
+  static global_ref = (typeof window !== 'undefined' ? window : global);
+  global_ref = (typeof window !== 'undefined' ? window : global);
   constructor(opts = {}) {
-    this.opts = deep_clone_config(opts);
-    // must use original ref for global_ref
-    this.opts.global_ref = opts.global_ref;
-    this.loading_collections = false;
-    this.collections_loaded = false;
-    this.smart_embed_active_models = {};
-    this._excluded_headings = null;
-    this.collections = {}; // collection names to initialized classes
-    this.is_init = true;
-    this.mains = [];
+    this.state = 'init';
     this._components = {};
+    this.load_timeout = setTimeout(() => {
+      this.load();
+    }, 5000);
   }
-
+  get collections(){
+    return Object.entries(this)
+      .reduce((acc, [key, value]) => {
+        if(value instanceof Collection){
+          acc[key] = value.state || 'init';
+        }
+        return acc;
+      }, {})
+    ;
+  }
+  /** @deprecated access `this.state` and `collection.state` directly instead */
+  get collections_loaded(){
+    return this.state === 'loaded';
+  }
+  /**
+   * Returns the config object for the SmartEnv instance.
+   * @returns {Object} The config object.
+   */
+  get config() {
+    if(!this._config) {
+      this._config = {};
+      for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
+        if(!main){
+          console.warn(`SmartEnv: '${main_key}' has been unloaded, skipping inclusion in smart_env`);
+          delete this.smart_env_configs[main_key];
+          continue; // skip if main has been unloaded
+        }
+        merge_env_config(
+          this._config,
+          deep_clone_config(
+            normalize_opts(opts)
+          )
+        );
+      }
+      // TODO: merge custom actions and components from smart-env folder and cache resulting object
+    }
+    return this._config;
+  }
+  static get global_env() {
+    return this.global_ref.smart_env;
+  }
+  static set global_env(env) {
+    this.global_ref.smart_env = env;
+  }
+  get global_env() {
+    return this.global_ref.smart_env;
+  }
+  set global_env(env) {
+    this.global_ref.smart_env = env;
+  }
+  /** @deprecated Use this.main_class_name instead of this.main/this.plugin */
+  get main() {
+    return this.smart_env_configs[this.mains[0]].main;
+  }
+  static get mains() {
+    return Object.keys(this.global_ref.smart_env_configs || {});
+  }
+  get mains() {
+    return Object.keys(this.global_ref.smart_env_configs || {});
+  }
+  static get should_reload() {
+    if(!this.global_env) return true;
+    if(this.global_env.state === 'loaded') return true;
+    if(this.global_env.constructor.version < this.version){
+      console.warn("SmartEnv: Reloading environment because of version mismatch", `${this.version} > ${this.global_env.constructor.version}`);
+      return true;
+    }
+    return false;
+  }
+  static get smart_env_configs() {
+    if(!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
+    return this.global_ref.smart_env_configs;
+  }
+  get smart_env_configs() {
+    if(!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
+    return this.global_ref.smart_env_configs;
+  }
   /**
    * Waits for either a specific main to be registered in the environment,
    * or (if `opts.main` is not specified) waits for environment collections to load.
@@ -86,7 +157,6 @@ export class SmartEnv {
       }
     });
   }
-
   /**
    * Creates or updates a SmartEnv instance.
    * - If a global environment exists and is an older version, it is unloaded and replaced.
@@ -97,198 +167,57 @@ export class SmartEnv {
    * @throws {TypeError} If an invalid main object is provided.
    * @throws {Error} If there's an error creating or updating the SmartEnv instance.
    */
-  static async create(main, main_env_opts = {}) {
+  static async create(main, main_env_opts = null) {
     if (!main || typeof main !== 'object') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
-    main_env_opts = normalize_opts(main_env_opts);
-
-    // The 'global_ref' in main_env_opts is actually the global object (Node's `global` or browser's `window`).
-    // So we check if that global object has a .smart_env instance. If it does, we'll reuse or reload it.
-    const global_obj =
-      main_env_opts.global_ref ||
-      (typeof window !== 'undefined' ? window : global)
-    ;
-
-    let global_env = null;
-    const global_prop = main_env_opts.global_prop ?? 'smart_env';
-    if (global_obj[global_prop]?.scope_name === 'smart_env') {
-      global_env = global_obj[global_prop];
+    if(!main_env_opts) {
+      if(!main.smart_env_config) {
+        throw new Error('SmartEnv: No main_env_opts or main.smart_env_config provided');
+      }
+      main_env_opts = main.smart_env_config;
     }
-
-    // BREAKS REFERENCES TO INITIAL ENV
-    // // Detect if there's an older environment version and reload if needed
-    // if (global_env && (global_env.constructor.version || 0) < this.version) {
-    //   console.warn(
-    //     `SmartEnv: A newer version (${this.version}) is being used, while the existing environment is (${global_env.constructor.version}). Reloading environment...`
-    //   );
-    //   await this.reload_all_mains(global_env, main, main_env_opts);
-    //   return main.env; // after reload, main.env is replaced by the new environment
-    // }
-
-    // If the global object has `smart_env` and it's the same or newer version, reuse it.
-    let main_key;
-    if (!global_env) {
-      // No existing environment, create a new one
-      main.env = new this(main_env_opts);
-      main.env.global_env = main.env;
-      main_key = await main.env.init(main, main_env_opts);
-    } else {
-      console.log('Reusing existing environment', main.constructor.name);
-      // Reuse the existing environment
-      main.env = global_env;
-      main_key = main.env.init_main(main, main_env_opts);
-      await main.env.load_main(main_key, main_env_opts);
+    this.add_main(main, main_env_opts);
+    if(this.should_reload){
+      this.global_env = new this();
+      await this.global_env.fs.load_files(); // skip exclusions; detect env_data_dir
+      await SmartSettings.create(this.global_env);
     }
-    return main.env;
+    clearTimeout(this.global_env.load_timeout);
+    this.global_env.load_timeout = setTimeout(() => {
+      this.global_env.load();
+    }, 5000);
+    return this.global_env;
   }
-
-  // BREAKS REFERENCES TO INITIAL ENV
-  // /**
-  //  * Reloads the entire environment if a newer SmartEnv version is loaded,
-  //  * re-initializing each main in the old environment within the new environment.
-  //  * @private
-  //  * @param {SmartEnv} old_env - The existing environment instance to be replaced.
-  //  * @param {Object} main - The main object that triggered the reload.
-  //  * @param {Object} main_env_opts - The environment options to apply to that main.
-  //  */
-  // static async reload_all_mains(old_env, main, main_env_opts) {
-  //   console.log('Reloading all mains');
-  //   // Grab references to all mains so we can re-create them
-  //   const old_mains_data = old_env.mains.map((mkey) => [
-  //     mkey,
-  //     old_env[mkey],
-  //     old_env[mkey]?.smart_env_config
-  //   ]);
-
-  //   // Unload old environment's mains
-  //   for (const [mkey, mobj] of old_mains_data) {
-  //     if (mobj) mobj.env = null;
-  //     old_env.unload_main(mkey);
-  //   }
-  //   old_env.global_env = null; // Remove old env from the global scope
-
-  //   // Create the new environment for the main that triggered reload
-  //   const new_env = new this(main_env_opts);
-  //   new_env.global_env = new_env;
-  //   await new_env.init(main, main_env_opts);
-
-  //   // Re-init all old mains except the new one
-  //   for (const [mkey, mobj, mconfig] of old_mains_data) {
-  //     if (!mobj || mobj === main) continue;
-  //     await this.create(mobj, mconfig);
-  //   }
-  // }
-
-  /**
-   * Initializes SmartEnv internals, then loads the provided main's collections.
-   * @param {Object} main - The main object to initialize.
-   * @param {Object} [main_env_opts={}]
-   * @returns {String} The main key used to store the main object on `this`.
-   */
-  async init(main, main_env_opts = {}) {
-    this.is_init = true;
-    const main_key = this.init_main(main, main_env_opts);
-    await this.fs.load_files(); // skip exclusions; detect env_data_dir
-    await SmartSettings.create(this);
-    await this.load_main(main_key, main_env_opts);
-    this.is_init = false;
-    return main_key;
-  }
-
-  /**
-   * Returns a combined environment config for all known mains.
-   * @returns {Object}
-   */
-  get main_env_config() {
-    return this.mains.reduce((acc, key) => {
-      acc[key] = this[key].smart_env_config;
-      return acc;
-    }, {});
-  }
-
-  /**
-   * Adds a new main object to the SmartEnv instance (or reuses existing).
-   * @param {Object} main - The main object to be added.
-   * @param {Object} [main_env_opts={}]
-   * @returns {String} The main key (snake_case of the main's constructor name)
-   */
-  init_main(main, main_env_opts = {}) {
+  static add_main(main, main_env_opts = null) {
+    if(this.global_env?._config) this.global_env._config = null;
     const main_key = camel_case_to_snake_case(main.constructor.name);
-
-    // Only push if we haven't seen it yet
-    if (!this.mains.includes(main_key)) {
-      this.mains.push(main_key);
+    this.smart_env_configs[main_key] = {main, opts: main_env_opts};
+    Object.defineProperty(main, 'env', {
+      get: () => {
+        return (typeof window !== 'undefined' ? window : global).smart_env;
+      }
+    });
+  }
+  async load() {
+    await this.init_collections();
+    for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
+      await this.ready_to_load_collections(main);
     }
-    this[main_key] = main;
-    this.opts = this.merge_options(this.opts, main_env_opts);
-    return main_key;
+    await this.load_collections();
+    this.state = 'loaded';
   }
-
-  /**
-   * Loads the collections for the given main.
-   * @param {String} main_key
-   * @param {Object} main_env_opts
-   */
-  async load_main(main_key, main_env_opts) {
-    const main = this[main_key];
-    if (!main_env_opts) main_env_opts = main.smart_env_config;
-    await this.init_collections(main_env_opts); // init so settings can be accessed
-    await this.ready_to_load_collections(main);
-    const main_collections = Object.keys(main_env_opts.collections || {}).reduce(
-      (acc, key) => {
-        if (!this.collections[key]) return acc; // skip if not initialized
-        acc[key] = this[key]; // add ref to collection instance to acc
-        return acc;
-      },
-      {}
-    );
-    await this.load_collections(main_collections);
-  }
-
   /**
    * Initializes collection classes if they have an 'init' function.
    * @param {Object} [config=this.opts]
    */
-  async init_collections(config = this.opts) {
+  async init_collections(config = this.config) {
     for (const key of Object.keys(config.collections || {})) {
       const _class = config.collections[key]?.class;
       if (typeof _class?.init !== 'function') continue; // skip if not a class or no init
       await _class.init(this, { ...config.collections[key] });
     }
   }
-
-  /**
-   * Loads any available collections, processing their load queues.
-   * @param {Object} [collections=this.collections] - Key-value map of collection instances.
-   */
-  async load_collections(collections = this.collections) {
-    this.loading_collections = true;
-    for (const key of Object.keys(collections || {})) {
-      if (
-        this.is_init &&
-        (this.opts.prevent_load_on_init || collections[key].opts.prevent_load_on_init)
-      ) {
-        continue;
-      }
-      if (typeof collections[key]?.process_load_queue === 'function') {
-        await collections[key].process_load_queue();
-      }
-    }
-    this.loading_collections = false;
-    this.collections_loaded = true;
-  }
-
-  /**
-   * Merges provided options into the target object, performing a deep merge for objects.
-   * @param {Object} target - The target object to merge into
-   * @param {Object} incoming - The incoming object to merge from
-   * @returns {Object} The mutated target object
-   */
-  merge_options(target, incoming) {
-    return merge_options(target, incoming);
-  }
-
   /**
    * Hook for main classes that optionally implement `ready_to_load_collections()`.
    * @param {Object} main
@@ -299,59 +228,20 @@ export class SmartEnv {
     }
     return true;
   }
-
   /**
-   * Unloads a specific main and its collections from the environment.
-   * @param {string} main_key
-   * @param {Object|null} [unload_config=null]
+   * Loads any available collections, processing their load queues.
+   * @param {Object} [collections=this.collections] - Key-value map of collection instances.
    */
-  unload_main(main_key, unload_config = null) {
-    console.log('unload_main', main_key);
-    this._components = {}; // clear component cache
-    this.unload_collections(main_key, unload_config);
-    if (this.mains.length > 1) {
-      this.unload_opts(main_key, unload_config);
-    } else {
-      this.opts = {};
-    }
-    this[main_key] = null;
-    this.mains = this.mains.filter((key) => key !== main_key);
-    if (this.mains.length === 0) {
-      this.global_env = null;
+  async load_collections(collections = this.collections) {
+    for (const key of Object.keys(collections || {})) {
+      if (typeof collections[key]?.process_load_queue === 'function') {
+        await collections[key].process_load_queue();
+      }
     }
   }
 
-  /**
-   * Unloads the collections referenced by the main being removed.
-   * @param {string} main_key
-   * @param {Object|null} [unload_config=null]
-   */
-  unload_collections(main_key, unload_config = null) {
-    console.log('unload_collections', main_key);
-    if (!unload_config) unload_config = this[main_key]?.smart_env_config;
-    if (!unload_config) return;
-    for (const ckey of Object.keys(unload_config.collections || {})) {
-      if (!this[ckey]) continue;
-      this[ckey].unload?.();
-      this[ckey] = null;
-    }
-  }
 
-  /**
-   * Removes from `this.opts` any object properties that are exclusive to the main being removed.
-   * Skips classes/functions, arrays, etc. Only plain objects are deeply iterated.
-   * @param {string} main_key - The main key being unloaded.
-   * @param {Object|null} [unload_config=null]
-   */
-  unload_opts(main_key, unload_config = null) {
-    if (!unload_config) unload_config = this[main_key]?.smart_env_config;
-    if (!unload_config) return;
-    const keep_configs = this.mains
-      .filter((m) => m !== main_key)
-      .map((m) => this[m]?.smart_env_config)
-      .filter(Boolean);
-    deep_remove_exclusive_props(this.opts, unload_config, keep_configs);
-  }
+
 
   /**
    * Triggers a save event in all known collections.
@@ -512,12 +402,6 @@ export class SmartEnv {
       {}
     );
   }
-  get global_env() {
-    return this.global_ref[this.global_prop];
-  }
-  set global_env(env) {
-    this.global_ref[this.global_prop] = env;
-  }
 
   get item_types() {
     return this.opts.item_types;
@@ -639,21 +523,13 @@ export class SmartEnv {
     this.smart_sources.render_settings();
   }
 
-  // /**
-  //  * Returns the config object for the SmartEnv instance.
-  //  * @returns {Object} The config object.
-  //  */
-  // get config() {
-  //   // TODO: merge custom actions and components from smart-env folder and cache resulting object
-  //   return this.opts;
-  // }
-
   // DEPRECATED
+
   /**
-   * @deprecated Use this.main_class_name instead of this.plugin
+   * @deprecated use this.config instead
    */
-  get main() {
-    return this[this.mains[this.mains.length - 1]];
+  get opts() {
+    return this.config;
   }
   /**
    * @deprecated Use this.main_class_name instead of this.plugin
@@ -661,4 +537,126 @@ export class SmartEnv {
   get plugin() {
     return this.main;
   }
+  /**
+   * Unloads a specific main and its collections from the environment.
+   * @param {string} main_key
+   * @param {Object|null} [unload_config=null]
+   * @deprecated use reload_all_mains() instead
+   */
+  unload_main(main_key, unload_config = null) {
+    return; // disable unloading (for now) in favor of reloading
+    console.log('unload_main', main_key);
+    this._components = {}; // clear component cache
+    this.unload_collections(main_key, unload_config);
+    if (this.mains.length > 1) {
+      this.unload_opts(main_key, unload_config);
+    } else {
+      this.opts = {};
+    }
+    this[main_key] = null;
+    this.mains = this.mains.filter((key) => key !== main_key);
+    if (this.mains.length === 0) {
+      this.global_env = null;
+    }
+  }
+
+  /**
+   * Unloads the collections referenced by the main being removed.
+   * @param {string} main_key
+   * @param {Object|null} [unload_config=null]
+   * @deprecated use reload_all_mains() instead
+   */
+  unload_collections(main_key, unload_config = null) {
+    return; // disable unloading (for now) in favor of reloading
+    console.log('unload_collections', main_key);
+    if (!unload_config) unload_config = this[main_key]?.smart_env_config;
+    if (!unload_config) return;
+    for (const ckey of Object.keys(unload_config.collections || {})) {
+      if (!this[ckey]) continue;
+      this[ckey].unload?.();
+      this[ckey] = null;
+    }
+  }
+
+  /**
+   * Removes from `this.opts` any object properties that are exclusive to the main being removed.
+   * Skips classes/functions, arrays, etc. Only plain objects are deeply iterated.
+   * @param {string} main_key - The main key being unloaded.
+   * @param {Object|null} [unload_config=null]
+   * @deprecated use reload_all_mains() instead
+   */
+  unload_opts(main_key, unload_config = null) {
+    return; // disable unloading (for now) in favor of reloading
+    if (!unload_config) unload_config = this[main_key]?.smart_env_config;
+    if (!unload_config) return;
+    const keep_configs = this.mains
+      .filter((m) => m !== main_key)
+      .map((m) => this[m]?.smart_env_config)
+      .filter(Boolean);
+    deep_remove_exclusive_props(this.opts, unload_config, keep_configs);
+  }
+
+  // /**
+  //  * Initializes SmartEnv internals, then loads the provided main's collections.
+  //  * @param {Object} main - The main object to initialize.
+  //  * @param {Object} [main_env_opts={}]
+  //  * @returns {String} The main key used to store the main object on `this`.
+  //  */
+  // async init(main, main_env_opts = {}) {
+  //   this.is_init = true;
+  //   // const main_key = this.init_main(main, main_env_opts);
+  //   // await this.fs.load_files(); // skip exclusions; detect env_data_dir
+  //   // await SmartSettings.create(this);
+  //   await this.load_main(main_key, main_env_opts);
+  //   this.is_init = false;
+  //   return main_key;
+  // }
+
+  // /**
+  //  * Adds a new main object to the SmartEnv instance (or reuses existing).
+  //  * @param {Object} main - The main object to be added.
+  //  * @param {Object} [main_env_opts={}]
+  //  * @returns {String} The main key (snake_case of the main's constructor name)
+  //  */
+  // init_main(main, main_env_opts = {}) {
+  //   const main_key = camel_case_to_snake_case(main.constructor.name);
+
+  //   // Only push if we haven't seen it yet
+  //   if (!this.mains.includes(main_key)) {
+  //     this.mains.push(main_key);
+  //   }
+  //   this[main_key] = main;
+  //   this.opts = this.merge_env_config(this.opts, main_env_opts);
+  //   return main_key;
+  // }
+
+  // /**
+  //  * Loads the collections for the given main.
+  //  * @param {String} main_key
+  //  * @param {Object} main_env_opts
+  //  */
+  // async load_main(main_key, main_env_opts) {
+  //   const main = this[main_key];
+  //   if (!main_env_opts) main_env_opts = main.smart_env_config;
+  //   await this.init_collections(main_env_opts); // init so settings can be accessed
+  //   await this.ready_to_load_collections(main);
+  //   const main_collections = Object.keys(main_env_opts.collections || {}).reduce(
+  //     (acc, key) => {
+  //       if (!this.collections[key]) return acc; // skip if not initialized
+  //       acc[key] = this[key]; // add ref to collection instance to acc
+  //       return acc;
+  //     },
+  //     {}
+  //   );
+  //   await this.load_collections(main_collections);
+  // }
+  // /**
+  //  * Merges provided options into the target object, performing a deep merge for objects.
+  //  * @param {Object} target - The target object to merge into
+  //  * @param {Object} incoming - The incoming object to merge from
+  //  * @returns {Object} The mutated target object
+  //  */
+  // merge_env_config(target, incoming) {
+  //   return merge_env_config(target, incoming);
+  // }
 }

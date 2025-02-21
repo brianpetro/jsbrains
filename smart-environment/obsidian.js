@@ -5,8 +5,18 @@ import { SmartView } from 'smart-view';
 import { SmartViewObsidianAdapter } from 'smart-view/adapters/obsidian.js';
 // import { SmartNotices } from "../../sc-obsidian/src/smart_notices.js";
 // import { Notice } from "obsidian";
-import { merge_options } from './utils/merge_options.js';
+import { merge_env_config } from './utils/merge_env_config.js';
 import { TFile } from 'obsidian';
+import { SmartSources, SmartSource } from 'smart-sources';
+import { AjsonMultiFileSourcesDataAdapter } from "smart-sources/adapters/data/ajson_multi_file.js";
+import { MarkdownSourceContentAdapter } from "smart-sources/adapters/markdown_source.js";
+import { SmartBlocks, SmartBlock } from 'smart-blocks';
+import { AjsonMultiFileBlocksDataAdapter } from "smart-blocks/adapters/data/ajson_multi_file.js";
+import { MarkdownBlockContentAdapter } from "smart-blocks/adapters/markdown_block.js";
+// actions architecture
+import smart_block from "smart-blocks/smart_block.js";
+import smart_source from "smart-sources/smart_source.js";
+
 
 const OBSIDIAN_DEFAULTS = {
   env_path: '',
@@ -23,15 +33,71 @@ const OBSIDIAN_DEFAULTS = {
     //   class: SmartNotices,
     //   adapter: Notice,
     // },
-  }
+  },
+  collections: {
+    smart_sources: {
+      collection_key: 'smart_sources',
+      class: SmartSources,
+      data_adapter: AjsonMultiFileSourcesDataAdapter,
+      source_adapters: {
+        "md": MarkdownSourceContentAdapter,
+        "txt": MarkdownSourceContentAdapter,
+        // "canvas": MarkdownSourceContentAdapter,
+        // "default": MarkdownSourceContentAdapter,
+      },
+      process_embed_queue: false,
+    },
+    smart_blocks: {
+      collection_key: 'smart_blocks',
+      class: SmartBlocks,
+      data_adapter: AjsonMultiFileBlocksDataAdapter,
+      block_adapters: {
+        "md": MarkdownBlockContentAdapter,
+        "txt": MarkdownBlockContentAdapter,
+        // "canvas": MarkdownBlockContentAdapter,
+      },
+    },
+  },
+  item_types: {
+    SmartSource,
+    SmartBlock,
+  },
+  items: {
+    smart_source,
+    smart_block,
+  },
+  default_settings: {
+    is_obsidian_vault: true,
+    smart_blocks: {
+      embed_blocks: true,
+      min_chars: 200,
+    },
+    smart_sources: {
+      min_chars: 200,
+      embed_model: {
+        adapter: "transformers",
+        transformers: {
+          legacy_transformers: false,
+          model_key: 'TaylorAI/bge-micro-v2',
+        },
+      },
+    },
+    file_exclusions: 'Untitled',
+    folder_exclusions: 'smart-chats',
+    smart_view_filter: {
+      render_markdown: true,
+      show_full_path: false,
+    },
+  },
 };
 
 export class SmartEnv extends BaseSmartEnv {
   static async create(plugin, main_env_opts = {}) {
-    const opts = merge_options(main_env_opts, OBSIDIAN_DEFAULTS);
+    const opts = merge_env_config(main_env_opts, OBSIDIAN_DEFAULTS);
     return await super.create(plugin, opts);
   }
   async init(plugin, main_env_opts = {}) {
+    await super.init(plugin, main_env_opts);
     plugin.registerEvent(
       plugin.app.vault.on('create', (file) => {
         if(file instanceof TFile){
@@ -62,6 +128,5 @@ export class SmartEnv extends BaseSmartEnv {
         }
       })
     );
-    return await super.init(plugin, main_env_opts);
   }
 }

@@ -70,7 +70,7 @@ Initializes collections based on the provided configuration.
 
 Loads the specified collections.
 
-### `merge_options(opts)`
+### `merge_env_config(opts)`
 
 Merges provided options into the SmartEnv instance, performing a deep merge for objects.
 

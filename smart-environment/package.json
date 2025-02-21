@@ -20,6 +20,8 @@
   "dependencies": {
     "smart-file-system": "../smart-fs",
     "smart-settings": "../smart-settings",
-    "smart-view": "../smart-view"
+    "smart-view": "../smart-view",
+    "smart-sources": "../smart-sources",
+    "smart-blocks": "../smart-blocks"
   }
 }

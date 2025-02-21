@@ -27,7 +27,7 @@ import { deep_remove_exclusive_props } from './utils/deep_remove_exclusive_props
 import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
-import { merge_options } from './utils/merge_options.js';
+import { merge_env_config } from './utils/merge_env_config.js';
 
 /**
  * @class SmartEnv
@@ -197,17 +197,6 @@ export class SmartEnv {
   }
 
   /**
-   * Returns a combined environment config for all known mains.
-   * @returns {Object}
-   */
-  get main_env_config() {
-    return this.mains.reduce((acc, key) => {
-      acc[key] = this[key].smart_env_config;
-      return acc;
-    }, {});
-  }
-
-  /**
    * Adds a new main object to the SmartEnv instance (or reuses existing).
    * @param {Object} main - The main object to be added.
    * @param {Object} [main_env_opts={}]
@@ -221,7 +210,7 @@ export class SmartEnv {
       this.mains.push(main_key);
     }
     this[main_key] = main;
-    this.opts = this.merge_options(this.opts, main_env_opts);
+    this.opts = this.merge_env_config(this.opts, main_env_opts);
     return main_key;
   }
 
@@ -285,8 +274,8 @@ export class SmartEnv {
    * @param {Object} incoming - The incoming object to merge from
    * @returns {Object} The mutated target object
    */
-  merge_options(target, incoming) {
-    return merge_options(target, incoming);
+  merge_env_config(target, incoming) {
+    return merge_env_config(target, incoming);
   }
 
   /**
