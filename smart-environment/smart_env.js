@@ -22,13 +22,11 @@
 import { render as settings_template } from './components/settings.js';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { deep_merge } from './utils/deep_merge.js';
-import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 import { deep_remove_exclusive_props } from './utils/deep_remove_exclusive_props.js';
 import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
-import { Collection } from 'smart-collections';
 
 /**
  * @class SmartEnv
@@ -54,10 +52,6 @@ export class SmartEnv {
     this.load_timeout = setTimeout(() => {
       this.load();
     }, 5000);
-  }
-  /** @deprecated access `this.state` and `collection.state` directly instead */
-  get collections_loaded(){
-    return this.state === 'loaded';
   }
   /**
    * Returns the config object for the SmartEnv instance.
@@ -88,10 +82,6 @@ export class SmartEnv {
   }
   static set global_env(env) {
     this.global_ref.smart_env = env;
-  }
-  /** @deprecated Use this.main_class_name instead of this.main/this.plugin */
-  get main() {
-    return this.smart_env_configs[this.mains[0]].main;
   }
   static get mains() {
     return Object.keys(this.global_ref.smart_env_configs || {});
@@ -227,9 +217,6 @@ export class SmartEnv {
       this.collections[key] = 'loaded';
     }
   }
-
-
-
 
   /**
    * Triggers a save event in all known collections.
@@ -395,24 +382,6 @@ export class SmartEnv {
     return this.opts.item_types;
   }
 
-  /**
-   * @deprecated use component pattern instead
-   */
-  get ejs() {
-    return this.opts.ejs;
-  }
-  /**
-   * @deprecated use component pattern instead
-   */
-  get templates() {
-    return this.opts.templates;
-  }
-  /**
-   * @deprecated use component pattern instead
-   */
-  get views() {
-    return this.opts.views;
-  }
 
   get fs_module_config() {
     return this.opts.modules.smart_fs;
@@ -513,6 +482,32 @@ export class SmartEnv {
 
   // DEPRECATED
 
+  /** @deprecated access `this.state` and `collection.state` directly instead */
+  get collections_loaded(){
+    return this.state === 'loaded';
+  }
+  /** @deprecated Use this['main_class_name'] instead of this.main/this.plugin */
+  get main() {
+    return this.smart_env_configs[this.mains[0]].main;
+  }
+  /**
+   * @deprecated use component pattern instead
+   */
+  get ejs() {
+    return this.opts.ejs;
+  }
+  /**
+   * @deprecated use component pattern instead
+   */
+  get templates() {
+    return this.opts.templates;
+  }
+  /**
+   * @deprecated use component pattern instead
+   */
+  get views() {
+    return this.opts.views;
+  }
   /**
    * @deprecated use this.config instead
    */
