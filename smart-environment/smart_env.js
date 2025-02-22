@@ -49,8 +49,8 @@ export class SmartEnv {
     this.state = 'init';
     this._components = {};
     this.collections = {};
-    this.load_timeout = setTimeout(() => {
-      this.load();
+    this.load_timeout = setTimeout(async () => {
+      await this.load();
     }, 5000);
   }
   /**
@@ -159,8 +159,8 @@ export class SmartEnv {
       await SmartSettings.create(this.global_env);
     }
     clearTimeout(this.global_env.load_timeout);
-    this.global_env.load_timeout = setTimeout(() => {
-      this.global_env.load();
+    this.global_env.load_timeout = setTimeout(async () => {
+      await this.global_env.load();
     }, 5000);
     return this.global_env;
   }
