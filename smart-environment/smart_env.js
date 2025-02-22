@@ -49,9 +49,7 @@ export class SmartEnv {
     this.state = 'init';
     this._components = {};
     this.collections = {};
-    this.load_timeout = setTimeout(async () => {
-      await this.load();
-    }, 5000);
+    this.load_timeout = null;
   }
   /**
    * Returns the config object for the SmartEnv instance.
@@ -76,6 +74,10 @@ export class SmartEnv {
       // TODO: merge custom actions and components from smart-env folder and cache resulting object
     }
     return this._config;
+  }
+  get env_start_wait_time() {
+    if(typeof this.config.env_start_wait_time === 'number') return this.config.env_start_wait_time;
+    return 5000;
   }
   static get global_env() {
     return this.global_ref.smart_env;
@@ -117,16 +119,16 @@ export class SmartEnv {
     return new Promise((resolve) => {
       if (opts.main) {
         const interval = setInterval(() => {
-          if (window.smart_env && window.smart_env.mains.includes(opts.main)) {
+          if (this.global_env && this.global_env.mains.includes(opts.main)) {
             clearInterval(interval);
-            resolve(window.smart_env);
+            resolve(this.global_env);
           }
         }, 1000);
       } else {
         const interval = setInterval(() => {
-          if (window.smart_env && window.smart_env.collections_loaded) {
+          if (this.global_env && this.global_env.state === 'loaded') {
             clearInterval(interval);
-            resolve(window.smart_env);
+            resolve(this.global_env);
           }
         }, 100);
       }
@@ -161,7 +163,7 @@ export class SmartEnv {
     clearTimeout(this.global_env.load_timeout);
     this.global_env.load_timeout = setTimeout(async () => {
       await this.global_env.load();
-    }, 5000);
+    }, this.global_env.env_start_wait_time);
     return this.global_env;
   }
   static add_main(main, main_env_opts = null) {
@@ -212,6 +214,7 @@ export class SmartEnv {
   async load_collections(collections = this.collections) {
     for (const key of Object.keys(collections || {})) {
       if (typeof this[key]?.process_load_queue === 'function') {
+        if(this.state === 'init' && this[key].opts.prevent_load_on_init === true) continue;
         await this[key].process_load_queue();
       }
       this.collections[key] = 'loaded';
