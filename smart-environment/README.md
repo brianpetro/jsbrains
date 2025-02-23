@@ -192,7 +192,6 @@ The Smart Environment internally normalizes the options provided in `main_env_op
 
 ### Key Components of `main_env_opts`
 
-- **`global_ref`**: A reference to the global object (e.g., `window` in browsers). This is used to store the singleton instance of the Smart Environment.
 - **`env_path`**: The base path for the environment, important for file system operations.
 - **`collections`**: Defines the data collections managed by the environment.
     - Each collection should have:
@@ -208,8 +207,6 @@ The Smart Environment internally normalizes the options provided in `main_env_op
 
 ```js
 export const smart_env_config = {
-  // Global reference (window/global)
-  global_ref: window,
   
   // Base path for the environment
   env_path: '',

@@ -16,7 +16,9 @@ import { MarkdownBlockContentAdapter } from "smart-blocks/adapters/markdown_bloc
 // actions architecture
 import smart_block from "smart-blocks/smart_block.js";
 import smart_source from "smart-sources/smart_source.js";
-
+import { parse_blocks } from "smart-blocks/content_parsers/parse_blocks.js";
+import { parse_links } from 'smart-sources/content_parsers/parse_links.js';
+import { parse_metadata } from 'smart-sources/content_parsers/parse_metadata.js';
 
 const OBSIDIAN_DEFAULTS = {
   env_path: '',
@@ -45,6 +47,11 @@ const OBSIDIAN_DEFAULTS = {
         // "canvas": MarkdownSourceContentAdapter,
         // "default": MarkdownSourceContentAdapter,
       },
+      content_parsers: [
+        parse_links,
+        parse_metadata,
+        parse_blocks,
+      ],
       process_embed_queue: false,
     },
     smart_blocks: {

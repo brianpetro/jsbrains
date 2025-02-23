@@ -170,10 +170,19 @@ export class SmartEnv {
     if(this.global_env?._config) this.global_env._config = null;
     const main_key = camel_case_to_snake_case(main.constructor.name);
     this.smart_env_configs[main_key] = {main, opts: main_env_opts};
-    Object.defineProperty(main, 'env', {
-      get: () => {
+    this.create_env_getter(main);
+  }
+  /**
+   * Creates a dynamic environment getter on any instance object.
+   * The returned 'env' property will yield the global `smart_env`.
+   * @param {Object} instance_to_receive_getter
+   */
+  static create_env_getter(instance_to_receive_getter) {
+    Object.defineProperty(instance_to_receive_getter, 'env', {
+      get: function() {
         return (typeof window !== 'undefined' ? window : global).smart_env;
-      }
+      },
+      // configurable: true
     });
   }
   async load() {

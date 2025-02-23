@@ -25,7 +25,6 @@ class TheMain {
   get smart_env_config() {
     if(!this._smart_env_config){ // must be cached to allow proper unload_main()
       this._smart_env_config = {
-        global_ref: global,
         env_path: path.resolve('./test/vault'),
         collections: {
           the_collection: {
@@ -53,7 +52,6 @@ class TheMain {
 
 class DiffMain {
   smart_env_config = {
-    global_ref: global, // ensures reuse of the same global environment
     env_path: path.resolve('./test/vault'),
     collections: {
       diff_collection: {
@@ -113,7 +111,6 @@ test.serial('SmartEnv.create() - creates a new instance if none is in the global
   t.truthy(env, 'Should create a new SmartEnv instance if none is in the global ref.');
   t.is(env.opts.env_path, path.resolve('./test/vault'), 'env_path should match the config.');
   t.is(the_main.env, env, 'FakeMain instance "env" property should reference the newly created SmartEnv instance.');
-  t.is(env.global_ref, global, 'Global ref should be set to Node global.');
   t.is(env.mains.length, 1, 'Should have exactly one main in the environment.');
   t.is(env.mains[0], 'the_main', 'Main key should be snake_case of constructor name.');
   t.truthy(env.the_collection, 'the_collection is loaded onto the environment.');
@@ -201,7 +198,6 @@ test.serial('SmartEnv.create() - creates a new instance if none is in the global
   t.truthy(env, 'Should create a new SmartEnv instance if none is in global ref.');
   t.is(env.opts.env_path, path.resolve('./test/vault'), 'env_path matches the config.');
   t.is(main.env, env, 'FakeMain env property references the SmartEnv.');
-  t.is(env.global_ref, global, 'Global ref should be Node global.');
   t.is(env.mains.length, 1, 'Exactly one main in the environment.');
   t.is(env.mains[0], 'the_main', 'Key is snake_case of constructor name.');
   t.truthy(env.the_collection, 'the_collection is loaded.');
