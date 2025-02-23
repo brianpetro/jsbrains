@@ -9,7 +9,7 @@ import { merge_env_config } from './utils/merge_env_config.js';
 import { TFile } from 'obsidian';
 import { SmartSources, SmartSource } from 'smart-sources';
 import { AjsonMultiFileSourcesDataAdapter } from "smart-sources/adapters/data/ajson_multi_file.js";
-import { MarkdownSourceContentAdapter } from "smart-sources/adapters/markdown_source.js";
+import { ObsidianMarkdownSourceContentAdapter } from "smart-sources/adapters/obsidian_markdown.js";
 import { SmartBlocks, SmartBlock } from 'smart-blocks';
 import { AjsonMultiFileBlocksDataAdapter } from "smart-blocks/adapters/data/ajson_multi_file.js";
 import { MarkdownBlockContentAdapter } from "smart-blocks/adapters/markdown_block.js";
@@ -40,8 +40,8 @@ const OBSIDIAN_DEFAULTS = {
       class: SmartSources,
       data_adapter: AjsonMultiFileSourcesDataAdapter,
       source_adapters: {
-        "md": MarkdownSourceContentAdapter,
-        "txt": MarkdownSourceContentAdapter,
+        "md": ObsidianMarkdownSourceContentAdapter,
+        "txt": ObsidianMarkdownSourceContentAdapter,
         // "canvas": MarkdownSourceContentAdapter,
         // "default": MarkdownSourceContentAdapter,
       },
