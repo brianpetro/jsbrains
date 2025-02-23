@@ -83,3 +83,24 @@ test('deep_merge_no_overwrite handles deeply nested objects', (t) => {
   t.is(target.a.b.c.d, 'existing', 'existing key d remains');
   t.is(target.a.b.c.e, 'new', 'new key e merged');
 });
+
+test('should handle merging array of functions', (t) => {
+  const parse_links = () => {};
+  const parse_blocks = () => {};
+  const target = {
+    a: {
+      b: {
+        content_parsers: [parse_links],
+      },
+    },
+  };
+  const source = {
+    a: {
+      b: {
+        content_parsers: [parse_blocks],
+      },
+    },
+  };
+  deep_merge_no_overwrite(target, source);
+  t.deepEqual(target.a.b.content_parsers, [parse_links, parse_blocks], 'content_parsers merged');
+});
