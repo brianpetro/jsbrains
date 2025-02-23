@@ -17,36 +17,47 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   async import() {
     if(!this.can_import) return;
     if(!this.should_import) return;
-    const content = await this.read(); // updates last_read.hash
+    const content = await this.read();
     if (!content) {
       console.warn(`No content to import for ${this.file_path}`);
       return;
     }
+    // TODO: should be dynamic: ex. content_parsers files export a should_parse function
     if(this.data.last_import?.hash === this.data.last_read?.hash){
       if(this.data.blocks) return; // if blocks already exist, skip re-import
     }
+    await this.parse_content(content);
+    await this.item.parse_content(content);
 
-    const outlinks = get_markdown_links(content);
-    this.data.outlinks = outlinks;
-
+    // Mark last_import
     const { mtime, size } = this.item.file.stat;
     this.data.last_import = {
       mtime,
       size,
       at: Date.now(),
       hash: this.data.last_read.hash,
-    }
+    };
     this.item.loaded_at = Date.now();
 
-    // import blocks
-    if(this.item.block_collection){
-      await this.item.block_collection.import_source(this.item, content);
-    }
-    // Queue saving
+    // also queue saving
     this.item.queue_save();
-    // Queue embedding
+    // queue embed
     this.item.queue_embed();
   }
+
+  async get_links(content=null) {
+    if(!content) content = await this.read();
+    if(!content) return;
+    return get_markdown_links(content);
+  }
+
+  async get_metadata(content=null) {
+    if(!content) content = await this.read();
+    if(!content) return;
+    const {frontmatter} = parse_frontmatter(content);
+    return frontmatter;
+  }
+
 
   // Erroneous reasons to skip import (logs to console)
   get can_import() {

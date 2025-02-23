@@ -21,8 +21,18 @@
 
 import { SmartSource } from "./smart_source.js";
 import { SmartSources } from "./smart_sources.js";
-
+import { AjsonMultiFileSourcesDataAdapter } from "./adapters/data/ajson_multi_file.js";
+import { MarkdownSourceContentAdapter } from "./adapters/markdown_source.js";
+// default config for smart_sources
+export const smart_sources_default_config = {
+  class: SmartSources,
+  data_adapter: AjsonMultiFileSourcesDataAdapter,
+  source_adapters: {
+    "md": MarkdownSourceContentAdapter
+  }
+}
 export {
   SmartSource,
   SmartSources,
+  smart_sources_default_config as smart_sources,
 }

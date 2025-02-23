@@ -64,6 +64,20 @@ export class SmartSource extends SmartEntity {
       }
     }
   }
+  async parse_content(content=null){
+    // 1) parse blocks (DEPRECATED handling: should be moved to content_parsers)
+    if(this.block_collection && typeof this.block_collection.import_source === 'function') {
+      await this.block_collection.import_source(this, content);
+    }
+    // 3) call each function in env.opts.collections.smart.sources.content_parsers
+    const parse_fns = this.env?.opts?.collections?.smart_sources?.content_parsers || [];
+    for(const fn of parse_fns) {
+      await fn(this, content);
+    }
+    if(this.data.last_import?.hash === this.data.last_read?.hash){
+      if(this.data.blocks) return; // if blocks already exist, skip re-import
+    }
+  }
 
   /**
    * Finds connections relevant to this SmartSource based on provided parameters.
@@ -461,6 +475,7 @@ export class SmartSource extends SmartEntity {
    */
   get last_read() { return this.data.last_read; }
 
+  get metadata() { return this.data.metadata; }
   /**
    * Retrieves the display name of the SmartSource.
    * @readonly
