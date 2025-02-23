@@ -10,7 +10,7 @@
  * The returned object keys reflect the path of headings (or list items) in the document, and
  * each value is an array of two numbers: the starting line and the ending line for that key's content.
  *
- * @function parse_blocks
+ * @function parse_markdown_blocks
  * @param {string} markdown - The complete Markdown text to parse.
  * @param {Object} [opts={}] - Parsing options
  * @param {number} [opts.start_index=1] - The line index to treat as line 1
@@ -26,7 +26,7 @@
  *   // ...
  * }
  */
-export function parse_blocks(markdown, opts={}) {
+export function parse_markdown_blocks(markdown, opts={}) {
   const { start_index = 1, line_keys = false } = opts;
   const lines = markdown.split('\n');
 

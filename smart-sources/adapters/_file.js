@@ -1,5 +1,5 @@
 import { SourceContentAdapter } from "./_adapter.js";
-import { parse_blocks } from "smart-blocks/parsers/markdown.js";
+import { parse_markdown_blocks } from "smart-blocks/parsers/markdown.js";
 /**
  * @class FileSourceContentAdapter
  * @extends SourceContentAdapter
@@ -136,11 +136,11 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    */
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const blocks_obj = parse_blocks(content);
+    const blocks_obj = parse_markdown_blocks(content);
 
     if (typeof blocks_obj !== 'object' || Array.isArray(blocks_obj)) {
-      console.warn("merge error: Expected an object from parse_blocks, but received:", blocks_obj);
-      throw new Error("merge error: parse_blocks did not return an object as expected.");
+      console.warn("merge error: Expected an object from parse_markdown_blocks, but received:", blocks_obj);
+      throw new Error("merge error: parse_markdown_blocks did not return an object as expected.");
     }
     const { new_blocks, new_with_parent_blocks, changed_blocks, same_blocks } = await this.get_changes(blocks_obj, content);
     for(const block of new_blocks){

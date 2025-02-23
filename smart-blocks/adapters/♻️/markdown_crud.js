@@ -1,4 +1,4 @@
-import { parse_blocks } from "./markdown.js";
+import { parse_markdown_blocks } from "./markdown.js";
 
 /**
  * Reads the content of a specific block from the full markdown content.
@@ -9,7 +9,7 @@ import { parse_blocks } from "./markdown.js";
  * @throws {Error} - If the block_key does not exist.
  */
 export function block_read(content, block_key) {
-  const blocks = parse_blocks(content);
+  const blocks = parse_markdown_blocks(content);
   const block_range = blocks[block_key];
   
   if (!block_range) {
@@ -32,7 +32,7 @@ export function block_read(content, block_key) {
  * @throws {Error} - If the block_key does not exist.
  */
 export function block_update(content, block_key, new_block_content) {
-  const blocks = parse_blocks(content);
+  const blocks = parse_markdown_blocks(content);
   const block_range = blocks[block_key];
 
   if (!block_range) {
@@ -60,7 +60,7 @@ export function block_update(content, block_key, new_block_content) {
  * @throws {Error} - If the block_key does not exist.
  */
 export function block_destroy(content, block_key) {
-  const blocks = parse_blocks(content);
+  const blocks = parse_markdown_blocks(content);
   const block_range = blocks[block_key];
   
   if (!block_range) {
