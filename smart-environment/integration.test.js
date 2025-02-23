@@ -179,14 +179,14 @@ test.serial('SmartEnv unload_main() - ensures environment cleanup', async (t) =>
   t.truthy(env.diff_collection, 'diff_collection from main_two exists.');
 
   // Unload main_two
-  env.unload_main('diff_main');
+  env.unload_main(main_two);
   t.is(env.mains.length, 1, 'Should remove main_two from environment’s mains.');
   t.is(env.diff_main, null, 'Property for main_two should be nulled out.');
   t.truthy(env.the_collection, 'the_collection remains because main_one is still present.');
   // t.true(env.diff_collection?.unloaded, 'diff_collection should be marked as unloaded.');
 
   // Finally unload main_one
-  env.unload_main('the_main');
+  env.unload_main(main_one);
   t.is(env.mains.length, 0, 'No mains remain after unloading the last one.');
   t.is(env.the_main, null, 'main_one property should be cleared.');
   // t.true(env.the_collection?.unloaded, 'the_collection also unloaded.');
@@ -244,14 +244,14 @@ test.serial('SmartEnv add_main & unload_main - ensures proper cleanup (integrati
   t.falsy(env.the_collection.unloaded, 'the_collection also not unloaded yet.');
 
   // 3) Unload the second main
-  env.unload_main('diff_main');
+  env.unload_main(main_two);
   t.is(env.mains.length, 1, 'Removes main_two from .mains.');
   t.is(env['diff_main'], null, 'main_two property is nulled on env.');
   t.true(env.diff_collection === null, 'diff_collection null');
   t.falsy(env.the_collection.unloaded, 'the_collection belongs to main_one; stays loaded.');
 
   // 4) Unload the first main
-  env.unload_main('the_main');
+  env.unload_main(main_one);
   t.is(env.mains.length, 0, 'No mains remain after unloading the last main.');
   t.is(env['the_main'], null, 'main_one property is cleared on env.');
   t.is(env.global_env, null, 'Global ref should be cleared when no mains exist.');
@@ -281,7 +281,7 @@ test.serial('SmartEnv unload_main() - only removes main-exclusive opts (integrat
   t.truthy(env.opts.shared_opt, 'shared_opt remains, used by both mains.');
 
   // 3) Unload mainOne => remove only its exclusive opts
-  env.unload_main('the_main');
+  env.unload_main(main_one);
   t.is(env.mains.length, 1, 'Only mainTwo remains after unloading mainOne.');
 
   t.falsy(env.opts.unique_opt_main_one, 'unique_opt_main_one is removed.');
@@ -289,7 +289,7 @@ test.serial('SmartEnv unload_main() - only removes main-exclusive opts (integrat
   t.truthy(env.opts.shared_opt, 'shared_opt remains because it is still used by mainTwo.');
 
   // 4) Unload mainTwo => remove everything else
-  env.unload_main('diff_main');
+  env.unload_main(main_two);
   t.is(env.mains.length, 0, 'All mains are unloaded.');
   t.falsy(env.opts.unique_opt_main_two, 'unique_opt_main_two is removed.');
   t.falsy(env.opts.shared_opt, 'shared_opt is removed now that no main references it.');
@@ -314,7 +314,7 @@ test.serial('SmartEnv add_main & unload_main - reloading a main works', async (t
   t.falsy(env.the_collection.unloaded, 'the_collection also not unloaded yet.');
 
   // 3) Unload the second main
-  env.unload_main('diff_main');
+  env.unload_main(main_two);
   t.is(env.mains.length, 1, 'Removes main_two from .mains.');
   t.is(env['diff_main'], null, 'main_two property is nulled on env.');
   t.true(env.diff_collection === null, 'diff_collection null');
@@ -365,7 +365,7 @@ test.serial('SmartEnv unload_main() - item_types specific to a single main are r
   t.truthy(env.opts.item_types.SharedItemType, 'SharedItemType is present for both mains.');
 
   // 3) Unload mainOne => remove item_types unique to mainOne
-  env.unload_main('the_main');
+  env.unload_main(main_one);
   t.is(env.mains.length, 1, 'Only mainTwo remains after unloading mainOne.');
   t.falsy(env.opts.item_types.UniqueMainOneItemType, 'UniqueMainOneItemType removed with mainOne.');
   t.truthy(env.opts.item_types.UniqueMainTwoItemType, 'UniqueMainTwoItemType remains for mainTwo.');
@@ -385,7 +385,7 @@ test.serial("opts.collections should be removed from env.opts when a main is unl
   await SmartEnv.create(main_two, main_two.smart_env_config);
   t.truthy(env.opts.collections.diff_collection, 'diff_collection exists in env.opts.');
 
-  env.unload_main('the_main');
+  env.unload_main(main_one);
   t.falsy(env.opts.collections.the_collection, 'the_collection is removed from env.opts.');
 })
 
