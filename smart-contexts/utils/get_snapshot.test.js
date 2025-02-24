@@ -7,7 +7,7 @@
  */
 
 import test from 'ava';
-import { build_snapshot } from './snapshot.js';
+import { get_snapshot } from './get_snapshot.js';
 import { SmartContext } from '../smart_context.js';
 import { SmartEnv } from 'smart-environment';
 import { SmartSources, SmartSource } from 'smart-sources';
@@ -79,6 +79,7 @@ let env = null;
 test.before(async () => {
   const main = new TestMain();
   env = await SmartEnv.create(main, main.smart_env_config);
+  await SmartEnv.wait_for({loaded: true});
 });
 
 /**
@@ -111,7 +112,7 @@ test.serial('Items with codeblock lines add those paths at the same depth', asyn
   });
 
   // Build snapshot with link_depth=0 => only depth=0 expansions
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
 
   // Check depth=0 includes: primaryA.md, other.md, codeRef1.md, codeRef2.md
   t.truthy(snapshot.items[0], 'Should have depth=0 object');
@@ -149,7 +150,7 @@ test.serial('No codeblock lines => normal behavior', async t => {
   });
 
   // link_depth=0 => only depth=0 expansions
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0 });
 
   t.deepEqual(Object.keys(snapshot.items).sort(), ['0'], 'Depth=0 only');
   const depth0_keys = Object.keys(snapshot.items[0]).sort();
@@ -185,7 +186,7 @@ test.serial('Skipped items remain out if max_len is reached, codeRef items do no
     }
   });
 
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 50 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 50 });
 
   // final result: skipMe is included, bigOne is not
   t.truthy(snapshot.items[0]['skipMe.md'], 'skipMe is included (smaller file), partially or fully');
@@ -197,7 +198,7 @@ test.serial('Skipped items remain out if max_len is reached, codeRef items do no
  * 4) Integration test with actual SmartEnv items 
  *    (example usage of real items referencing data content).
  */
-test.serial('integration: build_snapshot with actual SmartEnv items', async t => {
+test.serial('integration: get_snapshot with actual SmartEnv items', async t => {
   const contexts = env.smart_contexts;
 
   // Minimal test items in memory
@@ -234,7 +235,7 @@ test.serial('integration: build_snapshot with actual SmartEnv items', async t =>
     max_len: ctxItem.data.context_opts.max_len,
     templates: {}
   };
-  const snapshot = await build_snapshot(ctxItem, merged_opts);
+  const snapshot = await get_snapshot(ctxItem, merged_opts);
 
   // Should have content from both sources, but the "Secret" heading omitted
   t.truthy(snapshot.items[0]['test_integrationA.data']);
@@ -304,7 +305,7 @@ test.serial('Multi-depth outlink expansion with link_depth=2', async t => {
   });
 
   // Build snapshot with link_depth=2
-  const snapshot = await build_snapshot(sc_item, {
+  const snapshot = await get_snapshot(sc_item, {
     link_depth: 2,
     max_len: 0,
     inlinks: false // outlinks only
@@ -345,7 +346,7 @@ test.serial('Inbound link expansions with inlinks=true', async t => {
   });
 
   // Build snapshot with link_depth=1 and inlinks=true => we gather inbound references
-  const snapshot = await build_snapshot(sc_item, {
+  const snapshot = await get_snapshot(sc_item, {
     link_depth: 1,
     inlinks: true,
     max_len: 0
@@ -397,7 +398,7 @@ test.serial('Partial truncation with multiple items; smaller items can still fit
   // the expansions array might add small1 (len=10), then big2 (len=70), then big1 (len=80).
   // The snapshot logic for depth=0 includes partial truncation for the *first* item that doesn't fit,
   // then subsequent items skip if they can't fit fully.
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 100 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 100 });
 
   // Let's see the final ordering in snapshot.items[0].
   const items0 = snapshot.items[0];
@@ -440,7 +441,7 @@ test.serial('Multi-level codeblocks: codeRef referencing another codeRef at same
   });
 
   // link_depth=0 => expansions are all at the same depth from codeblocks
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
 
   // Depth=0 includes primaryB, codeRefLvl1, codeRefLvl2
   const depth0 = snapshot.items[0];
@@ -474,7 +475,7 @@ test.serial('Folder expansions: multiple sub-files in a folder are included', as
     }
   });
 
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
 
   // We expect depth=0 => fileX.md, fileY.md, and 'another.txt' as well
   const depth0 = snapshot.items[0];
@@ -530,7 +531,7 @@ test.serial('Re-discovery of the same file: only included once across expansions
     }
   });
 
-  const snapshot = await build_snapshot(sc_item, { link_depth: 1, max_len: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 1, max_len: 0 });
 
   // Depth=0 => mainA.md, mainB.md
   // Depth=1 => shared.md (once only)
@@ -554,7 +555,7 @@ test.serial('Nonexistent file references should be skipped gracefully', async t 
     }
   });
 
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
   // We expect that items[0] is empty because missingFile does not exist
   t.falsy(snapshot.items[0], 'No valid items at depth=0');
   t.true(snapshot.missing_items.includes('missingFile.md'), 'Missing file should be in missing_files');
@@ -600,7 +601,7 @@ test.serial('Repeated or incomplete code blocks are handled gracefully', async t
     }
   });
 
-  const snapshot = await build_snapshot(sc_item, { link_depth: 0, max_len: 0 });
+  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
   const depth0 = snapshot.items[0];
   t.truthy(depth0['multiBlock.md'], 'Main file included');
   t.truthy(depth0['firstRef.md'], 'firstRef included from first codeblock');
@@ -650,20 +651,6 @@ test('Codeblock referencing an external folder: subfiles are expanded with ignor
     # End
   `;
 
-  // 3) Provide minimal environment
-  const env = await SmartEnv.create({}, {
-    env_path: '/Users/brian/Documents/jsbrains/smart-contexts/test/test-content',
-    modules: {
-      smart_fs: {
-        class: SmartFs,
-        adapter: NodeFsSmartFsAdapter
-      }
-    },
-    collections: {
-      smart_contexts: { class: SmartContexts }
-    }
-  });
-
   // Write 'myDoc.md' to in-memory test FS
   await env.smart_sources.fs.write('myDoc.md', mainFile);
   await env.smart_sources.fs.load_files();
@@ -680,7 +667,7 @@ test('Codeblock referencing an external folder: subfiles are expanded with ignor
   });
 
   // 4) Build snapshot; link_depth=0, so we only see codeblock expansions at depth=0
-  const snapshot = await build_snapshot(scItem, {
+  const snapshot = await get_snapshot(scItem, {
     link_depth: 0,
     max_len: 0,
     // Provide an example exclude to show hidden files are omitted or patterns are tested
