@@ -673,7 +673,6 @@ test('Codeblock referencing an external folder: subfiles are expanded with ignor
     // Provide an example exclude to show hidden files are omitted or patterns are tested
     excluded_headings: [],
   });
-  console.log(snapshot);
 
   // 5) Confirm expansions
   t.truthy(snapshot.items[0]['myDoc.md'], 'Original doc is included');

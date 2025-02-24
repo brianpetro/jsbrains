@@ -1,6 +1,5 @@
 import { strip_excluded_headings } from './respect_exclusions.js';
 export async function get_snapshot(ctx_item, opts) {
-  console.log('opts', opts);
   const snapshot = {
     items: {},
     truncated_items: [],
@@ -38,11 +37,9 @@ export async function get_snapshot(ctx_item, opts) {
       ...opts.items,
     };
   }
-  console.log('snapshot after', snapshot);
   return snapshot;
 }
 async function process_depth(snapshot, curr_depth_keys, ctx_item, opts) {
-  console.log('curr_depth_keys', curr_depth_keys);
   const curr_depth_items = (curr_depth_keys ?? []).map(key => ctx_item.get_ref(key)).filter(Boolean);
   const curr_depth_non_item_keys = curr_depth_keys.filter(key => !ctx_item.get_ref(key));
   // check if is folder

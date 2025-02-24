@@ -23,7 +23,6 @@
  */
 
 export async function compile_snapshot(context_snapshot, merged_opts) {
-  console.log('context_snapshot', context_snapshot);
   const depths = Object.keys(context_snapshot.items)
     .map(d => parseInt(d, 10))
     .sort((a, b) => a - b);
