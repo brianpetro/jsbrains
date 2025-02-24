@@ -6,6 +6,7 @@ import { ThreadSourceAdapter } from "./_adapter.js";
  * @description for persisting OpenAI chat completion responses to JSON files
  */
 export class EnvJsonThreadSourceAdapter extends ThreadSourceAdapter {
+  static extensions = ['json'];
   static extension = 'json';
   extension = 'json';
   to_source_data(){

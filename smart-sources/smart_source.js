@@ -401,7 +401,8 @@ export class SmartSource extends SmartEntity {
    */
   get file_type() {
     if(!this._ext) {
-      const pcs = this.data.path?.split(".").slice(1);
+      const pcs = this.data.path?.split(".");
+      pcs.shift();
       while(pcs.length){
         const ext = pcs.join(".").toLowerCase();
         if(this.source_adapters[ext]) return ext;

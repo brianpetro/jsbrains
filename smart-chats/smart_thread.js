@@ -333,6 +333,13 @@ export class SmartThread extends SmartSource {
     return frag;
   }
 
+  /**
+   * @deprecated temp handling until SmartThreads/SmartChats v2
+   */
+  get file_type(){
+    return 'json';
+  }
+
   /*** Private Helpers ***/
 
   /**

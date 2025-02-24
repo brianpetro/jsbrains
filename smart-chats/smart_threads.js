@@ -26,7 +26,7 @@ export class SmartThreads extends SmartSources {
     // ensure source_dir exists
     if(!(await this.fs.exists(this.source_dir))) await this.fs.mkdir(this.source_dir);
     (await this.fs.list(this.source_dir))
-      .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
+      .filter(file => this.source_adapters?.[file.extension]) // Skip files without source adapter
       .forEach(file => {
         const key = file.path.replace(this.source_dir + '/', '').replace('.' + file.extension, '');
         this.items[key] = new this.item_type(this.env, { path: file.path, key });

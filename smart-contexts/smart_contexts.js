@@ -92,7 +92,7 @@ export class SmartContexts extends Collection {
       },
       excluded_headings: {
         name: 'Excluded headings',
-        description: 'Headings/patterns to exclude; use newline to separate multiple patterns.',
+        description: 'Headings/patterns to exclude; use newline to separate multiple patterns. Case-sensitive.',
         type: 'textarea_array'
       },
       context_explanation: {

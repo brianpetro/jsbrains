@@ -319,10 +319,13 @@ export class SmartSources extends SmartEntities {
       //   delete this._source_adapters.pdf;
       // }
       const source_adapters = Object.values(this.env.opts.collections?.[this.collection_key]?.source_adapters || {});
-      this._source_adapters = source_adapters.reduce((acc, adapter) => {
+      const _source_adapters = source_adapters.reduce((acc, adapter) => {
         adapter.extensions?.forEach(ext => acc[ext] = adapter);
         return acc;
       }, {});
+      if(Object.keys(_source_adapters).length){
+        this._source_adapters = _source_adapters;
+      }
     }
     return this._source_adapters;
   }
