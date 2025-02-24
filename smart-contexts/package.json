@@ -27,8 +27,7 @@
   "dependencies": {
     "smart-blocks": "file:../smart-blocks",
     "smart-collections": "file:../smart-collections",
-    "smart-file-system": "file:../smart-fs",
-    "smart-utils": "file:../../advanced-env/smart-utils"
+    "smart-file-system": "file:../smart-fs"
   },
   "devDependencies": {
     "ava": "^5.3.1",
