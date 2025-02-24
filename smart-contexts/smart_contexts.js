@@ -99,7 +99,7 @@ export class SmartContexts extends Collection {
         type: 'html',
         value: `
           <div class="setting-explanation">
-            <h5>Context Templates</h5>
+            <h5>Context templates</h5>
             <span>Included once in the final output at the beginning (before_context) and end (after_context).</span>
             <br>
             <br>
@@ -126,7 +126,7 @@ export class SmartContexts extends Collection {
         type: 'html',
         value: `
           <div class="setting-explanation">
-            <h5>Item Templates</h5>
+            <h5>Item templates</h5>
             <span>Included once for each item (before_item and after_item).</span>
             <br>
             <br>
@@ -156,7 +156,7 @@ export class SmartContexts extends Collection {
         type: 'html',
         value: `
           <div class="setting-explanation">
-            <h5>Link Templates</h5>
+            <h5>Link templates</h5>
             <span>Inserted before/after each link-based item (depth=1,2,...). 
                   Typically used to separate these items from the primary content.
                   <i>Note: links are treated similar to items but are aggregated after all items.</i>
