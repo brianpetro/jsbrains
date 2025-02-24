@@ -1,6 +1,7 @@
 import { FileSourceContentAdapter } from "./_file.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
-
+import { parse_links } from "../content_parsers/parse_links.js";
+import { parse_metadata } from "../content_parsers/parse_metadata.js";
 /**
  * @class MarkdownSourceContentAdapter
  * @extends FileSourceContentAdapter
@@ -43,6 +44,12 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     this.item.queue_save();
     // queue embed
     this.item.queue_embed();
+  }
+
+  // Runs before configured content_parsers (for example, templates uses outlinks)
+  async parse_content(content) {
+    await parse_links(this.item, content);
+    await parse_metadata(this.item, content);
   }
 
   async get_links(content=null) {

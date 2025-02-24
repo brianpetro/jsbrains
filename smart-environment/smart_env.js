@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2;
+  static version = 2.1;
   scope_name = 'smart_env';
   static global_ref = (typeof window !== 'undefined' ? window : global);
   global_ref = (typeof window !== 'undefined' ? window : global);
@@ -184,6 +184,9 @@ export class SmartEnv {
       },
       // configurable: true
     });
+  }
+  create_env_getter(instance_to_receive_getter) {
+    this.constructor.create_env_getter(instance_to_receive_getter);
   }
   async load() {
     await this.init_collections();

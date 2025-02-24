@@ -1,5 +1,5 @@
-export function parse_links(source, content) {
+export async function parse_links(source, content) {
   if(!source.source_adapter?.get_links) return;
-  const outlinks = source.source_adapter.get_links(content);
+  const outlinks = await source.source_adapter.get_links(content);
   source.data.outlinks = outlinks;
 }

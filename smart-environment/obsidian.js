@@ -17,8 +17,6 @@ import { MarkdownBlockContentAdapter } from "smart-blocks/adapters/markdown_bloc
 import smart_block from "smart-blocks/smart_block.js";
 import smart_source from "smart-sources/smart_source.js";
 import { parse_blocks } from "smart-blocks/content_parsers/parse_blocks.js";
-import { parse_links } from 'smart-sources/content_parsers/parse_links.js';
-import { parse_metadata } from 'smart-sources/content_parsers/parse_metadata.js';
 
 const OBSIDIAN_DEFAULTS = {
   env_path: '',
@@ -48,8 +46,6 @@ const OBSIDIAN_DEFAULTS = {
         // "default": MarkdownSourceContentAdapter,
       },
       content_parsers: [
-        parse_links,
-        parse_metadata,
         parse_blocks,
       ],
       process_embed_queue: false,
@@ -103,8 +99,10 @@ export class SmartEnv extends BaseSmartEnv {
     const opts = merge_env_config(main_env_opts, OBSIDIAN_DEFAULTS);
     return await super.create(plugin, opts);
   }
-  async init(plugin, main_env_opts = {}) {
-    await super.init(plugin, main_env_opts);
+  async load() {
+    await super.load();
+    // register event listeners for file changes after load
+    const plugin = this.main;
     plugin.registerEvent(
       plugin.app.vault.on('create', (file) => {
         if(file instanceof TFile){
