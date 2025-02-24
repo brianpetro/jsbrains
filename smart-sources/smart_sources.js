@@ -307,17 +307,22 @@ export class SmartSources extends SmartEntities {
    */
   get source_adapters() {
     if(!this._source_adapters){
-      this._source_adapters = {
-        ...(this.env.opts.collections?.[this.collection_key]?.source_adapters || {}),
-      };
-      if(!this.settings?.enable_image_adapter){
-        delete this._source_adapters.png;
-        delete this._source_adapters.jpg;
-        delete this._source_adapters.jpeg;
-      }
-      if(!this.settings?.enable_pdf_adapter){
-        delete this._source_adapters.pdf;
-      }
+      // this._source_adapters = {
+      //   ...(this.env.opts.collections?.[this.collection_key]?.source_adapters || {}),
+      // };
+      // if(!this.settings?.enable_image_adapter){
+      //   delete this._source_adapters.png;
+      //   delete this._source_adapters.jpg;
+      //   delete this._source_adapters.jpeg;
+      // }
+      // if(!this.settings?.enable_pdf_adapter){
+      //   delete this._source_adapters.pdf;
+      // }
+      const source_adapters = Object.values(this.env.opts.collections?.[this.collection_key]?.source_adapters || {});
+      this._source_adapters = source_adapters.reduce((acc, adapter) => {
+        adapter.extensions?.forEach(ext => acc[ext] = adapter);
+        return acc;
+      }, {});
     }
     return this._source_adapters;
   }

@@ -10,6 +10,9 @@ import { parse_metadata } from "../content_parsers/parse_metadata.js";
  * Responsible for importing file content into `item.data.blocks`, computing hashes, and identifying outlinks.
  */
 export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
+  static get extension() {
+    return ['md', 'txt'];
+  }
   /**
    * Import the source file content, parse blocks and links, and update `item.data`.
    * @async

@@ -400,9 +400,17 @@ export class SmartSource extends SmartEntity {
    * @returns {string} The file type in lowercase.
    */
   get file_type() {
-    return this.data.path?.split(".").pop().toLowerCase()
-      || this.source_adapters.default.extension
-    ;
+    if(!this._ext) {
+      const pcs = this.data.path?.split(".").slice(1);
+      while(pcs.length){
+        const ext = pcs.join(".").toLowerCase();
+        if(this.source_adapters[ext]) return ext;
+        pcs.shift();
+      }
+      // fallback to last extension
+      this._ext = this.data.path?.split(".").pop() || 'md';
+    }
+    return this._ext;
   }
 
   /**
@@ -513,7 +521,7 @@ export class SmartSource extends SmartEntity {
     if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
     else {
       console.log("No source adapter found for", this.file_type, this);
-      this._source_adapter = new this.source_adapters["default"](this);
+      // this._source_adapter = new this.source_adapters["default"](this);
     }
     return this._source_adapter;
   }
