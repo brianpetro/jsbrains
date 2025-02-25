@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.1;
+  static version = 2.11;
   scope_name = 'smart_env';
   static global_ref = (typeof window !== 'undefined' ? window : global);
   global_ref = (typeof window !== 'undefined' ? window : global);
