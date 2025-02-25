@@ -2,6 +2,7 @@ import { FileSourceContentAdapter } from "./_file.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { parse_links } from "../content_parsers/parse_links.js";
 import { parse_metadata } from "../content_parsers/parse_metadata.js";
+import { parse_frontmatter } from "../utils/parse_frontmatter.js";
 /**
  * @class MarkdownSourceContentAdapter
  * @extends FileSourceContentAdapter
