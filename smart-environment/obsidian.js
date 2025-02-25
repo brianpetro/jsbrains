@@ -105,7 +105,7 @@ export class SmartEnv extends BaseSmartEnv {
     const plugin = this.main;
     plugin.registerEvent(
       plugin.app.vault.on('create', (file) => {
-        if(file instanceof TFile){
+        if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
           this.smart_sources?.init_file_path(file.path);
           this.smart_sources?.fs.include_file(file.path);
         }
@@ -113,7 +113,7 @@ export class SmartEnv extends BaseSmartEnv {
     );
     plugin.registerEvent(
       plugin.app.vault.on('rename', (file) => {
-        if(file instanceof TFile){
+        if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
           this.smart_sources?.init_file_path(file.path);
           this.smart_sources?.fs.include_file(file.path);
         }
@@ -121,7 +121,7 @@ export class SmartEnv extends BaseSmartEnv {
     );
     plugin.registerEvent(
       plugin.app.vault.on('modify', (file) => {
-        if(file instanceof TFile){
+        if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
           const source = this.smart_sources?.get(file.path);
           if(source){
             source.queue_import();
