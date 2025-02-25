@@ -17,6 +17,8 @@ import { MarkdownBlockContentAdapter } from "smart-blocks/adapters/markdown_bloc
 import smart_block from "smart-blocks/smart_block.js";
 import smart_source from "smart-sources/smart_source.js";
 import { parse_blocks } from "smart-blocks/content_parsers/parse_blocks.js";
+import { SmartNotices } from "smart-notices/smart_notices.js"; // TODO: move to jsbrains
+import { Notice } from "obsidian";
 
 const OBSIDIAN_DEFAULTS = {
   env_path: '',
@@ -29,10 +31,10 @@ const OBSIDIAN_DEFAULTS = {
       class: SmartView,
       adapter: SmartViewObsidianAdapter,
     },
-    // smart_notices: {
-    //   class: SmartNotices,
-    //   adapter: Notice,
-    // },
+    smart_notices: {
+      class: SmartNotices,
+      adapter: Notice,
+    },
   },
   collections: {
     smart_sources: {

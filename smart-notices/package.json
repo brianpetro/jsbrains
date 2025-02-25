@@ -1,0 +1,8 @@
+{
+  "name": "smart-notices",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Plugin notices for the Smart Environment."
+}
