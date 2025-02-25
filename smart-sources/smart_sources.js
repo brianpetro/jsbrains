@@ -269,7 +269,14 @@ export class SmartSources extends SmartEntities {
    * Imports items (SmartSources or SmartBlocks) that have been flagged for import.
    */
   async process_source_import_queue(opts={}){
-    const { process_embed_queue = true } = opts;
+    const { process_embed_queue = true, import_all = false } = opts;
+    if(import_all){
+      Object.values(this.items).forEach(item => {
+        item._queue_import = true;
+        if(item.data.last_import?.at) item.data.last_import.at = 0; // Force re-import
+        if(item.data.last_import?.hash) item.data.last_import.hash = null; // Force re-import
+      });
+    }
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     console.log("import_queue " + import_queue.length);
     if(import_queue.length){
