@@ -6,6 +6,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * @extends SmartChatModelApiAdapter
  */
 export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
+  static key = "gemini";
 
   static defaults = {
     description: "Google Gemini",

@@ -55,6 +55,7 @@ const adapters_map = {
  * @extends SmartChatModelApiAdapter
  */
 export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
+  static key = "custom";
   static defaults = {
     description: 'Custom API (Local or Remote, OpenAI format)',
     type: 'API',

@@ -17,6 +17,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * @property {string} defaults.signup_url - URL with info
  */
 export class SmartChatModelLmStudioAdapter extends SmartChatModelApiAdapter {
+  static key = "lm_studio";
   static defaults = {
     description: "LM Studio (OpenAI-compatible)",
     type: "API",

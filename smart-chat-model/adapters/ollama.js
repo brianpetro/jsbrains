@@ -7,6 +7,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * @extends SmartChatModelApiAdapter
  */
 export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
+  static key = "ollama";
   static defaults = {
     description: "Ollama (Local)",
     type: "API",

@@ -17,6 +17,7 @@ import { SmartChatModelApiAdapter, SmartChatModelResponseAdapter } from "./_api.
  * @property {boolean} defaults.can_use_tools - Whether tools can be used
  */
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
+  static key = "openai";
   static defaults = {
     description: "OpenAI",
     type: "API",

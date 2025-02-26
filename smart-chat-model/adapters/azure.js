@@ -13,6 +13,7 @@ import { SmartChatModelOpenaiAdapter } from './openai.js';
  *   - `api_key`  (the Azure OpenAI key)
  */
 export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
+  static key = "azure";
   static defaults = {
     description: "Azure OpenAI",
     type: "API",

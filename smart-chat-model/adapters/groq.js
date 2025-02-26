@@ -6,6 +6,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * The main difference from openai.js: When processing assistant messages with array or null content, we merge into a single string.
  */
 export class SmartChatModelGroqAdapter extends SmartChatModelApiAdapter {
+  static key = "groq";
   static defaults = {
     description: "Groq",
     type: "API",

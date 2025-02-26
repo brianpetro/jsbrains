@@ -19,6 +19,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * @property {string} defaults.signup_url - URL for API key signup
  */
 export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
+  static key = "anthropic";
   static defaults = {
     description: "Anthropic Claude",
     type: "API",

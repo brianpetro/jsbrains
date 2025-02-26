@@ -17,6 +17,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * @property {string} defaults.signup_url - URL for API key signup
  */
 export class SmartChatModelCohereAdapter extends SmartChatModelApiAdapter {
+  static key = "cohere";
   static defaults = {
     description: "Cohere Command-R",
     type: "API",
