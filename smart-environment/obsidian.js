@@ -135,5 +135,12 @@ export class SmartEnv extends BaseSmartEnv {
         }
       })
     );
+    plugin.registerEvent(
+      plugin.app.vault.on('delete', (file) => {
+        if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
+          delete this.smart_sources?.items[file.path];
+        }
+      })
+    );
   }
 }
