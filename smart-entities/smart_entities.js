@@ -225,13 +225,19 @@ export class SmartEntities extends Collection {
       opts.exclude_key_starts_with_any.push((entity.source_key || entity.key)); // exclude current entity
       // include/exclude filters
       if (exclude_filter) {
-        if (typeof exclude_filter === "string") opts.exclude_key_starts_with_any.push(exclude_filter);
-        else if (Array.isArray(exclude_filter)) opts.exclude_key_starts_with_any.push(...exclude_filter);
+        // if (typeof exclude_filter === "string") opts.exclude_key_starts_with_any.push(exclude_filter);
+        // else if (Array.isArray(exclude_filter)) opts.exclude_key_starts_with_any.push(...exclude_filter);
+        if (!Array.isArray(opts.exclude_key_includes_any)) opts.exclude_key_includes_any = [];
+        if (typeof exclude_filter === "string") opts.exclude_key_includes_any.push(exclude_filter);
+        else if (exclude_filter.includes(",")) opts.exclude_key_includes_any.push(...exclude_filter.split(","));
       }
       if (include_filter) {
-        if (!Array.isArray(opts.key_starts_with_any)) opts.key_starts_with_any = [];
-        if (typeof include_filter === "string") opts.key_starts_with_any.push(include_filter);
-        else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
+        // if (!Array.isArray(opts.key_starts_with_any)) opts.key_starts_with_any = [];
+        // if (typeof include_filter === "string") opts.key_starts_with_any.push(include_filter);
+        // else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
+        if (!Array.isArray(opts.key_includes_any)) opts.key_includes_any = [];
+        if (typeof include_filter === "string") opts.key_includes_any.push(include_filter);
+        else if (include_filter.includes(",")) opts.key_includes_any.push(...include_filter.split(","));
       }
       // exclude inlinks
       if (exclude_inlinks && entity?.inlinks?.length) {
