@@ -4,5 +4,8 @@
   "license": "MIT",
   "version": "1.0.0",
   "type": "module",
-  "description": "Plugin notices for the Smart Environment."
+  "description": "Plugin notices for the Smart Environment.",
+  "dependencies": {
+    "smart-environment": "file:../smart-environment"
+  }
 }

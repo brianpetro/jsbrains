@@ -10,6 +10,7 @@
 
 import { setIcon } from 'obsidian';
 import { NOTICES } from './notices.js';
+import { SmartEnv } from 'smart-environment';
 
 /**
  * Ensures each notice in NOTICES has a `.create(opts)` method.
@@ -81,7 +82,7 @@ export class SmartNotices {
   constructor(scope, adapter=null) {
     this.scope = scope;
     this.main = scope; // legacy alias
-    this.main.env.create_env_getter(this); // sets this.env
+    SmartEnv.create_env_getter(this); // sets this.env
     this.active = {};
     this.adapter = adapter || this.env.config.modules.smart_notices.adapter;
     // Make sure each notice entry has a .create() method
@@ -90,7 +91,7 @@ export class SmartNotices {
 
   /** plugin settings for notices (muted, etc.) */
   get settings() {
-    return this.env.settings.smart_notices;
+    return this.env?.settings?.smart_notices || {};
   }
 
   /**
