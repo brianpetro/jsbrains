@@ -78,11 +78,12 @@ export class SmartNotices {
   /**
    * @param {Object} scope - The main plugin instance
    */
-  constructor(scope) {
+  constructor(scope, adapter=null) {
     this.scope = scope;
     this.main = scope; // legacy alias
     this.main.env.create_env_getter(this); // sets this.env
     this.active = {};
+    this.adapter = adapter || this.env.config.modules.smart_notices.adapter;
     // Make sure each notice entry has a .create() method
     define_default_create_methods(NOTICES, scope);
   }
@@ -90,11 +91,6 @@ export class SmartNotices {
   /** plugin settings for notices (muted, etc.) */
   get settings() {
     return this.env.settings.smart_notices;
-  }
-
-  /** The adapter used to actually show notices (Obsidian's Notice, etc.) */
-  get adapter() {
-    return this.env.config.modules.smart_notices.adapter;
   }
 
   /**
