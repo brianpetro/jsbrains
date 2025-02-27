@@ -44,9 +44,7 @@ export class SmartSources extends SmartEntities {
     // Initialize smart_fs
     await this.fs.init();
     // Initialize smart_sources
-    Object.values(this.fs.files)
-      .filter(file => this.source_adapters[file.extension]) // Skip files without source adapter
-      .forEach(file => this.init_file_path(file.path));
+    Object.values(this.fs.files).forEach(file => this.init_file_path(file.path));
     this.notices?.remove('initial_scan');
     this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
   }
@@ -57,6 +55,11 @@ export class SmartSources extends SmartEntities {
    * @returns {SmartSource} The initialized SmartSource instance.
    */
   init_file_path(file_path){
+    // Skip files without source adapter
+    if(!this.source_adapters[file_path.split(".").pop()]){
+      // console.warn(`No source adapter found for file ${file_path}`);
+      return;
+    }
     return this.items[file_path] = new this.item_type(this.env, { path: file_path });
   }
 

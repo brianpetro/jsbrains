@@ -108,16 +108,16 @@ export class SmartEnv extends BaseSmartEnv {
     plugin.registerEvent(
       plugin.app.vault.on('create', (file) => {
         if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
-          this.smart_sources?.init_file_path(file.path);
-          this.smart_sources?.fs.include_file(file.path);
+          const source = this.smart_sources?.init_file_path(file.path);
+          if(source) this.smart_sources?.fs.include_file(file.path);
         }
       })
     );
     plugin.registerEvent(
       plugin.app.vault.on('rename', (file) => {
         if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
-          this.smart_sources?.init_file_path(file.path);
-          this.smart_sources?.fs.include_file(file.path);
+          const source = this.smart_sources?.init_file_path(file.path);
+          if(source) this.smart_sources?.fs.include_file(file.path);
         }
       })
     );
