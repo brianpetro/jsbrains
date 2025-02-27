@@ -82,12 +82,15 @@ export class SmartModel {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    const adapter_key = this.opts.model_config?.adapter
+    let adapter_key = this.opts.model_config?.adapter
       || this.opts.adapter
       || this.settings.adapter
       || Object.keys(this.adapters)[0]
     ;
-    if(!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
+    if(!adapter_key || !this.adapters[adapter_key]){
+      console.warn(`Platform "${adapter_key}" not supported`);
+      adapter_key = Object.keys(this.adapters)[0];
+    }
     return adapter_key;
   }
 
