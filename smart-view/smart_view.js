@@ -92,8 +92,8 @@ export class SmartView {
    * @param {string} path - The path to the value.
    * @returns {*}
    */
-  get_by_path(obj, path) { 
-    return get_by_path(obj, path); 
+  get_by_path(obj, path, settings_scope = null) { 
+    return get_by_path(obj, path, settings_scope); 
   }
 
   /**
@@ -102,8 +102,8 @@ export class SmartView {
    * @param {string} path - The path to set the value.
    * @param {*} value - The value to set.
    */
-  set_by_path(obj, path, value) { 
-    set_by_path(obj, path, value); 
+  set_by_path(obj, path, value, settings_scope = null) { 
+    set_by_path(obj, path, value, settings_scope); 
   }
 
   /**
@@ -111,8 +111,8 @@ export class SmartView {
    * @param {Object} obj - The object to modify.
    * @param {string} path - The path to delete.
    */
-  delete_by_path(obj, path) { 
-    delete_by_path(obj, path); 
+  delete_by_path(obj, path, settings_scope = null) { 
+    delete_by_path(obj, path, settings_scope); 
   }
 
   /**
@@ -256,9 +256,12 @@ export class SmartView {
  * @param {string} path 
  * @returns {*}
  */
-function get_by_path(obj, path) {
+function get_by_path(obj, path, settings_scope = null) {
   if (!path) return '';
   const keys = path.split('.');
+  if(settings_scope) {
+    keys.unshift(settings_scope);
+  }
   const finalKey = keys.pop();
   const instance = keys.reduce((acc, key) => acc && acc[key], obj);
   if (instance && typeof instance[finalKey] === 'function') {
@@ -273,8 +276,12 @@ function get_by_path(obj, path) {
  * @param {string} path 
  * @param {*} value 
  */
-function set_by_path(obj, path, value) {
+function set_by_path(obj, path, value, settings_scope = null) {
   const keys = path.split('.');
+  if(settings_scope) {
+    keys.unshift(settings_scope);
+  }
+  console.log('keys', keys);
   const final_key = keys.pop();
   const target = keys.reduce((acc, key) => {
     if (!acc[key] || typeof acc[key] !== 'object') {
@@ -290,8 +297,11 @@ function set_by_path(obj, path, value) {
  * @param {Object} obj 
  * @param {string} path 
  */
-function delete_by_path(obj, path) {
+function delete_by_path(obj, path, settings_scope = null) {
   const keys = path.split('.');
+  if(settings_scope) {
+    keys.unshift(settings_scope);
+  }
   const finalKey = keys.pop();
   const instance = keys.reduce((acc, key) => acc && acc[key], obj);
   if (instance) {

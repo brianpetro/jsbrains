@@ -111,12 +111,14 @@ export class SmartViewAdapter {
     elm.innerHTML = "";
     const path = elm.dataset.setting;
     const scope = opts.scope || this.main.main;
+    const settings_scope = opts.settings_scope || null;
     try {
-      let value = elm.dataset.value ?? this.main.get_by_path(scope.settings, path);
+      let value = elm.dataset.value ?? this.main.get_by_path(scope.settings, path, settings_scope);
+      // REMOVE THIS: Bad behavior (doesn't use defaults until settings is opened; should be handled by smart_env_config.default_settings)
       if (typeof value === 'undefined' && typeof elm.dataset.default !== 'undefined') {
         value = elm.dataset.default;
         if(typeof value === 'string') value = value.toLowerCase() === 'true' ? true : value === 'false' ? false : value;
-        this.main.set_by_path(scope.settings, path, value);
+        this.main.set_by_path(scope.settings, path, value, settings_scope);
       }
 
       const renderer = this.setting_renderers[elm.dataset.type];
@@ -125,7 +127,7 @@ export class SmartViewAdapter {
         return elm;
       }
 
-      const setting = renderer.call(this, elm, path, value, scope);
+      const setting = renderer.call(this, elm, path, value, scope, settings_scope);
 
       if (elm.dataset.name) setting.setName(elm.dataset.name);
       if (elm.dataset.description) {
@@ -143,7 +145,7 @@ export class SmartViewAdapter {
     }
   }
 
-  render_dropdown_component(elm, path, value, scope) {
+  render_dropdown_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     let options;
     if (elm.dataset.optionsCallback) {
@@ -164,7 +166,7 @@ export class SmartViewAdapter {
         opt.selected = (option.value === value);
       });
       dropdown.onChange((value) => {
-        this.handle_on_change(path, value, elm, scope);
+        this.handle_on_change(path, value, elm, scope, settings_scope);
       });
       dropdown.setValue(value);
     });
@@ -172,7 +174,7 @@ export class SmartViewAdapter {
     return smart_setting;
   }
 
-  render_text_component(elm, path, value, scope) {
+  render_text_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addText(text => {
       text.setPlaceholder(elm.dataset.placeholder || "");
@@ -186,14 +188,14 @@ export class SmartViewAdapter {
       } else {
         text.onChange(async (value) => {
           clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => this.handle_on_change(path, value.trim(), elm, scope), 2000);
+          debounceTimer = setTimeout(() => this.handle_on_change(path, value.trim(), elm, scope, settings_scope), 2000);
         });
       }
     });
     return smart_setting;
   }
 
-  render_password_component(elm, path, value, scope ) {
+  render_password_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addText(text => {
       text.inputEl.type = "password";
@@ -202,13 +204,13 @@ export class SmartViewAdapter {
       let debounceTimer;
       text.onChange(async (value) => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope), 2000);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope, settings_scope), 2000);
       });
     });
     return smart_setting;
   }
 
-  render_number_component(elm, path, value, scope) {
+  render_number_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addText(number => {
       number.inputEl.type = "number";
@@ -219,13 +221,13 @@ export class SmartViewAdapter {
       let debounceTimer;
       number.onChange(async (value) => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.handle_on_change(path, parseInt(value), elm, scope), 2000);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, parseInt(value), elm, scope, settings_scope), 2000);
       });
     });
     return smart_setting;
   }
 
-  render_toggle_component(elm, path, value, scope) {
+  render_toggle_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addToggle(toggle => {
       let checkbox_val = value ?? false;
@@ -233,12 +235,12 @@ export class SmartViewAdapter {
         checkbox_val = checkbox_val.toLowerCase() === 'true';
       }
       toggle.setValue(checkbox_val);
-      toggle.onChange(async (value) => this.handle_on_change(path, value, elm, scope));
+      toggle.onChange(async (value) => this.handle_on_change(path, value, elm, scope, settings_scope));
     });
     return smart_setting;
   }
 
-  render_textarea_component(elm, path, value, scope) {
+  render_textarea_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addTextArea(textarea => {
       textarea.setPlaceholder(elm.dataset.placeholder || "");
@@ -246,12 +248,12 @@ export class SmartViewAdapter {
       let debounceTimer;
       textarea.onChange(async (value) => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope), 2000);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope, settings_scope), 2000);
       });
     });
     return smart_setting;
   }
-  render_textarea_array_component(elm, path, value, scope) {
+  render_textarea_array_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addTextArea(textarea => {
       textarea.setPlaceholder(elm.dataset.placeholder || "");
@@ -260,13 +262,13 @@ export class SmartViewAdapter {
       textarea.onChange(async (value) => {
         value = value.split("\n").map(v => v.trim()).filter(v => v);
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope), 2000);
+        debounceTimer = setTimeout(() => this.handle_on_change(path, value, elm, scope, settings_scope), 2000);
       });
     });
     return smart_setting;
   }
 
-  render_button_component(elm, path, value, scope) {
+  render_button_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addButton(button => {
       button.setButtonText(elm.dataset.btnText || elm.dataset.name);
@@ -275,29 +277,29 @@ export class SmartViewAdapter {
         if (elm.dataset.href) this.open_url(elm.dataset.href);
         if (elm.dataset.callback) {
           const callback = this.main.get_by_path(scope, elm.dataset.callback);
-          if (callback) callback(path, value, elm, scope);
+          if (callback) callback(path, value, elm, scope, settings_scope);
         }
       });
     });
     return smart_setting;
   }
 
-  render_remove_component(elm, path, value, scope) {
+  render_remove_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addButton(button => {
       button.setButtonText(elm.dataset.btnText || elm.dataset.name || "Remove");
       button.onClick(async () => {
-        this.main.delete_by_path(scope.settings, path);
+        this.main.delete_by_path(scope.settings, path, settings_scope);
         if (elm.dataset.callback) {
           const callback = this.main.get_by_path(scope, elm.dataset.callback);
-          if (callback) callback(path, value, elm, scope);
+          if (callback) callback(path, value, elm, scope, settings_scope);
         }
       });
     });
     return smart_setting;
   }
 
-  render_folder_select_component(elm, path, value, scope) {
+  render_folder_select_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addFolderSelect(folder_select => {
       folder_select.setPlaceholder(elm.dataset.placeholder || "");
@@ -307,26 +309,26 @@ export class SmartViewAdapter {
       });
       folder_select.inputEl.querySelector('input').addEventListener('change', (e) => {
         const folder = e.target.value;
-        this.handle_on_change(path, folder, elm, scope);
+        this.handle_on_change(path, folder, elm, scope, settings_scope);
         console.log('folder changed', folder);
       });
     });
     return smart_setting;
   }
 
-  render_file_select_component(elm, path, value, scope) {
+  render_file_select_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addFileSelect(file_select => {
       file_select.setPlaceholder(elm.dataset.placeholder || "");
       if (value) file_select.setValue(value);
       file_select.inputEl.closest('div').addEventListener("click", () => {
-        this.handle_file_select(path, value, elm, scope);
+        this.handle_file_select(path, value, elm, scope, settings_scope);
       });
     });
     return smart_setting;
   }
 
-  render_slider_component(elm, path, value, scope) {
+  render_slider_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     smart_setting.addSlider(slider => {
       const min = parseFloat(elm.dataset.min) || 0;
@@ -337,7 +339,7 @@ export class SmartViewAdapter {
       slider.setValue(currentValue);
       slider.onChange(newVal => {
         const numericVal = parseFloat(newVal);
-        this.handle_on_change(path, numericVal, elm, scope);
+        this.handle_on_change(path, numericVal, elm, scope, settings_scope);
       });
     });
     return smart_setting;
@@ -393,7 +395,7 @@ export class SmartViewAdapter {
     }, []);
   }
 
-  handle_on_change(path, value, elm, scope) {
+  handle_on_change(path, value, elm, scope, settings_scope) {
     this.pre_change(path, value, elm, scope);
     if(elm.dataset.validate){
       const valid = this[elm.dataset.validate](path, value, elm, scope);
@@ -403,7 +405,7 @@ export class SmartViewAdapter {
         return;
       }
     }
-    this.main.set_by_path(scope.settings, path, value);
+    this.main.set_by_path(scope.settings, path, value, settings_scope);
     if(elm.dataset.callback){
       const callback = this.main.get_by_path(scope, elm.dataset.callback);
       if(callback) callback(path, value, elm, scope);
