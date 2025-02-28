@@ -252,4 +252,10 @@ export class SmartFsObsidianAdapter {
     return this.obsidian_adapter.basePath;
   }
 
+  get_full_path(rel_path='') {
+    // detect / or \ and use that as the separator
+    const sep = rel_path.includes('/') ? '/' : '\\';
+    return this.get_base_path() + sep + rel_path;
+  }
+
 }

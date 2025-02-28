@@ -302,4 +302,8 @@ export class NodeFsSmartFsAdapter {
   get_base_path() {
     return path.resolve(this.smart_fs.fs_path);
   }
+
+  get_full_path(rel_path='') {
+    return path.resolve(this.get_base_path(), rel_path);
+  }
 }
