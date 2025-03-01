@@ -153,7 +153,7 @@ export class SmartNotices {
     const content_fragment = this._build_fragment(normalized_id, derived.text, derived);
 
     // If already active, update
-    if (this.active[normalized_id]?.noticeEl?.parentElement) {
+    if (this.active[normalized_id]?.noticeEl?.isConnected) {
       return this.active[normalized_id].setMessage(content_fragment, derived.timeout);
     }
 
