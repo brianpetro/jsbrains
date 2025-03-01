@@ -22,7 +22,6 @@
 import { render as settings_template } from './components/settings.js';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { deep_merge } from './utils/deep_merge.js';
-import { deep_remove_exclusive_props } from './utils/deep_remove_exclusive_props.js';
 import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
@@ -43,8 +42,8 @@ export class SmartEnv {
    */
   static version = 2.11;
   scope_name = 'smart_env';
-  static global_ref = (typeof window !== 'undefined' ? window : global);
-  global_ref = (typeof window !== 'undefined' ? window : global);
+  static global_ref = get_global_ref();
+  global_ref = this.constructor.global_ref;
   constructor(opts = {}) {
     this.state = 'init';
     this._components = {};
@@ -179,9 +178,7 @@ export class SmartEnv {
    */
   static create_env_getter(instance_to_receive_getter) {
     Object.defineProperty(instance_to_receive_getter, 'env', {
-      get: function() {
-        return (typeof window !== 'undefined' ? window : global).smart_env;
-      },
+      get: () => this.global_env,
       // configurable: true
     });
   }
@@ -398,13 +395,6 @@ export class SmartEnv {
   get global_prop() {
     return this.opts.global_prop ?? 'smart_env';
   }
-  get global_ref() {
-    return (
-      this.opts.global_ref ??
-      (typeof window !== 'undefined' ? window : global) ??
-      {}
-    );
-  }
 
   get item_types() {
     return this.opts.item_types;
@@ -548,4 +538,20 @@ export class SmartEnv {
   get plugin() {
     return this.main;
   }
+}
+function get_global_ref() {
+  if(typeof document !== 'undefined' && document.window){
+    console.log('using document.window');
+    return document.window;
+  }
+  if(typeof window !== 'undefined') {
+    console.log('using window');
+    return window;
+  }
+  if(typeof global?.window !== 'undefined') {
+    console.log('using global.window');
+    return global.window;
+  }
+  console.log('using global');
+  return global;
 }
