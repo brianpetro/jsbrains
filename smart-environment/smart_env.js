@@ -40,7 +40,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.11;
+  static version = 2.12;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -118,7 +118,7 @@ export class SmartEnv {
     return new Promise((resolve) => {
       if (opts.main) {
         const interval = setInterval(() => {
-          if (this.global_env && this.global_env.mains.includes(opts.main)) {
+          if (this.global_env && this.global_env[opts.main]) {
             clearInterval(interval);
             resolve(this.global_env);
           }

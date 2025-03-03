@@ -1,3 +1,8 @@
+import { 
+  Notice,
+  Platform,
+  TFile,
+} from 'obsidian';
 import { SmartEnv as BaseSmartEnv } from './smart_env.js';
 import { SmartFs } from 'smart-file-system';
 import { SmartFsObsidianAdapter } from 'smart-file-system/adapters/obsidian.js';
@@ -6,7 +11,6 @@ import { SmartViewObsidianAdapter } from 'smart-view/adapters/obsidian.js';
 // import { SmartNotices } from "../../sc-obsidian/src/smart_notices.js";
 // import { Notice } from "obsidian";
 import { merge_env_config } from './utils/merge_env_config.js';
-import { TFile } from 'obsidian';
 import { SmartSources, SmartSource } from 'smart-sources';
 import { AjsonMultiFileSourcesDataAdapter } from "smart-sources/adapters/data/ajson_multi_file.js";
 import { ObsidianMarkdownSourceContentAdapter } from "smart-sources/adapters/obsidian_markdown.js";
@@ -18,7 +22,6 @@ import smart_block from "smart-blocks/smart_block.js";
 import smart_source from "smart-sources/smart_source.js";
 import { parse_blocks } from "smart-blocks/content_parsers/parse_blocks.js";
 import { SmartNotices } from "smart-notices/smart_notices.js"; // TODO: move to jsbrains
-import { Notice } from "obsidian";
 
 const OBSIDIAN_DEFAULTS = {
   env_path: '',
@@ -101,7 +104,19 @@ export class SmartEnv extends BaseSmartEnv {
     const opts = merge_env_config(main_env_opts, OBSIDIAN_DEFAULTS);
     return await super.create(plugin, opts);
   }
+  get notices() {
+    if(!this._notices) this._notices = new SmartNotices(this, Notice);
+    return this._notices;
+  }
+  manual_load() {
+    this.manual_load = true;
+    
+  }
   async load() {
+    if(Platform.isMobile && !this.manual_load){
+      this.notices.show('load_env');
+      return;
+    }
     await super.load();
     // register event listeners for file changes after load
     const plugin = this.main;
