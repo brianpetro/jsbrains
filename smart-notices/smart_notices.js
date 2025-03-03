@@ -10,7 +10,6 @@
 
 import { setIcon } from 'obsidian';
 import { NOTICES } from './notices.js';
-import { SmartEnv } from 'smart-environment';
 
 /**
  * Ensures each notice in NOTICES has a `.create(opts)` method.
@@ -26,7 +25,7 @@ import { SmartEnv } from 'smart-environment';
  *
  * That object is used by SmartNotices to build & render the final notice.
  */
-export function define_default_create_methods(notices, scope=null) {
+export function define_default_create_methods(notices) {
   for (const key of Object.keys(notices)) {
     const notice_obj = notices[key];
     if (typeof notice_obj.create !== 'function') {
@@ -79,19 +78,21 @@ export class SmartNotices {
   /**
    * @param {Object} scope - The main plugin instance
    */
-  constructor(scope, adapter=null) {
-    this.scope = scope;
-    this.main = scope; // legacy alias
-    SmartEnv.create_env_getter(this); // sets this.env
+  constructor(env, adapter=null) {
+    this.env = env;
+    this.env.create_env_getter(this); // sets this.env
     this.active = {};
     this.adapter = adapter || this.env.config.modules.smart_notices.adapter;
     // Make sure each notice entry has a .create() method
-    define_default_create_methods(NOTICES, scope);
+    define_default_create_methods(NOTICES);
   }
 
   /** plugin settings for notices (muted, etc.) */
   get settings() {
-    return this.env?.settings?.smart_notices || {};
+    if(!this.env?.settings?.smart_notices) {
+      this.env.settings.smart_notices = {};
+    }
+    return this.env?.settings?.smart_notices;
   }
 
   /**
@@ -111,12 +112,6 @@ export class SmartNotices {
     } else {
       opts = opts || {};
     }
-
-    // If no explicit scope is passed, default to this.main
-    if (!opts.scope) {
-      opts.scope = this.main;
-    }
-
     const normalized_id = this._normalize_notice_key(id);
 
     // If notice is muted, skip
@@ -140,7 +135,7 @@ export class SmartNotices {
 
     // If we have a notice entry, let its .create(opts) override
     if (notice_entry?.create) {
-      const result = notice_entry.create({ ...opts, scope: this.main });
+      const result = notice_entry.create({ ...opts });
       // if user provided a direct message, override the text from create():
       derived.text = message || result.text;
       derived.timeout = result.timeout;
@@ -183,7 +178,7 @@ export class SmartNotices {
     const frag = document.createDocumentFragment();
     frag.createEl('p', {
       cls: 'sc-notice-head',
-      text: `[Smart Connections v${this.main.manifest.version}]`
+      text: `[Smart Env v${this.env.constructor.version}]`
     });
 
     const content = frag.createEl('p', { cls: 'sc-notice-content', text });
@@ -218,7 +213,7 @@ export class SmartNotices {
         e.preventDefault();
         e.stopPropagation();
       }
-      btnConfig.callback?.(this.main);
+      btnConfig.callback?.(this.env);
     });
     container.appendChild(btn);
   }
