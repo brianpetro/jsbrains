@@ -235,8 +235,11 @@ export class SmartSources extends SmartEntities {
     ;
     if(params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
     let results = await super.lookup(params);
+    if(results.error) {
+      console.warn(results.error);
+      return [];
+    }
     if(this.block_collection?.settings?.embed_blocks) {
-      console.log("lookup block_collection");
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
