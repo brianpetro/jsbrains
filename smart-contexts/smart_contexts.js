@@ -1,14 +1,11 @@
 /**
  * @file smart_contexts.js
  *
- * @description
- * Provides the SmartContexts collection class. Extends `Collection` from smart-collections,
- * manages multiple SmartContext items, merges default settings, and includes logic
- * for backward compatibility with older settings fields (e.g., before_context -> templates[-1].before).
+ * Manages a collection of SmartContext items. Also provides a compile_adapters map
+ * so each SmartContext can choose which adapter to use when building a final output.
  */
 
 import { Collection } from 'smart-collections';
-import { SmartContext } from './smart_context.js';
 
 /**
  * @class SmartContexts
@@ -27,7 +24,7 @@ export class SmartContexts extends Collection {
       link_depth: 0,
       inlinks: false,
       excluded_headings: [],
-      max_len: 0, // 0 means no enforced limit
+      max_len: 0, // 0 => no enforced limit
       templates: {
         '-1': { before: '', after: '' },
         '0': { before: '', after: '' },
@@ -37,10 +34,6 @@ export class SmartContexts extends Collection {
     };
   }
 
-  /**
-   * Runs after the collection is constructed or loaded. Ensures backwards
-   * compatibility with older fields like `before_context`, `after_context`, etc.
-   */
   async init() {
     // TEMP: for backwards compatibility 2025-02-18
     // copy old settings to new format
@@ -48,6 +41,8 @@ export class SmartContexts extends Collection {
     if (!this.settings.templates['-1']) this.settings.templates['-1'] = {};
     if (!this.settings.templates['0']) this.settings.templates['0'] = {};
     if (!this.settings.templates['1']) this.settings.templates['1'] = {};
+
+    // Migrate older fields to templates if found
     Object.entries(this.settings).forEach(([key, value]) => {
       if (key === 'before_context' && value) {
         this.settings.templates['-1'].before = value;
@@ -71,18 +66,17 @@ export class SmartContexts extends Collection {
     });
   }
 
-  /**
-   * The item type used by this collection (SmartContext).
-   * @readonly
-   */
-  get item_type() {
-    return SmartContext;
+
+  get compile_adapters() {
+    if (!this._compile_adapters) {
+      this._compile_adapters = {};
+      Object.values(this.opts.compile_adapters || {}).forEach((cls) => {
+        this._compile_adapters[cls.adapter_key] = cls;
+      });
+    }
+    return this._compile_adapters;
   }
 
-  /**
-   * Renders a settings configuration for this collection.
-   * Extend or override to provide dynamic settings or additional fields.
-   */
   get settings_config() {
     return {
       inlinks: {

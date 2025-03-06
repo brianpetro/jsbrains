@@ -1,24 +1,16 @@
 /**
  * @file smart_context.js
  *
- * @description
  * A single SmartContext item that references multiple data sources (files, blocks, directories, etc.)
- * to compile a final contextual string. The actual snapshot-building logic is in `utils/snapshot.js`,
- * while the final compile step is done in `utils/compiler.js`.
+ * to compile a final contextual output. Actual compilation is now handled by adapters in ./adapters/.
  */
 
 import { CollectionItem } from 'smart-collections';
-// import { build_snapshot } from './utils/snapshot.js';
 import { get_snapshot } from './utils/get_snapshot.js';
-import { compile_snapshot } from './utils/compiler.js';
-import { murmur_hash_32_alphanumeric } from './utils/create_hash.js';
 import { merge_context_opts } from './utils/merge_context_opts.js';
+import { murmur_hash_32_alphanumeric } from './utils/create_hash.js';
 
 export class SmartContext extends CollectionItem {
-  /**
-   * Default data structure for a new SmartContext.
-   * @static
-   */
   static get defaults() {
     return {
       data: {
@@ -38,25 +30,31 @@ export class SmartContext extends CollectionItem {
    */
   async get_snapshot(opts = {}) {
     const merged_opts = merge_context_opts(this, opts);
-    // Only method allowed to pass the item directly to the utils
     return await get_snapshot(this, merged_opts);
   }
 
   /**
    * compile
-   * Re-checks `max_len` if needed for final output.
+   * Delegates to a compile adapter from this.collection.compile_adapters.
+   * By default uses the 'default' adapter unless opts.adapter_key is given.
    * @async
    * @param {object} [opts={}]
-   * @returns {Promise<{context: string, stats: object}>}
+   * @returns {Promise<object|string>} Typically {context, stats} from the template adapter
    */
   async compile(opts = {}) {
-    const context_snapshot = await this.get_snapshot(opts);
-    // We pass only the snapshot + merged options (not the item itself).
-    // The specs require the compiler not to accept a context_item instance.
-    const merged_opts = merge_context_opts(this, opts);
-    return await compile_snapshot(context_snapshot, merged_opts);
+    const adapter_key = opts.adapter_key || 'default';
+    const adapter_class = this.collection.compile_adapters[adapter_key];
+    if (!adapter_class) {
+      throw new Error(`SmartContext: Compile adapter not found: ${adapter_key}`);
+    }
+    const adapter = new adapter_class(this);
+    return adapter.compile(opts);
   }
 
+  /**
+   * @method get_ref
+   * Looks up a reference in the environment. Distinguishes block vs source by '#' presence.
+   */
   get_ref(key) {
     const collection = key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
     return collection.get(key);
