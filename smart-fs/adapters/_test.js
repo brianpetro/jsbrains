@@ -17,7 +17,11 @@ export class SmartFsTestAdapter {
 
   get_file(file_path) {
     const file = {};
-    file.path = file_path.replace(/^\//, ''); // remove leading slash
+    file.path = file_path
+      .replace(/\\/g, '/') // normalize slashes
+      .replace(this.smart_fs.fs_path, '') // remove fs_path
+      .replace(/^\//, '') // remove leading slash
+    ;
     file.type = 'file';
     file.extension = file.path.split('.').pop().toLowerCase();
     file.name = file.path.split('/').pop();

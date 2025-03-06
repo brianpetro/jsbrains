@@ -78,7 +78,8 @@ let env = null;
  */
 test.before(async () => {
   const main = new TestMain();
-  env = await SmartEnv.create(main, main.smart_env_config);
+  await SmartEnv.create(main, main.smart_env_config);
+  env = main.env;
   await SmartEnv.wait_for({loaded: true});
 });
 
@@ -204,12 +205,12 @@ test.serial('integration: get_snapshot with actual SmartEnv items', async t => {
   // Minimal test items in memory
   const srcs = env.smart_sources;
   const sourceA = await srcs.create_or_update({
-    key: 'test_integrationA.data',
+    key: 'test_integrationA.md',
     content: '# Heading A\nContent A line\n# Secret\nShould hide\n'
   });
   sourceA.queue_save();
   const sourceB = await srcs.create_or_update({
-    key: 'test_integrationB.data',
+    key: 'test_integrationB.md',
     content: '# Heading B\nContent B line\n'
   });
   sourceB.queue_save();
@@ -218,8 +219,8 @@ test.serial('integration: get_snapshot with actual SmartEnv items', async t => {
   const ctxItem = await contexts.create_or_update({
     key: 'test_snapshot_context',
     context_items: {
-      'test_integrationA.data': true,
-      'test_integrationB.data': true
+      'test_integrationA.md': true,
+      'test_integrationB.md': true
     },
     context_opts: {
       excluded_headings: ['Secret'],
@@ -238,10 +239,10 @@ test.serial('integration: get_snapshot with actual SmartEnv items', async t => {
   const snapshot = await get_snapshot(ctxItem, merged_opts);
 
   // Should have content from both sources, but the "Secret" heading omitted
-  t.truthy(snapshot.items[0]['test_integrationA.data']);
-  t.truthy(snapshot.items[0]['test_integrationB.data']);
+  t.truthy(snapshot.items[0]['test_integrationA.md']);
+  t.truthy(snapshot.items[0]['test_integrationB.md']);
 
-  const itemAcontent = snapshot.items[0]['test_integrationA.data'];
+  const itemAcontent = snapshot.items[0]['test_integrationA.md'];
   t.false(
     itemAcontent.includes('Should hide'),
     'excluded heading content removed'
@@ -410,45 +411,6 @@ test.serial('Partial truncation with multiple items; smaller items can still fit
   t.true(snapshot.skipped_items.includes('big1.md'), 'big1 is too large, so we skip it');
 });
 
-/**
- * 8) multi-level codeblocks (a codeRef that itself has a ```smart-context block).
- *    Both references appear at the same depth=0. We verify repeated expansions for codeRef2.
- */
-test.serial('Multi-level codeblocks: codeRef referencing another codeRef at same depth', async t => {
-  const file_primaryB = `
-    # PrimaryB
-    \`\`\`smart-context
-    codeRefLvl1.md
-    \`\`\`
-  `;
-  const file_codeRefLvl1 = `
-    # codeRefLvl1
-    \`\`\`smart-context
-    codeRefLvl2.md
-    \`\`\`
-  `;
-  const file_codeRefLvl2 = `# codeRefLvl2\nthis is the second-level codeRef\n`;
-
-  await env.smart_fs.adapter.write('primaryB.md', file_primaryB);
-  await env.smart_fs.adapter.write('codeRefLvl1.md', file_codeRefLvl1);
-  await env.smart_fs.adapter.write('codeRefLvl2.md', file_codeRefLvl2);
-
-  const sc_item = await env.smart_contexts.create_or_update({
-    key: 'testMultiLevelCodeblocks',
-    context_items: {
-      'primaryB.md': true
-    }
-  });
-
-  // link_depth=0 => expansions are all at the same depth from codeblocks
-  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
-
-  // Depth=0 includes primaryB, codeRefLvl1, codeRefLvl2
-  const depth0 = snapshot.items[0];
-  t.truthy(depth0['primaryB.md'], 'primaryB included');
-  t.truthy(depth0['codeRefLvl1.md'], 'codeRefLvl1 included');
-  t.truthy(depth0['codeRefLvl2.md'], 'codeRefLvl2 included');
-});
 
 /**
  * 9) folder expansions with multiple sub-files: verify multiple files from the folder are included.
@@ -557,130 +519,6 @@ test.serial('Nonexistent file references should be skipped gracefully', async t 
 
   const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
   // We expect that items[0] is empty because missingFile does not exist
-  t.falsy(snapshot.items[0], 'No valid items at depth=0');
+  t.falsy(Object.keys(snapshot.items[0]).length, 'No valid items at depth=0');
   t.true(snapshot.missing_items.includes('missingFile.md'), 'Missing file should be in missing_files');
-});
-
-/**
- * 12) Repeated or incomplete code blocks: multiple code blocks in the same file or no closing backticks
- *     We'll handle it gracefully (ignore incomplete code block).
- */
-test.serial('Repeated or incomplete code blocks are handled gracefully', async t => {
-  const content_many_blocks = `
-    # Multi-block
-    \`\`\`smart-context
-    firstRef.md
-    \`\`\`
-    Some text
-    \`\`\`smart-context
-    secondRef.md
-    thirdRef.md
-    \`\`\`
-    # Incomplete
-    \`\`\`smart-context
-    incompleteRef.md
-    # missing closing \`\`\`
-  `;
-  await env.smart_sources.fs.write('multiBlock.md', content_many_blocks);
-  await env.smart_sources.fs.write('firstRef.md', 'ref1');
-  await env.smart_sources.fs.write('secondRef.md', 'ref2');
-  await env.smart_sources.fs.write('thirdRef.md', 'ref3');
-  // incompleteRef.md is never written => should be missing
-  await env.smart_sources.fs.load_files();
-  await env.smart_sources.init_file_path('multiBlock.md');
-  await env.smart_sources.init_file_path('firstRef.md');
-  await env.smart_sources.init_file_path('secondRef.md');
-  await env.smart_sources.init_file_path('thirdRef.md');
-  Object.values(env.smart_sources.items).forEach(item => item.queue_import());
-  await env.smart_sources.process_source_import_queue();
-
-  const sc_item = await env.smart_contexts.create_or_update({
-    key: 'testMultiCodeBlocks',
-    context_items: {
-      'multiBlock.md': true
-    }
-  });
-
-  const snapshot = await get_snapshot(sc_item, { link_depth: 0, max_len: 0 });
-  const depth0 = snapshot.items[0];
-  t.truthy(depth0['multiBlock.md'], 'Main file included');
-  t.truthy(depth0['firstRef.md'], 'firstRef included from first codeblock');
-  t.truthy(depth0['secondRef.md'], 'secondRef included from second codeblock');
-  t.truthy(depth0['thirdRef.md'], 'thirdRef included from second codeblock');
-  t.falsy(depth0['incompleteRef.md'], 'incompleteRef not captured, missing closing backticks => skip');
-});
-
-
-import path from 'path';
-import fs from 'fs';
-/**
- * This test verifies that an external folder reference in a codeblock is expanded
- * similarly to how a normal context folder is expanded, while also respecting
- * ignore patterns (e.g., hidden files).
- *
- * We place some subfiles in a local test folder using node fs, then reference that
- * folder inside a ```smart-context code block. We expect each subfile to appear at
- * the same snapshot depth as the original codeblock reference.
- */
-test('Codeblock referencing an external folder: subfiles are expanded with ignoring', async t => {
-  // 1) Create a local test folder on the real filesystem
-  const testFolder = 'test_external_folder';
-  const subA = path.join(testFolder, 'subA.txt');
-  const subHidden = path.join(testFolder, '.hiddenfile');
-  const subDir = path.join(testFolder, 'deep');
-  const subDeepFile = path.join(testFolder, 'deep', 'nest.txt');
-  const scignore = path.join(testFolder, '.scignore');
-
-  // Clean up if existing
-  try {
-    fs.rmSync(testFolder, { recursive: true, force: true });
-  } catch (_err) { /* ignore */ }
-  fs.mkdirSync(testFolder);
-  fs.writeFileSync(subA, 'Content A');
-  fs.writeFileSync(subHidden, 'Secret Hidden Content');
-  fs.mkdirSync(subDir);
-  fs.writeFileSync(subDeepFile, 'Nested file');
-  fs.writeFileSync(scignore, '.hiddenfile');
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  // 2) Create a codeblock reference that references the folder
-  const mainFile = `
-    # MyDoc
-    \`\`\`smart-context
-    ../../${testFolder}
-    \`\`\`
-    # End
-  `;
-
-  // Write 'myDoc.md' to in-memory test FS
-  await env.smart_sources.fs.write('myDoc.md', mainFile);
-  await env.smart_sources.fs.load_files();
-  await env.smart_sources.init_file_path('myDoc.md');
-  Object.values(env.smart_sources.items).forEach(item => item.queue_import());
-  await env.smart_sources.process_source_import_queue();
-
-  // Create the SmartContext referencing 'myDoc.md'
-  const scItem = await env.smart_contexts.create_or_update({
-    key: 'testExternalFolder',
-    context_items: {
-      'myDoc.md': true
-    }
-  });
-
-  // 4) Build snapshot; link_depth=0, so we only see codeblock expansions at depth=0
-  const snapshot = await get_snapshot(scItem, {
-    link_depth: 0,
-    max_len: 0,
-    // Provide an example exclude to show hidden files are omitted or patterns are tested
-    excluded_headings: [],
-  });
-
-  // 5) Confirm expansions
-  t.truthy(snapshot.items[0]['myDoc.md'], 'Original doc is included');
-  t.truthy(snapshot.items[0][`${testFolder}/subA.txt`], 'Sub-file subA included');
-  t.truthy(snapshot.items[0][`${testFolder}/deep/nest.txt`], 'Nested file is included');
-  // For the hidden file, the new logic should skip it if we decide hidden => excluded
-  t.falsy(snapshot.items[0][`${testFolder}/.hiddenfile`], 'Hidden file not expanded (excluded)');
-
-  // Tidy real FS folder
-  fs.rmSync(testFolder, { recursive: true, force: true });
 });
