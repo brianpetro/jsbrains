@@ -302,7 +302,10 @@ export class Collection {
    * Retrieves the item type (constructor) from the environment.
    * @returns {Function} Item constructor.
    */
-  get item_type() { return this.env.item_types[this.item_class_name]; }
+  get item_type() {
+    if(this.opts.item_type) return this.opts.item_type; // somewhat improved handling (future: config.items)
+    return this.env.item_types[this.item_class_name]; // DEPRECATED item_types config
+  }
 
   /**
    * Returns an array of all keys in the collection.

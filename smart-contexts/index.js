@@ -8,7 +8,8 @@ export const smart_contexts_default_config = {
   data_adapter: AjsonSingleFileCollectionDataAdapter,
   compile_adapters: {
     DefaultContextCompileAdapter,
-  }
+  },
+  item_type: SmartContext,
 }
 
 export {
