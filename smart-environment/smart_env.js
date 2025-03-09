@@ -26,6 +26,7 @@ import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
+import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 
 /**
  * @class SmartEnv
@@ -201,7 +202,16 @@ export class SmartEnv {
   async init_collections(config = this.config) {
     for (const key of Object.keys(config.collections || {})) {
       const _class = config.collections[key]?.class;
-      if (typeof _class?.init !== 'function') continue; // skip if not a class or no init
+      if (!_class) continue;
+      if (_class.default_settings) {
+        deep_merge_no_overwrite(
+          this.settings,
+          {
+            [key]: _class.default_settings
+          }
+        );
+      }
+      if (typeof _class.init !== 'function') continue; // skip if not a class or no init
       await _class.init(this, { ...config.collections[key] });
       this.collections[key] = 'init';
     }
