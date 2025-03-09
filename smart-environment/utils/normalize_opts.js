@@ -10,6 +10,7 @@ import { camel_case_to_snake_case } from "./camel_case_to_snake_case.js";
 export function normalize_opts(opts) {
   if (!opts.collections) opts.collections = {};
   if (!opts.modules) opts.modules = {};
+  if (!opts.items) opts.items = {};
 
   Object.entries(opts.collections).forEach(([key, val]) => {
     if (typeof val === 'function') {
@@ -21,6 +22,11 @@ export function normalize_opts(opts) {
       delete opts.collections[key];
     }
     if(!opts.collections[new_key].collection_key) opts.collections[new_key].collection_key = new_key;
+    if(val.item_type){
+      opts.items[camel_case_to_snake_case(val.item_type.name)] = {
+        class: val.item_type,
+      };
+    }
   });
   Object.entries(opts.modules).forEach(([key, val]) => {
     if (typeof val === 'function') {
