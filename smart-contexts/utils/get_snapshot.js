@@ -5,6 +5,7 @@ export async function get_snapshot(context_item, opts) {
     truncated_items: [],
     skipped_items: [],
     missing_items: [],
+    images: [],
     char_count: opts.items ? Object.values(opts.items).reduce((acc, i) => acc + i.char_count, 0) : 0,
   };
   const keys_at_depth = {};
@@ -57,6 +58,13 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       const item = context_item.get_ref(file.path);
       if(item) {
         source_items.push(item);
+      }else{
+        const image_exts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico'];
+        if(image_exts.some(ext => file.path.endsWith(`.${ext}`))) {
+          snapshot.images.push(file.path);
+        }else{
+          snapshot.missing_items.push(file.path);
+        }
       }
     }
   }

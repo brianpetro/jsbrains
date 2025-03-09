@@ -122,7 +122,8 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
 
   return {
     context: final_context.trim(),
-    stats
+    stats,
+    images: context_snapshot.images
   };
 }
 
