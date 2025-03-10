@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.12;
+  static version = 2.13;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -50,6 +50,7 @@ export class SmartEnv {
     this._components = {};
     this.collections = {};
     this.load_timeout = null;
+    if(opts.primary_main_key) this.primary_main_key = opts.primary_main_key;
   }
   /**
    * Returns the config object for the SmartEnv instance.
@@ -58,7 +59,15 @@ export class SmartEnv {
   get config() {
     if(!this._config) {
       this._config = {};
-      for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
+      const sorted_configs = Object.entries(this.smart_env_configs)
+        // if primary_main_key is set, move it to the front (uses those modules when they appear in multiple configs)
+        .sort(([main_key, {main, opts}]) => {
+          if(!this.primary_main_key) return 0;
+          if(main_key === this.primary_main_key) return -1;
+          return 0;
+        })
+      ;
+      for(const [main_key, {main, opts}] of sorted_configs){
         if(!main){
           console.warn(`SmartEnv: '${main_key}' has been unloaded, skipping inclusion in smart_env`);
           delete this.smart_env_configs[main_key];
@@ -156,7 +165,11 @@ export class SmartEnv {
     }
     this.add_main(main, main_env_opts);
     if(this.should_reload){
-      this.global_env = new this();
+      const opts = {};
+      if(this.global_env && this.version > this.global_env.constructor.version){
+        opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
+      }
+      this.global_env = new this(opts);
       await this.global_env.fs.load_files(); // skip exclusions; detect env_data_dir
       await SmartSettings.create(this.global_env);
     }
