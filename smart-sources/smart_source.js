@@ -400,16 +400,8 @@ export class SmartSource extends SmartEntity {
    * @returns {string} The file type in lowercase.
    */
   get file_type() {
-    if(!this._ext) {
-      const pcs = this.data.path?.split(".");
-      pcs.shift();
-      while(pcs.length){
-        const ext = pcs.join(".").toLowerCase();
-        if(this.source_adapters[ext]) return ext;
-        pcs.shift();
-      }
-      // fallback to last extension
-      this._ext = this.data.path?.split(".").pop() || 'md';
+    if (!this._ext) {
+      this._ext = this.collection.get_extension_for_path(this.path) || 'md'; 
     }
     return this._ext;
   }

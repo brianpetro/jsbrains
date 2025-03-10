@@ -35,33 +35,68 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Initializes items by setting up the file system and loading sources.
+   * Initializes items by letting each adapter do any necessary file-based scanning.
+   * Adapters that do not rely on file scanning can skip or do nothing.
    * @async
    * @returns {Promise<void>}
    */
   async init_items() {
-    for(const AdapterClass of Object.values(this.source_adapters)){
-      if(AdapterClass.init_items) await AdapterClass.init_items(this);
+    for (const AdapterClass of Object.values(this.source_adapters)) {
+      if (typeof AdapterClass.init_items === 'function') {
+        // Sub-classes can store a timestamp in 'collection.fs_items_initialized' or similarly to skip if done
+        await AdapterClass.init_items(this);
+      }
     }
-    
     this.notices?.remove('initial_scan');
     this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
   }
 
   /**
-   * Initializes a file path by creating a new SmartSource instance.
-   * @param {string} file_path - The path of the file to initialize.
-   * @returns {SmartSource} The initialized SmartSource instance.
+   * Creates (or returns existing) a SmartSource for a given file path, if the extension is recognized.
+   * @param {string} file_path - The path to the file or pseudo-file
+   * @returns {SmartSource|undefined} The newly created or existing SmartSource, or undefined if no recognized extension
    */
-  init_file_path(file_path){
-    // Skip files without source adapter
-    if(!this.source_adapters[file_path.split(".").pop()]){
-      // console.warn(`No source adapter found for file ${file_path}`);
+  init_file_path(file_path) {
+    // Extract extension using a new helper:
+    const ext = this.get_extension_for_path(file_path);
+    if (!ext) {
+      // skip if extension not recognized
+      // console.warn(`No recognized extension for ${file_path}`);
       return;
     }
-    return this.items[file_path] = new this.item_type(this.env, { path: file_path });
+    // If item already exists, return it
+    if (this.items[file_path]) return this.items[file_path];
+
+    // create new item
+    const item = new this.item_type(this.env, { path: file_path });
+    this.items[file_path] = item;
+    return item;
   }
 
+  /**
+   * Looks for an extension in descending order:
+   * e.g. split "my.file.name.github" -> ["my","file","name","github"]
+   * Try 'file.name.github', 'name.github', 'github'
+   * Return the first that is in 'source_adapters'
+   * @param {string} file_path
+   * @returns {string|undefined} recognized extension, or undefined if none
+   */
+  get_extension_for_path(file_path) {
+    if (!file_path) return undefined;
+    const pcs = file_path.split('.');
+    // if there's no dot, or only one piece, we have no extension
+    if (pcs.length < 2) return undefined;
+    // shift off the first portion so we only look at possible extension combos
+    pcs.shift(); // remove the first piece (like a base name)
+    while (pcs.length) {
+      const test_ext = pcs.join('.').toLowerCase();
+      if (this.source_adapters[test_ext]) {
+        return test_ext;
+      }
+      pcs.shift();
+    }
+    return undefined;
+  }
   /**
    * Removes old data files by pruning sources and blocks.
    * @async
