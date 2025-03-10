@@ -269,7 +269,7 @@ export class Collection {
    * Data directory strategy for this collection. Defaults to 'multi'.
    * @returns {string}
    */
-  get data_dir() { return 'multi'; }
+  get data_dir() { return this.collection_key; }
 
   /**
    * File system adapter from the environment.

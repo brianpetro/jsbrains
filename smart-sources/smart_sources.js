@@ -617,6 +617,7 @@ export class SmartSources extends SmartEntities {
       .length;
   }
 
+  get data_dir() { return 'multi'; }
 }
 
 export const settings_config = {

@@ -61,6 +61,7 @@ export class SmartBlocks extends SmartEntities {
   render_settings(container, opts = {}) {
     return this.render_collection_settings(container, opts);
   }
+  get data_dir() { return 'multi'; }
 
   /**
    * Retrieves the SmartSources collection instance.
