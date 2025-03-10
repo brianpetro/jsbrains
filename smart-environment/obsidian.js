@@ -136,7 +136,10 @@ export class SmartEnv extends BaseSmartEnv {
         }
         if(old_path){
           const source = this.smart_sources?.get(old_path);
-          if(source) this.smart_sources?.delete(old_path);
+          if(source) {
+            source.delete();
+            this.smart_sources?.process_save_queue();
+          }
         }
       })
     );
