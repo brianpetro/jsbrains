@@ -14,6 +14,15 @@ import { parse_markdown_blocks } from "smart-blocks/parsers/markdown.js";
  * - Override methods as necessary for custom file handling logic.
  */
 export class FileSourceContentAdapter extends SourceContentAdapter {
+  static async init_items(collection){
+    if(collection.fs_items_initialized) return;
+    collection._fs = null; // Clear fs to reload exclusions
+    // Initialize smart_fs
+    await collection.fs.init();
+    // Initialize smart_sources
+    Object.values(collection.fs.files).forEach(file => collection.init_file_path(file.path));
+    collection.fs_items_initialized = Date.now();
+  }
   /**
    * @name fs
    * @type {Object}

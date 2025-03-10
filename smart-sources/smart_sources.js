@@ -40,11 +40,10 @@ export class SmartSources extends SmartEntities {
    * @returns {Promise<void>}
    */
   async init_items() {
-    this._fs = null; // Clear fs to reload exclusions
-    // Initialize smart_fs
-    await this.fs.init();
-    // Initialize smart_sources
-    Object.values(this.fs.files).forEach(file => this.init_file_path(file.path));
+    for(const AdapterClass of Object.values(this.source_adapters)){
+      if(AdapterClass.init_items) await AdapterClass.init_items(this);
+    }
+    
     this.notices?.remove('initial_scan');
     this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
   }
