@@ -291,7 +291,7 @@ export class SmartBlock extends SmartEntity {
       const number = this.sub_key.match(/^.*page\s*(\d+).*$/i)[1];
       return `${this.source.path}#page=${number}`;
     }else{
-      return this.source.path;
+      return this.source?.path || "MISSING SOURCE";
     }
   }
 

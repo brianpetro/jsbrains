@@ -153,11 +153,11 @@ export class SmartEnv extends BaseSmartEnv {
         if(file instanceof TFile && this.smart_sources?.source_adapters?.[file.extension]){
           const source = this.smart_sources?.get(file.path);
           if(source){
-            source.queue_import();
-            if(this.sources_import_timeout) clearTimeout(this.sources_import_timeout);
-            this.sources_import_timeout = setTimeout(() => {
-              this.smart_sources?.process_source_import_queue();
-            }, 3000);
+            if(!this.sources_import_timeouts) this.sources_import_timeouts = {};
+            if(this.sources_import_timeouts[file.path]) clearTimeout(this.sources_import_timeouts[file.path]);
+            this.sources_import_timeouts[file.path] = setTimeout(() => {
+              source.import();
+            }, 23000);
           }
         }
       })
