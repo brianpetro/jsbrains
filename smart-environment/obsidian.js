@@ -138,7 +138,12 @@ export class SmartEnv extends BaseSmartEnv {
           const source = this.smart_sources?.get(old_path);
           if(source) {
             source.delete();
-            this.smart_sources?.process_save_queue();
+            // debounce save queue
+            if (this.rename_debounce_timeout) clearTimeout(this.rename_debounce_timeout);
+            this.rename_debounce_timeout = setTimeout(() => {
+              this.smart_sources?.process_save_queue();
+              this.rename_debounce_timeout = null;
+            }, 1000);
           }
         }
       })
@@ -151,7 +156,7 @@ export class SmartEnv extends BaseSmartEnv {
             source.queue_import();
             if(this.sources_import_timeout) clearTimeout(this.sources_import_timeout);
             this.sources_import_timeout = setTimeout(() => {
-              source.import();
+              this.smart_sources?.process_source_import_queue();
             }, 3000);
           }
         }
