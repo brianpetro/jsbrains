@@ -235,3 +235,96 @@ Smart View uses a consistent pattern for rendering components:
 3. `post_process`: Adds listeners and performs final operations
 
 This pattern, combined with the use of document fragments, allows for flexible, extensible, and efficient component rendering across different environments.
+
+# Developer Guide: SmartView `render` Method-Export Pattern
+
+Follow this clear, repeatable pattern when developing components for the SmartView ecosystem. This ensures consistency, modularity, and ease of integration.
+
+## Component File Structure
+
+Each component exports three functions:
+
+- `build_html(scope, opts)` → Returns raw HTML as a string.
+- `render(scope, opts)` → Converts HTML to a DOM fragment and post-processes it.
+- `post_process(scope, frag, opts)` → Applies event listeners and final DOM adjustments.
+
+## Implementation Details
+
+### 1. `build_html(scope, opts)`
+
+**Purpose:** Generates raw HTML markup based on input data.
+
+```js
+/**
+ * Generate raw HTML markup.
+ * @param {Object} scope - Data/config for component.
+ * @param {Object} [opts={}] - Additional options.
+ * @returns {string} HTML markup string.
+ */
+export function build_html(scope, opts = {}) {
+  return `
+    <div class="my-component">
+      <button class="refresh-btn">Refresh</button>
+      <p>${scope.text}</p>
+    </div>
+  `;
+}
+```
+
+### 2. `render(scope, opts)`
+
+**Purpose:** Transforms HTML to DOM fragment and initiates post-processing.
+
+```js
+/**
+ * Render component to DocumentFragment.
+ * @param {Object} scope - Data/config for rendering.
+ * @param {Object} [opts={}] - Additional options.
+ * @returns {Promise<DocumentFragment>} Rendered fragment.
+ */
+export async function render(scope, opts = {}) {
+  const html = build_html.call(this, scope, opts);
+  const frag = this.create_doc_fragment(html);
+  return await post_process.call(this, scope, frag, opts);
+}
+```
+
+### 3. `post_process(scope, frag, opts)`
+
+**Purpose:** Adds event listeners, final DOM manipulations, and interaction logic.
+
+Always preserve context using `const self = this;` for event listeners.
+
+```js
+/**
+ * Attach listeners and perform DOM manipulation.
+ * @param {Object} scope - Data/config.
+ * @param {DocumentFragment} frag - Rendered fragment.
+ * @param {Object} [opts={}] - Additional options.
+ * @returns {Promise<DocumentFragment>} Fragment ready for DOM insertion.
+ */
+export async function post_process(scope, frag, opts = {}) {
+  const self = this;
+
+  const refresh_btn = frag.querySelector('.refresh-btn');
+  refresh_btn.addEventListener('click', async () => {
+    await self.re_render();
+  });
+
+  return frag;
+}
+```
+
+## Key Guidelines
+
+- Always clearly separate responsibilities:
+  - HTML generation (`build_html`).
+  - DOM construction (`render`).
+  - Event handling and DOM updates (`post_process`).
+
+- Explicitly pass `this` context using `.call(this, scope, opts)`.
+- Always capture `this` as `const self = this;` in event listeners.
+- Return promises from async methods (`render`, `post_process`).
+
+Adhering to these guidelines ensures code maintainability, modularity, and ease of debugging across SmartView components.
+

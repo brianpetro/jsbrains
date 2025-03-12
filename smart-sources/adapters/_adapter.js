@@ -21,6 +21,9 @@ export class SourceContentAdapter {
   static get adapter_key(){
     return to_snake(this.name);
   }
+  get fs() {
+    return this.item.collection.fs;
+  }
 
 }
 
