@@ -18,6 +18,9 @@ export class SourceContentAdapter {
   get adapter_key(){
     return to_snake(this.constructor.name);
   }
+  static get adapter_key(){
+    return to_snake(this.name);
+  }
 
 }
 
