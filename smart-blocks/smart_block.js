@@ -301,7 +301,8 @@ export class SmartBlock extends SmartEntity {
    * @returns {string} The display name.
    */
   get name() {
-    const source_name = this.source.name;
+    const source_name = this.source?.name;
+    if(!source_name) return "MISSING SOURCE";
     const block_path_parts = this.key.split("#").slice(1);
     if(this.should_show_full_path) return [source_name, ...block_path_parts].join(" > ");
     if(block_path_parts[block_path_parts.length-1][0] === "{") block_path_parts.pop(); // Remove block index
