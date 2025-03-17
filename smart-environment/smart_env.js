@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.134;
+  static version = 2.135;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -504,9 +504,9 @@ export class SmartEnv {
   async load_settings() {
     if (!(await this.data_fs.exists('smart_env.json'))) await this.save_settings({});
     // must deep copy default_settings to avoid mutating the original object (prevents unexpected behavior)
-    let settings = JSON.parse(JSON.stringify(this.opts.default_settings || {})); // set defaults if provided
+    let settings = JSON.parse(JSON.stringify(this.config.default_settings || {})); // set defaults if provided
     deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
-    deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings
+    deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings (DEPRECATED????)
     this._saved = true;
     return settings;
   }
