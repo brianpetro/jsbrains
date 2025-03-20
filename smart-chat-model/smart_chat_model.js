@@ -62,6 +62,9 @@ export class SmartChatModel extends SmartModel {
    * Stream chat responses.
    * @param {Object} req - Request parameters
    * @param {Object} handlers - Event handlers for streaming
+   * @param {Function} handlers.chunk - Handler for chunks: receives response object
+   * @param {Function} handlers.error - Handler for errors: receives error object
+   * @param {Function} handlers.done - Handler for completion: receives final response object
    * @returns {Promise<string>} Complete response text
    */
   async stream(req, handlers = {}) {

@@ -21,7 +21,7 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
   }
 
   async render_markdown(markdown, scope) {
-    const component = scope.env.smart_connections_plugin.connections_view;
+    const component = scope.env.smart_connections_plugin?.connections_view || new Component();
     if(!scope) return console.warn("Scope required for rendering markdown in Obsidian adapter");
     // MarkdownRenderer attempts to get container parent and throws error if not present
     // So wrap in extra div to act as parent and render into inner div
@@ -33,7 +33,7 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
         markdown,
         container,
         scope?.file_path || "",
-        component || new Component()
+        component
       );
     }catch(e){
       console.warn("Error rendering markdown in Obsidian adapter", e);
