@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.135;
+  static version = 2.137;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -169,13 +169,17 @@ export class SmartEnv {
       if(this.global_env && this.version > this.global_env.constructor.version){
         opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
       }
+      if(this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
       this.global_env = new this(opts);
-      await this.global_env.fs.load_files(); // skip exclusions; detect env_data_dir
-      await SmartSettings.create(this.global_env);
+      if(!window.all_envs) window.all_envs = [];
+      window.all_envs.push(this.global_env);
+      // await this.global_env.fs.load_files(); // skip exclusions; detect env_data_dir
+      // await SmartSettings.create(this.global_env);
     }
     clearTimeout(this.global_env.load_timeout);
     this.global_env.load_timeout = setTimeout(async () => {
       await this.global_env.load();
+      this.global_env.load_timeout = null;
     }, this.global_env.env_start_wait_time);
     return this.global_env;
   }
@@ -200,6 +204,8 @@ export class SmartEnv {
     this.constructor.create_env_getter(instance_to_receive_getter);
   }
   async load() {
+    await this.fs.load_files(); // skip exclusions; detect env_data_dir
+    if(!this.settings) await SmartSettings.create(this);
     await this.init_collections();
     for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
       this[main_key] = main;
