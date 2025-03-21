@@ -101,6 +101,16 @@ const OBSIDIAN_DEFAULTS = {
 
 export class SmartEnv extends BaseSmartEnv {
   static async create(plugin, main_env_opts = {}) {
+    // Special handling for old Obsidian smart environments
+    // Detect if environment has 'init_main'
+    if (!plugin.app.plugins.plugins['smart-connections']?.env?.constructor?.version) {
+      const update_notice = "Detected older SmartEnv with 'init_main'. Reloading without the outdated plugin. Please update Smart Connections.";
+      // Attempt a user-visible notice if Obsidian's Notice is in scope, otherwise warn:
+      console.warn(update_notice);
+      new Notice(update_notice, 0);
+      await disable_plugin(plugin.app, 'smart-connections');
+    }
+
     const opts = merge_env_config(main_env_opts, OBSIDIAN_DEFAULTS);
     return await super.create(plugin, opts);
   }
@@ -170,4 +180,10 @@ export class SmartEnv extends BaseSmartEnv {
       })
     );
   }
+}
+
+async function disable_plugin(app, plugin_id) {
+  console.log('disabling plugin', plugin_id);
+  await app.plugins.disablePlugin(plugin_id);
+  app.plugins.loadManifests();
 }

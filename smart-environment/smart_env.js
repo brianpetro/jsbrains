@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.137;
+  static version = 2.1391;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -103,8 +103,13 @@ export class SmartEnv {
   static get should_reload() {
     if(!this.global_env) return true;
     if(this.global_env.state === 'loaded') return true;
+    if(typeof this.global_env?.constructor?.version === 'undefined') return true;
+    // If our new code is a higher version, reload:
     if(this.global_env.constructor.version < this.version){
-      console.warn("SmartEnv: Reloading environment because of version mismatch", `${this.version} > ${this.global_env.constructor.version}`);
+      console.warn(
+        "SmartEnv: Reloading environment because of version mismatch",
+        `${this.version} > ${this.global_env.constructor.version}`
+      );
       return true;
     }
     return false;
@@ -145,8 +150,7 @@ export class SmartEnv {
   }
   /**
    * Creates or updates a SmartEnv instance.
-   * - If a global environment exists and is an older version, it is unloaded and replaced.
-   * - If the environment is the same version or newer, it reuses the existing environment.
+   * - If a global environment exists and is an older version or lacks 'init_main', it is replaced.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
    * @param {Object} [main_env_opts={}] - Options for configuring the SmartEnv instance.
    * @returns {SmartEnv} The SmartEnv instance.
@@ -163,24 +167,27 @@ export class SmartEnv {
       }
       main_env_opts = main.smart_env_config;
     }
+
     this.add_main(main, main_env_opts);
+
     if(this.should_reload){
       const opts = {};
-      if(this.global_env && this.version > this.global_env.constructor.version){
+      if(this.global_env && this.version > (this.global_env.constructor?.version || 0)){
         opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
       }
       if(this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
+
       this.global_env = new this(opts);
       if(!window.all_envs) window.all_envs = [];
       window.all_envs.push(this.global_env);
-      // await this.global_env.fs.load_files(); // skip exclusions; detect env_data_dir
-      // await SmartSettings.create(this.global_env);
     }
+
     clearTimeout(this.global_env.load_timeout);
     this.global_env.load_timeout = setTimeout(async () => {
       await this.global_env.load();
       this.global_env.load_timeout = null;
     }, this.global_env.env_start_wait_time);
+
     return this.global_env;
   }
   static add_main(main, main_env_opts = null) {
@@ -197,7 +204,6 @@ export class SmartEnv {
   static create_env_getter(instance_to_receive_getter) {
     Object.defineProperty(instance_to_receive_getter, 'env', {
       get: () => this.global_env,
-      // configurable: true
     });
   }
   create_env_getter(instance_to_receive_getter) {
@@ -216,7 +222,7 @@ export class SmartEnv {
   }
   /**
    * Initializes collection classes if they have an 'init' function.
-   * @param {Object} [config=this.opts]
+   * @param {Object} [config=this.config]
    */
   async init_collections(config = this.config) {
     for (const key of Object.keys(config.collections || {})) {
@@ -252,7 +258,7 @@ export class SmartEnv {
   async load_collections(collections = this.collections) {
     for (const key of Object.keys(collections || {})) {
       if (typeof this[key]?.process_load_queue === 'function') {
-        if(this.state === 'init' && this[key].opts.prevent_load_on_init === true) continue;
+        if(this.state === 'init' && this[key].opts?.prevent_load_on_init === true) continue;
         await this[key].process_load_queue();
       }
       this.collections[key] = 'loaded';
@@ -260,7 +266,7 @@ export class SmartEnv {
   }
   /**
    * Removes a main from the window.smart_env_configs to exclude it on reload
-   * @param {Class} main_class
+   * @param {Class} main
    * @param {Object|null} [unload_config=null]
    */
   static unload_main(main) {
@@ -482,7 +488,7 @@ export class SmartEnv {
   get data_fs_path() {
     if(!this._data_fs_path) {
       this._data_fs_path = (this.opts.env_path
-        + (this.opts.env_path ? (this.opts.env_path.includes('\\') ? '\\' : '/') : '') // detect and use correct separator based on env_path
+        + (this.opts.env_path ? (this.opts.env_path.includes('\\') ? '\\' : '/') : '')
         + this.env_data_dir).replace(/\\\\/g, '\\').replace(/\/\//g, '/')
       ;
     }
@@ -535,7 +541,7 @@ export class SmartEnv {
   }
   /** @deprecated Use this['main_class_name'] instead of this.main/this.plugin */
   get main() {
-    return this.smart_env_configs[this.mains[0]].main;
+    return this.smart_env_configs[this.mains[0]]?.main;
   }
   /**
    * @deprecated use component pattern instead
