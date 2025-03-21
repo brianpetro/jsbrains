@@ -11,7 +11,10 @@ export class SmartEnv extends BaseSmartEnv {
   static async create(plugin, main_env_opts = {}) {
     // Special handling for old Obsidian smart environments
     // Detect if environment has 'init_main'
-    if (plugin.app.plugins.plugins['smart-connections'] && !plugin.app.plugins.plugins['smart-connections']?.env?.constructor?.version) {
+    if (plugin.app.plugins.plugins['smart-connections']
+        && plugin.app.plugins.plugins['smart-connections'].env
+        && !plugin.app.plugins.plugins['smart-connections'].env.constructor.version
+    ) {
       const update_notice = "Detected older SmartEnv with 'init_main'. Reloading without the outdated plugin. Please update Smart Connections.";
       // Attempt a user-visible notice if Obsidian's Notice is in scope, otherwise warn:
       console.warn(update_notice);

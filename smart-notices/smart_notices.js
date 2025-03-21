@@ -79,8 +79,7 @@ export class SmartNotices {
    * @param {Object} scope - The main plugin instance
    */
   constructor(env, adapter=null) {
-    this.env = env;
-    this.env.create_env_getter(this); // sets this.env
+    env?.create_env_getter(this); // sets this.env
     this.active = {};
     this.adapter = adapter || this.env.config.modules.smart_notices.adapter;
     // Make sure each notice entry has a .create() method
