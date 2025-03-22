@@ -9,19 +9,6 @@ export async function build_html(collection, opts={}){
   </div>`;
   return html;
 }
-
-export async function render(collection, opts = {}) {
-  const html = await build_html.call(this, collection, opts);
-  const frag = this.create_doc_fragment(html);
-  return await post_process.call(this, collection, frag, opts);
-}
-
-export async function post_process(collection, frag, opts = {}) {
-  await this.render_setting_components(frag, {scope: collection});
-  
-  return frag;
-}
-
 function settings_header_html(collection, opts = {}) {
   const heading_text = collection.collection_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
   const heading_html = collection.collection_key === 'smart_sources' 
@@ -79,4 +66,16 @@ function get_block_heading_html(collection) {
     <!--<span>Loaded: ${item_count} blocks (expected ${collection.expected_blocks_ct})</span>-->
     ${load_time_html}
   `;
+}
+
+export async function render(collection, opts = {}) {
+  const html = await build_html.call(this, collection, opts);
+  const frag = this.create_doc_fragment(html);
+  return await post_process.call(this, collection, frag, opts);
+}
+
+export async function post_process(collection, frag, opts = {}) {
+  await this.render_setting_components(frag, {scope: collection});
+  
+  return frag;
 }
