@@ -25,14 +25,8 @@ export class SmartEnv extends BaseSmartEnv {
     const opts = merge_env_config(main_env_opts, default_config);
     return await super.create(plugin, opts);
   }
-  get notices() {
-    // if(!this._notices) this._notices = new SmartNotices(this, Notice);
-    if(!this._notices) this._notices = this.init_module('smart_notices');
-    return this._notices;
-  }
   manual_load() {
     this.manual_load = true;
-    
   }
   async load() {
     if(Platform.isMobile && !this.manual_load){

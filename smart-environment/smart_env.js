@@ -304,6 +304,15 @@ export class SmartEnv {
     };
     return new module_config.class(opts);
   }
+  get notices() {
+    if(!this._notices) {
+      const SmartNoticesClass = this.config.modules.smart_notices.class;
+      this._notices = new SmartNoticesClass(this, {
+        adapter: this.config.modules.smart_notices.adapter,
+      });
+    }
+    return this._notices;
+  }
 
   /**
    * Exposes a settings template function from environment opts or defaults.

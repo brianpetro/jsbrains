@@ -78,10 +78,10 @@ export class SmartNotices {
   /**
    * @param {Object} scope - The main plugin instance
    */
-  constructor(env, adapter=null) {
+  constructor(env, opts = {}) {
     env?.create_env_getter(this); // sets this.env
     this.active = {};
-    this.adapter = adapter || this.env.config.modules.smart_notices.adapter;
+    this.adapter = opts.adapter || this.env.config.modules.smart_notices.adapter;
     // Make sure each notice entry has a .create() method
     define_default_create_methods(NOTICES);
   }
@@ -90,6 +90,9 @@ export class SmartNotices {
   get settings() {
     if(!this.env?.settings?.smart_notices) {
       this.env.settings.smart_notices = {};
+    }
+    if(!this.env?.settings?.smart_notices?.muted) {
+      this.env.settings.smart_notices.muted = {};
     }
     return this.env?.settings?.smart_notices;
   }
