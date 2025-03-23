@@ -209,7 +209,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
         else await this.fs.remove(this.data_path);
       }
     } catch (e) {
-      console.warn("Error loading item (queueing import)", this.item.key, this.data_path, e);
+      // console.warn("Error loading item (queueing import)", this.item.key, this.data_path, e);
       this.item.queue_import();
     }
   }

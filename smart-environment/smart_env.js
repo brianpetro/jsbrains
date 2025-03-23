@@ -348,6 +348,13 @@ export class SmartEnv {
    */
   async render_component(component_key, scope, opts = {}) {
     const component_renderer = this.get_component(component_key, scope);
+    if(!component_renderer) {
+      console.warn(`SmartEnv: component ${component_key} not found for scope ${scope.constructor.name}`);
+      return this.smart_view.create_doc_fragment(`<div class="smart-env-component-not-found">
+        <h1>Component Not Found</h1>
+        <p>The component ${component_key} was not found for scope ${scope.constructor.name}.</p>
+      </div>`);
+    }
     const frag = await component_renderer(scope, opts);
     return frag;
   }

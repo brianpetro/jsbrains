@@ -77,7 +77,7 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
             batch_size: this.batch_size,
             use_gpu: this.use_gpu,
         };
-        console.log({load_opts});
+        // console.log({load_opts});
         // Initialize the model in the iframe
         await this._send_message('load', load_opts);
             

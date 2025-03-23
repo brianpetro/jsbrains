@@ -8,7 +8,8 @@ import { merge_env_config } from 'smart-environment/utils/merge_env_config.js';
 import default_config from './default.config.js';
 
 export class SmartEnv extends BaseSmartEnv {
-  static async create(plugin, main_env_opts = {}) {
+  static async create(plugin, main_env_opts = null) {
+    if(!main_env_opts) main_env_opts = plugin.smart_env_config;
     // Special handling for old Obsidian smart environments
     // Detect if environment has 'init_main'
     if (plugin.app.plugins.plugins['smart-connections']
