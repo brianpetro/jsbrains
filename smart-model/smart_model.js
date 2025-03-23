@@ -118,12 +118,11 @@ export class SmartModel {
   get models() { return this.adapter.models; }
 
   /**
-   * Get the default model key to use
-   * @returns {string} Default model identifier
+   * Get default model key.
+   * @returns {string} Default model key
    */
   get default_model_key() {
-    /* override in sub-class */
-    throw new Error('default_model_key must be overridden in sub-class');
+    return this.adapter.constructor.defaults.default_model;
   }
 
   /**
