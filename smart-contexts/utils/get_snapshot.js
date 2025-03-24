@@ -1,4 +1,5 @@
 import { strip_excluded_headings } from './respect_exclusions.js';
+import { get_markdown_links } from 'smart-sources/utils/get_markdown_links.js';
 export async function get_snapshot(context_item, opts) {
   const snapshot = {
     items: {},
@@ -73,7 +74,12 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
     if (is_already_in_snapshot(item.key, snapshot)) {
       continue;
     }
-    const content = await item.read();
+    let content = await item.read();
+    console.log('read context');
+    if(!opts.calculating && content.includes('dataview')) {
+      content = await item.read({render_output: true});
+      item.data.outlinks = get_markdown_links(content);
+    }
     const excluded_headings = opts.excluded_headings || [];
     const [new_content, exclusions, removed_char_count] = strip_excluded_headings(content, excluded_headings);
     curr_depth[item.path] = {
