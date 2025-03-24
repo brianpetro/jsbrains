@@ -1,6 +1,65 @@
 ---
 sync external: ../jsbrains/smart-contexts/specs.md
 ---
+## Smart Contexts spec
+### adapters
+- `compile_adapters`
+	- `SmartContexts` getter `compile_adapters` uses `static adapter_key` property from adapter classes in `this.opts.compile_adapters` to cache adapter map at `this._compile_adapters`
+	- used to transform `snapshot{}` into final output used as context
+	- `smart_context.compile(opts{})`
+		- initiates adapter from `smart_context.collection.compile_adapters`
+			- uses `template_compile_adapter` by default unless `opts.adapter_key` is set
+	- Base `_adapter.js`
+		- `static adapter_key = "default"`
+		- returns JSON returned by `get_snapshot()`
+	- `template_compile_adapter.js`
+		- `static adapter_key = "default_template"`
+		- implements current logic in `compiler.js`
+### data structures
+- `context_opts{}`
+	- may include `templates[n]` object where properties are -1,0,1,2... mapping to wrap-full, wrap-primary, wrap-secondary, wrap-tertiary... context items
+		- values are objects containing `before` and `after` properties with text to insert before/after the respective scope
+	- can include all context-related settings (e.g. `link_depth`, `inlinks`, `excluded_headings`, etc.)
+- `context_snapshot{}`
+	- `.items[0]` primary items
+		- similar to `context_items{}` object with values replaced by the content at the source referenced by the property name
+	- `.items[1]` secondary items
+		- linked items in primary items
+	- `.items[2]` tertiary items
+#### `item.data{}`
+- `context_items{}`
+	- References to primary sources (items) stored as `{ [source1.key]: true, ... }`
+
+### settings
+- `max_len` property (in characters) to define a limit for final compiled output (larger items may be truncated or skipped to respect this limit)
+- `link_depth` for how many levels of outbound/inbound links to traverse
+- `templates{}` may contain `{before, after}` objects for wrapping context items at varying depths
+	- Properties map to respective items depth
+		- `templates[-1]` may be used to wrap the final output of all items
+		- `templates[0]` is used to wrap each primary item, `templates[1]` wraps each secondary item, ...
+### methods
+- `get_snapshot(opts={})`
+	- `opts` is a `context_opts{}` object that's merged with `this.collection.settings{}`
+	- item references are retrieved from `Object.keys(this.data.context_items{})` and the values are replaced by their source (items) content (`source.read()`)
+		- respects excluded headings (omits from returned content)
+		- checks against `max_len` and can exclude or truncate content as needed
+		- links are traversed up until the `link_depth` setting
+		- new object is saved to `context_snapshot.items[0]`
+	- returns a `context_snapshot{}` object with references replaced by actual content
+- `compile(opts={})`
+	- Transforms context snapshot into a compiled string and provides stats
+	- Merges collection-level settings and with `opts{}`
+		- `opts{}` may be used to override collection-level settings
+	- Builds the final context string and statistics
+		- wraps context items and final output with their respective templates
+	- returns `{ context: string, stats{} }`
+- `respect_exclusions(opts={})`
+	- Strips out headings or sections matching user-defined `excluded_headings`
+	- Mutates `opts.items` and optionally `opts.links`
+- `process_items(merged)` and `process_links(merged)`
+	- Internal steps used by `get_snapshot()`
+	- Gather and load content for the items
+	- Traverse and merge link data (outbound or inbound)
 
 # Smart Contexts API Specification
 
