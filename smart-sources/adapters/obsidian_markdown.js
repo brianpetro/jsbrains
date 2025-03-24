@@ -53,7 +53,6 @@ export class ObsidianMarkdownSourceContentAdapter extends MarkdownSourceContentA
     const max_wait = 10000;
     let wait_time = 0;
     while (last_html !== container.innerHTML || last_html.includes('Loading...')) {
-      console.log('waiting for markdown to render');
       await new Promise(resolve => setTimeout(resolve, 200));
       last_html = container.innerHTML;
       wait_time += 200;
@@ -65,7 +64,6 @@ export class ObsidianMarkdownSourceContentAdapter extends MarkdownSourceContentA
 
     // Convert HTML back to MD
     const newMd = htmlToMarkdown(container);
-    console.log('newMd', newMd);
     return newMd;
   }
 }
