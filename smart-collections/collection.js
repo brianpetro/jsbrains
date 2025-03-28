@@ -29,7 +29,8 @@ export class Collection {
    * @param {boolean} [opts.prevent_load_on_init] - Whether to prevent loading items on initialization.
    */
   constructor(env, opts = {}) {
-    this.env = env;
+    // this.env = env;
+    env.create_env_getter(this);
     this.opts = opts;
     if (opts.collection_key) this.collection_key = opts.collection_key;
     this.env[this.collection_key] = this;

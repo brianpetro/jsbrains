@@ -1,5 +1,5 @@
-utils/
 package.json
-test/
-components/
+test
+**/*.test.js
+components
 README.md

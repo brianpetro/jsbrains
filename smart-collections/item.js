@@ -30,7 +30,8 @@ export class CollectionItem {
    * @param {Object|null} [data=null] - Initial data for the item.
    */
   constructor(env, data = null) {
-    this.env = env;
+    // this.env = env;
+    env.create_env_getter(this);
     this.config = this.env?.config;
     this.merge_defaults();
 

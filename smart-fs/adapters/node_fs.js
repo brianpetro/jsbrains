@@ -293,7 +293,10 @@ export class NodeFsSmartFsAdapter {
   async write(rel_path, content) {
     // ensure parent folder exists
     const parent_folder = path.dirname(rel_path);
-    if(!await this.exists(parent_folder)) await this.mkdir(parent_folder, { recursive: true });
+    if(!await this.exists(parent_folder)){
+      console.log('mkdir for write', parent_folder);
+      await this.mkdir(parent_folder, { recursive: true });
+    }
     return await this.writeFile(rel_path, content);
   }
 

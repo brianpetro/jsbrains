@@ -1,6 +1,5 @@
-utils/
 package.json
-components/
+components
 README.md
 schema.js
 test/old-tests (needs review)
@@ -10,3 +9,5 @@ sqlite.**
 *.sqlite
 smart_block.js
 smart_blocks.js
+test
+**/*.test.js

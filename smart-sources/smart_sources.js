@@ -70,6 +70,8 @@ export class SmartSources extends SmartEntities {
     // create new item
     const item = new this.item_type(this.env, { path: file_path });
     this.items[file_path] = item;
+    item.queue_import();
+    item.queue_load();
     return item;
   }
 

@@ -1,1 +1,5 @@
 node_modules
+test
+**/*.test.js
+components
+README.md
