@@ -53,8 +53,11 @@ var SmartModel = class {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    const adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
-    if (!adapter_key || !this.adapters[adapter_key]) throw new Error(`Platform "${adapter_key}" not supported`);
+    let adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
+    if (!adapter_key || !this.adapters[adapter_key]) {
+      console.warn(`Platform "${adapter_key}" not supported`);
+      adapter_key = Object.keys(this.adapters)[0];
+    }
     return adapter_key;
   }
   /**
@@ -81,11 +84,11 @@ var SmartModel = class {
     return this.adapter.models;
   }
   /**
-   * Get the default model key to use
-   * @returns {string} Default model identifier
+   * Get default model key.
+   * @returns {string} Default model key
    */
   get default_model_key() {
-    throw new Error("default_model_key must be overridden in sub-class");
+    return this.adapter.constructor.defaults.default_model;
   }
   /**
    * Get the current model key
@@ -652,7 +655,7 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
   async load() {
     console.log("TransformersAdapter initializing");
     console.log(this.model.model_key);
-    const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3");
+    const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.1");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
