@@ -657,10 +657,10 @@ export class SmartSources extends SmartEntities {
 }
 
 export const settings_config = {
-  "smart_change.active": {
-    "name": "Smart Change (change safety)",
-    "description": "Enable Smart Changes (prevents accidental deletions/overwrites).",
-    "type": "toggle",
-    "default": true,
-  },
+  // "smart_change.active": {
+  //   "name": "Smart Change (change safety)",
+  //   "description": "Enable Smart Changes (prevents accidental deletions/overwrites).",
+  //   "type": "toggle",
+  //   "default": true,
+  // },
 };
