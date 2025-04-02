@@ -162,7 +162,7 @@ function build_item_placeholders(path, depth, mtime) {
 }
 
 function convert_to_time_ago(timestamp) {
-  const seconds = Math.floor((Date.now() / 1000) - timestamp);
+  const seconds = Math.floor(Date.now() - timestamp);
 
   const intervals = [
     { label: 'year', seconds: 31536000 },
