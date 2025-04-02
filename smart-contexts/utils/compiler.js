@@ -30,8 +30,7 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
   // Build the per-depth chunk data
   for (const depth of depths) {
     const items = context_snapshot.items[depth] || {};
-    const before_raw = merged_opts.templates?.[depth]?.before || '';
-    const after_raw  = merged_opts.templates?.[depth]?.after  || '';
+    const { before_raw, after_raw } = get_templates_for_depth(depth, merged_opts);
 
     for (const [path, item] of Object.entries(items)) {
       const placeholders = build_item_placeholders(path, depth);
@@ -126,6 +125,22 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
   };
 }
 
+
+function get_templates_for_depth(depth, merged_opts) {
+  let before_template_depth = depth;
+  let before_raw = merged_opts.templates?.[before_template_depth]?.before;
+  while (typeof before_raw !== 'string' && before_template_depth > -1) {
+    before_template_depth--;
+    before_raw = merged_opts.templates?.[before_template_depth]?.before;
+  }
+  let after_template_depth = depth;
+  let after_raw = merged_opts.templates?.[after_template_depth]?.after;
+  while (typeof after_raw !== 'string' && after_template_depth > -1) {
+    after_template_depth--;
+    after_raw = merged_opts.templates?.[after_template_depth]?.after;
+  }
+  return { before_raw, after_raw };
+}
 
 /**
  * Build placeholders for each chunk: {{ITEM_PATH}}, {{ITEM_NAME}}, {{ITEM_EXT}}, {{ITEM_DEPTH}}.
