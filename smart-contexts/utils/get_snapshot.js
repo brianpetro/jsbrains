@@ -86,6 +86,7 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       ref: item,
       path: item.path,
       content: new_content,
+      mtime: item.mtime,
       char_count: new_content.length,
       exclusions,
       excluded_char_count: removed_char_count,

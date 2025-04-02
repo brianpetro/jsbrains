@@ -130,6 +130,7 @@ export class SmartContexts extends Collection {
               <li><code>{{ITEM_NAME}}</code> - Filename of the item</li>
               <li><code>{{ITEM_EXT}}</code> - File extension</li>
               <li><code>{{ITEM_DEPTH}}</code> - Depth level of the item</li>
+              <li><code>{{ITEM_TIME_AGO}}</code> - Time since the item was last modified</li>
             </ul>
           </div>
         `
@@ -163,6 +164,7 @@ export class SmartContexts extends Collection {
               <li><code>{{ITEM_NAME}}</code> - Filename of the linked file</li>
               <li><code>{{ITEM_EXT}}</code> - File extension</li>
               <li><code>{{ITEM_DEPTH}}</code> - Depth level of the link</li>
+              <li><code>{{ITEM_TIME_AGO}}</code> - Time since the linked file was last modified</li>
             </ul>
           </div>
         `

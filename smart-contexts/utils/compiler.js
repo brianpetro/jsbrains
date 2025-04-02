@@ -8,8 +8,6 @@
  *   - Concatenate all items.
  *   - Finally, optionally apply top-level wrap (templates[-1]) if it still fits; skip otherwise.
  *
- * Enhanced File Tree Logic:
- *   - We still build a nested structure from all file paths.
  *   - After building, we call `compress_single_child_dirs(...)` to collapse
  *     directories with only one child. For example:
  *       docs/
@@ -27,7 +25,6 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     .map(d => parseInt(d, 10))
     .sort((a, b) => a - b);
 
-  const all_paths = [];
   const chunks = [];
 
   // Build the per-depth chunk data
@@ -40,11 +37,11 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
       const placeholders = build_item_placeholders(path, depth);
       chunks.push({
         path,
+        mtime: item.mtime,
         before_tpl: replace_vars(before_raw, placeholders),
         item_text: item.content,
         after_tpl: replace_vars(after_raw, placeholders)
       });
-      all_paths.push(path);
     }
   }
 
@@ -93,6 +90,8 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     top_after_raw.includes('{{FILE_TREE}}');
   let file_tree_str = '';
   if (want_tree) {
+    const all_paths = chunks.map(c => c.path);
+    // TODO add mtime for rendering FILE_TREE_MTIME var replacement
     file_tree_str = create_file_tree_string(all_paths);
   }
 
@@ -134,7 +133,7 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
  * @param {number} depth
  * @returns {object}
  */
-function build_item_placeholders(path, depth) {
+function build_item_placeholders(path, depth, mtime) {
   const name = path.substring(path.lastIndexOf('/') + 1);
   const dot_pos = name.lastIndexOf('.');
   const ext = dot_pos > 0 ? name.slice(dot_pos + 1) : '';
@@ -142,10 +141,32 @@ function build_item_placeholders(path, depth) {
     ITEM_PATH: path,
     ITEM_NAME: name,
     ITEM_EXT: ext,
-    ITEM_DEPTH: depth
+    ITEM_DEPTH: depth,
+    ITEM_TIME_AGO: convert_to_time_ago(mtime)
   };
 }
 
+function convert_to_time_ago(timestamp) {
+  const seconds = Math.floor((Date.now() / 1000) - timestamp);
+
+  const intervals = [
+    { label: 'year', seconds: 31536000 },
+    { label: 'month', seconds: 2592000 },
+    { label: 'day', seconds: 86400 },
+    { label: 'hour', seconds: 3600 },
+    { label: 'minute', seconds: 60 },
+    { label: 'second', seconds: 1 }
+  ];
+
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count >= 1) {
+      return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
+    }
+  }
+  
+  return 'just now';
+}
 
 /**
  * Replaces {{KEY}} in a string with the provided replacements object.
