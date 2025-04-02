@@ -26,46 +26,24 @@ export class SmartContexts extends Collection {
       excluded_headings: [],
       max_len: 0, // 0 => no enforced limit
       templates: {
-        '-1': { before: '', after: '' },
-        '0': { before: '', after: '' },
-        '1': { before: '', after: '' },
-        '2': { before: '', after: '' }
-      }
+        '-1': {
+          before: '{{FILE_TREE}}'
+        },
+        '0': {
+          before: '{{ITEM_PATH}}\n```{{ITEM_EXT}}',
+          after: '```'
+        },
+        '1': {
+          before: 'LINK: {{ITEM_NAME}}\n```{{ITEM_EXT}}',
+          after: '```'
+        },
+        '1': {
+          before: 'REF: {{ITEM_NAME}}\n```{{ITEM_EXT}}',
+          after: '```'
+        },
+      },
     };
   }
-
-  async init() {
-    // TEMP: for backwards compatibility 2025-02-18
-    // copy old settings to new format
-    if (!this.settings.templates) this.settings.templates = {};
-    if (!this.settings.templates['-1']) this.settings.templates['-1'] = {};
-    if (!this.settings.templates['0']) this.settings.templates['0'] = {};
-    if (!this.settings.templates['1']) this.settings.templates['1'] = {};
-
-    // Migrate older fields to templates if found
-    Object.entries(this.settings).forEach(([key, value]) => {
-      if (key === 'before_context' && value) {
-        this.settings.templates['-1'].before = value;
-        delete this.settings.before_context;
-      } else if (key === 'after_context' && value) {
-        this.settings.templates['-1'].after = value;
-        delete this.settings.after_context;
-      } else if (key === 'before_item' && value) {
-        this.settings.templates['0'].before = value;
-        delete this.settings.before_item;
-      } else if (key === 'after_item' && value) {
-        this.settings.templates['0'].after = value;
-        delete this.settings.after_item;
-      } else if (key === 'before_link' && value) {
-        this.settings.templates['1'].before = value;
-        delete this.settings.before_link;
-      } else if (key === 'after_link' && value) {
-        this.settings.templates['1'].after = value;
-        delete this.settings.after_link;
-      }
-    });
-  }
-
 
   get compile_adapters() {
     if (!this._compile_adapters) {
