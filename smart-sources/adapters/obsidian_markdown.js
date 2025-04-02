@@ -52,10 +52,15 @@ export class ObsidianMarkdownSourceContentAdapter extends MarkdownSourceContentA
     let last_html = container.innerHTML;
     const max_wait = 10000;
     let wait_time = 0;
-    while (last_html !== container.innerHTML || last_html.includes('Loading...')) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+    let conseq_same = 0;
+    let changed = true;
+    while (conseq_same < 7) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      changed = last_html !== container.innerHTML;
       last_html = container.innerHTML;
-      wait_time += 200;
+      if(!changed) conseq_same++;
+      else conseq_same = 0;
+      wait_time += 100;
       if (wait_time > max_wait) {
         console.warn('ObsidianMarkdownSourceContentAdapter: Timeout waiting for markdown to render.');
         break;
