@@ -1,7 +1,7 @@
 import test from 'ava';
 import { SmartFs } from '../smart_fs.js';
 import { SmartFsTestAdapter } from '../adapters/_test.js';
-import { load_ignore_patterns_smart, should_ignore } from './ignore.js';
+import { load_ignore_patterns_smart, should_ignore, is_text_file } from './ignore.js';
 
 test('should_ignore() returns true if path matches any pattern', t => {
   // Note the raw patterns – 'foo', 'bar', '*.log' – are deliberately unexpanded
@@ -47,4 +47,12 @@ test('load_ignore_patterns_smart should detect .gitignore and .scignore upward',
   t.truthy(patterns.includes('**/baz'));
   t.truthy(patterns.includes('**/baz/**'));
   t.truthy(patterns.includes('**/*.tmp'));
+});
+
+test('is_text_file() returns true for no extension known text files', t => {
+  t.true(is_text_file('Dockerfile'));
+  t.true(is_text_file('Appfile'));
+  t.true(is_text_file('Matchfile'));
+  t.true(is_text_file('Deliverfile'));
+  t.true(is_text_file('Gymfile'));
 });

@@ -23,6 +23,21 @@ const TEXT_FILE_EXTENSIONS = [
   '.canvas'
 ];
 
+const NO_EXTENSION_TEXT_FILES = [
+  'Dockerfile',
+  'Appfile',
+  'Matchfile',
+  'Deliverfile',
+  'Gymfile',
+  'Fastfile',
+  'Gemfile',
+  'Guardfile',
+  'Jenkinsfile',
+  'Makefile',
+  'Procfile',
+  'Rakefile',
+];
+
 /**
  * Determine if a file is considered a "text file" by extension.
  * @param {string} file_path - Relative or absolute file path.
@@ -31,6 +46,9 @@ const TEXT_FILE_EXTENSIONS = [
 export function is_text_file(file_path) {
   const last_dot_index = file_path.lastIndexOf('.');
   if (last_dot_index === -1) {
+    if(NO_EXTENSION_TEXT_FILES.some(file => file_path.endsWith(file))) {
+      return true;
+    }
     return false;
   }
   const ext = file_path.substring(last_dot_index).toLowerCase();
