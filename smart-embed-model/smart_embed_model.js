@@ -125,9 +125,9 @@ export class SmartEmbedModel extends SmartModel {
   get settings_config() {
     const _settings_config = {
       adapter: {
-        name: 'Embedding Model Platform',
+        name: 'Embedding model platform',
         type: "dropdown",
-        description: "Select an embedding model platform.",
+        description: "Select an embedding model platform. The default 'transformers' utilizes built-in local models.",
         options_callback: 'get_platforms_as_options',
         callback: 'adapter_changed',
         default: this.constructor.defaults.adapter,

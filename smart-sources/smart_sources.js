@@ -432,7 +432,7 @@ export class SmartSources extends SmartEntities {
         "conditional": () => this.loaded && this.collection_key === 'smart_sources',
       },
       "clear_all": {
-        "name": "Clear All",
+        "name": "Clear all",
         "description": "Clear all data and reimport sources.",
         "type": "button_with_confirm",
         "callback": "run_clear_all",

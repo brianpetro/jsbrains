@@ -121,10 +121,10 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
     return {
       ...super.settings_config,
       "[ADAPTER].api_key": {
-        name: "OpenAI API Key for embeddings",
+        name: "OpenAI API key for embeddings",
         type: "password",
-        description: "Required for OpenAI embedding models",
-        placeholder: "Enter OpenAI API Key",
+        description: "Required for OpenAI embedding models.",
+        placeholder: "Enter OpenAI API key",
       },
     };
   }

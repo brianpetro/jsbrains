@@ -386,46 +386,39 @@ export const settings_config = {
 
 export const connections_filter_config = {
   "smart_view_filter.show_full_path": {
-    "name": "Show Full Path",
+    "name": "Show full path",
     "type": "toggle",
     "description": "Show full path in view.",
-    "callback": "re_render"
   },
   "smart_view_filter.render_markdown": {
-    "name": "Render Markdown",
+    "name": "Render markdown",
     "type": "toggle",
     "description": "Render markdown in results.",
-    "callback": "re_render"
   },
   "smart_view_filter.results_limit": {
-    "name": "Results Limit",
+    "name": "Results limit",
     "type": "number",
     "description": "Limit the number of results.",
     "default": 20,
-    "callback": "re_render"
   },
   "smart_view_filter.exclude_inlinks": {
-    "name": "Exclude Inlinks",
+    "name": "Exclude inlinks (backlinks)",
     "type": "toggle",
-    "description": "Exclude inlinks.",
-    "callback": "re_render_settings"
+    "description": "Exclude notes that link to the current note.",
   },
   "smart_view_filter.exclude_outlinks": {
-    "name": "Exclude Outlinks",
+    "name": "Exclude outlinks",
     "type": "toggle",
-    "description": "Exclude outlinks.",
-    "callback": "re_render_settings"
+    "description": "Exclude links already in the current document.",
   },
   "smart_view_filter.include_filter": {
-    "name": "Include Filter",
+    "name": "Include filter",
     "type": "text",
-    "description": "Require that results match this value.",
-    "callback": "re_render"
+    "description": "Require that result file path matches this value.",
   },
   "smart_view_filter.exclude_filter": {
-    "name": "Exclude Filter",
+    "name": "Exclude filter",
     "type": "text",
-    "description": "Exclude results that match this value.",
-    "callback": "re_render"
+    "description": "Exclude results with file path that matches this value.",
   }
 };

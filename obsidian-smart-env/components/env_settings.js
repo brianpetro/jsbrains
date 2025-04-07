@@ -16,10 +16,10 @@ export async function build_html(env, opts = {}) {
 
   // Buttons to add new folder or file
   const addExcludedFolderBtn = `
-    <button class="sc-add-excluded-folder-btn" type="button">Add Excluded Folder</button>
+    <button class="sc-add-excluded-folder-btn" type="button">Add excluded folder</button>
   `;
   const addExcludedFileBtn = `
-    <button class="sc-add-excluded-file-btn" type="button">Add Excluded File</button>
+    <button class="sc-add-excluded-file-btn" type="button">Add excluded file</button>
   `;
 
   // We'll show the current lists of excluded folders/files in simple blocks
@@ -36,13 +36,13 @@ export async function build_html(env, opts = {}) {
     <div class="sc-env-settings-container">
       <div class="smart-env-settings-header">
         <h2>Smart Environment</h2>
-        <button class="sc-collection-stats-btn" type="button">Show Stats</button>
-        <button class="smart-env_reload-sources-btn" type="button">Reload Sources</button>
+        <button class="sc-collection-stats-btn" type="button">Show stats</button>
+        <button class="smart-env_reload-sources-btn" type="button">Reload sources</button>
       </div>
       ${env_settings_html}
 
       <div class="smart-env-settings-header">
-        <h2>Excluded Folders</h2>
+        <h2>Excluded folders</h2>
         ${addExcludedFolderBtn}
       </div>
       <div>
@@ -50,13 +50,13 @@ export async function build_html(env, opts = {}) {
       </div>
 
       <div class="smart-env-settings-header">
-        <h2>Excluded Files</h2>
+        <h2>Excluded files</h2>
         ${addExcludedFileBtn}
       </div>
       <div>
         ${excludedFilesList}
       </div>
-      <button class="sc-excluded-sources-btn" type="button">Show Excluded</button>
+      <button class="sc-excluded-sources-btn" type="button">Show excluded</button>
 
       <div data-smart-settings="smart_sources"></div>
       <div data-smart-settings="smart_blocks"></div>

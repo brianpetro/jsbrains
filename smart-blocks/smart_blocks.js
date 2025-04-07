@@ -50,9 +50,9 @@ export class SmartBlocks extends SmartEntities {
   get settings_config() {
     return this.process_settings_config({
       "embed_blocks": {
-        name: 'Embed Blocks',
+        name: 'Utilize Smart Blocks',
         type: "toggle",
-        description: "Embed blocks using the embedding model.",
+        description: "Creates more granular embeddings by splitting sources into smaller chunks. This may improve search results especially for large documents that have well-defined sections.",
         default: true,
       },
       ...super.settings_config,

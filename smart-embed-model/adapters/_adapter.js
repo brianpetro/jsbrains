@@ -69,7 +69,7 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
   get settings_config() {
     return {
       "[ADAPTER].model_key": {
-        name: 'Embedding Model',
+        name: 'Embedding model',
         type: "dropdown",
         description: "Select an embedding model.",
         options_callback: 'adapter.get_models_as_options',

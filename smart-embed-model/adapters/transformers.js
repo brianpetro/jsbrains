@@ -284,15 +284,15 @@ export const transformers_models = {
  */
 export const transformers_settings_config = {
   "[ADAPTER].gpu_batch_size": {
-    name: 'GPU Batch Size',
+    name: 'GPU batch size',
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter number ex. 10",
   },
   "[ADAPTER].legacy_transformers": {
-    name: 'Legacy Transformers (no GPU)',
+    name: 'Legacy transformers (no GPU)',
     type: "toggle",
-    description: "Use legacy transformers (v2) instead of v3.",
+    description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
     callback: 'embed_model_changed',
     default: true,
   },
