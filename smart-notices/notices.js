@@ -166,6 +166,11 @@ export const NOTICES = {
     timeout: 0
   },
 
+  reload_sources: {
+    en: 'Reloaded sources in {{time_ms}}ms'
+  },
+
+
 
 };
 

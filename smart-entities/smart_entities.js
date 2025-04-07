@@ -75,7 +75,7 @@ export class SmartEntities extends Collection {
   async unload() {
     if (typeof this.embed_model?.unload === 'function') {
       this.embed_model.unload();
-      this.embed_model = null; // triggers new instance on next access
+    //   this.embed_model = null; // triggers new instance on next access
     }
     super.unload();
   }

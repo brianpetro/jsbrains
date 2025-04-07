@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139103;
+  static version = 2.139105;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -257,11 +257,13 @@ export class SmartEnv {
    */
   async load_collections(collections = this.collections) {
     for (const key of Object.keys(collections || {})) {
+      const time_start = Date.now();
       if (typeof this[key]?.process_load_queue === 'function') {
         if(this.state === 'init' && this[key].opts?.prevent_load_on_init === true) continue;
         await this[key].process_load_queue();
       }
       this.collections[key] = 'loaded';
+      this[key].load_time_ms = Date.now() - time_start; 
     }
   }
   /**
@@ -436,7 +438,7 @@ export class SmartEnv {
       },
       excluded_headings: {
         name: 'Excluded Headings',
-        description: 'Comma-separated list of headings to exclude.',
+        description: 'Comma-separated list of headings to exclude. Note: currently only applies to blocks (2025-04-07).',
         type: 'text',
         default: ''
       }
@@ -546,7 +548,6 @@ export class SmartEnv {
   async update_exclusions() {
     this.smart_sources._fs = null;
     await this.smart_sources.fs.init();
-    this.smart_sources.render_settings();
   }
 
   // DEPRECATED

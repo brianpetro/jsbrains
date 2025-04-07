@@ -457,6 +457,7 @@ export class Collection {
   unload() {
     this.clear();
     this.unloaded = true;
+    this.env.collections[this.collection_key] = null;
   }
 
   /**
@@ -482,6 +483,23 @@ export class Collection {
    */
   async render_component(component_key, opts = {}) {
     return await this.env.render_component(component_key, this, opts);
+  }
+  // only show process notice if taking longer than 1 second
+  show_process_notice(process, opts = {}) {
+    if(!this.debounce_process_notice) this.debounce_process_notice = {};
+    this.debounce_process_notice[process] = setTimeout(() => {
+      this.debounce_process_notice[process] = null;
+      this.env.notices?.show(process, { collection_key: this.collection_key, ...opts });
+    }, 1000);
+  }
+
+  clear_process_notice(process) {
+    if (this.debounce_process_notice?.[process]) {
+      clearTimeout(this.debounce_process_notice[process]);
+      this.debounce_process_notice[process] = null;
+    } else {
+      this.env.notices?.remove(process);
+    }
   }
 }
 

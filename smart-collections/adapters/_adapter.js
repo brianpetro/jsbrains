@@ -87,6 +87,7 @@ export class CollectionDataAdapter {
     const adapter = this.create_item_adapter(item);
     await adapter.load_if_updated();
   }
+
 }
 
 

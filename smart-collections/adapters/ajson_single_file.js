@@ -80,7 +80,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
    * @returns {Promise<void>}
    */
   async process_load_queue() {
-    this.collection.notices?.show('loading_collection', { collection_key: this.collection.collection_key });
+    this.collection.show_process_notice('loading_collection');
 
 
     // Ensure directory exists
@@ -97,7 +97,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
           item.queue_import?.();
         }
       }
-      this.collection.notices?.remove('loading_collection');
+      this.collection.clear_process_notice('loading_collection');
       return;
     }
 
@@ -110,7 +110,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
           item.queue_import?.();
         }
       }
-      this.collection.notices?.remove('loading_collection');
+      this.collection.clear_process_notice('loading_collection');
       return;
     }
 
@@ -132,8 +132,9 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
       item.loaded_at = Date.now();
     }
 
-    this.collection.notices?.remove('loading_collection');
+    this.collection.clear_process_notice('loading_collection');
   }
+
 
   /**
    * Helper to parse single-file .ajson content, distributing states to items.
@@ -239,7 +240,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
    * @returns {Promise<void>}
    */
   async process_save_queue() {
-    this.collection.notices?.show('saving_collection', { collection_key: this.collection.collection_key });
+    this.collection.show_process_notice('saving_collection');
 
 
     const save_queue = Object.values(this.collection.items).filter(item => item._queue_save);
@@ -264,7 +265,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
     }
 
     console.log(`Saved (single-file) ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
-    this.collection.notices?.remove('saving_collection');
+    this.collection.clear_process_notice('saving_collection');
   }
 }
 

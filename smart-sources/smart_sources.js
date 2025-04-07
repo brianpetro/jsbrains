@@ -27,11 +27,7 @@ export class SmartSources extends SmartEntities {
    */
   async init() {
     await super.init();
-    this.notices?.show('initial_scan', { collection_key: this.collection_key });
     await this.init_items();
-    this.notices?.remove('initial_scan');
-    this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
-
   }
 
   /**
@@ -41,13 +37,14 @@ export class SmartSources extends SmartEntities {
    * @returns {Promise<void>}
    */
   async init_items() {
+    this.show_process_notice('initial_scan');
     for (const AdapterClass of Object.values(this.source_adapters)) {
       if (typeof AdapterClass.init_items === 'function') {
         // Sub-classes can store a timestamp in 'collection.fs_items_initialized' or similarly to skip if done
         await AdapterClass.init_items(this);
       }
     }
-    this.notices?.remove('initial_scan');
+    this.clear_process_notice('initial_scan');
     this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
   }
 
@@ -318,13 +315,13 @@ export class SmartSources extends SmartEntities {
       const time_start = Date.now();
       // Import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
-        this.notices?.show('import_progress', {
+        this.show_process_notice('import_progress', {
           progress: i,
           total: import_queue.length,
         });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
-      this.notices?.remove('import_progress');
+      this.clear_process_notice('import_progress');
 
       this.notices?.show('done_import', {
         count: import_queue.length,
@@ -413,20 +410,20 @@ export class SmartSources extends SmartEntities {
    */
   get settings_config(){
     const _settings_config = {
-      "load": {
-        "name": "Load",
-        "description": "Load sources.",
-        "type": "button",
-        "callback": "run_load",
-        "conditional": () => !this.loaded && this.collection_key === 'smart_sources',
-      },
-      "re_import": {
-        "name": "Re-Import",
-        "description": "Re-import all sources.",
-        "type": "button",
-        "callback": "run_re_import",
-        "conditional": () => this.loaded && this.collection_key === 'smart_sources',
-      },
+      // "load": {
+      //   "name": "Load",
+      //   "description": "Load sources.",
+      //   "type": "button",
+      //   "callback": "run_load",
+      //   "conditional": () => !this.loaded && this.collection_key === 'smart_sources',
+      // },
+      // "re_import": {
+      //   "name": "Re-Import",
+      //   "description": "Re-import all sources.",
+      //   "type": "button",
+      //   "callback": "run_re_import",
+      //   "conditional": () => this.loaded && this.collection_key === 'smart_sources',
+      // },
       "prune": {
         "name": "Prune",
         "description": "Remove sources and blocks that are no longer needed.",
@@ -613,9 +610,11 @@ export class SmartSources extends SmartEntities {
   get folder_exclusions() {
     return (this.env.settings?.folder_exclusions?.length) ? this.env.settings.folder_exclusions.split(",").map((folder) => {
       folder = folder.trim();
-      if (folder.slice(-1) !== "/") return folder + "/";
+      if (folder === "") return false;
+      if (folder === "/") return false;
+      if (!folder.endsWith("/")) return folder + "/";
       return folder;
-    }) : [];
+    }).filter(Boolean) : [];
   }
 
   /**
@@ -640,6 +639,10 @@ export class SmartSources extends SmartEntities {
     return this.fs.file_paths
       .filter(file_path => extensions.some(ext => file_path.endsWith(ext)) && !this.fs.is_excluded(file_path))
       .length;
+  }
+  get excluded_file_paths() {
+    return this.env.fs.file_paths // use env-level fs (contains all files)
+      .filter(file_path => this.fs.is_excluded(file_path));
   }
 
   /**

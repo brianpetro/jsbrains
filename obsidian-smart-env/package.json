@@ -14,10 +14,12 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "scripts": {
+    "build": "node build.js",
     "test": "npx ava --verbose"
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
+    "obsidian": "latest",
     "smart-environment": "../smart-environment",
     "smart-file-system": "../smart-fs",
     "smart-settings": "../smart-settings",
@@ -25,5 +27,7 @@
     "smart-sources": "../smart-sources",
     "smart-blocks": "../smart-blocks",
     "smart-notices": "../smart-notices"
+  },
+  "devDependencies": {
   }
 }

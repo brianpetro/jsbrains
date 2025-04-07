@@ -14,7 +14,8 @@ import { SmartNotices } from "smart-notices/smart_notices.js"; // TODO: move to 
 import smart_block from "smart-blocks/smart_block.js";
 import smart_source from "smart-sources/smart_source.js";
 import { parse_blocks } from "smart-blocks/content_parsers/parse_blocks.js";
-export default {
+import { merge_env_config } from 'smart-environment/utils/merge_env_config';
+const smart_env_config = {
   env_path: '',
   modules: {
     smart_fs: {
@@ -89,3 +90,6 @@ export default {
     },
   },
 };
+import { smart_env_config as dist_config } from './dist/smart_env.config.js';
+merge_env_config(smart_env_config, dist_config);
+export default smart_env_config;

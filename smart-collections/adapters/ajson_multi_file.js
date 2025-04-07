@@ -65,7 +65,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    * @returns {Promise<void>}
    */
   async process_load_queue() {
-    this.collection.notices?.show('loading_collection', { collection_key: this.collection.collection_key });
+    this.collection.show_process_notice('loading_collection');
 
 
     // check if directory exists
@@ -76,12 +76,12 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
   
     const load_queue = Object.values(this.collection.items).filter(item => item._queue_load);
     if (!load_queue.length) {
-      this.collection.notices?.remove('loading_collection');
+      this.collection.clear_process_notice('loading_collection');
       return;
     }
   
     console.log(`Loading ${this.collection.collection_key}: ${load_queue.length} items`);
-    const time_start = Date.now();
+    // const time_start = Date.now();
     const batch_size = 100; // could be configurable
   
     for (let i = 0; i < load_queue.length; i += batch_size) {
@@ -95,11 +95,11 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
       }));
     }
   
-    this.collection.env.collections[this.collection.collection_key] = 'loaded';
-    this.collection.load_time_ms = Date.now() - time_start;
+    // this.collection.env.collections[this.collection.collection_key] = 'loaded';
+    // this.collection.load_time_ms = Date.now() - time_start;
     console.log(`Loaded ${this.collection.collection_key} in ${this.collection.load_time_ms}ms`);
     this.collection.loaded = load_queue.length;
-    this.collection.notices?.remove('loading_collection');
+    this.collection.clear_process_notice('loading_collection');
   }
   
   /**
@@ -108,7 +108,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    * @returns {Promise<void>}
    */
   async process_save_queue() {
-    this.collection.notices?.show('saving_collection', { collection_key: this.collection.collection_key });
+    this.collection.show_process_notice('saving_collection');
   
 
     const save_queue = Object.values(this.collection.items).filter(item => item._queue_save);
@@ -134,7 +134,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
     }
   
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
-    this.collection.notices?.remove('saving_collection');
+    this.collection.clear_process_notice('saving_collection');
 
   }
 
