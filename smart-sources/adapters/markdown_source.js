@@ -22,7 +22,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     if(!this.should_import) return;
     const content = await this.read();
     if (!content) {
-      console.warn(`No content to import for ${this.file_path}`);
+      // console.warn(`No content to import for ${this.file_path}`);
       return;
     }
     // TODO: should be dynamic: ex. content_parsers files export a should_parse function
