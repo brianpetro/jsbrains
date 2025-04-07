@@ -42,8 +42,6 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         this.iframe = document.createElement('iframe');
         this.iframe.style.display = 'none';
         this.iframe.id = this.iframe_id;
-        // set sandbox attribute
-        this.iframe.sandbox = 'allow-scripts allow-same-origin';
         document.body.appendChild(this.iframe);
         // Set up message listener
         window.addEventListener('message', this._handle_message.bind(this));

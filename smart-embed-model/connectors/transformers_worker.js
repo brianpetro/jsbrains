@@ -433,9 +433,9 @@ var SmartEmbedModel = class extends SmartModel {
   get settings_config() {
     const _settings_config = {
       adapter: {
-        name: "Embedding Model Platform",
+        name: "Embedding model platform",
         type: "dropdown",
-        description: "Select an embedding model platform.",
+        description: "Select an embedding model platform. The default 'transformers' utilizes built-in local models.",
         options_callback: "get_platforms_as_options",
         callback: "adapter_changed",
         default: this.constructor.defaults.adapter
@@ -650,7 +650,7 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
   get settings_config() {
     return {
       "[ADAPTER].model_key": {
-        name: "Embedding Model",
+        name: "Embedding model",
         type: "dropdown",
         description: "Select an embedding model.",
         options_callback: "adapter.get_models_as_options",
@@ -937,15 +937,15 @@ var transformers_models = {
 };
 var transformers_settings_config = {
   "[ADAPTER].gpu_batch_size": {
-    name: "GPU Batch Size",
+    name: "GPU batch size",
     type: "number",
     description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
     placeholder: "Enter number ex. 10"
   },
   "[ADAPTER].legacy_transformers": {
-    name: "Legacy Transformers (no GPU)",
+    name: "Legacy transformers (no GPU)",
     type: "toggle",
-    description: "Use legacy transformers (v2) instead of v3.",
+    description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
     callback: "embed_model_changed",
     default: true
   }
