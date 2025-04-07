@@ -32,7 +32,7 @@ export async function build_html(env, opts = {}) {
     <div class="sc-env-settings-container">
       <div class="sc-env-settings-header">
         <h2>Smart Environment</h2>
-        <button type="button" class="toggle-env-settings-btn">Show settings</button>
+        <button type="button" class="toggle-env-settings-btn">Show environment settings</button>
       </div>
       <div class="sc-env-settings-body" style="display: none;">
         <div class="smart-env-settings-header">
@@ -100,7 +100,7 @@ export async function post_process(env, container, opts = {}) {
     heading_btn.addEventListener('click', () => {
       const is_hidden = (body_el.style.display === 'none');
       body_el.style.display = is_hidden ? 'block' : 'none';
-      heading_btn.textContent = is_hidden ? 'Hide settings' : 'Show settings';
+      heading_btn.textContent = is_hidden ? 'Hide environment settings' : 'Show environment settings';
     });
   }
 
