@@ -315,13 +315,15 @@ export class SmartSources extends SmartEntities {
       const time_start = Date.now();
       // Import 100 at a time
       for (let i = 0; i < import_queue.length; i += 100) {
-        this.show_process_notice('import_progress', {
+        this.notices?.show('import_progress', {
           progress: i,
           total: import_queue.length,
         });
         await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
       }
-      this.clear_process_notice('import_progress');
+      setTimeout(() => {
+        this.notices?.remove('import_progress');
+      }, 1000);
 
       this.notices?.show('done_import', {
         count: import_queue.length,
