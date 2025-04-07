@@ -130,6 +130,11 @@ export class SmartFsObsidianAdapter {
     if(rel_path.endsWith('/')) rel_path = rel_path.slice(0, -1);
     const files = this.obsidian_app.vault.getAllLoadedFiles()
       .filter((file) => {
+        if(file.path.length > 200) {
+          // add to excluded files
+          this.smart_fs.auto_excluded_files.push(file.path);
+          return false;
+        }
         if(rel_path !== '' && !file.path.startsWith(rel_path)) return false;
         if(file instanceof this.obsidian.TFile){
           if(opts.type === 'folder') return false;

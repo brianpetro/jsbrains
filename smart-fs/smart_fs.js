@@ -82,6 +82,7 @@ class SmartFs {
     this.files = {};
     this.file_paths = [];
     this.folder_paths = [];
+    this.auto_excluded_files = [];
   }
   async refresh() {
     this.files = {};

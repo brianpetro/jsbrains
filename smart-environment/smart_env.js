@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139105;
+  static version = 2.139106;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -538,6 +538,13 @@ export class SmartEnv {
     deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
     deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings (DEPRECATED????)
     this._saved = true;
+    if(this.fs.auto_excluded_files) {
+      const existing_file_exclusions = settings.file_exclusions.split(',').map(s => s.trim()).filter(Boolean);
+      settings.file_exclusions = [...existing_file_exclusions, ...this.fs.auto_excluded_files]
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .join(',')
+      ;
+    }
     return settings;
   }
 

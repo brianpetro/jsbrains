@@ -58,6 +58,11 @@ export async function build_html(env, opts = {}) {
 
         <div data-smart-settings="smart_sources"></div>
         <div data-smart-settings="smart_blocks"></div>
+        <p>Notes about embedding models:</p>
+        <ul>
+          <li>IMPORTANT: make sure local <code>BGE-micro-v2</code> embedding model works before trying other local models.</li>
+          <li>API models require an API key and send your notes to third-party servers for processing.</li>
+        </ul>
       </div>
     </div>
   `;
