@@ -167,11 +167,15 @@ export class SmartSources extends SmartEntities {
     
     await this.process_save_queue(true); // pass true => forcibly save all
     // Queue embedding for items with changed metadata
-    const items_w_vec = Object.values(this.items).filter(item => item.vec);
-    for (const item of items_w_vec) {
-      if (item.source_adapter.should_import) item.queue_import();
-      else if (item.should_embed) item.queue_embed();
-    }
+    // const items_w_vec = Object.values(this.items).filter(item => item.vec);
+    // for (const item of items_w_vec) {
+    //   if (item.source_adapter.should_import) item.queue_import();
+    //   else if (item.should_embed) item.queue_embed();
+    // }
+
+    Object.values(this.items).forEach(i => i.queue_embed());
+    Object.values(this.block_collection.items).forEach(i => i.queue_embed());
+    await this.process_embed_queue();
   }
 
   /**
@@ -426,9 +430,9 @@ export class SmartSources extends SmartEntities {
       //   "callback": "run_re_import",
       //   "conditional": () => this.loaded && this.collection_key === 'smart_sources',
       // },
-      "prune": {
-        "name": "Prune",
-        "description": "Remove sources and blocks that are no longer needed.",
+      "refresh_embeddings": {
+        "name": "Refresh embeddings",
+        "description": "Remove sources and blocks that are no longer needed. Attempt to embed all active items.",
         "type": "button",
         "callback": "run_prune",
         "conditional": () => this.loaded && this.collection_key === 'smart_sources',
