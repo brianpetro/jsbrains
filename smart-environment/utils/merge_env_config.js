@@ -9,7 +9,7 @@ export function merge_env_config(target, incoming) {
         if (!target[key]) target[key] = {};
         deep_merge_no_overwrite(target[key], value);
       }
-    } else {
+    } else if(value !== target[key]) {
       if (target[key] !== undefined) {
         console.warn(
           `SmartEnv: Overwriting existing property ${key} in smart_env_config`,
