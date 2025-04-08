@@ -25,7 +25,8 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
     // For each file recognized by this collection's fs,
     // let 'init_file_path' decide if extension is recognized:
     for (const file of Object.values(collection.fs.files)) {
-      collection.init_file_path(file.path);
+      const item = collection.init_file_path(file.path);
+      if(item) item.init_file_mtime = file.stat.mtime;
     }
     collection.fs_items_initialized = Date.now();
   }

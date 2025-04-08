@@ -208,6 +208,10 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
         if(file_data.length) await this.fs.write(this.data_path, file_data);
         else await this.fs.remove(this.data_path);
       }
+      const last_import_mtime = this.item.data.last_import?.at || 0;
+      if(last_import_mtime && this.item.init_file_mtime > last_import_mtime){
+        this.item.queue_import();
+      }
     } catch (e) {
       // console.warn("Error loading item (queueing import)", this.item.key, this.data_path, e);
       this.item.queue_import();
