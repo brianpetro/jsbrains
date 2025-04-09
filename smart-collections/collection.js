@@ -461,21 +461,6 @@ export class Collection {
   }
 
   /**
-   * Runs load process for all items in the collection, triggering queue loads and rendering settings after done.
-   * @returns {Promise<void>}
-   */
-  async run_data_load() {
-    this.loaded = null;
-    this.load_time_ms = null;
-    Object.values(this.items).forEach((item) => item.queue_load());
-    this.notices?.show("loading_collection", { collection_key: this.collection_key });
-    await this.process_load_queue();
-    this.notices?.remove("loading_collection");
-    this.notices?.show("done_loading_collection", { collection_key: this.collection_key });
-    this.render_settings();
-
-  }
-  /**
    * Helper function to render a component in the collection scope
    * @param {*} component_key 
    * @param {*} opts 

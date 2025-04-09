@@ -16,7 +16,17 @@ export async function parse_blocks(source, content) {
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
       // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
       const block_key = source.key + sub_key;
+      const existing_block = source.block_collection.get(block_key);
       const block_content = get_line_range(content, line_range[0], line_range[1]);
+      if(
+        existing_block
+        && existing_block.lines[0] === line_range[0]
+        && existing_block.lines[1] === line_range[1]
+        && existing_block.size === block_content.length
+        && existing_block.vec
+      ){
+        continue;
+      }
       const block_outlinks = get_markdown_links(block_content);
       const block_data = {
         key: block_key,

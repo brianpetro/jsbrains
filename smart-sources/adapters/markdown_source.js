@@ -29,6 +29,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     if(this.data.last_import?.hash === this.data.last_read?.hash){
       if(this.data.blocks) return; // if blocks already exist, skip re-import
     }
+    this.data.blocks = null;
     await this.parse_content(content);
     await this.item.parse_content(content);
 

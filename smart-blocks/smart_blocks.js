@@ -115,19 +115,6 @@ export class SmartBlocks extends SmartEntities {
    */
   async search() { throw "Not implemented: search"; }
 
-  /**
-   * @async
-   * @throws {Error} Throws an error indicating the method is not implemented.
-   * @returns {Promise<void>}
-   */
-  async run_data_load() { throw "Not implemented: run_data_load"; }
-
-  /**
-   * @async
-   * @throws {Error} Throws an error indicating the method is not implemented.
-   * @returns {Promise<void>}
-   */
-  async run_re_import() { throw "Not implemented: run_re_import"; }
 
   /**
    * @async

@@ -96,87 +96,6 @@ export class SmartSources extends SmartEntities {
     }
     return undefined;
   }
-  /**
-   * Removes old data files by pruning sources and blocks.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async prune() {
-    await this.fs.refresh(); // Refresh source files in case they have changed
-    this.notices?.show('pruning_collection', { collection_key: this.collection_key });
-    
-
-    // Identify sources to remove
-    const remove_sources = Object.values(this.items)
-      .filter(item => {
-        if(item.is_gone){
-          item.reason = "is_gone";
-          return true;
-        }
-        if(item.excluded){
-          item.reason = "excluded";
-          return true;
-        }
-        if(!item.data.blocks){
-          item.reason = "!data.blocks";
-          return true;
-        }
-        return false;
-      });
-    
-    // Remove identified sources
-    for(let i = 0; i < remove_sources.length; i++){
-      const source = remove_sources[i];
-      console.log(source.reason);
-      // Possibly remove from disk or environment
-      // source.delete();
-      // Or we might do advanced pruning logic
-    }
-    
-    this.notices?.remove('pruning sources');
-    this.notices?.show('done_pruning_collection', { collection_key: this.collection_key, count: remove_sources.length });
-    this.notices?.show('pruning_collection', { collection_key: this.block_collection.collection_key });
-
-
-    // Identify blocks to remove
-    const remove_smart_blocks = Object.values(this.block_collection.items)
-      .filter(item => {
-        if(!item.vec) return false; // skip blocks that have no vec?
-        if(item.is_gone) {
-          item.reason = "is_gone";
-          return true;
-        }
-        if(!item.should_embed) {
-          item.reason = "!should_embed";
-          return true;
-        }
-        return false;
-      })
-    ;
-    
-    // Remove identified blocks
-    for(let i = 0; i < remove_smart_blocks.length; i++){
-      const item = remove_smart_blocks[i];
-      if(item.is_gone) item.delete();
-      else item.remove_embeddings();
-    }
-    
-    this.notices?.remove('pruning_collection');
-    this.notices?.show('done_pruning_collection', { collection_key: this.block_collection.collection_key, count: remove_smart_blocks.length });
-    console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
-    
-    await this.process_save_queue(true); // pass true => forcibly save all
-    // Queue embedding for items with changed metadata
-    // const items_w_vec = Object.values(this.items).filter(item => item.vec);
-    // for (const item of items_w_vec) {
-    //   if (item.source_adapter.should_import) item.queue_import();
-    //   else if (item.should_embed) item.queue_embed();
-    // }
-
-    Object.values(this.items).forEach(i => i.queue_embed());
-    Object.values(this.block_collection.items).forEach(i => i.queue_embed());
-    await this.process_embed_queue();
-  }
 
   /**
    * Builds a map of links between sources.
@@ -312,7 +231,8 @@ export class SmartSources extends SmartEntities {
    * Imports items (SmartSources or SmartBlocks) that have been flagged for import.
    */
   async process_source_import_queue(opts={}){
-    const { process_embed_queue = true } = opts;
+    const { process_embed_queue = true, force = false } = opts;
+    if (force) Object.values(this.items).forEach(item => item._queue_import = true);
     const import_queue = Object.values(this.items).filter(item => item._queue_import);
     console.log("import_queue " + import_queue.length);
     if(import_queue.length){
@@ -352,17 +272,6 @@ export class SmartSources extends SmartEntities {
    */
   get source_adapters() {
     if(!this._source_adapters){
-      // this._source_adapters = {
-      //   ...(this.env.opts.collections?.[this.collection_key]?.source_adapters || {}),
-      // };
-      // if(!this.settings?.enable_image_adapter){
-      //   delete this._source_adapters.png;
-      //   delete this._source_adapters.jpg;
-      //   delete this._source_adapters.jpeg;
-      // }
-      // if(!this.settings?.enable_pdf_adapter){
-      //   delete this._source_adapters.pdf;
-      // }
       const source_adapters = Object.values(this.env.opts.collections?.[this.collection_key]?.source_adapters || {});
       const _source_adapters = source_adapters.reduce((acc, adapter) => {
         adapter.extensions?.forEach(ext => acc[ext] = adapter);
@@ -373,10 +282,6 @@ export class SmartSources extends SmartEntities {
       }
     }
     return this._source_adapters;
-  }
-  reset_source_adapters(){
-    this._source_adapters = null;
-    this.render_settings();
   }
 
   /**
@@ -416,27 +321,6 @@ export class SmartSources extends SmartEntities {
    */
   get settings_config(){
     const _settings_config = {
-      // "load": {
-      //   "name": "Load",
-      //   "description": "Load sources.",
-      //   "type": "button",
-      //   "callback": "run_load",
-      //   "conditional": () => !this.loaded && this.collection_key === 'smart_sources',
-      // },
-      // "re_import": {
-      //   "name": "Re-Import",
-      //   "description": "Re-import all sources.",
-      //   "type": "button",
-      //   "callback": "run_re_import",
-      //   "conditional": () => this.loaded && this.collection_key === 'smart_sources',
-      // },
-      "refresh_embeddings": {
-        "name": "Refresh embeddings",
-        "description": "Remove sources and blocks that are no longer needed. Attempt to embed all active items.",
-        "type": "button",
-        "callback": "run_prune",
-        "conditional": () => this.loaded && this.collection_key === 'smart_sources',
-      },
       "clear_all": {
         "name": "Clear all",
         "description": "Clear all data and reimport sources.",
@@ -446,20 +330,6 @@ export class SmartSources extends SmartEntities {
         "conditional": () => this.loaded && this.collection_key === 'smart_sources',
       },
       ...super.settings_config,
-      "enable_image_adapter": {
-        "name": "Image Adapter",
-        "description": "Enable image processing.",
-        "type": "toggle",
-        "default": false,
-        "callback": "reset_source_adapters",
-      },
-      "enable_pdf_adapter": {
-        "name": "PDF Adapter",
-        "description": "Enable PDF processing.",
-        "type": "toggle",
-        "default": false,
-        "callback": "reset_source_adapters",
-      },
       ...this.process_settings_config(settings_config),
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
         if(acc[adapter_constructor]) return acc; // Skip if already added same adapter_constructor
@@ -475,8 +345,6 @@ export class SmartSources extends SmartEntities {
         return acc;
       }, {}),
     };
-    if(!['png', 'jpg', 'jpeg'].some(ext => this.env.opts.collections?.[this.collection_key]?.source_adapters?.[ext])) delete _settings_config.enable_image_adapter;
-    if(!this.env.opts.collections?.[this.collection_key]?.source_adapters?.['pdf']) delete _settings_config.enable_pdf_adapter;
     return _settings_config;
   }
 
@@ -512,51 +380,6 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Runs the load process by invoking superclass methods and rendering settings.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async run_data_load() {
-    await super.run_data_load();
-    this.block_collection.render_settings();
-    this.render_settings(); // Re-render settings to update buttons
-  }
-
-  /**
-   * Runs the import process by queuing imports for changed items and processing the import queue.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async run_re_import(){
-    const start_time = Date.now();
-    // Queue import for items with changed metadata
-    Object.values(this.items).forEach(item => {
-      // if (item.source_adapter.should_import) item.queue_import();
-      if(item.data.last_import?.at) item.data.last_import.at = 0; // Force re-import
-      item.queue_import();
-      item.queue_embed();
-      item.blocks.forEach(block => block.queue_embed());
-    });
-    await this.process_source_import_queue();
-    const end_time = Date.now();
-    console.log(`Time spent importing: ${end_time - start_time}ms`);
-    this.render_settings();
-    this.block_collection.render_settings();
-  }
-
-  /**
-   * Runs the prune process to clean up sources and blocks.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async run_prune(){
-    await this.prune();
-    await this.process_save_queue();
-    this.render_settings();
-    this.block_collection.render_settings();
-  }
-
-  /**
    * Clears all data by removing sources and blocks, reinitializing the file system, and reimporting items.
    * @async
    * @returns {Promise<void>}
@@ -583,7 +406,39 @@ export class SmartSources extends SmartEntities {
     this.notices?.remove('clearing_all');
     this.notices?.show('done_clearing_all');
     await this.process_source_import_queue();
+  }
 
+  /**
+   * Deletes all *.ajson files in the "multi/" data_dir, then re-saves all sources (opts.force=true).
+   */
+  async run_clean_up_data() {
+    this.notices?.show('pruning_collection', { collection_key: this.block_collection.collection_key });
+    // Identify blocks to remove
+    const remove_smart_blocks = this.block_collection.filter(item => {
+      if(!item.vec) return false; // skip blocks that have no vec?
+      if(item.is_gone) {
+        item.reason = "is_gone";
+        return true;
+      }
+      if(!item.should_embed) {
+        item.reason = "!should_embed";
+        return true;
+      }
+      return false;
+    });
+    // Remove identified blocks
+    for(let i = 0; i < remove_smart_blocks.length; i++){
+      const item = remove_smart_blocks[i];
+      if(item.is_gone) item.delete();
+      else item.remove_embeddings();
+    }
+    this.notices?.remove('pruning_collection');
+    this.notices?.show('done_pruning_collection', { collection_key: this.block_collection.collection_key, count: remove_smart_blocks.length });
+    console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
+    // 1) remove all .ajson files in `this.data_dir` ("multi" by default)
+    await this.data_fs.remove_dir(this.data_dir, true);
+    // 2) forcibly re-save all items
+    await this.process_save_queue({ force: true });
   }
 
   /**

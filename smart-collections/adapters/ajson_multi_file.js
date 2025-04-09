@@ -316,7 +316,6 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
       this.item._queue_save = false;
     }catch(e){
       if(e.code === 'ENOENT' && retries < 1){
-        console.warn("ENOENT, creating directory", this.data_path);
         const dir = this.collection_adapter.collection.data_dir;
         if (!(await this.fs.exists(dir))) {
           await this.fs.mkdir(dir);

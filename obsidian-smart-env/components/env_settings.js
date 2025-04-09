@@ -38,6 +38,7 @@ export async function build_html(env, opts = {}) {
         <div class="smart-env-settings-header">
           <button class="sc-collection-stats-btn" type="button">Show stats</button>
           <button class="smart-env_reload-sources-btn" type="button">Reload sources</button>
+          <button class="smart-env_clean-up-data-btn" type="button">Clean-up data</button>
         </div>
 
         ${env_settings_html}
@@ -160,6 +161,14 @@ export async function post_process(env, container, opts = {}) {
     });
   }
 
+  // Clean-up data
+  const clean_up_data_btn = container.querySelector('.smart-env_clean-up-data-btn');
+  if (clean_up_data_btn) {
+    clean_up_data_btn.addEventListener('click', async () => {
+      await env.smart_sources.run_clean_up_data();
+    });
+  }
+
   // Render sub-collections if any
   const env_collections_containers = container.querySelectorAll('[data-smart-settings]');
   for (const el of env_collections_containers) {
@@ -217,7 +226,7 @@ function render_excluded_file_list(env, container) {
     li.setText(file_path + '  ');
     const remove_btn = li.createEl('button', { text: '(x)', cls: 'remove-file-btn' });
     remove_btn.addEventListener('click', () => {
-      const splitted = excluded_csv.split(',').map(x => x.trim()).filter(Boolean);
+      const splitted = excluded_csv.split(',').map(s => s.trim()).filter(Boolean);
       const new_arr = splitted.filter(f => f !== file_path);
       env.settings.file_exclusions = new_arr.join(',');
       render_excluded_file_list(env, container);
@@ -227,3 +236,4 @@ function render_excluded_file_list(env, container) {
     ul.createEl('li', { text: 'No files excluded yet.' });
   }
 }
+
