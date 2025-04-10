@@ -41,7 +41,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.1391091;
+  static version = 2.1391092;
   scope_name = 'smart_env';
   static global_ref = get_global_ref();
   global_ref = this.constructor.global_ref;
@@ -212,6 +212,10 @@ export class SmartEnv {
   async load() {
     await this.fs.load_files(); // skip exclusions; detect env_data_dir
     if(!this.settings) await SmartSettings.create(this);
+    if(this.config.default_settings){
+      // takes precedence over default_settings in collection classes (merged by subsequent init_collections)
+      deep_merge_no_overwrite(this.settings, this.config.default_settings);
+    }
     await this.init_collections();
     for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
       this[main_key] = main;
