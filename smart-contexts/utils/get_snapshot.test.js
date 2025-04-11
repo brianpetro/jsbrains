@@ -21,6 +21,7 @@ import { SmartFsTestAdapter } from 'smart-file-system/adapters/_test.js';
 import { NodeFsSmartFsAdapter } from 'smart-file-system/adapters/node_fs.js';
 import { SmartFs } from 'smart-file-system/smart_fs.js';
 
+global.window = {};
 /**
  * A simple test Main class that yields a well-defined smart_env_config.
  */
@@ -521,4 +522,62 @@ test.serial('Nonexistent file references should be skipped gracefully', async t 
   // We expect that items[0] is empty because missingFile does not exist
   t.falsy(Object.keys(snapshot.items[0]).length, 'No valid items at depth=0');
   t.true(snapshot.missing_items.includes('missingFile.md'), 'Missing file should be in missing_files');
+});
+/**
+ * NEW TEST (12) - verify that outlinks inside an excluded heading are NOT followed
+ * when 'follow_links_in_excluded' is false.
+ */
+test.serial('Outlinks in excluded heading are ignored when follow_links_in_excluded=false', async t => {
+  // Write a file that has a heading "Secret" containing an outlink to "secretTarget.md"
+  // Then a normal heading with an outlink to "publicTarget.md".
+  const fileA = `
+# Normal
+Link to [[publicTarget]]
+# Secret
+Link to [[secretTarget]]
+  `;
+  await env.smart_sources.fs.write('fileA.md', fileA);
+  await env.smart_sources.fs.write('publicTarget.md', '# Public Content\n');
+  await env.smart_sources.fs.write('secretTarget.md', '# Secret Content\n');
+  await env.smart_sources.fs.load_files();
+  await env.smart_sources.init_file_path('fileA.md');
+  await env.smart_sources.init_file_path('publicTarget.md');
+  await env.smart_sources.init_file_path('secretTarget.md');
+  Object.values(env.smart_sources.items).forEach(item => item.queue_import());
+  await env.smart_sources.process_source_import_queue();
+
+  // Insert outlinks metadata for fileA
+  const fileA_src = await env.smart_sources.create_or_update({
+    key: 'fileA.md',
+    outlinks: ['publicTarget.md', 'secretTarget.md'] // from raw content
+  });
+  fileA_src.queue_save();
+  await env.smart_sources.process_save_queue();
+
+  // We have a context referencing fileA, which has 'Secret' heading excluded
+  const sc_item = await env.smart_contexts.create_or_update({
+    key: 'followLinksExcludedTest',
+    context_items: {
+      'fileA.md': true
+    },
+    context_opts: {
+      excluded_headings: ['Secret']
+    }
+  });
+
+  // Build snapshot with link_depth=1, follow_links_in_excluded=false
+  const snapshot = await get_snapshot(sc_item, {
+    link_depth: 1,
+    follow_links_in_excluded: false,
+    max_len: 0,
+    excluded_headings: ['Secret']
+  });
+
+  // Depth=0 => fileA
+  t.truthy(snapshot.items[0]['fileA.md'], 'fileA at depth=0');
+
+  // Depth=1 => should only see "publicTarget.md" included, not "secretTarget.md"
+  const depth1 = snapshot.items[1];
+  t.truthy(depth1['publicTarget.md'], 'Public target is discovered');
+  t.falsy(depth1['secretTarget.md'], 'Secret target was not followed from an excluded heading');
 });

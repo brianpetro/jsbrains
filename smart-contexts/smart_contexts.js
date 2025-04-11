@@ -23,6 +23,7 @@ export class SmartContexts extends Collection {
     return {
       link_depth: 0,
       inlinks: false,
+      follow_links_in_excluded: true, // NEW: toggle whether to follow outlinks from excluded headings
       excluded_headings: [],
       max_len: 0, // 0 => no enforced limit
       templates: {
@@ -64,8 +65,13 @@ export class SmartContexts extends Collection {
       },
       excluded_headings: {
         name: 'Excluded headings',
-        description: 'Headings/patterns to exclude; use newline to separate multiple patterns. Case-sensitive.',
+        description: 'Headings/patterns to exclude; use newline to separate multiple patterns. Case-sensitive',
         type: 'textarea_array'
+      },
+      follow_links_in_excluded: {
+        name: 'Follow links in excluded headings?',
+        description: 'If off, any links found inside excluded heading sections are ignored (not followed).',
+        type: 'toggle'
       },
       context_explanation: {
         type: 'html',

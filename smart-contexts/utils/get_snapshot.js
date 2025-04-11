@@ -1,5 +1,20 @@
 import { strip_excluded_headings } from './respect_exclusions.js';
 import { get_markdown_links } from 'smart-sources/utils/get_markdown_links.js';
+
+/**
+ * @function get_snapshot
+ * @description Builds a snapshot of items up to `opts.link_depth`, possibly including inbound links
+ * if `opts.inlinks` is set. Applies heading exclusions. Optionally ignores outlinks from
+ * excluded sections if 'follow_links_in_excluded' = false.
+ * @param {SmartContext} context_item
+ * @param {object} opts
+ * @property {boolean} [opts.inlinks=false]
+ * @property {boolean} [opts.follow_links_in_excluded=true]
+ * @property {number} [opts.link_depth=0]
+ * @property {number} [opts.max_len=0]
+ * @property {string[]} [opts.excluded_headings]
+ * @returns {Promise<object>} snapshot
+ */
 export async function get_snapshot(context_item, opts) {
   const snapshot = {
     items: {},
@@ -9,12 +24,23 @@ export async function get_snapshot(context_item, opts) {
     images: [],
     char_count: opts.items ? Object.values(opts.items).reduce((acc, i) => acc + i.char_count, 0) : 0,
   };
+
   const keys_at_depth = {};
   keys_at_depth[0] = Object.keys(context_item.data.context_items);
+
   const max_depth = opts.link_depth ?? 0;
+
+  // For each depth level from 0..max_depth, gather items
   for (let depth = 0; depth <= max_depth; depth++) {
-    const curr_depth = await process_depth(snapshot, keys_at_depth[depth], context_item, opts);
+    const curr_depth = await process_depth(
+      snapshot,
+      keys_at_depth[depth],
+      context_item,
+      opts
+    );
     snapshot.items[depth] = curr_depth;
+
+    // Plan next depth's keys
     if (depth !== max_depth) {
       keys_at_depth[depth + 1] = Object.keys(Object.values(curr_depth).reduce((acc, i) => {
         if(opts.inlinks) {
@@ -41,6 +67,13 @@ export async function get_snapshot(context_item, opts) {
   }
   return snapshot;
 }
+
+/**
+ * @async
+ * @function process_depth
+ * @description Reads the given item keys, handles folder expansions, applies heading exclusions,
+ * and (optionally) re-parses outlinks from stripped content if 'follow_links_in_excluded' is false.
+ */
 async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
   const source_items = (curr_depth_keys ?? []).map(key => context_item.get_ref(key)).filter(Boolean);
   const non_source_keys = curr_depth_keys.filter(key => !context_item.get_ref(key));
@@ -80,8 +113,18 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       content = await item.read({render_output: true});
       item.data.outlinks = get_markdown_links(content);
     }
+
+    // Exclude headings if needed
     const excluded_headings = opts.excluded_headings || [];
-    const [new_content, exclusions, removed_char_count] = strip_excluded_headings(content, excluded_headings);
+    const [new_content, exclusions, removed_char_count] =
+      strip_excluded_headings(content, excluded_headings);
+
+    // If we do NOT want to follow links in excluded headings, parse outlinks from the stripped content
+    if (opts.follow_links_in_excluded === false) {
+      item.data.outlinks = get_markdown_links(new_content);
+    }
+    snapshot.char_count += new_content.length;
+
     curr_depth[item.path] = {
       ref: item,
       path: item.path,
@@ -89,13 +132,16 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       mtime: item.mtime,
       char_count: new_content.length,
       exclusions,
-      excluded_char_count: removed_char_count,
+      excluded_char_count: removed_char_count
     };
   }
   return curr_depth;
 }
 
+/**
+ * @function is_already_in_snapshot
+ * @description Returns true if item_path is already included in any depth.
+ */
 function is_already_in_snapshot(item_path, snapshot) {
-  return Object.values(snapshot.items).some(depth => depth[item_path]);
+  return Object.values(snapshot.items).some((depthObj) => depthObj?.[item_path]);
 }
-
