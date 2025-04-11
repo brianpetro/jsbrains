@@ -104,12 +104,40 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
   async remove() {
     await this.fs.remove(this.file_path);
   }
+  async move_to(move_to_ref) {
+    if(!move_to_ref) {
+      throw new Error("Invalid entity reference for move_to operation");
+    }
+    const move_content = await this.read();
+    let has_existing = false;
+    if(typeof move_to_ref === "string") {
+      const existing = this.item.collection.get(move_to_ref);
+      if(existing) {
+        move_to_ref = existing;
+        has_existing = true; // found existing entity
+      }
+    }else{
+      has_existing = true; // passed in existing entity
+    }
+    if(has_existing){
+      await move_to_ref.append(move_content);
+    } else {
+      move_to_ref = await this.item.collection.create(move_to_ref, move_content);
+    }
+    if(this.item.key !== move_to_ref.key){
+      await this.remove();
+      this.item.delete();
+    }else{
+      console.log(`did not delete ${this.item.key} because it was moved to ${move_to_ref.key}`);
+    }
+    return move_to_ref;
+  }
 
   /**
    * TRANSFERRED FROM markdown.js (2024-12-13)
    * TODO NEEDS REVIEW/REFACTOR
    */
-  async move_to(entity_ref) {
+  async move_to_v1(entity_ref) {
     const new_path = typeof entity_ref === "string" ? entity_ref : entity_ref.key;
     if (!new_path) {
       throw new Error("Invalid entity reference for move_to operation");

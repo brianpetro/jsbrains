@@ -246,6 +246,12 @@ export class SmartFsObsidianAdapter {
    */
   async write(rel_path, data) {
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
+    // if rel_path contains a folder, ensure it exists
+    const folder_path = rel_path.split('/').slice(0, -1).join('/');
+    if(!await this.exists(folder_path)) {
+      await this.mkdir(folder_path);
+      console.log(`Created folder: ${folder_path}`);
+    }
     return await this.obsidian_adapter.write(rel_path, data);
   }
 
