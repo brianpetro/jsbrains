@@ -365,9 +365,9 @@ export class SmartSources extends SmartEntities {
       try{
         const embed_blocks = this.block_collection.settings.embed_blocks;
         this._embed_queue = Object.values(this.items).reduce((acc, item) => {
-          if(item._queue_embed && item.should_embed && item.is_unembedded) acc.push(item);
+          if(item._queue_embed || (item.should_embed && item.is_unembedded)) acc.push(item);
           if(embed_blocks) item.blocks.forEach(block => {
-            if(block._queue_embed && block.should_embed && block.is_unembedded) acc.push(block);
+            if(block._queue_embed || (block.should_embed && block.is_unembedded)) acc.push(block);
           });
           return acc;
         }, []);

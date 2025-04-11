@@ -19,11 +19,19 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
    */
   async import() {
     if(!this.can_import) return;
-    if(!this.should_import) return;
+    if(!this.outdated){
+      this.item.blocks.forEach(block => {
+        if(!block.vec) block.queue_embed();
+      });
+      return;
+    }
     const content = await this.read();
     if (!content) {
       // console.warn(`No content to import for ${this.file_path}`);
       return;
+    }
+    if(!this.item.vec){
+      this.item.data.last_import = null;
     }
     // TODO: should be dynamic: ex. content_parsers files export a should_parse function
     if(this.data.last_import?.hash === this.data.last_read?.hash){
