@@ -120,7 +120,7 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       strip_excluded_headings(content, excluded_headings);
 
     // If we do NOT want to follow links in excluded headings, parse outlinks from the stripped content
-    if (opts.follow_links_in_excluded === false) {
+    if (!context_item.settings.follow_links_in_excluded) {
       item.data.outlinks = get_markdown_links(new_content);
     }
     snapshot.char_count += new_content.length;
