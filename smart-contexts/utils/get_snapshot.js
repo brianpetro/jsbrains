@@ -103,21 +103,27 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
     }
   }
   const curr_depth = {};
+  const batch = [];
   for (const item of source_items) {
     if (is_already_in_snapshot(item.key, snapshot)) {
       continue;
     }
+    batch.push(process_item(item));
+  }
+  await Promise.all(batch);
+  return curr_depth;
+
+  async function process_item(item) {
     let content = await item.read();
     console.log('read context');
-    if(!opts.calculating && content.includes('dataview')) {
-      content = await item.read({render_output: true});
+    if (!opts.calculating && content.includes('dataview')) {
+      content = await item.read({ render_output: true });
       item.data.outlinks = get_markdown_links(content);
     }
 
     // Exclude headings if needed
     const excluded_headings = opts.excluded_headings || [];
-    const [new_content, exclusions, removed_char_count] =
-      strip_excluded_headings(content, excluded_headings);
+    const [new_content, exclusions, removed_char_count] = strip_excluded_headings(content, excluded_headings);
 
     // If we do NOT want to follow links in excluded headings, parse outlinks from the stripped content
     if (!context_item.settings.follow_links_in_excluded) {
@@ -135,7 +141,6 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       excluded_char_count: removed_char_count
     };
   }
-  return curr_depth;
 }
 
 /**
