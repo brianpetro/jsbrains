@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { glob_to_regex } from './utils/match_glob.js';
+import { glob_to_regex } from "./utils/glob_to_regex.js";
 import { fuzzy_search } from './utils/fuzzy_search.js';
 /**
  * SmartFs - Intelligent file system wrapper for Smart Environments
