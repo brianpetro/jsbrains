@@ -321,14 +321,6 @@ export class SmartSources extends SmartEntities {
    */
   get settings_config(){
     const _settings_config = {
-      "clear_all": {
-        "name": "Clear all",
-        "description": "Clear all data and reimport sources.",
-        "type": "button_with_confirm",
-        "callback": "run_clear_all",
-        "confirm": "Are you sure you want to clear all data and re-import?",
-        "conditional": () => this.loaded && this.collection_key === 'smart_sources',
-      },
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {

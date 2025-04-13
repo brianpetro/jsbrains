@@ -35,10 +35,11 @@ export async function build_html(env, opts = {}) {
         <button type="button" class="toggle-env-settings-btn">Show environment settings</button>
       </div>
       <div class="sc-env-settings-body" style="display: none;">
-        <div class="smart-env-settings-header">
+        <div class="smart-env-settings-header" id="smart-env-buttons">
           <button class="sc-collection-stats-btn" type="button">Show stats</button>
           <button class="smart-env_reload-sources-btn" type="button">Reload sources</button>
           <button class="smart-env_clean-up-data-btn" type="button">Clean-up data</button>
+          <button class="smart-env_clear-sources-data-btn" type="button">Clear sources data</button>
         </div>
 
         ${env_settings_html}
@@ -170,6 +171,48 @@ export async function post_process(env, container, opts = {}) {
     });
   }
 
+  // Clear sources data (inline confirm, no browser confirm())
+  const smart_env_buttons = container.querySelector('#smart-env-buttons');
+  const clear_sources_data_btn = smart_env_buttons.querySelector('.smart-env_clear-sources-data-btn');
+  if (clear_sources_data_btn) {
+    // Create inline confirm row
+    const inline_confirm_html = `
+      <div class="sc-inline-confirm-row" style="display: none;">
+        <span style="margin-right: 10px;">
+          Are you sure you want to clear all sources data? This cannot be undone.
+        </span>
+        <span class="sc-inline-confirm-row-buttons">
+          <button class="sc-inline-confirm-yes">Yes</button>
+          <button class="sc-inline-confirm-cancel">Cancel</button>
+        </span>
+      </div>
+    `;
+    const inline_confirm_frag = this.create_doc_fragment(inline_confirm_html);
+
+    // Insert the confirm row after the button
+    smart_env_buttons.appendChild(inline_confirm_frag);
+
+    const confirm_yes = smart_env_buttons.querySelector('.sc-inline-confirm-yes');
+    const confirm_cancel = smart_env_buttons.querySelector('.sc-inline-confirm-cancel');
+
+    clear_sources_data_btn.addEventListener('click', () => {
+      const confirm_row = smart_env_buttons.querySelector('.sc-inline-confirm-row');
+      confirm_row.style.display = 'block';
+      clear_sources_data_btn.style.display = 'none';
+    });
+    confirm_yes.addEventListener('click', async (e) => {
+      const confirm_row = e.target.closest('.sc-inline-confirm-row');
+      await env.smart_sources.run_clear_all();
+      confirm_row.style.display = 'none';
+      clear_sources_data_btn.style.display = 'inline-block';
+    });
+    confirm_cancel.addEventListener('click', (e) => {
+      const confirm_row = e.target.closest('.sc-inline-confirm-row');
+      confirm_row.style.display = 'none';
+      clear_sources_data_btn.style.display = 'inline-block';
+    });
+  }
+
   // Render sub-collections if any
   const env_collections_containers = container.querySelectorAll('[data-smart-settings]');
   for (const el of env_collections_containers) {
@@ -237,4 +280,3 @@ function render_excluded_file_list(env, container) {
     ul.createEl('li', { text: 'No files excluded yet.' });
   }
 }
-
