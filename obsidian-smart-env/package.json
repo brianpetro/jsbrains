@@ -26,7 +26,8 @@
     "smart-view": "../smart-view",
     "smart-sources": "../smart-sources",
     "smart-blocks": "../smart-blocks",
-    "smart-notices": "../smart-notices"
+    "smart-notices": "../smart-notices",
+    "smart-model": "../smart-model"
   },
   "devDependencies": {
   }

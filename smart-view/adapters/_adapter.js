@@ -140,8 +140,8 @@ export class SmartViewAdapter {
       this.handle_disabled_and_hidden(elm);
       return elm;
     } catch(e) {
-      console.error({path, elm});
-      console.error(e);
+      console.error(JSON.stringify({path, elm}, null, 2));
+      console.error(JSON.stringify(e, null, 2));
     }
   }
 

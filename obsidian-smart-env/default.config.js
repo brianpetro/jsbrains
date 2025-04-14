@@ -10,6 +10,8 @@ import { AjsonMultiFileBlocksDataAdapter } from "smart-blocks/adapters/data/ajso
 import { MarkdownBlockContentAdapter } from "smart-blocks/adapters/markdown_block.js";
 import { Notice } from 'obsidian';
 import { SmartNotices } from "smart-notices/smart_notices.js"; // TODO: move to jsbrains
+import { render as source_settings_component } from 'smart-sources/components/settings.js';
+import { render as model_settings_component } from "smart-model/components/settings.js";
 // actions architecture
 import smart_block from "smart-blocks/smart_block.js";
 import smart_source from "smart-sources/smart_source.js";
@@ -65,6 +67,14 @@ const smart_env_config = {
   items: {
     smart_source,
     smart_block,
+  },
+  components: {
+    smart_blocks: {
+      settings: source_settings_component,
+    },
+    smart_embed_model: {
+      settings: model_settings_component,
+    },
   },
   default_settings: {
     is_obsidian_vault: true,
