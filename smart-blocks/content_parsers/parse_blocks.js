@@ -11,7 +11,7 @@ import { parse_markdown_blocks } from "../parsers/markdown.js";
  * @returns {Promise<void>}
  */
 export async function parse_blocks(source, content) {
-  if(source.file_type === 'md') {
+  // if(source.file_type === 'md' || source.data.content?.length > 0) {
     let blocks_obj = parse_markdown_blocks(content);
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
       // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
@@ -42,7 +42,7 @@ export async function parse_blocks(source, content) {
     }
     // await Promise.all(blocks);
     clean_and_update_source_blocks(source, blocks_obj);
-  }
+  // }
 }
 
 /**

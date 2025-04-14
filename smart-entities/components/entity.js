@@ -1,6 +1,6 @@
 export async function render(entity, opts = {}) {
   let markdown;
-  if(should_render_embed(entity)) markdown = entity.embed_link;
+  if(should_render_embed(entity)) markdown = `${entity.embed_link}\n\n${await entity.read()}`;
   else markdown = process_for_rendering(await entity.read())
   let frag;
   if(entity.env.settings.smart_view_filter.render_markdown) frag = await this.render_markdown(markdown, entity);
@@ -22,6 +22,6 @@ export async function post_process(scope, frag, opts = {}) {
 
 export function should_render_embed(entity) {
   if (!entity) return false;
-  if (entity.is_canvas || entity.is_excalidraw) return true;
+  if (entity.is_media) return true;
   return false;
 }

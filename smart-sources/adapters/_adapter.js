@@ -24,6 +24,10 @@ export class SourceContentAdapter {
   get fs() {
     return this.item.collection.fs;
   }
+  get env() {
+    return this.item.env;
+  }
+
 
 }
 

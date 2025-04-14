@@ -29,7 +29,8 @@ export class SmartBlock extends SmartEntity {
   }
   get block_adapter() {
     if(!this._block_adapter){
-      this._block_adapter = new this.collection.opts.block_adapters[this.file_type](this);
+      // this._block_adapter = new this.collection.opts.block_adapters[this.file_type](this);
+      this._block_adapter = new this.collection.opts.block_adapters.md(this);
     }
     return this._block_adapter;
   }
@@ -390,8 +391,7 @@ export class SmartBlock extends SmartEntity {
   // source dependent
   get excluded_lines() { return this.source.excluded_lines; }
   get file() { return this.source.file; }
-  get is_canvas() { return this.source.is_canvas; }
-  get is_excalidraw() { return this.source.is_excalidraw; }
+  get is_media() { return this.source.is_media; }
   get mtime() { return this.source.mtime; }
   
 

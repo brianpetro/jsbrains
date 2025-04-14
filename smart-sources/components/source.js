@@ -12,10 +12,3 @@ export async function render(source, opts = {}) {
   else frag = this.create_doc_fragment(`<span>${markdown}</span>`);
   return await post_process.call(this, source, frag, opts);
 }
-
-function should_render_embed_source(source) {
-  if(should_render_embed(source)) return true;
-  if (source.source?.is_canvas || source.source?.is_excalidraw) return true;
-  if (source.file_type !== 'md') return true;
-  return false;
-}

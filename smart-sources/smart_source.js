@@ -448,19 +448,8 @@ export class SmartSource extends SmartEntity {
    */
   get inlinks() { return Object.keys(this.collection.links?.[this.path] || {}); }
 
-  /**
-   * Determines if the SmartSource is a canvas file.
-   * @readonly
-   * @returns {boolean} `true` if the file is a canvas, `false` otherwise.
-   */
-  get is_canvas() { return this.path.endsWith("canvas"); }
 
-  /**
-   * Determines if the SmartSource is an Excalidraw file.
-   * @readonly
-   * @returns {boolean} `true` if the file is Excalidraw, `false` otherwise.
-   */
-  get is_excalidraw() { return this.path.endsWith("excalidraw.md"); }
+  get is_media() { return this.source_adapter.is_media || false; }
 
   /**
    * Determines if the SmartSource is gone (i.e., the file no longer exists).
