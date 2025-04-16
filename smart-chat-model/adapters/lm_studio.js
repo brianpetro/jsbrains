@@ -25,7 +25,7 @@ export class SmartChatModelLmStudioAdapter extends SmartChatModelApiAdapter {
     streaming: true,
     adapter: "LM_Studio_OpenAI_Compat",
     models_endpoint: "http://localhost:1234/v1/models",
-    default_model: "gpt-4o-mini", // Replace with a model listed by LM Studio
+    default_model: "", // Replace with a model listed by LM Studio
     signup_url: "https://lmstudio.ai/docs/api/openai-api",
     can_use_tools: true,
   };

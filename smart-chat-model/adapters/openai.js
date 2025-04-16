@@ -24,7 +24,7 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     endpoint: "https://api.openai.com/v1/chat/completions",
     streaming: true,
     models_endpoint: "https://api.openai.com/v1/models",
-    default_model: "gpt-4o-mini",
+    default_model: "gpt-4.1-mini",
     signup_url: "https://platform.openai.com/api-keys",
     can_use_tools: true,
   };
