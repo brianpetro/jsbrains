@@ -1,6 +1,3 @@
----
-sync external: ../jsbrains/smart-environment/README.md
----
 # Smart Environment
 
 Welcome to Smart Environment, the efficient, productive, and user-aligned AI-powered ecosystem for personal and professional use. Smart Environment empowers individuals by providing a suite of AI tools in a private, secure, and open-source software package.
