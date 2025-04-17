@@ -1,6 +1,3 @@
----
-sync external: ../jsbrains/smart-view/api_spec.md
----
 
 # api_spec.md
 
