@@ -2,7 +2,7 @@
   "name": "smart-environment",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Implements Smart Environment best practices.",
   "main": "index.js",
