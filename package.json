@@ -24,11 +24,5 @@
     "jsdoc": "^4.0.2"
   },
   "workspaces": [
-    "smart-chats",
-    "smart-chunks",
-    "smart-collections",
-    "smart-entities",
-    "smart-instruct-model",
-    "smart-ranker-model"
   ]
 }

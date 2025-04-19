@@ -25,7 +25,6 @@
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
-    "smart-environment": "file:../smart-environment"
   },
   "devDependencies": {
     "ava": "^5.3.1",

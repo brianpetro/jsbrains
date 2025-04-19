@@ -18,11 +18,11 @@
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
-    "smart-file-system": "../smart-fs",
-    "smart-settings": "../smart-settings",
-    "smart-view": "../smart-view",
-    "smart-sources": "../smart-sources",
-    "smart-blocks": "../smart-blocks",
-    "smart-notices": "../smart-notices"
+    "smart-blocks": "file:../smart-blocks",
+    "smart-file-system": "file:../smart-fs",
+    "smart-notices": "file:../smart-notices",
+    "smart-settings": "file:../smart-settings",
+    "smart-sources": "file:../smart-sources",
+    "smart-view": "file:../smart-view"
   }
 }
