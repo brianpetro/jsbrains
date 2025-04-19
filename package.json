@@ -1,6 +1,6 @@
 {
   "name": "jsbrains",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A collection of smart modules for building brains in JavaScript.",
   "main": "index.js",
   "repository": {
@@ -23,6 +23,5 @@
   "devDependencies": {
     "jsdoc": "^4.0.2"
   },
-  "workspaces": [
-  ]
+  "workspaces": []
 }
