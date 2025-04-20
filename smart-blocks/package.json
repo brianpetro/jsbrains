@@ -2,7 +2,7 @@
   "name": "smart-blocks",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Easy to manage collections of blocks.",
   "main": "index.js",
@@ -26,9 +26,9 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-collections": "file:../smart-collections",
-    "smart-entities": "file:../smart-entities",
-    "smart-sources": "file:../smart-sources"
+    "smart-collections": "*",
+    "smart-entities": "*",
+    "smart-sources": "*"
   },
   "ava": {
     "files": [

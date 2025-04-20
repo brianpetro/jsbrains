@@ -3,7 +3,7 @@
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Convenient interface for utilizing various ranking models via API and locally.",
   "main": "smart_rank_model.js",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.1.1",
-    "smart-model": "file:../smart-model"
+    "smart-model": "*"
   },
   "homepage": "https://jsbrains.org",
   "devDependencies": {

@@ -2,7 +2,7 @@
   "name": "smart-chats",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Easy to manage chats with AI.",
   "main": "index.js",
@@ -24,7 +24,7 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-sources": "file:../smart-sources"
+    "smart-sources": "*"
   },
   "ava": {
     "files": [

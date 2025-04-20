@@ -2,7 +2,7 @@
   "name": "smart-clusters",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Easy to manage clusters.",
   "main": "index.js",
@@ -24,11 +24,11 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "ava": "^6.0.1",
-    "smart-environment": "file:../smart-environment",
-    "smart-fs": "file:../smart-fs"
+    "smart-environment": "*",
+    "smart-file-system": "*"
   },
   "dependencies": {
-    "smart-collections": "file:../smart-collections"
+    "smart-collections": "*"
   },
   "ava": {
     "files": [

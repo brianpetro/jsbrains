@@ -1,17 +1,16 @@
 {
-  "name": "smart-directories",
+  "name": "smart-groups",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
-  "description": "Easy to manage embedded directories.",
+  "description": "Easy to manage groups.",
   "main": "index.js",
   "scripts": {
     "test": "npx ava --verbose"
   },
   "keywords": [
-    "embeddings",
-    "directories"
+    "groups"
   ],
   "repository": {
     "type": "git",
@@ -25,7 +24,7 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-entities": "file:../smart-entities"
+    "smart-entities": "*"
   },
   "ava": {
     "files": [

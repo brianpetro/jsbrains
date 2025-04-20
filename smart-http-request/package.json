@@ -3,7 +3,7 @@
   "author": "Brian Joseph Petro (🌴 Brian)",
   "type": "module",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "no-nonsense adapter for various HTTP clients",
   "main": "index.js",
   "scripts": {
@@ -13,8 +13,7 @@
     "type": "git",
     "url": "brianpetro/jsbrains"
   },
-  "keywords": [
-  ],
+  "keywords": [],
   "bugs": {
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },

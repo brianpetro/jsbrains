@@ -1,6 +1,4 @@
 import { SmartEntity } from "smart-entities";
-// import { render as render_source_component } from "./components/source.js";
-import { create_hash } from "smart-sources/utils/create_hash.js";
 
 /**
  * @class SmartBlock

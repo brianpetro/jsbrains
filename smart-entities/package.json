@@ -2,7 +2,7 @@
   "name": "smart-entities",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Easy to manage embedded collections.",
   "main": "main.js",
@@ -22,14 +22,16 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "ava": "^6.0.1",
-    "smart-blocks": "file:../smart-blocks",
-    "smart-environment": "file:../smart-environment",
-    "smart-fs": "file:../smart-fs",
-    "smart-sources": "file:../smart-sources"
+    "smart-environment": "*",
+    "smart-file-system": "*"
   },
   "dependencies": {
-    "smart-collections": "file:../smart-collections",
-    "smart-embed-model": "file:../smart-embed-model"
+    "smart-blocks": "*",
+    "smart-collections": "*",
+    "smart-embed-model": "*",
+    "smart-http-request": "*",
+    "smart-model": "*",
+    "smart-sources": "*"
   },
   "ava": {
     "files": [

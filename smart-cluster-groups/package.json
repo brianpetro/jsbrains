@@ -2,7 +2,7 @@
   "name": "smart-cluster-groups",
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Easy to manage cluster groups.",
   "main": "index.js",
@@ -24,13 +24,13 @@
   "homepage": "https://jsbrains.org",
   "devDependencies": {
     "ava": "^6.0.1",
-    "smart-environment": "file:../../../jsbrains/smart-environment",
-    "smart-fs": "file:../../../jsbrains/smart-fs"
+    "smart-environment": "*",
+    "smart-file-system": "*"
   },
   "dependencies": {
-    "smart-clusters": "file:../smart-clusters",
-    "smart-collections": "file:../smart-collections",
-    "smart-entities": "file:../smart-entities"
+    "smart-clusters": "*",
+    "smart-collections": "*",
+    "smart-entities": "*"
   },
   "ava": {
     "files": [

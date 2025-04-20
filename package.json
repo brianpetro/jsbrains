@@ -2,7 +2,6 @@
   "name": "jsbrains",
   "version": "1.0.2",
   "description": "A collection of smart modules for building brains in JavaScript.",
-  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "brianpetro/jsbrains"
@@ -23,5 +22,27 @@
   "devDependencies": {
     "jsdoc": "^4.0.2"
   },
-  "workspaces": []
+  "private": true,
+  "workspaces": [
+    "smart-blocks",
+    "smart-chat-model",
+    "smart-chats",
+    "smart-cluster-groups",
+    "smart-clusters",
+    "smart-collections",
+    "smart-contexts",
+    "smart-directories",
+    "smart-embed-model",
+    "smart-entities",
+    "smart-environment",
+    "smart-file-system",
+    "smart-groups",
+    "smart-http_request",
+    "smart-model",
+    "smart-notices",
+    "smart-rank-model",
+    "smart-settings",
+    "smart-sources",
+    "smart-view"
+  ]
 }

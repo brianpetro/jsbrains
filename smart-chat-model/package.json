@@ -3,7 +3,7 @@
   "author": "Brian Joseph Petro (🌴 Brian)",
   "type": "module",
   "license": "MIT",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "no-nonsense adapter for Anthropic Claude, Google Gemini, Cohere & more with OpenAI style API interface.",
   "main": "index.js",
   "scripts": {
@@ -25,8 +25,8 @@
   },
   "homepage": "https://jsbrains.org",
   "dependencies": {
-    "smart-http-request": "../smart-http-request",
-    "smart-model": "../smart-model"
+    "smart-http-request": "*",
+    "smart-model": "*"
   },
   "devDependencies": {
     "ava": "^6.1.2",

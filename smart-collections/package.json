@@ -3,7 +3,7 @@
   "author": "Brian Joseph Petro (🌴 Brian)",
   "type": "module",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Convenient interface for managing collections of items.",
   "main": "main.js",
   "scripts": {
@@ -24,14 +24,12 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "homepage": "https://jsbrains.org",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "ava": "^5.3.1",
-    "smart-file-system": "file:../smart-fs",
+    "smart-file-system": "*",
     "sql.js": "^1.12.0"
   },
-
   "ava": {
     "files": [
       "test.js",
