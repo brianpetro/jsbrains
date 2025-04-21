@@ -37,7 +37,7 @@
     "smart-environment",
     "smart-file-system",
     "smart-groups",
-    "smart-http_request",
+    "smart-http-request",
     "smart-model",
     "smart-notices",
     "smart-rank-model",
