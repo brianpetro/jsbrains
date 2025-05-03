@@ -1,6 +1,3 @@
----
-sync external: ../jsbrains/smart-contexts/specs.md
----
 ## Smart Contexts spec
 ### adapters
 - `compile_adapters`

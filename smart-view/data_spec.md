@@ -1,6 +1,3 @@
----
-sync external: ../jsbrains/smart-view/data_spec.md
----
 # data_spec.md
 
 ## `scope` Object
