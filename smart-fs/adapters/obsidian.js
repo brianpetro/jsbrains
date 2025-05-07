@@ -245,6 +245,7 @@ export class SmartFsObsidianAdapter {
    * @returns {Promise<void>} A promise that resolves when the operation is complete
    */
   async write(rel_path, data) {
+    if(!data) data = '';
     if (!rel_path.startsWith(this.fs_path)) rel_path = this.fs_path + '/' + rel_path;
     // if rel_path contains a folder, ensure it exists
     const folder_path = rel_path.split('/').slice(0, -1).join('/');
