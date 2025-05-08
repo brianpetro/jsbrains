@@ -35,6 +35,7 @@
     "smart-embed-model",
     "smart-entities",
     "smart-environment",
+    "smart-fs",
     "smart-file-system",
     "smart-groups",
     "smart-http-request",
