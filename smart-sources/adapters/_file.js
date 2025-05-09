@@ -21,6 +21,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
     // Refresh or init the fs as needed:
     collection._fs = null; // Clear fs to reload exclusions
     await collection.fs.init();
+    await collection.init_fs();
 
     // For each file recognized by this collection's fs,
     // let 'init_file_path' decide if extension is recognized:

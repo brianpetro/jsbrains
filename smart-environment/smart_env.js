@@ -563,7 +563,8 @@ export class SmartEnv {
    */
   async update_exclusions() {
     this.smart_sources._fs = null;
-    await this.smart_sources.fs.init();
+    // await this.smart_sources.fs.init();
+    await this.smart_sources.init_fs();
   }
 
   // DEPRECATED

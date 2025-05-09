@@ -59,7 +59,7 @@ class SmartFs {
   constructor(env, opts = {}) {
     this.env_path = opts.env_path || env.config.env_path || env.config.vault_path || ''; // vault_path is DEPRECATED
     this.gitignore_patterns = [];
-    this.#load_gitignore();
+    this.#load_exclusions();
   }
   static async create(env, opts = {}) {
     if(typeof opts.env_path !== 'string' || opts.env_path.length === 0) return; // no env_path provided
@@ -77,7 +77,7 @@ class SmartFs {
    * @private
    * @returns {Minimatch[]} Array of Minimatch patterns
    */
-  #load_gitignore() {
+  #load_exclusions() {
     const gitignore_path = path.join(this.env_path, '.gitignore');
     if (fs.existsSync(gitignore_path)) {
       fs.readFileSync(gitignore_path, 'utf8')

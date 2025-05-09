@@ -92,7 +92,7 @@ class SmartFs {
     await this.init();
   }
   async init() {
-    await this.load_gitignore();
+    await this.load_exclusions();
     await this.load_files();
   }
   async load_files() {
@@ -122,7 +122,7 @@ class SmartFs {
    * 
    * @returns {Promise<RegExp[]>} Array of RegExp patterns
    */
-  async load_gitignore() {
+  async load_exclusions() {
     const gitignore_path = '.gitignore';
     // use adapter method directly to skip exclusion checks
     const gitignore_exists = await this.adapter.exists(gitignore_path);

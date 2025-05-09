@@ -384,7 +384,8 @@ export class SmartSources extends SmartEntities {
     this.block_collection.clear();
     this._fs = null;
 
-    await this.fs.init();
+    // await this.fs.init();
+    await this.init_fs();
 
     await this.init_items();
     this._excluded_headings = null;
@@ -398,6 +399,22 @@ export class SmartSources extends SmartEntities {
     this.notices?.remove('clearing_all');
     this.notices?.show('done_clearing_all');
     await this.process_source_import_queue();
+  }
+  async init_fs(opts={}){
+    const {force_refresh = false} = opts;
+    if(force_refresh) await this.env.fs.refresh();
+    await this.fs.load_exclusions();
+    // prevent re-scanning all files (already done at env-level fs.init)
+    this.fs.file_paths = this.fs.post_process(this.env.fs.file_paths);
+    this.fs.files = this.fs.file_paths.reduce((acc, file_path) => {
+      acc[file_path] = this.env.fs.files[file_path];
+      return acc;
+    }, {});
+    this.fs.folder_paths = this.fs.post_process(this.env.fs.folder_paths);
+    this.fs.folders = this.fs.folder_paths.reduce((acc, folder_path) => {
+      acc[folder_path] = this.env.fs.folders[folder_path];
+      return acc;
+    }, {});
   }
 
   /**
