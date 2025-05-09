@@ -267,8 +267,9 @@ export class SmartEnv {
         if(this.state === 'init' && this[key].opts?.prevent_load_on_init === true) continue;
         await this[key].process_load_queue();
       }
-      this.collections[key] = 'loaded';
       this[key].load_time_ms = Date.now() - time_start; 
+      this.collections[key] = 'loaded';
+      console.log(`Loaded ${this[key].collection_key} in ${this[key].load_time_ms}ms`);
     }
   }
   /**

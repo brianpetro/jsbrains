@@ -1,4 +1,4 @@
-import { create_hash } from "smart-sources/utils/create_hash.js";
+import { create_hash, murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 /**
  * @file _adapter.js
  * @description Abstract base class for block-level adapters.
@@ -103,14 +103,14 @@ export class BlockContentAdapter {
   }
 
   /**
-   * @async
    * @method create_hash
    * @param {string} content The content to hash.
    * @returns {Promise<string>} The computed hash of the content.
    * @description Hash the block content to detect changes and prevent unnecessary re-embeddings.
    */
-  async create_hash(content) {
-    return await create_hash(content);
+  create_hash(content) {
+    // return await create_hash(content);
+    return murmur_hash_32_alphanumeric(content);
   }
 }
 

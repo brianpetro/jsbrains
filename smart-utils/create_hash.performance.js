@@ -26,14 +26,14 @@ async function measure_performance() {
   console.log(`MurmurHash3 32-bit x ${ITERATIONS} iterations took: ${elapsed} ms`);
   console.log(`Last result (just for reference): ${result}`);
 
-  // const start_time_2 = Date.now();
-  // for (let i = 0; i < ITERATIONS; i++) {
-  //   result = await create_hash(test_string, i); 
-  // }
-  // const end_time_2 = Date.now();
-  // const elapsed_2 = end_time_2 - start_time_2;
-  // console.log(`CreateHash x ${ITERATIONS} iterations took: ${elapsed_2} ms`);
-  // console.log(`Last result (just for reference): ${result}`);
+  const start_time_2 = Date.now();
+  for (let i = 0; i < ITERATIONS; i++) {
+    result = await create_hash(test_string, i); 
+  }
+  const end_time_2 = Date.now();
+  const elapsed_2 = end_time_2 - start_time_2;
+  console.log(`CreateHash x ${ITERATIONS} iterations took: ${elapsed_2} ms`);
+  console.log(`Last result (just for reference): ${result}`);
 
   const start_time_3 = Date.now();
   for (let i = 0; i < ITERATIONS; i++) {
@@ -61,6 +61,8 @@ async function measure_performance() {
   // const elapsed_5 = end_time_5 - start_time_5;
   // console.log(`FNV1a 32-bit x ${ITERATIONS} iterations took: ${elapsed_5} ms`);
   // console.log(`Last result (just for reference): ${result}`);
+
+
 }
 
 measure_performance();

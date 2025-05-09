@@ -1,3 +1,8 @@
+/**
+ * Creates a SHA-256 hash of the given text.
+ * @param {string} text - The text to hash.
+ * @returns {Promise<string>} The SHA-256 hash of the text.
+ */
 export async function create_hash(text) {
   // if text length greater than 100000, truncate
   if (text.length > 100000) text = text.substring(0, 100000);

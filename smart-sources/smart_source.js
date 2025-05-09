@@ -1,7 +1,6 @@
 import { SmartEntity } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 import { render as render_source_component } from "./components/source.js";
-import { create_hash } from "./utils/create_hash.js";
 
 /**
  * @class SmartSource
