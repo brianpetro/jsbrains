@@ -5,12 +5,11 @@ import { parse_markdown_blocks } from "../parsers/markdown.js";
  * @method parse_blocks
  * @description Imports blocks for a given source by parsing the content. Delegates parsing to a parser
  * depending on the source.file_type (e.g., parse_blocks for .md).
- * @async
  * @param {SmartSource} source The source whose blocks are to be imported.
  * @param {string} content The raw content of the source file.
  * @returns {Promise<void>}
  */
-export async function parse_blocks(source, content) {
+export function parse_blocks(source, content) {
   // if(source.file_type === 'md' || source.data.content?.length > 0) {
     let blocks_obj = parse_markdown_blocks(content);
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {

@@ -57,6 +57,17 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     this.item.queue_embed();
   }
 
+  // // WIP: move block parsing here
+  // async read() {
+  //   const current_last_read_hash = this.data.last_read?.hash;
+  //   const content = await super.read();
+  //   if(!content) return console.warn(`MarkdownSourceContentAdapter: Skipping missing-file: ${this.file_path}`);
+  //   if(current_last_read_hash === this.data.last_read?.hash) return content;
+  //   const blocks = parse_markdown_blocks(content);
+  //   this.handle_excluded_headings(blocks);
+  // }
+
+
   // Runs before configured content_parsers (for example, templates uses outlinks)
   async parse_content(content) {
     await parse_links(this.item, content);

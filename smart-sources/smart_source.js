@@ -64,10 +64,10 @@ export class SmartSource extends SmartEntity {
     }
   }
   async parse_content(content=null){
-    // 1) parse blocks (DEPRECATED handling: should be moved to content_parsers)
-    if(this.block_collection && typeof this.block_collection.import_source === 'function') {
-      await this.block_collection.import_source(this, content);
-    }
+    // // 1) parse blocks (DEPRECATED handling: should be moved to content_parsers)
+    // if(this.block_collection && typeof this.block_collection.import_source === 'function') {
+    //   await this.block_collection.import_source(this, content);
+    // }
     // 3) call each function in env.opts.collections.smart.sources.content_parsers
     const parse_fns = this.env?.opts?.collections?.smart_sources?.content_parsers || [];
     for(const fn of parse_fns) {
