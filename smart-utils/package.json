@@ -1,0 +1,9 @@
+{
+  "name": "smart-utils",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "main": "index.js",
+  "license": "MIT",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Dependency-free utility functions for the Smart Environment."
+}

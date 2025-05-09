@@ -44,6 +44,7 @@
     "smart-rank-model",
     "smart-settings",
     "smart-sources",
+    "smart-utils",
     "smart-view"
   ]
 }
