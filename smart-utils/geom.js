@@ -1,13 +1,4 @@
 /**
- * Geometric utilities: centroid and medoid
- *
- * Usage:
- *   const { compute_centroid, compute_medoid } = require('./geom.js');
- *   let c = compute_centroid([[0,0],[2,2],[4,6]]);
- *   let m = compute_medoid([[0,0],[2,2],[4,6]]);
- */
-
-/**
  * Computes the centroid of an array of points in N-dimensional space.
  * The centroid is the arithmetic mean of the coordinates across all points.
  * @param {number[][]} points - Array of points, each is an array of numbers

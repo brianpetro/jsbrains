@@ -28,7 +28,8 @@
     "smart-file-system": "*"
   },
   "dependencies": {
-    "smart-collections": "*"
+    "smart-collections": "*",
+    "smart-utils": "*"
   },
   "ava": {
     "files": [

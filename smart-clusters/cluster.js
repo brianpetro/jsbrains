@@ -5,8 +5,8 @@
  */
 import { CollectionItem } from 'smart-collections';
 import { cos_sim } from 'smart-entities/utils/cos_sim.js';
-import { compute_centroid } from './utils/geom.js';
-import { sim_hash } from './utils/sim_hash.js';
+import { compute_centroid } from 'smart-utils/geom.js';
+import { sim_hash } from 'smart-utils/sim_hash.js';
 
 /**
  * @class Cluster
