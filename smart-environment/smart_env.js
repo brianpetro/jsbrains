@@ -28,6 +28,7 @@ import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
 import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 
+const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
 /**
  * @class SmartEnv
  * @description
@@ -43,7 +44,7 @@ export class SmartEnv {
    */
   static version = 2.13910996;
   scope_name = 'smart_env';
-  static global_ref = get_global_ref();
+  static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
   constructor(opts = {}) {
     this.state = 'init';
@@ -178,8 +179,10 @@ export class SmartEnv {
       if(this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
 
       this.global_env = new this(opts);
-      if(!window.all_envs) window.all_envs = [];
-      window.all_envs.push(this.global_env);
+
+      const g = this.global_ref;
+      if(!g.all_envs) g.all_envs = [];
+      g.all_envs.push(this.global_env);
     }
 
     clearTimeout(this.global_env.load_timeout);
@@ -273,7 +276,7 @@ export class SmartEnv {
     }
   }
   /**
-   * Removes a main from the window.smart_env_configs to exclude it on reload
+   * Removes a main from the global.smart_env_configs to exclude it on reload
    * @param {Class} main
    * @param {Object|null} [unload_config=null]
    */
@@ -603,20 +606,4 @@ export class SmartEnv {
   get plugin() {
     return this.main;
   }
-}
-function get_global_ref() {
-  if(typeof document !== 'undefined' && document.window){
-    console.log('using document.window');
-    return document.window;
-  }
-  if(typeof window !== 'undefined') {
-    console.log('using window');
-    return window;
-  }
-  if(typeof global?.window !== 'undefined') {
-    console.log('using global.window');
-    return global.window;
-  }
-  console.log('using global');
-  return global;
 }

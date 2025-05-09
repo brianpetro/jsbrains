@@ -78,12 +78,8 @@ class DiffMain {
  * Utility: clears any existing global SmartEnv references for a fresh environment.
  */
 function clear_global_smart_env() {
-  if (typeof global !== 'undefined' && global.smart_env) {
-    delete global.smart_env;
-  }
-  if (typeof window !== 'undefined' && window.smart_env) {
-    delete window.smart_env;
-  }
+  const g = SmartEnv.global_ref;
+  if (g.smart_env) delete g.smart_env;
 }
 
 /**
