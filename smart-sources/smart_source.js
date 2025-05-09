@@ -1,6 +1,7 @@
 import { SmartEntity } from "smart-entities";
 import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 import { render as render_source_component } from "./components/source.js";
+import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 
 /**
  * @class SmartSource
@@ -525,11 +526,12 @@ export class SmartSource extends SmartEntity {
    * @returns {Array<number>|null} The mean vector or `null` if no vectors are present.
    */
   get mean_block_vec() {
-    return this._mean_block_vec
-      ? this._mean_block_vec
-      : this._mean_block_vec = this.block_vecs.reduce((acc, vec) => acc.map((val, i) => val + vec[i]), Array(384).fill(0))
-        .map(val => val / this.block_vecs.length);
+    if (this._mean_block_vec){
+      this._mean_block_vec = compute_centroid(this.block_vecs);
+    }
+    return this._mean_block_vec;
   }
+
 
   /**
    * Calculates the median vector of all blocks within the SmartSource.
@@ -537,22 +539,12 @@ export class SmartSource extends SmartEntity {
    * @returns {Array<number>|null} The median vector or `null` if no vectors are present.
    */
   get median_block_vec() {
-    if (this._median_block_vec) return this._median_block_vec;
-    if (!this.block_vecs.length) return null;
-
-    const vec_length = this.block_vecs[0].length;
-    this._median_block_vec = new Array(vec_length);
-    const mid = Math.floor(this.block_vecs.length / 2);
-
-    for (let i = 0; i < vec_length; i++) {
-      const values = this.block_vecs.map(vec => vec[i]).sort((a, b) => a - b);
-      this._median_block_vec[i] = this.block_vecs.length % 2 !== 0
-        ? values[mid]
-        : (values[mid - 1] + values[mid]) / 2;
+    if (this._median_block_vec){
+      this._median_block_vec = compute_medoid(this.block_vecs);
     }
-
     return this._median_block_vec;
   }
+
 
   // DEPRECATED methods
   /**
