@@ -25,9 +25,11 @@ export class SmartView {
    */
   async render_setting_components(container, opts = {}) {
     const components = container.querySelectorAll(".setting-component");
+    const promises = [];
     for (const component of components) {
-      await this.render_setting_component(component, opts);
+      promises.push(this.render_setting_component(component, opts));
     }
+    await Promise.all(promises);
     return container;
   }
 
