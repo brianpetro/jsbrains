@@ -318,7 +318,11 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
         this._res.message.tool_calls[0].function.name += chunk.message.tool_calls[0].function.name;
       }
       if(chunk.message.tool_calls[0].function.arguments){
-        this._res.message.tool_calls[0].function.arguments += chunk.message.tool_calls[0].function.arguments;
+        if(typeof chunk.message.tool_calls[0].function.arguments === 'string'){
+          this._res.message.tool_calls[0].function.arguments += chunk.message.tool_calls[0].function.arguments;
+        }else{
+          this._res.message.tool_calls[0].function.arguments = chunk.message.tool_calls[0].function.arguments;
+        }
       }
     }
   }
