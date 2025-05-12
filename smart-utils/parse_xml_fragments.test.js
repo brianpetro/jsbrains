@@ -5,15 +5,32 @@ test('parses xml', t => {
   const xml =
     '<action><msg>Hello</msg><count>3</count><flag>true</flag></action>';
   const out = parse_xml_fragments(xml);
-  t.deepEqual(out, { action: { contents: { msg: { contents: 'Hello' }, count: { contents: 3 }, flag: { contents: true } } } });
+  t.deepEqual(out, {
+    action: {
+      contents: {
+        msg: { contents: 'Hello' },
+        count: { contents: 3 },
+        flag: { contents: true }
+      }
+    }
+  });
 });
 
 /* repeated tags → array --------------------------------------------- */
 test('repeated child tags produce array', t => {
-  const xml =
-    '<col><item>one</item><item>two</item><item>three</item></col>';
+  const xml = '<col><item>one</item><item>two</item><item>three</item></col>';
   const out = parse_xml_fragments(xml);
-  t.deepEqual(out, { col: { contents: { item: [{ contents: 'one' }, { contents: 'two' }, { contents: 'three' }] } } });
+  t.deepEqual(out, {
+    col: {
+      contents: {
+        item: [
+          { contents: 'one' },
+          { contents: 'two' },
+          { contents: 'three' }
+        ]
+      }
+    }
+  });
 });
 
 /* nesting ------------------------------------------------------------ */
@@ -29,7 +46,7 @@ test('nested children parsed recursively', t => {
             c: { contents: false }
           }
         },
-        d: {contents: null}
+        d: { contents: null }
       }
     }
   });
@@ -39,21 +56,23 @@ test('nested children parsed recursively', t => {
 test('self-closing tag resolved to null', t => {
   const xml = '<root><empty /></root>';
   const out = parse_xml_fragments(xml);
-  t.deepEqual(out, { root: { contents: { empty: {contents: null} } } });
+  t.deepEqual(out, { root: { contents: { empty: { contents: null } } } });
 });
 
 /* autodetect root tag ------------------------------------------------ */
 test('autodetects root when not supplied', t => {
   const xml = '<xyz><val>42</val></xyz>';
-  t.deepEqual(parse_xml_fragments(xml), { xyz: { contents: { val: {contents: 42} } } });
+  t.deepEqual(parse_xml_fragments(xml), {
+    xyz: { contents: { val: { contents: 42 } } }
+  });
 });
 
-/* malformed xml ------------------------------------------------------ */
-test('invalid / malformed xml yields null', t => {
-  t.is(parse_xml_fragments('<noend>'), null);
+/* malformed xml (mismatched) ---------------------------------------- */
+test('mismatched closing tag yields null', t => {
+  t.is(parse_xml_fragments('<a><b></a>'), null);
 });
 
-/* attributes ignored ------------------------------------------------- */
+/* attributes --------------------------------------------------------- */
 test('handles attributes on tags', t => {
   const xml =
     '<root data-x="1"><item id="7">foo</item><img src="bar" /></root>';
@@ -72,7 +91,10 @@ test('handles attributes on tags', t => {
 /* multi-root --------------------------------------------------------- */
 test('handles multiple top-level elements parsed', t => {
   const xml = '<a>1</a><b>2</b>';
-  t.deepEqual(parse_xml_fragments(xml), { a: { contents: 1 }, b: { contents: 2 } });
+  t.deepEqual(parse_xml_fragments(xml), {
+    a: { contents: 1 },
+    b: { contents: 2 }
+  });
 });
 
 /* free text ignored -------------------------------------------------- */
@@ -80,7 +102,6 @@ test('ignores text outside tags', t => {
   const xml = 'hello<a>1</a>world';
   t.deepEqual(parse_xml_fragments(xml), { a: { contents: 1 } });
 });
-
 
 /* attribute type coercion ------------------------------------------- */
 test('attributes remain strings unless explicitly numeric', t => {
@@ -122,5 +143,19 @@ test('comments ignored', t => {
   const xml = '<root><!-- secret --><val>1</val></root>';
   t.deepEqual(parse_xml_fragments(xml), {
     root: { contents: { val: { contents: 1 } } }
+  });
+});
+
+/* unclosed tag (new behaviour) -------------------------------------- */
+test('unclosed tag treated as closed at EOF', t => {
+  const xml = '<action><msg>Hello';
+  const out = parse_xml_fragments(xml);
+  t.deepEqual(out, {
+    action: { contents: { msg: { contents: 'Hello' } } }
+  });
+  const xml2 = '<think>Some thoughts...';
+  const out2 = parse_xml_fragments(xml2);
+  t.deepEqual(out2, {
+    think: { contents: 'Some thoughts...' }
   });
 });
