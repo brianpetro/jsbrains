@@ -87,7 +87,7 @@ export async function post_process(message, frag, opts) {
   // If the content is markdown, render it
   if (text_container && typeof message.content === 'string') {
     const markdown_rendered_frag = await this.render_markdown(message.content, message);
-    text_container.innerHTML = '';
+    this.empty(text_container);
     text_container.appendChild(markdown_rendered_frag);
   }
 

@@ -366,7 +366,7 @@ export class CollectionItem {
    */
   async render_item(container, opts = {}) {
     const frag = await this.component.call(this.smart_view, this, opts);
-    container.innerHTML = '';
+    this.env.smart_view.empty(container);
     container.appendChild(frag);
     return container;
   }

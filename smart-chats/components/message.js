@@ -158,7 +158,7 @@ export async function post_process(message, frag, opts) {
           // Hide edit interface
           edit_textarea.style.display = 'none';
           msg_content.style.display = 'block';
-          edit_button.innerHTML = this.get_icon_html('edit');
+          this.safe_inner_html(edit_button, this.get_icon_html('edit'));
           edit_button.title = 'Edit message';
           
           // Use existing thread method to handle the edited message
@@ -168,13 +168,13 @@ export async function post_process(message, frag, opts) {
           // Just hide textarea if no changes
           edit_textarea.style.display = 'none';
           msg_content.style.display = 'block';
-          edit_button.innerHTML = this.get_icon_html('edit');
+          this.safe_inner_html(edit_button, this.get_icon_html('edit'));
           edit_button.title = 'Edit message';
         }
       } else {
         // Show textarea for editing
         edit_textarea.style.display = 'block';
-        edit_button.innerHTML = this.get_icon_html('check');
+        this.safe_inner_html(edit_button, this.get_icon_html('check'));
         edit_button.title = 'Save changes';
         edit_textarea.focus();
       }
@@ -190,27 +190,9 @@ export async function post_process(message, frag, opts) {
   }
 
   const msg_span = frag.querySelector('.sc-message-content > span:first-child');
-  // if (Array.isArray(message.content)) {
-  //   const msg_content = await Promise.all(message.content.map(async (part) => {
-  //     if (part.type === "image_url") {
-  //       return `<img src="${part.image_url.url}" alt="Chat image" class="sc-message-image"/>`;
-  //     }
-  //     if(part.type === 'text' && part.text?.length) return await this.render_markdown(part.text, message);
-  //   }));
-  //   console.log('msg_content', msg_content);
-  //   msg_span.innerHTML = msg_content.join('\n');
-  // } else {
-    const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
-    msg_span.innerHTML = '';
-    msg_span.appendChild(markdown_rendered_frag);
-  // }
+  const markdown_rendered_frag = await this.render_markdown(msg_span.textContent, message);
+  this.empty(msg_span);
+  msg_span.appendChild(markdown_rendered_frag);
   
   return frag;
-}
-
-// for testing
-function get_html_from_fragment(fragment) {
-    const temp_container = document.createElement('div');
-    temp_container.appendChild(fragment.cloneNode(true));
-    return temp_container.innerHTML;
 }

@@ -46,7 +46,7 @@ export class SmartThreads extends SmartSources {
     if(Object.keys(opts).length > 0) this.render_opts = opts; // persist render options for future renders (not ideal, but required since declaring render_opts outside of this class)
     if(container && (!this.container || this.container !== container)) this.container = container;
     const frag = await this.env.render_component('smart_chat', this, this.render_opts);
-    container.innerHTML = '';
+    this.env.smart_view.empty(container);
     container.appendChild(frag);
     return frag;
   }

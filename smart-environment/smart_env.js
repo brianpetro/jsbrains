@@ -42,7 +42,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.13910997;
+  static version = 2.13913;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -345,7 +345,7 @@ export class SmartEnv {
       throw new Error('Container is required');
     }
     const frag = await this.render_component('settings', this, {});
-    container.innerHTML = '';
+    this.smart_view.empty(container);
     container.appendChild(frag);
     return frag;
   }

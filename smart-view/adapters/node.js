@@ -1,5 +1,7 @@
 import { SmartViewAdapter } from "./_adapter.js";
 import * as lucide from 'lucide-static';
+import { safe_inner_html } from '../utils/safe_inner_html.js';
+import { empty } from '../utils/empty.js';
 
 export class SmartViewNodeAdapter extends SmartViewAdapter {
   /**
@@ -50,6 +52,12 @@ export class Setting {
   constructor(element) {
     this.element = element;
     this.container = this.createSettingItemContainer();
+  }
+  safe_inner_html(elm, html){
+    safe_inner_html(elm, html);
+  }
+  empty(elm){
+    empty(elm);
   }
   add_text(configurator) {
     const controlContainer = this.container.querySelector('.control');
@@ -254,12 +262,12 @@ export class Setting {
   set_name(name) {
     const nameElement = this.container.querySelector('.name');
     if (nameElement) {
-      nameElement.innerHTML = name;
+      this.safe_inner_html(nameElement, name);
     } else {
       // Create the element if it doesn't exist
       const newNameElement = document.createElement('div');
       newNameElement.classList.add('name');
-      newNameElement.innerHTML = name;
+      this.safe_inner_html(newNameElement, name);
       // this.element.appendChild(newNameElement);
       const info_container = this.container.querySelector('.info');
       info_container.prepend(newNameElement);
@@ -276,12 +284,12 @@ export class Setting {
     }
     
     // Clear existing content
-    desc_element.innerHTML = '';
+    this.empty(desc_element);
     
     if (description instanceof DocumentFragment) {
       desc_element.appendChild(description);
     } else {
-      desc_element.innerHTML = description;
+      this.safe_inner_html(desc_element, description);
     }
   }
   set_tooltip(tooltip) {
@@ -291,7 +299,7 @@ export class Setting {
     elm.setAttribute('title', tooltip);
     const tooltip_container = document.createElement('div');
     tooltip_container.classList.add('tooltip');
-    tooltip_container.innerHTML = tooltip;
+    this.safe_inner_html(tooltip_container, tooltip);
     elm.insertAdjacentElement('afterend', tooltip_container);
   }
   // aliases

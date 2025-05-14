@@ -133,7 +133,7 @@ export class SmartEntities extends Collection {
     this.env._embed_model = null;
   }
   re_render_settings() {
-    this.settings_container.innerHTML = '';
+    this.env.smart_view.empty(this.settings_container);
     this.render_settings();
   }
 

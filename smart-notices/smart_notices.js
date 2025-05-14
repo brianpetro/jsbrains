@@ -209,7 +209,7 @@ export class SmartNotices {
    */
   _add_button(btnConfig, container) {
     const btn = document.createElement('button');
-    btn.innerHTML = btnConfig.text;
+    this.safe_inner_html(btn, btnConfig.text);
     btn.addEventListener('click', (e) => {
       if (btnConfig.stay_open) {
         e.preventDefault();

@@ -85,9 +85,9 @@ export async function post_process(error, frag, opts) {
       details_content.hidden = is_expanded;
       
       // Update toggle button text
-      details_toggle.innerHTML = `
+      this.safe_inner_html(details_toggle, `
         ${is_expanded ? 'Show' : 'Hide'} Details ${this.get_icon_html(is_expanded ? 'chevron-down' : 'chevron-up')}
-      `;
+      `);
     });
   }
 
@@ -98,7 +98,7 @@ export async function post_process(error, frag, opts) {
       const container = retry_button.closest('.sc-error-container');
       container.classList.add('retrying');
       retry_button.disabled = true;
-      retry_button.innerHTML = `${this.get_icon_html('loader')} Retrying...`;
+      this.safe_inner_html(retry_button, `${this.get_icon_html('loader')} Retrying...`);
       
       try {
         await opts.retry();

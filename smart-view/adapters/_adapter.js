@@ -349,7 +349,7 @@ export class SmartViewAdapter {
 
   render_html_component(elm, path, value, scope) {
     // render html into a div
-    elm.innerHTML = value;
+    this.safe_inner_html(elm, value);
     return elm;
   }
 

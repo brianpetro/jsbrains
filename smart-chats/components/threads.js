@@ -106,7 +106,7 @@ export async function post_process(threads_collection, frag, opts) {
   // New chat button
   const new_chat_button = frag.querySelector('button[title="New Chat"]');
   new_chat_button.addEventListener('click', async () => {
-    threads_collection.container.innerHTML = '';
+    this.empty(threads_collection.container);
     opts.thread_key = null; // clear thread key saved to `this.render_opts{}`
     threads_collection.render();
   });
