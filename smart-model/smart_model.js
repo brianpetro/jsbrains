@@ -370,32 +370,4 @@ export class SmartModel {
     this.re_render_settings();
   }
 
-  // /**
-  //  * Render settings.
-  //  * @param {HTMLElement} [container] - Container element
-  //  * @param {Object} [opts] - Render options
-  //  * @returns {Promise<HTMLElement>} Container element
-  //  */
-  // async render_settings(container=this.settings_container, opts = {}) {
-  //   if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-  //   const model_type = this.constructor.name.toLowerCase().replace('smart', '').replace('model', '');
-  //   let model_settings_container;
-  //   if(this.settings_container) {
-  //     const container_id = `#${model_type}-model-settings-container`;
-  //     model_settings_container = this.settings_container.querySelector(container_id);
-  //     if(!model_settings_container) {
-  //       model_settings_container = document.createElement('div');
-  //       model_settings_container.id = container_id;
-  //       this.settings_container.appendChild(model_settings_container);
-  //     }
-  //     model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
-  //   }
-  //   const frag = await this.render_settings_component(this, opts);
-  //   if(model_settings_container) {
-  //     model_settings_container.innerHTML = '';
-  //     model_settings_container.appendChild(frag);
-  //     this.smart_view.on_open_overlay(model_settings_container);
-  //   }
-  //   return frag;
-  // }
 }
