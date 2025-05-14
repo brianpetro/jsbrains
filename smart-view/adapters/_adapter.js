@@ -1,3 +1,5 @@
+import { empty } from '../utils/empty.js';
+import { safe_inner_html } from '../utils/safe_inner_html.js';
 export class SmartViewAdapter {
   constructor(main) {
     this.main = main;
@@ -108,7 +110,7 @@ export class SmartViewAdapter {
   }
 
   async render_setting_component(elm, opts={}) {
-    elm.innerHTML = "";
+    this.empty(elm);
     const path = elm.dataset.setting;
     const scope = opts.scope || this.main.main;
     const settings_scope = opts.settings_scope || null;
@@ -453,5 +455,11 @@ export class SmartViewAdapter {
       });
     });
     return smart_setting;
+  }
+  empty(elm){
+    empty(elm);
+  }
+  safe_inner_html(elm, html){
+    safe_inner_html(elm, html);
   }
 }

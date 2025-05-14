@@ -6,6 +6,9 @@
  * automatically binding data-smart-setting inputs to scope.settings.
  */
 
+import { empty } from './utils/empty.js';
+import { safe_inner_html } from './utils/safe_inner_html.js';
+
 export class SmartView {
   /**
    * @constructor
@@ -249,6 +252,12 @@ export class SmartView {
       }
       document.head.appendChild(styleEl);
     }
+  }
+  empty(elm){
+    empty(elm);
+  }
+  safe_inner_html(elm, html){
+    safe_inner_html(elm, html);
   }
 }
 
