@@ -159,3 +159,9 @@ test('unclosed tag treated as closed at EOF', t => {
     think: { contents: 'Some thoughts...' }
   });
 });
+
+/* invalid input ------------------------------------------------------ */
+test('returns null for empty or null input', t => {
+  t.is(parse_xml_fragments(''), null);
+  t.is(parse_xml_fragments(null), null);
+});
