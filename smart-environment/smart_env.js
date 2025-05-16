@@ -29,12 +29,13 @@ import { merge_env_config } from './utils/merge_env_config.js';
 import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 
 const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
+
 /**
  * @class SmartEnv
  * @description
  * The SmartEnv class represents a global runtime environment managing configuration,
  * references to collections, modules, and a global scope. It ensures that only one instance
- * of the environment is created and acts as a central point of coordination.
+ * of the environment is created and acts as a central coordination point.
  */
 export class SmartEnv {
   /**
@@ -42,49 +43,94 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.13913;
+  static version = 2.139133;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
+
   constructor(opts = {}) {
     this.state = 'init';
     this._components = {};
     this.collections = {};
     this.load_timeout = null;
-    if(opts.primary_main_key) this.primary_main_key = opts.primary_main_key;
+    this._collections_version_signature = null; // ← new
+    if (opts.primary_main_key) this.primary_main_key = opts.primary_main_key;
   }
+
+  // ========================================================================
+  // ──  CONFIG (now version-aware)                                          ──
+  // ========================================================================
+
   /**
-   * Returns the config object for the SmartEnv instance.
-   * @returns {Object} The config object.
+   * Builds or returns the cached configuration object.
+   * The cache is invalidated automatically whenever the “version signature”
+   * of any collection class changes (controlled by its static `version`).
+   *
+   * @returns {Object} the merged, up-to-date environment config
    */
   get config() {
-    if(!this._config) {
-      this._config = {};
-      const sorted_configs = Object.entries(this.smart_env_configs)
-        // if primary_main_key is set, move it to the front (uses those modules when they appear in multiple configs)
-        .sort(([main_key, {main, opts}]) => {
-          if(!this.primary_main_key) return 0;
-          if(main_key === this.primary_main_key) return -1;
-          return 0;
-        })
-      ;
-      for(const [main_key, {main, opts}] of sorted_configs){
-        if(!main){
-          console.warn(`SmartEnv: '${main_key}' has been unloaded, skipping inclusion in smart_env`);
-          delete this.smart_env_configs[main_key];
-          continue; // skip if main has been unloaded
-        }
-        merge_env_config(
-          this._config,
-          deep_clone_config(
-            normalize_opts(opts)
-          )
-        );
+    const signature = this.compute_collections_version_signature();
+
+    if (this._config && signature === this._collections_version_signature) {
+      return this._config;                       // still current – use cache
+    }
+
+    // cache miss or collections updated → rebuild
+    this._collections_version_signature = signature;
+    this._config = {};
+
+    const sorted_configs = Object.entries(this.smart_env_configs)
+      .sort(([main_key]) => {
+        if (!this.primary_main_key) return 0;
+        return main_key === this.primary_main_key ? -1 : 0;
+      });
+
+      
+    for (const [key, rec] of sorted_configs) {
+      if (!rec?.main) {
+        console.warn(`SmartEnv: '${key}' unloaded, skipping`);
+        delete this.smart_env_configs[key];
+        continue;
       }
-      // TODO: merge custom actions and components from smart-env folder and cache resulting object
+      if (!rec?.opts){
+        console.warn(`SmartEnv: '${key}' opts missing, skipping`);
+        continue;          // extra safety
+      }
+      merge_env_config(
+        this._config,
+        deep_clone_config(normalize_opts(rec.opts)),
+      );
     }
     return this._config;
   }
+
+  /**
+   * Produces a deterministic string representing the current versions of every
+   * collection class across all mains.  When any collection ships a higher
+   * `static version`, the signature changes – automatically invalidating the
+   * cached `config`.
+   *
+   * @returns {string} pipe-delimited version signature
+   */
+  compute_collections_version_signature() {
+    const list = [];
+
+    for (const rec of Object.values(this.smart_env_configs)) {
+      const { opts } = rec || {};
+      if (!opts) continue;
+      for (const [collection_key, def] of Object.entries(opts.collections || {})) {
+        const cls = def?.class;
+        const v = typeof cls?.version === 'number' ? cls.version : 0;
+        list.push(`${collection_key}:${v}`);
+      }
+    }
+    return list.sort().join('|');
+  }
+
+  // ========================================================================
+  // ──  GLOBAL HELPERS / STATIC API                                         ──
+  // ========================================================================
+
   get env_start_wait_time() {
     if(typeof this.config.env_start_wait_time === 'number') return this.config.env_start_wait_time;
     return 5000;
@@ -194,9 +240,14 @@ export class SmartEnv {
     return this.global_env;
   }
   static add_main(main, main_env_opts = null) {
-    if(this.global_env?._config) this.global_env._config = null;
+    if (this.global_env) {
+      this.global_env._config = null;                    // invalidate cache
+      this.global_env._collections_version_signature = null;
+    }
+
+    if (!main_env_opts) main_env_opts = main.smart_env_config;
     const main_key = camel_case_to_snake_case(main.constructor.name);
-    this.smart_env_configs[main_key] = {main, opts: main_env_opts};
+    this.smart_env_configs[main_key] = { main, opts: main_env_opts };
     this.create_env_getter(main);
   }
   /**
@@ -267,12 +318,12 @@ export class SmartEnv {
     for (const key of Object.keys(collections || {})) {
       const time_start = Date.now();
       if (typeof this[key]?.process_load_queue === 'function') {
-        if(this.state === 'init' && this[key].opts?.prevent_load_on_init === true) continue;
+        // if(this.state === 'init' && this[key].opts?.prevent_load_on_init === true) continue;
         await this[key].process_load_queue();
+        this[key].load_time_ms = Date.now() - time_start; 
+        this.collections[key] = 'loaded';
+        console.log(`Loaded ${this[key].collection_key} in ${this[key].load_time_ms}ms`);
       }
-      this[key].load_time_ms = Date.now() - time_start; 
-      this.collections[key] = 'loaded';
-      console.log(`Loaded ${this[key].collection_key} in ${this[key].load_time_ms}ms`);
     }
   }
   /**
