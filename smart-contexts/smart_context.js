@@ -56,8 +56,7 @@ export class SmartContext extends CollectionItem {
    * Looks up a reference in the environment. Distinguishes block vs source by '#' presence.
    */
   get_ref(key) {
-    const collection = key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
-    return collection.get(key);
+    return this.collection.get_ref(key);
   }
 
   get_item_keys_by_depth(depth) {

@@ -167,6 +167,10 @@ export class SmartContexts extends Collection {
       }
     };
   }
+  get_ref(key) {
+    const collection = key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
+    return collection.get(key);
+  }
 }
 
 export default { SmartContexts };
