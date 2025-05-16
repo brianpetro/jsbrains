@@ -26,7 +26,8 @@ export async function get_snapshot(context_item, opts) {
   };
 
   const keys_at_depth = {};
-  keys_at_depth[0] = Object.keys(context_item.data.context_items);
+  // keys_at_depth[0] = Object.keys(context_item.data.context_items);
+  keys_at_depth[0] = context_item.get_item_keys_by_depth(0);
 
   const max_depth = opts.link_depth ?? 0;
 

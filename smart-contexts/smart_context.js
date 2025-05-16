@@ -60,6 +60,12 @@ export class SmartContext extends CollectionItem {
     return collection.get(key);
   }
 
+  get_item_keys_by_depth(depth) {
+    this.convert_data_context_items_bool_to_object(); // TEMPORARY for backwards compatibility
+    return Object.keys(this.data.context_items).filter(k => this.data.context_items[k].d === depth);
+  }
+
+
   /**
    * If no user-provided key, fallback to a stable hash of the context_items.
    */
@@ -67,5 +73,22 @@ export class SmartContext extends CollectionItem {
     if (this.data.key) return this.data.key;
     const str = JSON.stringify(this.data.context_items || {});
     return murmur_hash_32_alphanumeric(str);
+  }
+  get has_context_items() {
+    return Object.keys(this.data.context_items || {}).length > 0;
+  }
+
+
+  /**
+   * Backwards compatibility (remove in v2)
+   * Converts context_items from boolean to object with depth d=0
+   */
+  convert_data_context_items_bool_to_object() {
+    if(Object.values(this.data.context_items).every(v => v === true)){
+      Object.keys(this.data.context_items).forEach(k => {
+        this.data.context_items[k] = { d: 0 }
+      })
+      this.queue_save()
+    }
   }
 }
