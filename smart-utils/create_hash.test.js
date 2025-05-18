@@ -1,5 +1,5 @@
 import test from 'ava';
-import { murmur_hash_32, create_hash, murmur_hash_32_alphanumeric, murmur_hash_32_alphanumeric_2 } from './create_hash.js';
+import { murmur_hash_32, create_hash, murmur_hash_32_alphanumeric } from './create_hash.js';
 
 import { fnv1a_32, fnv1a_32_alphanumeric } from './create_hash.js';
 
