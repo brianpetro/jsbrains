@@ -1,21 +1,63 @@
 import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
 
-export function merge_env_config(target, incoming) {
+/**
+ * Deep-merge `incoming` into `target` **without losing data**, honouring
+ * version semantics for collections (and, in the future, modules).
+ *
+ * Rules for `collections`:
+ *   • If `target` does not have the collection ⇒ copy it straight in.
+ *   • If both have it and **incoming.class.version** is **higher** ⇒ replace
+ *     the whole record (newer wins) but preserve keys the new record omits.
+ *   • If versions are **equal** **or incoming is older** ⇒ *augment* the
+ *     existing record with any keys that don’t already exist
+ *     (`deep_merge_no_overwrite`). This keeps the newer class intact while
+ *     merging additional props from the incoming definition.
+ *
+ * Arrays are concatenated. Primitive keys are overwritten.
+ *
+ * @param {object} target   – The destination object (mutated in-place).
+ * @param {object} incoming – The source object to merge from.
+ * @returns {object} The same `target` reference for chaining.
+ */
+export function merge_env_config (target, incoming) {
   for (const [key, value] of Object.entries(incoming)) {
-    if (typeof value === 'object' && value !== null) {
-      if (Array.isArray(value)) {
-        target[key] = [...(target[key] || []), ...value];
-      } else {
-        if (!target[key]) target[key] = {};
-        deep_merge_no_overwrite(target[key], value);
+
+    /* ───────────────────────────── Collections ───────────────────────────── */
+    if (key === 'collections' && value && typeof value === 'object') {
+      if (!target.collections) target.collections = {};
+
+      for (const [col_key, col_def] of Object.entries(value)) {
+        const existing_def = target.collections[col_key];
+
+        // First time we meet this collection – just take it.
+        if (!existing_def) {
+          target.collections[col_key] = { ...col_def };
+          continue;
+        }
+
+        const new_ver = +(col_def?.class?.version ?? 0);
+        const cur_ver = +(existing_def?.class?.version ?? 0);
+
+        if (new_ver > cur_ver) {
+          // Newer definition wins but keep keys the newer record omits
+          const replaced = { ...col_def };
+          deep_merge_no_overwrite(replaced, existing_def);
+          target.collections[col_key] = replaced;
+        } else {
+          // Same or older version – additive merge (don’t overwrite)
+          deep_merge_no_overwrite(existing_def, col_def);
+        }
       }
-    } else if(value !== target[key]) {
-      if (target[key] !== undefined) {
-        console.warn(
-          `SmartEnv: Overwriting existing property ${key} in smart_env_config`,
-          {old: target[key], new: value}
-        );
-      }
+      continue; // done with this top-level key
+    }
+
+    /* ───────────────────────────── Default path ──────────────────────────── */
+    if (Array.isArray(value)) {
+      target[key] = [...(target[key] || []), ...value];
+    } else if (value && typeof value === 'object') {
+      if (!target[key]) target[key] = {};
+      deep_merge_no_overwrite(target[key], value);
+    } else {
       target[key] = value;
     }
   }

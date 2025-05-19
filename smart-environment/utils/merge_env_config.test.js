@@ -88,3 +88,31 @@ test('should not merge if incoming value is same object reference as target', t 
     t.deepEqual(result, expected);
     t.is(result.a, shared_object); // Ensure reference wasn't broken unnecessarily
 });
+
+
+class ColV1 {}  ColV1.version = 1;
+class ColV2 {}  ColV2.version = 2;
+
+test('newer collection version replaces older one', t => {
+  const target   = { collections: { foo: { class: ColV1, flag: true } } };
+  const incoming = { collections: { foo: { class: ColV2 } } };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.collections.foo.class, ColV2,
+       'incoming class replaces the older version');
+  t.true(target.collections.foo.flag,
+       'non-conflicting props are preserved');
+});
+
+test('older or same version does NOT replace BUT includes extra props', t => {
+  const target   = { collections: { foo: { class: ColV2 } } };
+  const incoming = { collections: { foo: { class: ColV1, extra: 123 } } };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.collections.foo.class, ColV2,
+       'existing newer class kept');
+  t.is(target.collections.foo.extra, 123,
+       'older definition merged with no overwrite');
+});
