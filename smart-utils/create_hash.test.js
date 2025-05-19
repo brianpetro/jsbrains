@@ -122,3 +122,11 @@ test('create_hash: different inputs produce different results', async (t) => {
 
   t.not(hashA, hashB);
 });
+
+test('create_hash: truncates very long input', async (t) => {
+  const long_a = 'a'.repeat(150000);
+  const long_b = 'a'.repeat(100000);
+  const hashA = await create_hash(long_a);
+  const hashB = await create_hash(long_b);
+  t.is(hashA, hashB);
+});

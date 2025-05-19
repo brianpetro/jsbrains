@@ -16,7 +16,7 @@ SmartEmbedModel is a versatile and convenient interface for utilizing various em
 ## Installation
 
 ```bash
-npm install smart-embed
+npm install smart-embed-model
 ```
 
 ## Quick Start
