@@ -15,6 +15,7 @@ import { Collection } from 'smart-collections';
  * or data relevant to a specific use case (e.g., building a textual context for AI).
  */
 export class SmartContexts extends Collection {
+  static version = 0.1;
   /**
    * Default settings for all SmartContext items in this collection.
    * @readonly

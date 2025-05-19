@@ -116,7 +116,6 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
 
   async function process_item(item) {
     let content = await item.read();
-    console.log('read context');
     if (!opts.calculating && content.includes('dataview')) {
       content = await item.read({ render_output: true });
       item.data.outlinks = get_markdown_links(content);
