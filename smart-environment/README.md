@@ -47,10 +47,6 @@ Initializes a new SmartEnv instance.
 
 - `opts`: Configuration options for the SmartEnv instance.
 
-### `async init(main, main_env_opts = {})`
-
-Initializes the SmartEnv instance with the provided main object and options.
-
 ### `init_main(main, main_env_opts = {})`
 
 Adds a new main object to the SmartEnv instance.
