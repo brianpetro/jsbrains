@@ -17,8 +17,6 @@ JS Brains is a collection of lightweight modules for building intelligent applic
       Handles structured documents (sources) and their embedded blocks, integrating with embeddings and semantic lookups.
         - [**smart-chats/**](https://github.com/brianpetro/jsbrains/tree/main/smart-chats#readme)  
           Manages chat threads, messages, and system or user prompts, integrating with LLM-based chat models for dynamic conversation handling.
-        - [**smart-templates/**](https://github.com/brianpetro/jsbrains/tree/main/smart-templates#readme)  
-          Manages templates, enabling variable substitution and EJS rendering for turning templates into prompts or documents, often integrated with chat and embed models.
     - [**smart-blocks/**](https://github.com/brianpetro/jsbrains/tree/main/smart-blocks#readme)  
       Manages block-level granularity within sources, representing distinct sections or pieces of content for targeted embedding, search, and tool integration.
 
@@ -75,7 +73,6 @@ Below is a **condensed** but **comprehensive** reference to these libraries, det
   - [smart-http-request](#smart-http-request)  
   - [smart-clusters](#smart-clusters)  
   - [smart-view](#smart-view)  
-  - [smart-templates](#smart-templates)
 
 - [Key Concepts & Core Classes](#key-concepts--core-classes)
 - [Directory & File Structures](#directory--file-structures)
@@ -148,10 +145,6 @@ The **"smart-*"** set of libraries in JS Brains comprise a modular ecosystem for
 - `SmartView` with environment-specific adapters like `SmartViewNodeAdapter` or `SmartViewObsidianAdapter`.
 - Offers standard setting types (dropdown, toggle, text, etc.) plus markdown rendering.
 
-#### smart-templates
-- Provides **template** generation with AI-driven or user-provided variable filling.
-- `SmartTemplate` extends `SmartSource` or is in a specialized collection.
-- Supports EJS syntax, or mustache-like placeholders, with optional AI completion via `var_prompts`.
 
 ---
 

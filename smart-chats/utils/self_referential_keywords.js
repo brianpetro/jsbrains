@@ -5,8 +5,11 @@ export function contains_self_referential_keywords(user_input, language) {
   const language_settings = ScTranslations[language];
   if (!language_settings) return false;
   let check_str = `${user_input}`;
-  if (check_str.match(new RegExp(`\\b(${language_settings.pronouns.join("|")})\\b`, "gi"))) return true;
-  return false;
+  check_str = check_str
+    .replace(/\[\[[^\]]+\]\]/g, '')
+    .replace(/\/[^/]*?\//g, '')
+    .replace(/@"[^"]+"/g, '');
+  return new RegExp(`\\b(${language_settings.pronouns.join('|')})\\b`, 'i').test(check_str);
 }
 
 export function get_language_options(){
