@@ -153,7 +153,7 @@ function build_item_placeholders(path, depth, mtime) {
   const dot_pos = name.lastIndexOf('.');
   const ext = dot_pos > 0 ? name.slice(dot_pos + 1) : '';
   return {
-    ITEM_PATH: path,
+    ITEM_PATH: path.replace("external:", ""),
     ITEM_NAME: name,
     ITEM_EXT: ext,
     ITEM_DEPTH: depth,
