@@ -80,6 +80,7 @@ class DiffMain {
 function clear_global_smart_env() {
   const g = SmartEnv.global_ref;
   if (g.smart_env) delete g.smart_env;
+  if (g.smart_env_configs) delete g.smart_env_configs;
 }
 
 /**
@@ -144,6 +145,7 @@ test.serial('SmartEnv.create() - merges options into existing environment (no re
 test.serial('SmartEnv init_main() - adds a new main and merges its config', async (t) => {
   clear_global_smart_env();
   const env = new SmartEnv({ modules: {}, collections: {} });
+  SmartEnv.global_env = env;
   const the_main = new TheMain();
   const main_key = env.init_main(the_main, the_main.smart_env_config);
   await env.load_main(main_key);
@@ -160,6 +162,7 @@ test.serial('SmartEnv unload_main() - ensures environment cleanup', async (t) =>
 
   // Create an environment with 2 mains
   const env = new SmartEnv({ modules: {}, collections: {} });
+  SmartEnv.global_env = env;
   const main_one = new TheMain();
   env.init_main(main_one, main_one.smart_env_config);
   await env.load_main('the_main');
@@ -246,7 +249,7 @@ test.serial('SmartEnv add_main & unload_main - ensures proper cleanup (integrati
   env.unload_main(main_one);
   t.is(env.mains.length, 0, 'No mains remain after unloading the last main.');
   t.is(env['the_main'], null, 'main_one property is cleared on env.');
-  t.is(env.global_env, null, 'Global ref should be cleared when no mains exist.');
+  t.is(SmartEnv.global_env, null, 'Global ref should be cleared when no mains exist.');
   t.true(env.the_collection === null, 'the_collection null');
 });
 

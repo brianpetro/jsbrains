@@ -25,6 +25,10 @@ const default_adapter_export = {
 // Create an environment with the specified item type and mock data adapter
 function create_env_and_collection(itemType = CollectionItem) {
   const env = {
+    create_env_getter(obj) {
+      Object.defineProperty(obj, 'env', { value: env });
+    },
+    collections: {},
     config: {
       collections: {
         collection: {}

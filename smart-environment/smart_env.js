@@ -257,6 +257,7 @@ export class SmartEnv {
    */
   static create_env_getter(instance_to_receive_getter) {
     Object.defineProperty(instance_to_receive_getter, 'env', {
+      configurable: true,
       get: () => this.global_env,
     });
   }
@@ -282,7 +283,7 @@ export class SmartEnv {
   /**
    * Initializes collection classes if they have an 'init' function.
    * @param {Object} [config=this.config]
-   */
+  */
   async init_collections(config = this.config) {
     for (const key of Object.keys(config.collections || {})) {
       const _class = config.collections[key]?.class;

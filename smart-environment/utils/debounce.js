@@ -7,16 +7,26 @@
  * @param {Object} context - The context to apply when calling func
  * @return {Function} The debounced function
  */
-export function debounce(func, wait, context = null) {
+export function debounce(func, wait, opts = {}) {
+  const { immediate = false, context = null } = opts;
   let timeout = null;
 
-  return function (...args) {
-    const later = () => {
-      timeout = null;
-      func.apply(context || this, args);
-    };
-
+  const debounced = function (...args) {
+    const call_now = immediate && !timeout;
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+
+    timeout = setTimeout(() => {
+      timeout = null;
+      if (!immediate) func.apply(context || this, args);
+    }, wait);
+
+    if (call_now) func.apply(context || this, args);
   };
+
+  debounced.cancel = () => {
+    clearTimeout(timeout);
+    timeout = null;
+  };
+
+  return debounced;
 }
