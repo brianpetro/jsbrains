@@ -1,0 +1,40 @@
+{
+  "name": "smart-completions",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Easy to manage completions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "keywords": [
+    "completions",
+    "collections",
+    "sources"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "devDependencies": {
+    "ava": "^6.0.1",
+    "smart-environment": "*"
+  },
+  "dependencies": {
+    "smart-chat-model": "*",
+    "smart-collections": "*",
+    "smart-contexts": "*",
+    "smart-utils": "*"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.js"
+    ]
+  }
+}
