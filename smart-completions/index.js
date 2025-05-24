@@ -12,11 +12,12 @@ import { SmartCompletionSystemAdapter } from "./adapters/system.js";
 export const smart_completions_default_config = {
   class: SmartCompletions,
   data_adapter: AjsonSingleFileCollectionDataAdapter,
+  item_type: SmartCompletion,
   completion_adapters: {
     SmartCompletionTemplateAdapter,
     SmartCompletionContextAdapter,
     SmartCompletionUserAdapter,
-    // ActionCompletionAdapter,
+    ActionCompletionAdapter,
     ActionXmlCompletionAdapter,
     SmartCompletionSystemAdapter,
   }
