@@ -306,12 +306,6 @@ export class SmartEntity extends CollectionItem {
    */
   get path() { return this.data.path; }
 
-  /**
-   * Gets the component responsible for rendering the entity.
-   * @readonly
-   * @returns {Function} The render function for the entity component.
-   */
-  get component() { return render_entity_component; }
 
   get is_unembedded() {
     if(!this.vec) return true;
@@ -319,20 +313,6 @@ export class SmartEntity extends CollectionItem {
     return false;
   }
 
-  // COMPONENTS 2024-11-27
-  get connections_component() {
-    if(!this._connections_component) this._connections_component = this.components?.connections?.bind(this.smart_view);
-    return this._connections_component;
-  }
-  async render_connections(container, opts={}) {
-    if(container) this.env.smart_view.safe_inner_html(container, 'Loading connections...');
-    const frag = await this.env.render_component('connections', this, opts);
-    if(container) {
-      this.env.smart_view.empty(container);
-      container.appendChild(frag);
-    }
-    return frag;
-  }
 }
 
 import { find_connections } from "./actions/find_connections.js";

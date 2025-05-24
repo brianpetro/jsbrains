@@ -460,15 +460,6 @@ export class Collection {
     this.env.collections[this.collection_key] = null;
   }
 
-  /**
-   * Helper function to render a component in the collection scope
-   * @param {*} component_key 
-   * @param {*} opts 
-   * @returns 
-   */
-  async render_component(component_key, opts = {}) {
-    return await this.env.render_component(component_key, this, opts);
-  }
   // only show process notice if taking longer than 1 second
   show_process_notice(process, opts = {}) {
     if(!this.debounce_process_notice) this.debounce_process_notice = {};

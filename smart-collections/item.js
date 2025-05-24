@@ -258,16 +258,6 @@ export class CollectionItem {
    */
   parse() { /* NO-OP by default */ }
 
-  /**
-   * Helper function to render a component in the item scope
-   * @param {*} component_key 
-   * @param {*} opts 
-   * @returns 
-   */
-  async render_component(component_key, opts = {}) {
-    return await this.env.render_component(component_key, this, opts);
-  }
-
   get actions() {
     if(!this._actions) {
       this._actions = Object.entries(this.env.opts.items[this.item_type_key].actions || {}).reduce((acc, [k,v]) => {
@@ -357,19 +347,19 @@ export class CollectionItem {
     this.env.smart_settings.save();
   }
 
-  /**
-   * Render this item into a container using the item's component.
-   * @deprecated 2024-12-02 Use explicit component pattern from environment
-   * @param {HTMLElement} container
-   * @param {Object} opts
-   * @returns {Promise<HTMLElement>}
-   */
-  async render_item(container, opts = {}) {
-    const frag = await this.component.call(this.smart_view, this, opts);
-    this.env.smart_view.empty(container);
-    container.appendChild(frag);
-    return container;
-  }
+  // /**
+  //  * Render this item into a container using the item's component.
+  //  * @deprecated 2024-12-02 Use explicit component pattern from environment
+  //  * @param {HTMLElement} container
+  //  * @param {Object} opts
+  //  * @returns {Promise<HTMLElement>}
+  //  */
+  // async render_item(container, opts = {}) {
+  //   const frag = await this.component.call(this.smart_view, this, opts);
+  //   this.env.smart_view.empty(container);
+  //   container.appendChild(frag);
+  //   return container;
+  // }
 
   /**
    * @deprecated use env.smart_view
@@ -380,12 +370,12 @@ export class CollectionItem {
     return this._smart_view;
   }
 
-  /**
-   * Override in child classes to set the component for this item
-   * @deprecated 2024-12-02
-   * @returns {Function} The render function for this component
-   */
-  get component() { return item_component; }
+  // /**
+  //  * Override in child classes to set the component for this item
+  //  * @deprecated 2024-12-02
+  //  * @returns {Function} The render function for this component
+  //  */
+  // get component() { return item_component; }
 }
 
 /**
