@@ -1,0 +1,38 @@
+{
+  "name": "smart-actions",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Easy to manage action groups.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "keywords": [
+    "action groups",
+    "collections",
+    "actions"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "devDependencies": {
+    "ava": "^6.0.1",
+    "smart-environment": "*",
+    "smart-file-system": "*"
+  },
+  "dependencies": {
+    "smart-collections": "*"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.js"
+    ]
+  }
+}
