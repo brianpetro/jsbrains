@@ -423,6 +423,7 @@ export class Collection {
 
   /**
    * Renders the settings for the collection into a given container.
+   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
    * @param {HTMLElement} [container=this.settings_container]
    * @param {Object} opts
    * @returns {Promise<HTMLElement>}
@@ -433,6 +434,7 @@ export class Collection {
 
   /**
    * Helper function to render collection settings.
+   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
    * @param {HTMLElement} [container=this.settings_container]
    * @param {Object} opts
    * @returns {Promise<HTMLElement>}

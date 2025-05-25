@@ -323,6 +323,7 @@ export class SmartSources extends SmartEntities {
     const _settings_config = {
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
+      ...this.process_settings_config(this.embed_model.settings_config, 'embed_model'),
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
         if(acc[adapter_constructor]) return acc; // Skip if already added same adapter_constructor
         const item = this.items[Object.keys(this.items).find(i => i.endsWith(file_extension))];

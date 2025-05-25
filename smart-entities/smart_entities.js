@@ -121,7 +121,7 @@ export class SmartEntities extends Collection {
     if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
       settings: this.settings.embed_model,
       adapters: this.env.opts.modules.smart_embed_model?.adapters,
-      re_render_settings: this.re_render_settings.bind(this),
+      re_render_settings: () => this.env.render_component('collection_settings', this, {settings_container: this.settings_container}),
       reload_model: this.reload_embed_model.bind(this),
     });
     return this.env._embed_model;
@@ -131,10 +131,6 @@ export class SmartEntities extends Collection {
     console.log("reload_embed_model");
     this.embed_model.unload();
     this.env._embed_model = null;
-  }
-  re_render_settings() {
-    this.env.smart_view.empty(this.settings_container);
-    this.render_settings();
   }
 
   /**
@@ -319,6 +315,9 @@ export class SmartEntities extends Collection {
   get settings_config() {
     return settings_config;
   }
+  /**
+   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
+   */
   async render_settings(container=this.settings_container, opts = {}) {
     container = await this.render_collection_settings(container, opts);
     const embed_model_settings_frag = await this.env.render_component('settings', this.embed_model, opts);
