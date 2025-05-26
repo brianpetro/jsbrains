@@ -26,7 +26,6 @@
   "workspaces": [
     "smart-blocks",
     "smart-chat-model",
-    "smart-chats",
     "smart-cluster-groups",
     "smart-clusters",
     "smart-collections",

@@ -2,7 +2,6 @@
   "source": {
     "include": [
       "smart-chat-model",
-      "smart-chats",
       "smart-chunks",
       "smart-collections",
       "smart-embed"
