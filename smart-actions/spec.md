@@ -1,5 +1,3 @@
-
-
 ## Data Structures
 ### `SmartAction` Item
 A single action is stored (and often persisted) as a `SmartAction` item. Its primary data fields:
