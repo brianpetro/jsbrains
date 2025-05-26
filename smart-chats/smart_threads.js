@@ -103,6 +103,10 @@ export class SmartThreads extends SmartSources {
       },
     };
   }
+  re_render_settings() {
+    this.env.smart_view.empty(this.settings_container);
+    this.render_settings();
+  }
 
   async render_settings(container=this.settings_container, opts={}) {
     container = await this.render_collection_settings(container, opts);
