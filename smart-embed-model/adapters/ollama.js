@@ -76,10 +76,10 @@ import {
 /**
  * Adapter for Ollama's local embedding API.
  * Handles communication with locally running Ollama instance for generating embeddings.
- * @class SmartEmbedModelOllamaAdapter
+ * @class SmartEmbedOllamaAdapter
  * @extends SmartEmbedModelApiAdapter
  */
-export class SmartEmbedModelOllamaAdapter extends SmartEmbedModelApiAdapter {
+export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
   static defaults = {
     description: "Ollama (Local)",
     type: "API",
@@ -113,6 +113,7 @@ export class SmartEmbedModelOllamaAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh = false) {
+    this.models_endpoint = this.constructor.defaults.models_endpoint;
     if (
       !refresh &&
       this.adapter_config?.models &&
