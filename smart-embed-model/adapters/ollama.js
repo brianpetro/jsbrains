@@ -83,15 +83,29 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
   static defaults = {
     description: "Ollama (Local)",
     type: "API",
-    endpoint: "http://localhost:11434/api/embed",
-    models_endpoint: "http://localhost:11434/api/tags",
+    host: "http://localhost:11434",
+    endpoint: "/api/embed",
+    models_endpoint: "/api/tags",
     api_key: 'na', // Not required for local instance
     streaming: false, // Ollama's embed API does not support streaming
     max_tokens: 8192, // Example default, adjust based on model capabilities
     signup_url: null, // Not applicable for local instance
-    batch_size: 100,
+    batch_size: 30,
     models: {},
   };
+
+  get endpoint() {
+    return `${this.model_config.host}${this.model_config.endpoint}`;
+  }
+
+  get models_endpoint() {
+    return `${this.model_config.host}${this.model_config.models_endpoint}`;
+  }
+
+  async load() {
+    await this.get_models();
+    await super.load();
+  }
 
   /**
    * Estimate token count for input text.
@@ -163,16 +177,6 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh = false) {
-    this.models_endpoint = this.constructor.defaults.models_endpoint;
-    // if (
-    //   !refresh &&
-    //   this.adapter_config?.models &&
-    //   typeof this.adapter_config.models === 'object' &&
-    //   Object.keys(this.adapter_config.models).length > 0
-    // ) {
-    //   return this.adapter_config.models; // return cached models if not refreshing
-    // }
-
     try {
       const list_resp = await this.http_adapter.request({
         url: this.models_endpoint,
@@ -191,9 +195,8 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
         });
         models_raw.push({ ...(await detail_resp.json()), name: m.name });
       }
-      console.log(models_raw);
       const model_data = this.parse_model_data(models_raw);
-      // this.adapter_settings.models = model_data;
+      this.model_data = model_data;
       this.model.re_render_settings();
       return model_data;
     } catch (error) {
@@ -236,6 +239,12 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
   get settings_config() {
     const config = super.settings_config;
     delete config['[ADAPTER].api_key'];
+    config['[ADAPTER].host'] = {
+      name: 'Ollama host',
+      type: 'text',
+      description: 'Enter the host for your Ollama instance',
+      default: this.constructor.defaults.host,
+    };
     return config;
   }
 }
@@ -253,7 +262,6 @@ class SmartEmbedModelOllamaRequestAdapter extends SmartEmbedModelRequestAdapter 
    * @returns {Object} Request parameters in Ollama's format
    */
   to_platform(streaming = false) {
-    console.log(this.embed_inputs.length);
     const ollama_body = {
       model: this.adapter.model_config.id,
       input: this.embed_inputs,
@@ -329,7 +337,7 @@ class SmartEmbedModelOllamaResponseAdapter extends SmartEmbedModelResponseAdapte
  * @returns {boolean}
  */
 const is_embedding_model = (mod) => {
-  return /(?:^|[-_])(embed|embedding)(?:$|[-_])/.test(mod.name);
+  return ['embed', 'embedding', 'bge'].some(keyword => mod.name.toLowerCase().includes(keyword));
 };
 
 /**
