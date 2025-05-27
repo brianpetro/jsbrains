@@ -89,7 +89,8 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     streaming: false, // Ollama's embed API does not support streaming
     max_tokens: 8192, // Example default, adjust based on model capabilities
     signup_url: null, // Not applicable for local instance
-    batch_size: 3,
+    batch_size: 100,
+    models: {},
   };
 
   /**
@@ -163,14 +164,14 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
    */
   async get_models(refresh = false) {
     this.models_endpoint = this.constructor.defaults.models_endpoint;
-    if (
-      !refresh &&
-      this.adapter_config?.models &&
-      typeof this.adapter_config.models === 'object' &&
-      Object.keys(this.adapter_config.models).length > 0
-    ) {
-      return this.adapter_config.models; // return cached models if not refreshing
-    }
+    // if (
+    //   !refresh &&
+    //   this.adapter_config?.models &&
+    //   typeof this.adapter_config.models === 'object' &&
+    //   Object.keys(this.adapter_config.models).length > 0
+    // ) {
+    //   return this.adapter_config.models; // return cached models if not refreshing
+    // }
 
     try {
       const list_resp = await this.http_adapter.request({
@@ -182,7 +183,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
       }
       const list_data = await list_resp.json();
       const models_raw = [];
-      for (const m of list_data.models || []) {
+      for (const m of filter_embedding_models(list_data.models || [])) {
         const detail_resp = await this.http_adapter.request({
           url: 'http://localhost:11434/api/show',
           method: 'POST',
@@ -190,8 +191,9 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
         });
         models_raw.push({ ...(await detail_resp.json()), name: m.name });
       }
+      console.log(models_raw);
       const model_data = this.parse_model_data(models_raw);
-      this.adapter_settings.models = model_data;
+      // this.adapter_settings.models = model_data;
       this.model.re_render_settings();
       return model_data;
     } catch (error) {
@@ -318,3 +320,27 @@ class SmartEmbedModelOllamaResponseAdapter extends SmartEmbedModelResponseAdapte
   }
 }
 
+/**
+ * True when a model’s name contains “embed” or “embedding”
+ * as an independent segment (delimited by – or _).
+ * Pure, side-effect-free.
+ *
+ * @param {OllamaModel} mod
+ * @returns {boolean}
+ */
+const is_embedding_model = (mod) => {
+  return /(?:^|[-_])(embed|embedding)(?:$|[-_])/.test(mod.name);
+};
+
+/**
+ * Returns only embedding models.
+ *
+ * @param {OllamaModel[]} models
+ * @returns {OllamaModel[]}
+ */
+export const filter_embedding_models = (models) => {
+  if (!Array.isArray(models)) {
+    throw new TypeError('models must be an array');
+  }
+  return models.filter(is_embedding_model);
+};
