@@ -738,7 +738,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.1");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
