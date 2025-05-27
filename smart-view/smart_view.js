@@ -160,18 +160,6 @@ export class SmartView {
   }
 
   /**
-   * Handles the smooth transition effect when opening overlays.
-   * @param {HTMLElement} overlay_container - The overlay container element.
-   */
-  on_open_overlay(overlay_container) {
-    overlay_container.style.transition = 'background-color 0.5s ease-in-out';
-    overlay_container.style.backgroundColor = 'var(--bold-color)';
-    setTimeout(() => {
-      overlay_container.style.backgroundColor = '';
-    }, 500);
-  }
-
-  /**
    * Renders settings from a config, returning a fragment.
    * @async
    * @param {Object} settings_config
