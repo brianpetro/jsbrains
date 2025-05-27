@@ -89,7 +89,56 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     streaming: false, // Ollama's embed API does not support streaming
     max_tokens: 8192, // Example default, adjust based on model capabilities
     signup_url: null, // Not applicable for local instance
+    batch_size: 3,
   };
+
+  /**
+   * Estimate token count for input text.
+   * Ollama does not expose a tokenizer so we use a character based heuristic.
+   * @param {string} input - Text to tokenize
+   * @returns {Promise<Object>} Token count result
+   */
+  async count_tokens(input) {
+    return { tokens: this.estimate_tokens(input) };
+  }
+
+  /**
+   * Prepare input text and ensure it fits within `max_tokens`.
+   * @param {string} embed_input - Raw input text
+   * @returns {Promise<string|null>} Processed input text
+   */
+  async prepare_embed_input(embed_input) {
+    if (typeof embed_input !== 'string') throw new TypeError('embed_input must be a string');
+    if (embed_input.length === 0) return null;
+
+    const { tokens } = await this.count_tokens(embed_input);
+    if (tokens <= this.max_tokens) return embed_input;
+
+    return await this.trim_input_to_max_tokens(embed_input, tokens);
+  }
+
+  /**
+   * Trim input text to satisfy `max_tokens`.
+   * @private
+   * @param {string} embed_input - Input text
+   * @param {number} tokens_ct - Existing token count
+   * @returns {Promise<string|null>} Trimmed text
+   */
+  async trim_input_to_max_tokens(embed_input, tokens_ct) {
+    const reduce_ratio = (tokens_ct - this.max_tokens) / tokens_ct;
+    const new_length = Math.floor(embed_input.length * (1 - reduce_ratio));
+    let trimmed_input = embed_input.slice(0, new_length);
+    const last_space_index = trimmed_input.lastIndexOf(' ');
+    if (last_space_index > 0) trimmed_input = trimmed_input.slice(0, last_space_index);
+    const prepared = await this.prepare_embed_input(trimmed_input);
+    if (prepared === null) return null;
+    return prepared;
+  }
+
+  /** @returns {number} Maximum tokens for an input */
+  get max_tokens() {
+    return this.model_config.max_tokens || this.constructor.defaults.max_tokens;
+  }
 
   /**
    * Get the request adapter class.
@@ -120,27 +169,30 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
       typeof this.adapter_config.models === 'object' &&
       Object.keys(this.adapter_config.models).length > 0
     ) {
-      return this.adapter_config.models; // Return cached models if not refreshing
+      return this.adapter_config.models; // return cached models if not refreshing
     }
 
     try {
-      console.log('Fetching models from Ollama...');
-      const response = await this.http_adapter.request({
+      const list_resp = await this.http_adapter.request({
         url: this.models_endpoint,
         method: 'GET',
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.statusText}`);
+      if (list_resp.ok === false) {
+        throw new Error(`Failed to fetch models list: ${list_resp.statusText}`);
       }
-
-      const data = await response.json();
-      const model_data = this.parse_model_data(data);
-      console.log('Available models:', model_data);
-
-      this.adapter_settings.models = model_data; // Persist models
-      this.model.re_render_settings(); // Update settings UI
-
+      const list_data = await list_resp.json();
+      const models_raw = [];
+      for (const m of list_data.models || []) {
+        const detail_resp = await this.http_adapter.request({
+          url: 'http://localhost:11434/api/show',
+          method: 'POST',
+          body: JSON.stringify({ model: m.name }),
+        });
+        models_raw.push({ ...(await detail_resp.json()), name: m.name });
+      }
+      const model_data = this.parse_model_data(models_raw);
+      this.adapter_settings.models = model_data;
+      this.model.re_render_settings();
       return model_data;
     } catch (error) {
       console.error('Failed to fetch model data:', error);
@@ -154,17 +206,21 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Object} Map of model objects with capabilities and limits
    */
   parse_model_data(model_data) {
-    if (!model_data || !model_data.models) {
+    if (!Array.isArray(model_data)) {
       console.error('Invalid model data format from Ollama:', model_data);
       return {};
     }
 
-    return model_data.models.reduce((acc, model) => {
+    return model_data.reduce((acc, model) => {
+      const info = model.model_info || {};
+      const ctx = Object.entries(info).find(([k]) => k.includes('context_length'))?.[1];
+      const dims = Object.entries(info).find(([k]) => k.includes('embedding_length'))?.[1];
       acc[model.name] = {
         model_name: model.name,
         id: model.name,
-        multimodal: false, // Adjust if Ollama supports multimodal embeddings
-        max_input_tokens: model.context_length || this.max_tokens, // Use context_length if provided
+        multimodal: false,
+        max_input_tokens: ctx || this.max_tokens,
+        dims,
         description: model.description || `Model: ${model.name}`,
       };
       return acc;
@@ -195,8 +251,9 @@ class SmartEmbedModelOllamaRequestAdapter extends SmartEmbedModelRequestAdapter 
    * @returns {Object} Request parameters in Ollama's format
    */
   to_platform(streaming = false) {
+    console.log(this.embed_inputs.length);
     const ollama_body = {
-      model: this.model,
+      model: this.adapter.model_config.id,
       input: this.embed_inputs,
       // Advanced parameters can be added here if needed
       // truncate: true, // Defaults to true, adjust based on requirements
@@ -243,9 +300,10 @@ class SmartEmbedModelOllamaResponseAdapter extends SmartEmbedModelResponseAdapte
       return [];
     }
 
+    const tokens = Math.ceil(resp.prompt_eval_count / this.adapter.batch_size);
     const embeddings = resp.embeddings.map((vec) => ({
       vec: vec,
-      tokens: null, // Ollama's embed API does not provide token counts
+      tokens: tokens,
     }));
 
     return embeddings;
