@@ -210,6 +210,7 @@ export class CollectionItem {
       exclude_key_starts_with_any,
       exclude_key_includes,
       exclude_key_includes_any,
+      exclude_key_ends_with,
       key_ends_with,
       key_starts_with,
       key_starts_with_any,
@@ -231,6 +232,9 @@ export class CollectionItem {
 
     // Exclude keys that include any of the provided strings
     if (exclude_key_includes_any && exclude_key_includes_any.some((include) => this.key.includes(include))) return false;
+
+    // Exclude keys that end with a specific string
+    if (exclude_key_ends_with && this.key.endsWith(exclude_key_ends_with)) return false;
 
     // Include only keys that end with a specific string
     if (key_ends_with && !this.key.endsWith(key_ends_with)) return false;
