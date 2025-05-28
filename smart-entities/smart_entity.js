@@ -6,7 +6,6 @@
 import { CollectionItem } from "smart-collections";
 // import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 import { DefaultEntityVectorAdapter } from "./adapters/default.js";
-import { render as render_entity_component } from "./components/entity.js";
 
 /**
  * @class SmartEntity

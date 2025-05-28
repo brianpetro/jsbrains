@@ -348,7 +348,6 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
   }
 
   handle_chunk(chunk) {
-    console.log('handle_chunk', chunk);
     let chunk_trimmed = chunk.trim();
     if(['[',','].includes(chunk_trimmed[0])) chunk_trimmed = chunk_trimmed.slice(1);
     if([']',','].includes(chunk_trimmed[chunk_trimmed.length - 1])) chunk_trimmed = chunk_trimmed.slice(0, -1);

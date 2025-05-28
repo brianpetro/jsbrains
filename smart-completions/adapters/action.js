@@ -86,7 +86,6 @@ export class ActionCompletionAdapter extends SmartCompletionAdapter {
 
     // Run the action
     const result = await action_item.run_action(parsed_args);
-    console.log('ActionCompletionAdapter: result', result);
     // If the tool returns an object with a 'final' key, treat it as the final assistant message
     if (result && typeof result === 'object' && result.final) {
       // Ensure we have a response object in completion

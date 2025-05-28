@@ -312,7 +312,6 @@ export class SmartViewAdapter {
       folder_select.inputEl.querySelector('input').addEventListener('change', (e) => {
         const folder = e.target.value;
         this.handle_on_change(path, folder, elm, scope, settings_scope);
-        console.log('folder changed', folder);
       });
     });
     return smart_setting;

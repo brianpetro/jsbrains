@@ -1,6 +1,5 @@
 export async function insert_image(request, image_path, fs) {
   const base64_image = await convert_image_to_base64(fs, image_path);
-  console.log('base64_image', base64_image);
   if(!base64_image) return;
   const last_user_index = request.messages.findLastIndex(x => x.role === 'user');
   const image_content = {
@@ -18,7 +17,6 @@ export async function insert_image(request, image_path, fs) {
   last_user_message.content.push(image_content.content[0]);
 }
 async function convert_image_to_base64(fs, image_path) {
-  console.log('convert image_path', image_path);
   if (!image_path) return;
   const image_exts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico'];
   const ext = image_path.split('.').pop().toLowerCase();

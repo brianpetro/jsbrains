@@ -12,7 +12,6 @@ export class SmartAction extends CollectionItem {
     if(params.group?.settings?.actions?.[this.key]?.active === false) return { message: 'This action is disabled by the group' };
     let result = await this.action_adapter.run(params);
     result = await this.post_process(params, result);
-    console.log(result);
     return result;
   }
   async pre_process(params) {

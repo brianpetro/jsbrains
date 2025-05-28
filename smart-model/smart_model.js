@@ -294,7 +294,6 @@ export class SmartModel {
    * @returns {Array<Object>} Array of {value, name} option objects
    */
   get_platforms_as_options() {
-    console.log('get_platforms_as_options', this.adapters);
     return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
   }
 
@@ -349,7 +348,6 @@ export class SmartModel {
   }
 
   re_render_settings() {
-    console.log('re_render_settings', this.opts);
     if(typeof this.opts.re_render_settings === 'function') this.opts.re_render_settings();
     else console.warn('re_render_settings is not a function (must be passed in model opts)');
   }
@@ -357,7 +355,6 @@ export class SmartModel {
    * Reload model.
    */
   reload_model() {
-    console.log('reload_model', this.opts);
     if(typeof this.opts.reload_model === 'function') this.opts.reload_model();
     else console.warn('reload_model is not a function (must be passed in model opts)');
   }

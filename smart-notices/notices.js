@@ -20,9 +20,9 @@ export const NOTICES = {
     en: 'Mobile detected: to prevent performance issues, click to load Smart Environment when ready.',
     button: {
       en: `Load Smart Env`,
-      callback: (env) => { env.manual_load(); }
+      callback: (env) => { env.load(true); }
     },
-    timeout: 0
+    timeout: 10000
   },
   missing_entity: {
     en: 'No entity found for key: {{key}}'

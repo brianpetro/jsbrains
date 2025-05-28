@@ -37,16 +37,13 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh=false) {
-    console.log('get_models', refresh);
     if(!refresh
       && this.adapter_config?.models
       && typeof this.adapter_config.models === 'object'
       && Object.keys(this.adapter_config.models).length > 0
     ) return this.adapter_config.models; // return cached models if not refreshing
     try {
-      console.log('models_request_params', this.models_request_params);
       const list_resp = await this.http_adapter.request(this.models_request_params);
-      console.log('list_response', list_resp);
       const list_data = await list_resp.json();
       // get model details for each model in list
       const models_raw_data = [];
@@ -56,13 +53,10 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
           method: 'POST',
           body: JSON.stringify({model: model.name}),
         });
-        console.log('model_details_response', model_details_resp);
         const model_details_data = await model_details_resp.json();
-        console.log('model_details_data', model_details_data);
         models_raw_data.push({...model_details_data, name: model.name});
       }
       const model_data = this.parse_model_data(models_raw_data);
-      console.log('model_data', model_data);
       this.adapter_settings.models = model_data; // set to adapter_settings to persist
       this.model.re_render_settings(); // re-render settings to update models dropdown
       return model_data;

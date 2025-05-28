@@ -15,13 +15,11 @@ export class SmartActions extends Collection {
       source_type: 'included',
     });
     action.module = module;
-    console.log('action', action, module);
     return action;
   }
   async register_mjs_action(file_path) {
     if(typeof file_path !== 'string') return;
     const action_key = path.basename(file_path, '.mjs');
-    console.log('register_mjs_action', action_key, file_path);
     const source_type = 'mjs';
     return await this.create_or_update({
       key: action_key,

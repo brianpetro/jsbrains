@@ -109,11 +109,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       && Object.keys(this.adapter_config.models).length > 0
     ) return this.adapter_config.models; // return cached models if not refreshing
     try {
-      console.log('models_request_params', this.models_request_params);
       const response = await this.http_adapter.request(this.models_request_params);
-      console.log('response', response);
       const model_data = this.parse_model_data(await response.json());
-      console.log('model_data', model_data);
       this.adapter_settings.models = model_data; // set to adapter_settings to persist
       this.model.re_render_settings(); // re-render settings to update models dropdown
       return model_data;
@@ -148,10 +145,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       stream: false,
     });
     const request_params = _req.to_platform();
-    console.log('request_params', request_params);
     const http_resp = await this.http_adapter.request(request_params);
     if(!http_resp) return null;
-    console.log('http_resp', http_resp);
     const _res = new this.res_adapter(this, await http_resp.json());
     try{
       return _res.to_openai();
@@ -177,7 +172,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     const _req = new this.req_adapter(this, req);
     const request_params = _req.to_platform(true);
     if(this.streaming_chunk_splitting_regex) request_params.chunk_splitting_regex = this.streaming_chunk_splitting_regex; // handle Google's BS
-    console.log('request_params', request_params);
     
     return await new Promise((resolve, reject) => {
       try {
@@ -187,15 +181,12 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
         this.active_stream.addEventListener("message", async (e) => {
           // console.log('message', e);
           if (this.is_end_of_stream(e)) {
-            console.log('end of stream');
             await resp_adapter.handle_chunk(e.data);
             this.stop_stream();
             const final_resp = resp_adapter.to_openai();
             handlers.done && await handlers.done(final_resp);
             // should return the final aggregated response if needed
             resolve(final_resp);
-            console.log('final_resp', final_resp);
-            console.log(resp_adapter);
             return;
           }
           

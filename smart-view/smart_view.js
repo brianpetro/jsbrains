@@ -280,7 +280,6 @@ function set_by_path(obj, path, value, settings_scope = null) {
   if(settings_scope) {
     keys.unshift(settings_scope);
   }
-  console.log('keys', keys);
   const final_key = keys.pop();
   const target = keys.reduce((acc, key) => {
     if (!acc[key] || typeof acc[key] !== 'object') {

@@ -39,7 +39,6 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
     let compiled;
     try {
       compiled = await ctx_item.compile(context_opts);
-      console.log('compiled', context_key, compiled);
     } catch(err) {
       console.warn("Error compiling ephemeral context", err);
       return;
@@ -60,7 +59,6 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
   async insert_images(image_paths) {
     if(!Array.isArray(image_paths) || !image_paths.length) return;
     for(const img_path of image_paths) {
-      console.log('img_path', img_path);
       await insert_image(this.request, img_path, this.item.env.fs);
     }
   }

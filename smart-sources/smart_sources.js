@@ -201,7 +201,6 @@ export class SmartSources extends SmartEntities {
         ...(await this.block_collection.lookup(params)),
       ].sort(sort_by_score);
     }
-    console.log(results);
     return results.slice(0, limit);
   }
 

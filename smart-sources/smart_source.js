@@ -502,7 +502,7 @@ export class SmartSource extends SmartEntity {
     if(this._source_adapter) return this._source_adapter;
     if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
     else {
-      console.log("No source adapter found for", this.file_type, this);
+      console.log("No source adapter found for " + this.file_type);
       // this._source_adapter = new this.source_adapters["default"](this);
     }
     return this._source_adapter;
@@ -513,6 +513,7 @@ export class SmartSource extends SmartEntity {
 
   /**
    * Retrieves the component responsible for rendering the SmartSource.
+   * @deprecated
    * @readonly
    * @returns {Function} The render function for the source component.
    */

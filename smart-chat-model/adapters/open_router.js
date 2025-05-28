@@ -72,7 +72,6 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
       model_data = model_data.data;
     }
     if(model_data.error) throw new Error(model_data.error);
-    console.log('model_data', model_data);
     return model_data.reduce((acc, model) => {
       acc[model.id] = {
         model_name: model.id,

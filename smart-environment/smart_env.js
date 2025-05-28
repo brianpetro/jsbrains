@@ -43,7 +43,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139137;
+  static version = 2.139138;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -265,6 +265,7 @@ export class SmartEnv {
     this.constructor.create_env_getter(instance_to_receive_getter);
   }
   async load() {
+    this.state = 'loading';
     await this.fs.load_files(); // skip exclusions; detect env_data_dir
     if(!this.settings) await SmartSettings.create(this);
     if(this.config.default_settings){
@@ -319,7 +320,6 @@ export class SmartEnv {
     for (const key of Object.keys(collections || {})) {
       const time_start = Date.now();
       if (typeof this[key]?.process_load_queue === 'function') {
-        // if(this.state === 'init' && this[key].opts?.prevent_load_on_init === true) continue;
         await this[key].process_load_queue();
         this[key].load_time_ms = Date.now() - time_start; 
         this.collections[key] = 'loaded';

@@ -292,7 +292,6 @@ export class SmartEntities extends Collection {
       return acc;
     }, Promise.resolve({}));
 
-    console.log(results);
     const top_k = Object.values(results)
       .sort(sort_by_score)
       .slice(0, limit)
