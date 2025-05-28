@@ -177,32 +177,47 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh = false) {
-    try {
-      const list_resp = await this.http_adapter.request({
-        url: this.models_endpoint,
-        method: 'GET',
-      });
-      if (list_resp.ok === false) {
-        throw new Error(`Failed to fetch models list: ${list_resp.statusText}`);
-      }
-      const list_data = await list_resp.json();
-      const models_raw = [];
-      for (const m of filter_embedding_models(list_data.models || [])) {
-        const detail_resp = await this.http_adapter.request({
-          url: 'http://localhost:11434/api/show',
-          method: 'POST',
-          body: JSON.stringify({ model: m.name }),
+    if(!this.model_data || refresh) {
+      try {
+        const list_resp = await this.http_adapter.request({
+          url: this.models_endpoint,
+          method: 'GET',
         });
-        models_raw.push({ ...(await detail_resp.json()), name: m.name });
+        if (list_resp.ok === false) {
+          throw new Error(`Failed to fetch models list: ${list_resp.statusText}`);
+        }
+        const list_data = await list_resp.json();
+        const models_raw = [];
+        for (const m of filter_embedding_models(list_data.models || [])) {
+          const detail_resp = await this.http_adapter.request({
+            url: 'http://localhost:11434/api/show',
+            method: 'POST',
+            body: JSON.stringify({ model: m.name }),
+          });
+          models_raw.push({ ...(await detail_resp.json()), name: m.name });
+        }
+        const model_data = this.parse_model_data(models_raw);
+        this.model_data = model_data;
+        this.model.re_render_settings();
+        return model_data;
+      } catch (error) {
+        console.error('Failed to fetch model data:', error);
+        return { "_": { id: `Failed to fetch models from ${this.model.adapter_name}` } };
       }
-      const model_data = this.parse_model_data(models_raw);
-      this.model_data = model_data;
-      this.model.re_render_settings();
-      return model_data;
-    } catch (error) {
-      console.error('Failed to fetch model data:', error);
-      return { "_": { id: `Failed to fetch models from ${this.model.adapter_name}` } };
     }
+    return this.model_data;
+  }
+  /**
+   * Get available models as dropdown options synchronously.
+   * @returns {Array<Object>} Array of model options.
+   */
+  get_models_as_options() {
+    const models = this.model_data;
+    if(!Object.keys(models || {}).length){
+      this.get_models(true); // refresh models
+      return [{value: '', name: 'No models currently available'}];
+    }
+    return Object.values(models).map(model => ({ value: model.id, name: model.name || model.id })).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
