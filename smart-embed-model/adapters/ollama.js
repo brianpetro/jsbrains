@@ -92,6 +92,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     signup_url: null, // Not applicable for local instance
     batch_size: 30,
     models: {},
+    model_key: 'nomic-embed-text',
   };
 
   get endpoint() {
@@ -273,17 +274,12 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
 class SmartEmbedModelOllamaRequestAdapter extends SmartEmbedModelRequestAdapter {
   /**
    * Convert request to Ollama's embed API format.
-   * @param {boolean} [streaming=false] - Whether streaming is enabled (not used here)
    * @returns {Object} Request parameters in Ollama's format
    */
-  to_platform(streaming = false) {
+  to_platform() {
     const ollama_body = {
-      model: this.adapter.model_config.id,
+      model: this.adapter.model_config.model_key,
       input: this.embed_inputs,
-      // Advanced parameters can be added here if needed
-      // truncate: true, // Defaults to true, adjust based on requirements
-      // options: { temperature: 0.7 }, // Example option
-      // keep_alive: "5m", // Example option
     };
 
     return {
@@ -301,7 +297,6 @@ class SmartEmbedModelOllamaRequestAdapter extends SmartEmbedModelRequestAdapter 
   get_headers() {
     return {
       "Content-Type": "application/json",
-      // Add additional headers if required by Ollama
     };
   }
 }
