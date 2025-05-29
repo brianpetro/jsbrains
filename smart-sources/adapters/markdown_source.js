@@ -94,7 +94,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
       console.warn(`MarkdownSourceContentAdapter: Skipping missing-file: ${this.file_path}`);
       return false;
     }
-    if(this.item.size > 300000) { // if file is larger than 300kb, skip
+    if(this.item.size > (this.settings?.max_import_size || 300000)) { // if file is larger than 300kb, skip
       console.warn(`MarkdownSourceContentAdapter: Skipping large file: ${this.file_path}`);
       return false;
     }
