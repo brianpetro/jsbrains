@@ -250,7 +250,6 @@ var SmartModel = class {
    * @returns {Array<Object>} Array of {value, name} option objects
    */
   get_platforms_as_options() {
-    console.log("get_platforms_as_options", this.adapters);
     return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
   }
   // SETTINGS
@@ -295,7 +294,6 @@ var SmartModel = class {
     return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
   re_render_settings() {
-    console.log("re_render_settings", this.opts);
     if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
     else console.warn("re_render_settings is not a function (must be passed in model opts)");
   }
@@ -303,7 +301,6 @@ var SmartModel = class {
    * Reload model.
    */
   reload_model() {
-    console.log("reload_model", this.opts);
     if (typeof this.opts.reload_model === "function") this.opts.reload_model();
     else console.warn("reload_model is not a function (must be passed in model opts)");
   }
@@ -315,34 +312,6 @@ var SmartModel = class {
     this.reload_model();
     this.re_render_settings();
   }
-  // /**
-  //  * Render settings.
-  //  * @param {HTMLElement} [container] - Container element
-  //  * @param {Object} [opts] - Render options
-  //  * @returns {Promise<HTMLElement>} Container element
-  //  */
-  // async render_settings(container=this.settings_container, opts = {}) {
-  //   if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-  //   const model_type = this.constructor.name.toLowerCase().replace('smart', '').replace('model', '');
-  //   let model_settings_container;
-  //   if(this.settings_container) {
-  //     const container_id = `#${model_type}-model-settings-container`;
-  //     model_settings_container = this.settings_container.querySelector(container_id);
-  //     if(!model_settings_container) {
-  //       model_settings_container = document.createElement('div');
-  //       model_settings_container.id = container_id;
-  //       this.settings_container.appendChild(model_settings_container);
-  //     }
-  //     model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
-  //   }
-  //   const frag = await this.render_settings_component(this, opts);
-  //   if(model_settings_container) {
-  //     model_settings_container.innerHTML = '';
-  //     model_settings_container.appendChild(frag);
-  //     this.smart_view.on_open_overlay(model_settings_container);
-  //   }
-  //   return frag;
-  // }
 };
 __publicField(SmartModel, "defaults", {
   // override in sub-class if needed
