@@ -129,6 +129,10 @@ export class SmartCompletion extends CollectionItem {
           ...result
         });
       }
+      const typing_indicator = this.container
+        ?.closest('.smart-chat-thread')
+        ?.querySelector('.smart-chat-typing-indicator');
+      if (typing_indicator) typing_indicator.style.display = 'none';
       this.queue_save();
     } catch (err) {
       console.error("Error in SmartCompletion.complete():", err);
@@ -208,6 +212,15 @@ export class SmartCompletion extends CollectionItem {
   }
   get response_structured_output(){
     if (!this.response) return null;
+    // if tool call, return structured output
+    if(this.action_call){
+      try{
+        const parsed = JSON.parse(this.action_call);
+        return parsed;
+      }catch(e){
+        console.log("failed to parse tool_call in response_structured_output");
+      }
+    }
     if (!this.response_text) return null;
     const parsed = parse_xml_fragments(this.response_text);
     if (!parsed) return null;
