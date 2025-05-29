@@ -378,6 +378,26 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
         ...data.usageMetadata
       };
     }
+
+    // tool calls
+    if(data.candidates?.[0]?.content?.parts?.[0]?.functionCall){
+      if(!this._res.candidates[0].content.parts[0].functionCall){
+        this._res.candidates[0].content.parts[0].functionCall = {
+          name: '',
+          args: {},
+        };
+      }
+      this._res.candidates[0].content.parts[0].functionCall.name += data.candidates[0].content.parts[0].functionCall.name;
+      if(data.candidates[0].content.parts[0].functionCall.args){
+        Object.entries(data.candidates[0].content.parts[0].functionCall.args).forEach(([key, value]) => {
+          if(!this._res.candidates[0].content.parts[0].functionCall.args[key]){
+            this._res.candidates[0].content.parts[0].functionCall.args[key] = '';
+          }
+          this._res.candidates[0].content.parts[0].functionCall.args[key] += value;
+        });
+      }
+    }
+    
   }
 
 }
