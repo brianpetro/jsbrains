@@ -179,32 +179,27 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
    */
   async get_models(refresh = false) {
     if(!this.model_data || refresh) {
-      try {
-        const list_resp = await this.http_adapter.request({
-          url: this.models_endpoint,
-          method: 'GET',
-        });
-        if (list_resp.ok === false) {
-          throw new Error(`Failed to fetch models list: ${list_resp.statusText}`);
-        }
-        const list_data = await list_resp.json();
-        const models_raw = [];
-        for (const m of filter_embedding_models(list_data.models || [])) {
-          const detail_resp = await this.http_adapter.request({
-            url: 'http://localhost:11434/api/show',
-            method: 'POST',
-            body: JSON.stringify({ model: m.name }),
-          });
-          models_raw.push({ ...(await detail_resp.json()), name: m.name });
-        }
-        const model_data = this.parse_model_data(models_raw);
-        this.model_data = model_data;
-        this.model.re_render_settings();
-        return model_data;
-      } catch (error) {
-        console.error('Failed to fetch model data:', error);
-        return { "_": { id: `Failed to fetch models from ${this.model.adapter_name}` } };
+      const list_resp = await this.http_adapter.request({
+        url: this.models_endpoint,
+        method: 'GET',
+      });
+      if (list_resp.ok === false) {
+        throw new Error(`Failed to fetch models list: ${list_resp.statusText}`);
       }
+      const list_data = await list_resp.json();
+      const models_raw = [];
+      for (const m of filter_embedding_models(list_data.models || [])) {
+        const detail_resp = await this.http_adapter.request({
+          url: 'http://localhost:11434/api/show',
+          method: 'POST',
+          body: JSON.stringify({ model: m.name }),
+        });
+        models_raw.push({ ...(await detail_resp.json()), name: m.name });
+      }
+      const model_data = this.parse_model_data(models_raw);
+      this.model_data = model_data;
+      this.model.re_render_settings();
+      return model_data;
     }
     return this.model_data;
   }

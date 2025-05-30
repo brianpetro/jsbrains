@@ -116,6 +116,7 @@ export class SmartModelAdapter {
 
   /**
    * Set the adapter's state.
+   * @deprecated should be handled in SmartModel (only handle once)
    * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
    * @throws {Error} If the state is invalid
    */

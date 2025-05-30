@@ -112,6 +112,15 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       return;
     }
     this._is_processing_embed_queue = true;
+    // load the embed_model if not already loaded
+    try {
+      if(!this.collection.embed_model.is_loaded) {
+        await this.collection.embed_model.load();
+      }
+    } catch (e) {
+      this.notices?.show('Failed to load embed_model');
+      return;
+    }
 
     try {
       const embed_queue = this.collection.embed_queue;

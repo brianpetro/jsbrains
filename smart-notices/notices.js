@@ -170,8 +170,6 @@ export const NOTICES = {
     en: 'Reloaded sources in {{time_ms}}ms'
   },
 
-
-
 };
 
 

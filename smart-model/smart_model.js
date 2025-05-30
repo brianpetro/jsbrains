@@ -163,8 +163,23 @@ export class SmartModel {
    */
   async load() {
     this.set_state('loading');
-    if (!this.adapter?.is_loaded) {
-      await this.invoke_adapter_method('load');
+    try {
+      if (!this.adapter?.is_loaded) {
+        await this.invoke_adapter_method('load');
+      }
+    } catch (err) {
+      this.set_state('unloaded');
+
+      // try to reload once per minute
+      if(!this.reload_model_timeout) {
+        this.reload_model_timeout = setTimeout(async () => {
+          this.reload_model_timeout = null;
+          await this.load();
+          this.set_state('loaded');
+          this.notices?.show('Loaded model: ' + this.model_key);
+        }, 60000);
+      }
+      throw new Error(`Failed to load model: ${err.message}`);
     }
     this.set_state('loaded');
   }
