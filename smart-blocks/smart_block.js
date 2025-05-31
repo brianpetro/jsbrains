@@ -47,7 +47,7 @@ export class SmartBlock extends SmartEntity {
    * @returns {void}
    */
   queue_embed() {
-    this._queue_embed = true;
+    this._queue_embed = this.should_embed;
     this.source?.queue_embed();
   }
 
