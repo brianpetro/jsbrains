@@ -26,8 +26,8 @@ export class SmartCompletionAdapter {
   get response () {
     return this.item.response;
   }
-  insert_user_message(user_message) {
-    insert_user_message(this.request, user_message);
+  insert_user_message(user_message, opts = {}) {
+    insert_user_message(this.request, user_message, opts);
   }
 
   // Override these methods in subclasses

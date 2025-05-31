@@ -69,9 +69,10 @@ export class SmartContext extends CollectionItem {
    * If no user-provided key, fallback to a stable hash of the context_items.
    */
   get key() {
-    if (this.data.key) return this.data.key;
-    const str = JSON.stringify(this.data.context_items || {});
-    return murmur_hash_32_alphanumeric(str);
+    if (!this.data.key) {
+      this.data.key = Date.now().toString();
+    }
+    return this.data.key;
   }
   get has_context_items() {
     return Object.keys(this.data.context_items || {}).length > 0;

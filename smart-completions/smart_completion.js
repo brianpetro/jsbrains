@@ -81,10 +81,19 @@ export class SmartCompletion extends CollectionItem {
    */
   async build_request() {
     this.data.completion.request = {};
-    const data_keys = Object.keys(this.data);
-    for (const key of data_keys) {
-      const AdapterClass = this.completion_adapters[key];
-      if (AdapterClass) {
+    // Get all adapter classes and sort by order
+    const adapters = Object.entries(this.completion_adapters)
+      .map(([key, AdapterClass]) => ({
+        key,
+        AdapterClass,
+        order: AdapterClass.order ?? 0
+      }))
+      .sort((a, b) => a.order - b.order);
+
+    // Check each adapter's property_name against data
+    for (const {AdapterClass, key} of adapters) {
+      const property = AdapterClass.property_name;
+      if (property && this.data[property]) {
         const adapter = new AdapterClass(this);
         await adapter.to_request?.();
       }

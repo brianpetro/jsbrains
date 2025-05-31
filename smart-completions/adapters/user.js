@@ -7,6 +7,7 @@ import { SmartCompletionAdapter } from './_adapter.js';
  * to `completion.request.messages`.
  */
 export class SmartCompletionUserAdapter extends SmartCompletionAdapter {
+  static order = 1;
   /**
    * @returns {string}
    */
@@ -22,8 +23,10 @@ export class SmartCompletionUserAdapter extends SmartCompletionAdapter {
    */
   async to_request() {
     const user_message = this.data.user_message;
+    const new_user_message = this.data.new_user_message;
     this.insert_user_message(user_message, {
-      position: 'start' // always at start so that other adapters may add again to end (e.g. context adapter)
+      position: 'start', // always at start so that other adapters may add again to end (e.g. context adapter)
+      new_user_message
     });
   }
 

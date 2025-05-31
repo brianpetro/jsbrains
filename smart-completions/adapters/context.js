@@ -9,6 +9,7 @@ import { insert_image } from '../utils/insert_image.js';
  * compiles ephemeral context text, and inserts it as a system message.
  */
 export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
+  static order = 10;
   static get property_name() {
     return 'context_key';
   }
@@ -45,14 +46,14 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
     }
 
     if(compiled.context){
-      this.insert_user_message(compiled.context, {position: 'start'});
+      this.insert_user_message(compiled.context);
+      // append user message (again, after the context)
+      if(this.data.user_message) {
+        this.insert_user_message(this.data.user_message, {position: 'end'});
+      }
     }
     if(compiled.images.length > 0) {
       await this.insert_images(compiled.images);
-    }
-    // append user message (again, after the context)
-    if(this.data.user_message) {
-      this.insert_user_message(this.data.user_message, {position: 'end'});
     }
   }
 

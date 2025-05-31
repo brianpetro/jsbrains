@@ -10,7 +10,7 @@
 
 export function insert_user_message(request, user_message, opts = {}) {
   if (!user_message) return;
-  const {position = 'end'} = opts;
+  const {position = 'end', new_user_message = false} = opts;
 
   if (!request.messages) {
     request.messages = [];
@@ -20,7 +20,7 @@ export function insert_user_message(request, user_message, opts = {}) {
   const last_user_index = request.messages.findLastIndex(x => x.role === 'user');
   
   // If there's no user message yet, add one based on position
-  if (last_user_index === -1) {
+  if ((last_user_index === -1) || new_user_message) {
     // Create a new user message object
     const new_user_message = {
       role: 'user',
