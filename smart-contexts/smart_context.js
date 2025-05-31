@@ -22,6 +22,30 @@ export class SmartContext extends CollectionItem {
   }
 
   /**
+   * add_item
+   * @param {string|object} item
+   */
+  add_item(item) {
+    if(typeof item === 'object') {
+      item = item.key || item.path;
+    }
+    if(!item) return console.error('SmartContext: add_item called with invalid item');
+    this.data.context_items[item] = { d: 0 }
+    this.queue_save();
+  }
+
+  /**
+   * add_items
+   * @param {string[]|object[]} items
+   */
+  add_items(items) {
+    if(!Array.isArray(items)) {
+      items = [items];
+    }
+    items.forEach(item => this.add_item(item));
+  }
+
+  /**
    * get_snapshot
    * Gathers items at depth=0..link_depth, respects exclusions, and tracks truncated/skipped items.
    * @async

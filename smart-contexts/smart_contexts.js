@@ -16,6 +16,20 @@ import { Collection } from 'smart-collections';
  */
 export class SmartContexts extends Collection {
   static version = 0.1;
+
+  /**
+   * new_context
+   * @param {object} data
+   * @param {object} opts
+   * @param {string[]} opts.add_items
+   * @returns {SmartContext}
+   */
+  new_context(data = {}, opts = {}) {
+    const item = new this.item_type(this.env, data);
+    if(Array.isArray(opts.add_items)) item.add_items(opts.add_items);
+    this.set(item);
+    return item;
+  }
   /**
    * Default settings for all SmartContext items in this collection.
    * @readonly
