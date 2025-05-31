@@ -116,3 +116,16 @@ test('older or same version does NOT replace BUT includes extra props', t => {
   t.is(target.collections.foo.extra, 123,
        'older definition merged with no overwrite');
 });
+
+test('newer component version replaces older one', t => {
+  const old_component = function() {};
+  const new_component = function() {};
+  new_component.version = 2;
+  const target = { components: { test_component: old_component } };
+  const incoming = { components: { test_component: new_component } };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.components.test_component, new_component,
+       'newer component replaces older one');
+});

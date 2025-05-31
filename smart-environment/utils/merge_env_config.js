@@ -50,6 +50,23 @@ export function merge_env_config (target, incoming) {
       }
       continue; // done with this top-level key
     }
+    /* ───────────────────────────── Components ───────────────────────────── */
+    if (key === 'components' && value && typeof value === 'object') {
+      if (!target.components) target.components = {};
+      for (const [comp_key, comp_def] of Object.entries(value)) {
+        if (!target.components[comp_key]) target.components[comp_key] = comp_def;
+        else {
+          const new_ver = +(comp_def?.version ?? 0);
+          const cur_ver = +(target.components[comp_key]?.version ?? 0);
+          if (new_ver > cur_ver) {
+            target.components[comp_key] = comp_def;
+          } else {
+            deep_merge_no_overwrite(target.components[comp_key], comp_def);
+          }
+        }
+      }
+      continue; // done with this top-level key
+    }
 
     /* ───────────────────────────── Default path ──────────────────────────── */
     if (Array.isArray(value)) {
