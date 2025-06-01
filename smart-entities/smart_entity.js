@@ -62,12 +62,9 @@ export class SmartEntity extends CollectionItem {
    */
   init() {
     super.init();
-    if (!this.vec){
+    if (!this.vec || !this.vec.length){
+      this.vec = null;
       this.queue_embed();
-    // This should be able to be removed since embeedings are indexed by model_key
-    // } else if (this.vec.length !== this.embed_model.model_config.dims) {
-    //   this.vec = null;
-    //   this.queue_embed();
     }
     // Only keep active model embeddings
     Object.entries(this.data.embeddings || {}).forEach(([model, embedding]) => {
