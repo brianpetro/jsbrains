@@ -152,9 +152,11 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
           this.is_queue_halted = false; // reset halt after break
           break;
         }
-        const batch = embed_queue.slice(i, i + this.collection.embed_model.batch_size);
-
+        // Show progress notice every ~100 items
+        this._show_embed_progress_notice(embed_queue.length);
+        
         // Prepare input
+        const batch = embed_queue.slice(i, i + this.collection.embed_model.batch_size);
         await Promise.all(batch.map(item => item.get_embed_input()));
 
         // Embed batch
@@ -178,8 +180,6 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         this.embedded_total += batch.length;
         this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
 
-        // Show progress notice every ~100 items
-        this._show_embed_progress_notice(embed_queue.length);
 
         // Process save queue every 1000 items
         if (this.embedded_total - this.last_save_total > 1000) {
@@ -204,13 +204,20 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     }
   }
 
+  get should_show_embed_progress_notice() {
+    if((Date.now() - (this.last_notice_time ?? 0)) > 30000){
+      return true;
+    }
+    return (this.embedded_total - this.last_notice_embedded_total) >= 100;
+  }
   /**
    * Displays the embedding progress notice.
    * @private
    * @returns {void}
    */
   _show_embed_progress_notice(embed_queue_length) {
-    if (this.embedded_total - this.last_notice_embedded_total < 100) return;
+    if (!this.should_show_embed_progress_notice) return;
+    this.last_notice_time = Date.now();
     this.last_notice_embedded_total = this.embedded_total;
     this.notices?.show('embedding_progress', {
       progress: this.embedded_total,

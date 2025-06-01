@@ -120,6 +120,10 @@ export const NOTICES = {
     },
     timeout: 0
   },
+  embedding_error: {
+    en: 'Error embedding: {{error}}',
+    timeout: 0
+  },
 
   import_progress: {
     en: 'Importing... {{progress}} / {{total}} sources',
