@@ -120,6 +120,10 @@ export class SmartCompletion extends CollectionItem {
       return;
     }
     const chat_model = this.get_chat_model(opts);
+    this.data.completion.chat_model = {
+      model_key: chat_model.model_key,
+      platform_key: chat_model.adapter_name,
+    };
     if (!chat_model) {
       console.warn("No chat model available for SmartCompletion. Check environment config.");
       return;
