@@ -231,6 +231,16 @@ export const transformers_models = {
     "description": "Local, 4,096 tokens, 384 dim",
     "adapter": "transformers"
   },
+  // Too slow and persistent crashes
+  // "jinaai/jina-embeddings-v2-base-de": {
+  //   "id": "jinaai/jina-embeddings-v2-base-de",
+  //   "batch_size": 1,
+  //   "dims": 768,
+  //   "max_tokens": 4096,
+  //   "name": "jina-embeddings-v2-base-de",
+  //   "description": "Local, 4,096 tokens, 768 dim, German",
+  //   "adapter": "transformers"
+  // },
   "Xenova/jina-embeddings-v2-base-zh": {
     "id": "Xenova/jina-embeddings-v2-base-zh",
     "batch_size": 1,
