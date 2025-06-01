@@ -258,13 +258,8 @@ export class SmartSources extends SmartEntities {
     }
 
     this.build_links_map();
-    try{
-      if(process_embed_queue) await this.process_embed_queue();
-      else console.log("skipping process_embed_queue");
-    }catch(e){
-      console.error("Error processing embed queue", e);
-      this.notices?.show('embedding_error', { error: e.message });
-    }
+    if(process_embed_queue) await this.process_embed_queue();
+    else console.log("skipping process_embed_queue");
     await this.process_save_queue();
     await this.block_collection?.process_save_queue();
   }
