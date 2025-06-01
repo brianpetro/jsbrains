@@ -149,14 +149,14 @@ export class SmartEmbedModel extends SmartModel {
     return Object.entries(this.models).map(([key, model]) => ({ value: key, name: key }));
   }
 
-  /**
-   * Get embedding model options including 'None' option
-   * @returns {Array<Object>} Array of model options with value and name
-   */
-  get_block_embedding_model_options() {
-    const options = this.get_embedding_model_options();
-    options.unshift({ value: 'None', name: 'None' });
-    return options;
-  }
+  // /**
+  //  * Get embedding model options including 'None' option
+  //  * @returns {Array<Object>} Array of model options with value and name
+  //  */
+  // get_block_embedding_model_options() {
+  //   const options = this.get_embedding_model_options();
+  //   options.unshift({ value: 'None', name: 'None' });
+  //   return options;
+  // }
 
 }

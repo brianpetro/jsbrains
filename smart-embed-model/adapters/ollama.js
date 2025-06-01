@@ -223,8 +223,17 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
    */
   parse_model_data(model_data) {
     if (!Array.isArray(model_data)) {
+      this.model_data = {};
       console.error('Invalid model data format from Ollama:', model_data);
       return {};
+    }
+
+    if(model_data.length === 0){
+      this.model_data = {"no_models_available": {
+        id: "no_models_available",
+        name: "No models currently available",
+      }};
+      return this.model_data;
     }
 
     return model_data.reduce((acc, model) => {
