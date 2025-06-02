@@ -39,6 +39,9 @@ export class ActionXmlCompletionAdapter extends ActionCompletionAdapter {
     const action_key = this.data.action_xml_key;
     if (!action_key) return;
 
+    const thread = this.item.thread;
+    if (thread.current_completion !== this.item) return console.log('ActionXmlCompletionAdapter: skipping tools, not the current completion');
+
     /* resolve SmartAction + dynamic tool schema ------------------------- */
     const action_item = this.env.smart_actions?.get(action_key);
     if (!action_item) {

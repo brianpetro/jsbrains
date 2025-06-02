@@ -108,6 +108,7 @@ export class SmartCompletion extends CollectionItem {
         await adapter.to_request?.();
       }
     }
+    return this.data.completion.request;
   }
   async parse_response(){
     const data_keys = Object.keys(this.data);
@@ -118,6 +119,7 @@ export class SmartCompletion extends CollectionItem {
         await adapter.from_response?.();
       }
     }
+    return this.data.completion.responses;
   }
 
   /**
