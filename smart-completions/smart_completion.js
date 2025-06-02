@@ -27,6 +27,16 @@ import { parse_xml_fragments } from "smart-utils/parse_xml_fragments.js";
  * }
  */
 export class SmartCompletion extends CollectionItem {
+  constructor(env, data = null) {
+    super(env, data);
+    this.run_adapter_item_constructors();
+  }
+
+  run_adapter_item_constructors(){
+    for (const [key, AdapterClass] of Object.entries(this.completion_adapters)) {
+      AdapterClass.item_constructor?.(this);
+    }
+  }
   /**
    * Default data structure for a new SmartCompletion item.
    * @static
@@ -198,10 +208,6 @@ export class SmartCompletion extends CollectionItem {
     }
   }
 
-  get is_last_in_thread() {
-    if(!this.thread || !this.thread.completion_keys?.length) return false;
-    return this.thread.completion_keys[this.thread.completion_keys.length - 1] === this.key;
-  }
   get response() {
     return this.data.completion.responses[0]; // TODO: index based on this.response_i
   }
@@ -266,9 +272,10 @@ export class SmartCompletion extends CollectionItem {
     }
     return messages;
   }
-  get thread() {
-    const thread_key = this.data.thread_key;
-    if(!thread_key) return null;
-    return this.env.smart_chat_threads.get(thread_key);
+
+  get is_completed() {
+    return this.data.completion.responses.length > 0;
   }
+
+
 }
