@@ -21,7 +21,9 @@ export class SmartDirectories extends SmartGroups {
     }
 
     // Set initial expanded/collapsed state based on settings
-    dir.data.env_settings_expanded_view = this.env.settings.expanded_view;
+    dir.data.env_settings_expanded_view = this.env.settings.smart_view_filter.expanded_view
+      ?? this.env.settings.expanded_view // @deprecated
+    ;
     return dir;
   }
 
