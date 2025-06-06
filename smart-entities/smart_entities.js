@@ -270,7 +270,7 @@ export class SmartEntities extends Collection {
     ;
     if(params.filter?.limit) delete params.filter.limit; // remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
     const filter = {
-      ...(this.env.chats?.current?.scope || {}),
+      ...(this.env.chats?.current?.scope || {}), // DEPRECATED: since Smart Chat v1 (remove after removing legacy Smart Chat v0 from obsidian-smart-connections)
       ...(params.filter || {}),
     };
     const results = await hyp_vecs.reduce(async (acc_promise, embedding, i) => {
