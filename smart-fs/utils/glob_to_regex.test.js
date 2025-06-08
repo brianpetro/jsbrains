@@ -27,10 +27,14 @@ test('glob_to_regex should handle options correctly', t => {
 // });
 
 test('glob_to_regex safely handles file paths with brackets and special regex chars', t => {
-  const problematic_path = String.raw`^Z - ARCHIVE\/People Files\/Joseph \(Me\)\/2018-06-25 Google Personal Information Download\/Takeout\/Drive\/00-CLOUDSIGNS\/CloudSigns Archive\/CloudSigns Demo Assets\/CloudSigns Demo Assets Folder\/CloudSignsDEMO\/Sign\/assets\/ed-10155332_623694644387646_4217760740425848280_n[\.jpg\*\%\$`;
-  
+  const problematic_path_1 = String.raw`^Z - ARCHIVE\/People Files\/Joseph \(Me\)\/2018-06-25 Google Personal Information Download\/Takeout\/Drive\/00-CLOUDSIGNS\/CloudSigns Archive\/CloudSigns Demo Assets\/CloudSigns Demo Assets Folder\/CloudSignsDEMO\/Sign\/assets\/ed-10155332_623694644387646_4217760740425848280_n[\.jpg\*\%\$`;
   // This should NOT throw an error
   t.notThrows(() => {
-    glob_to_regex(problematic_path);
+    glob_to_regex(problematic_path_1);
   });
+  const problematic_path_2 = `d1 Prive/50-59 Christianity and religion/54 Christianity and society/{ Staan in de wereld van nu_d1.54.96/De ongelooflijke podcast - 206 - Tegeltuinen.md`;
+  t.notThrows(() => {
+    glob_to_regex(problematic_path_2);
+  });
+  
 });
