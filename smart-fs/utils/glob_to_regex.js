@@ -25,7 +25,7 @@ function adjust_for_windows_paths(pattern, windows_paths) {
 
 /**
  * Converts a glob pattern to a regular expression pattern.
- * This version includes safeguards for unbalanced brackets.
+ * Includes safeguards for unbalanced brackets and braces.
  * @param {string} pattern - The glob pattern to convert.
  * @param {boolean} extended_glob - Whether to support extended glob syntax.
  * @return {string} The converted regex pattern.
@@ -89,8 +89,13 @@ function glob_to_regex_pattern(pattern, extended_glob) {
 
       case '{':
         if (!in_class) {
-          in_brace++;
-          result += '(';
+          const closingIndex = pattern.indexOf('}', i + 1);
+          if (closingIndex === -1) {
+            result += '\\{';
+          } else {
+            in_brace++;
+            result += '(';
+          }
         } else {
           result += '\\{';
         }
