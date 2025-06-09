@@ -420,3 +420,14 @@ export const connections_filter_config = {
     "description": "Exclude results with file path that matches this value.",
   }
 };
+
+import collection from 'smart-collections/collection.js';
+import smart_entity from './smart_entity.js';
+export default {
+  class: SmartEntities,
+  data_adapter: collection.data_adapter,
+  // TODO vector adapter
+  items: {
+    smart_entity
+  }
+}

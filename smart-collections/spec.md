@@ -29,3 +29,11 @@ sequenceDiagram
   C->>I: validate_save()
   I-->>C: queued for save
 ```
+
+## Item Actions
+
+Collection items expose actions that are defined in their default configuration
+exports. Each action is bound to the item instance and can be accessed via the
+`actions` getter. Actions are loaded from
+`env.config.collections[collection_key].items[item_type_key].actions` and this
+mechanism replaces the deprecated `item_types` and `items` configuration keys.

@@ -21,3 +21,9 @@ export async function find_connections(params = {}) {
   }
   return this.connections_from_cache(cache_key);
 }
+
+export default {
+  key: "find_connections",
+  action: find_connections,
+  // settings_config, // optional
+};

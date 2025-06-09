@@ -480,4 +480,12 @@ export class Collection {
     }
   }
 }
-
+import collection_item from './item.js';
+import {AjsonSingleFileCollectionDataAdapter} from './adapters/ajson_single_file.js';
+export default {
+  class: Collection,
+  data_adapter: AjsonSingleFileCollectionDataAdapter,
+  items: {
+    collection_item,
+  }
+}

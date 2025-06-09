@@ -585,10 +585,12 @@ export class SmartSource extends SmartEntity {
 
 }
 
-import { find_connections } from "./actions/find_connections.js";
+// import { find_connections } from "./actions/find_connections.js"; // DEPRECATED handling (use default export)
+import find_connections from "./actions/find_connections.js";
 export default {
   class: SmartSource,
   actions: {
-    find_connections: find_connections,
+    // find_connections: find_connections, // DEPRECATED handling (use default export)
+    find_connections,
   },
 }

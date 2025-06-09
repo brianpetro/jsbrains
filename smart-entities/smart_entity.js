@@ -312,10 +312,12 @@ export class SmartEntity extends CollectionItem {
 
 }
 
-import { find_connections } from "./actions/find_connections.js";
+// import { find_connections } from "./actions/find_connections.js"; // DEPRECATED handling (use default export instead)
+import find_connections from "./actions/find_connections.js";
 export default {
   class: SmartEntity,
   actions: {
-    find_connections: find_connections,
+    // find_connections: find_connections, // DEPRECATED handling (use default export instead)
+    find_connections,
   },
 }

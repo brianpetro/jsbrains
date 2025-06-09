@@ -37,3 +37,9 @@ export async function find_connections(params={}) {
   }
   return connections;
 }
+
+export default {
+  key: "find_connections",
+  action: find_connections,
+  // settings_config, // optional
+}

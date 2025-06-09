@@ -409,10 +409,12 @@ export class SmartBlock extends SmartEntity {
   get note_key() { return this.key.split("#")[0]; }
 }
 
-import { find_connections } from "smart-entities/actions/find_connections.js";
+// import { find_connections } from "smart-entities/actions/find_connections.js";
+import find_connections from "smart-entities/actions/find_connections.js";
 export default {
   class: SmartBlock,
   actions: {
-    find_connections: find_connections,
+    // find_connections: find_connections, // DEPRECATED handing (use default export instead)
+    find_connections,
   },
 }

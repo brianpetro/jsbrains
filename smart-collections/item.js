@@ -1,7 +1,7 @@
 import { create_uid, deep_merge } from './utils/helpers.js';
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 import { deep_equal } from "./utils/deep_equal.js";
-
+import { is_class } from 'smart-utils/callable_type.js';
 /**
  * @class CollectionItem
  *
@@ -264,8 +264,12 @@ export class CollectionItem {
 
   get actions() {
     if(!this._actions) {
-      this._actions = Object.entries(this.env.opts.items[this.item_type_key].actions || {}).reduce((acc, [k,v]) => {
-        acc[k] = v.bind(this);
+      const cfg = this.env.config?.collections?.[this.collection_key]?.items?.[this.item_type_key] || {};
+      const actions = cfg.actions || {};
+      this._actions = Object.entries(actions).reduce((acc, [k, v]) => {
+        const action_key = v.key || k;
+        const action = v.action;
+        acc[action_key] = is_class(action) ? new action(this) : action.bind(this);
         return acc;
       }, {});
     }
@@ -393,4 +397,8 @@ export function camel_case_to_snake_case(str) {
     .replace(/2$/, '') // remove trailing 2 (bundled subclasses)
     ;
   return result;
+}
+
+export default {
+  class: CollectionItem,
 }

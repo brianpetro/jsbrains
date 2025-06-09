@@ -130,3 +130,15 @@ export class SmartBlocks extends SmartEntities {
    */
   async run_force_refresh() { throw "Not implemented: run_force_refresh"; }
 }
+
+import smart_block from "./smart_block.js";
+export default {
+  key: "smart_blocks",
+  class: SmartBlocks,
+  // settings_config, // optional
+  // data_adapter, // optional
+  // source_adapters, // optional
+  items: {
+    smart_block
+  }
+};

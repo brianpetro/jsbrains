@@ -537,3 +537,16 @@ export const settings_config = {
   //   "default": true,
   // },
 };
+
+
+// default config for smart_sources
+export default {
+  class: SmartSources,
+  data_adapter: AjsonMultiFileSourcesDataAdapter,
+  source_adapters: {
+    "md": MarkdownSourceContentAdapter
+  },
+  items: {
+    smart_source
+  }
+};
