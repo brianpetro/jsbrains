@@ -26,11 +26,18 @@ export class SmartContext extends CollectionItem {
    * @param {string|object} item
    */
   add_item(item) {
+    let key;
     if(typeof item === 'object') {
-      item = item.key || item.path;
+      key = item.key || item.path;
+    }else{
+      key = item;
     }
-    if(!item) return console.error('SmartContext: add_item called with invalid item');
-    this.data.context_items[item] = { d: 0 }
+    const context_item = {
+      d: 0,
+      ...(typeof item === 'object' ? item : {})
+    }
+    if(!key) return console.error('SmartContext: add_item called with invalid item', item);
+    this.data.context_items[key] = context_item;
     this.queue_save();
   }
 
@@ -85,7 +92,14 @@ export class SmartContext extends CollectionItem {
 
   get_item_keys_by_depth(depth) {
     this.convert_data_context_items_bool_to_object(); // TEMPORARY for backwards compatibility
-    return Object.keys(this.data.context_items).filter(k => this.data.context_items[k].d === depth);
+    return Object.keys(this.data.context_items)
+      .filter(k => {
+        const item_depth = this.data.context_items[k].d;
+        if(item_depth === depth) return true;
+        if(typeof item_depth === 'undefined' && depth === 0) return true; // legacy case, no depth set
+        return false;
+      })
+    ;
   }
 
 

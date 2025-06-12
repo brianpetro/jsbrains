@@ -3,3 +3,4 @@ test
 **/*.test.js
 components
 README.md
+adapters/**

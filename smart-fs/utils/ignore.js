@@ -247,11 +247,16 @@ export function expand_pattern(line) {
  */
 export function should_ignore(relative_path, patterns, aggregator=[]) {
   relative_path = relative_path.replace(/\\/g, '/');
-  patterns.push(`**/.git/**`);
-  patterns.push(`.git/**`);
-  patterns.push(`**/node_modules/**`);
-  patterns.push(`node_modules/**`);
-  patterns.push(`package-lock.json`);
+  // Ensure patterns are unique
+  patterns = [...new Set([
+    ...patterns,
+    // Default patterns to ignore common folders and files
+    '**/.git/**',
+    '.git/**',
+    '**/node_modules/**',
+    'node_modules/**',
+    'package-lock.json',
+  ])]; // deduplicated patterns
   for (const raw_pattern of patterns) {
     // Expand each pattern again here, so that
     // a bare 'foo' in patterns can match direct 'foo'

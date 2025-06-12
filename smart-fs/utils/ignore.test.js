@@ -56,3 +56,8 @@ test('is_text_file() returns true for no extension known text files', t => {
   t.true(is_text_file('Deliverfile'));
   t.true(is_text_file('Gymfile'));
 });
+
+test('should match absolute paths', t => {
+  const patterns = ['**/community-actions/README.md'];
+  t.true(should_ignore("C:/Users/brian/Documents/community-actions/README.md", patterns));
+});

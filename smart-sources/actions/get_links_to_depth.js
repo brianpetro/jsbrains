@@ -50,7 +50,8 @@ export function get_links_to_depth(
   } = {},
 ) {
   if (!target_source || typeof target_source !== "object" || !target_source.collection) {
-    throw new TypeError("Invalid target_source supplied to get_links_to_depth()");
+    // throw new TypeError("Invalid target_source supplied to get_links_to_depth()");
+    return [];
   }
 
   const collection = target_source.collection;      // SmartSources instance

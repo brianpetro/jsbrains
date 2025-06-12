@@ -6,7 +6,7 @@ import { get_markdown_links } from 'smart-sources/utils/get_markdown_links.js';
  * @description Builds a snapshot of items up to `opts.link_depth`, possibly including inbound links
  * if `opts.inlinks` is set. Applies heading exclusions. Optionally ignores outlinks from
  * excluded sections if 'follow_links_in_excluded' = false.
- * @param {SmartContext} context_item
+ * @param {SmartContext} ctx
  * @param {object} opts
  * @property {boolean} [opts.inlinks=false]
  * @property {boolean} [opts.follow_links_in_excluded=true]
@@ -15,7 +15,7 @@ import { get_markdown_links } from 'smart-sources/utils/get_markdown_links.js';
  * @property {string[]} [opts.excluded_headings]
  * @returns {Promise<object>} snapshot
  */
-export async function get_snapshot(context_item, opts) {
+export async function get_snapshot(ctx, opts) {
   const snapshot = {
     items: {},
     truncated_items: [],
@@ -27,7 +27,7 @@ export async function get_snapshot(context_item, opts) {
 
   const keys_at_depth = {};
   // keys_at_depth[0] = Object.keys(context_item.data.context_items);
-  keys_at_depth[0] = context_item.get_item_keys_by_depth(0);
+  keys_at_depth[0] = ctx.get_item_keys_by_depth(0);
 
   const max_depth = opts.link_depth ?? 0;
 
@@ -36,7 +36,7 @@ export async function get_snapshot(context_item, opts) {
     const curr_depth = await process_depth(
       snapshot,
       keys_at_depth[depth],
-      context_item,
+      ctx,
       opts
     );
     snapshot.items[depth] = curr_depth;
@@ -75,12 +75,12 @@ export async function get_snapshot(context_item, opts) {
  * @description Reads the given item keys, handles folder expansions, applies heading exclusions,
  * and (optionally) re-parses outlinks from stripped content if 'follow_links_in_excluded' is false.
  */
-async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
-  const source_items = (curr_depth_keys ?? []).map(key => context_item.get_ref(key)).filter(Boolean);
-  const non_source_keys = curr_depth_keys.filter(key => !context_item.get_ref(key));
+async function process_depth(snapshot, curr_depth_keys, ctx, opts) {
+  const ctx_items = (curr_depth_keys ?? []).map(key => ctx.get_ref(key)).filter(Boolean);
+  const non_source_keys = curr_depth_keys.filter(key => !ctx.get_ref(key));
   // check if is folder
   for (const key of non_source_keys) {
-    const smart_fs = context_item.env.smart_sources.fs;
+    const smart_fs = ctx.env.smart_sources.fs;
     const files = await smart_fs.adapter.list_files_recursive(key);
     if(!files.length) {
       snapshot.missing_items.push(key);
@@ -90,9 +90,9 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
       if (is_already_in_snapshot(file.path, snapshot)) {
         continue;
       }
-      const item = context_item.get_ref(file.path);
+      const item = ctx.get_ref(file.path);
       if(item) {
-        source_items.push(item);
+        ctx_items.push(item);
       }else{
         const image_exts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico'];
         if(image_exts.some(ext => file.path.endsWith(`.${ext}`))) {
@@ -105,20 +105,20 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
   }
   const curr_depth = {};
   const batch = [];
-  for (const item of source_items) {
-    if (is_already_in_snapshot(item.key, snapshot)) {
+  for (const context_item of ctx_items) {
+    if (is_already_in_snapshot(context_item.key, snapshot)) {
       continue;
     }
-    batch.push(process_item(item));
+    batch.push(process_item(context_item));
   }
   await Promise.all(batch);
   return curr_depth;
 
-  async function process_item(item) {
-    let content = await item.read();
+  async function process_item(context_item) {
+    let content = await context_item.read();
     if (!opts.calculating && content.split('\n').some(line => line.startsWith('```dataview'))) {
-      content = await item.read({ render_output: true });
-      item.data.outlinks = get_markdown_links(content);
+      content = await context_item.read({ render_output: true });
+      context_item.data.outlinks = get_markdown_links(content);
     }
 
     // Exclude headings if needed
@@ -126,16 +126,16 @@ async function process_depth(snapshot, curr_depth_keys, context_item, opts) {
     const [new_content, exclusions, removed_char_count] = strip_excluded_headings(content, excluded_headings);
 
     // If we do NOT want to follow links in excluded headings, parse outlinks from the stripped content
-    if (!context_item.settings.follow_links_in_excluded) {
-      item.data.outlinks = get_markdown_links(new_content);
+    if (!ctx.settings.follow_links_in_excluded) {
+      context_item.data.outlinks = get_markdown_links(new_content);
     }
     snapshot.char_count += new_content.length;
 
-    curr_depth[item.path] = {
-      ref: item,
-      path: item.path,
+    curr_depth[context_item.path] = {
+      ref: context_item,
+      path: context_item.path,
       content: new_content,
-      mtime: item.mtime,
+      mtime: context_item.mtime,
       char_count: new_content.length,
       exclusions,
       excluded_char_count: removed_char_count
