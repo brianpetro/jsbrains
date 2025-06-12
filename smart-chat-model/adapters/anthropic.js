@@ -77,20 +77,70 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
    */
   get models() {
     return {
-      "claude-3-7-sonnet-latest": {
-        name: "Claude 3.7 Sonnet (Latest)",
-        id: "claude-3-7-sonnet-latest",
-        model_name: "claude-3-7-sonnet-latest",
-        description: "Anthropic's Claude Sonnet (Latest)",
+      // ── Claude 4 family ──────────────────────────────────────────────────────
+      "claude-opus-4-20250514": {
+        name: "Claude Opus 4 (2025-05-14)",
+        id: "claude-opus-4-20250514",
+        model_name: "claude-opus-4-20250514",
+        description: "Anthropic's Claude Opus 4 (2025-05-14)",
         max_input_tokens: 200000,
         max_output_tokens: 4000,
         multimodal: true
       },
+      "claude-sonnet-4-20250514": {
+        name: "Claude Sonnet 4 (2025-05-14)",
+        id: "claude-sonnet-4-20250514",
+        model_name: "claude-sonnet-4-20250514",
+        description: "Anthropic's Claude Sonnet 4 (2025-05-14)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
+      },
+
+      // ── Claude 3.7 family ───────────────────────────────────────────────────
+      "claude-3-7-sonnet-latest": {
+        name: "Claude 3.7 Sonnet (Latest)",
+        id: "claude-3-7-sonnet-latest",
+        model_name: "claude-3-7-sonnet-latest",
+        description: "Anthropic's Claude Sonnet 3.7 (Latest)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
+      },
+      "claude-3-7-sonnet-20250219": {
+        name: "Claude 3.7 Sonnet (2025-02-19)",
+        id: "claude-3-7-sonnet-20250219",
+        model_name: "claude-3-7-sonnet-20250219",
+        description: "Anthropic's Claude Sonnet 3.7 (2025-02-19)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
+      },
+
+      // ── Claude 3.5 family ───────────────────────────────────────────────────
       "claude-3-5-sonnet-latest": {
         name: "Claude 3.5 Sonnet (Latest)",
         id: "claude-3-5-sonnet-latest",
         model_name: "claude-3.5-sonnet-latest",
-        description: "Anthropic's Claude Sonnet (Latest)",
+        description: "Anthropic's Claude Sonnet 3.5 (Latest)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
+      },
+      "claude-3-5-sonnet-20241022": {
+        name: "Claude 3.5 Sonnet (2024-10-22)",
+        id: "claude-3-5-sonnet-20241022",
+        model_name: "claude-3-5-sonnet-20241022",
+        description: "Anthropic's Claude Sonnet 3.5 (2024-10-22)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
+      },
+      "claude-3.5-sonnet-20240620": { // kept original id typo for backward compatibility
+        name: "Claude 3.5 Sonnet (2024-06-20)",
+        id: "claude-3.5-sonnet-20240620",
+        model_name: "claude-3.5-sonnet-20240620",
+        description: "Anthropic's Claude Sonnet 3.5 (2024-06-20)",
         max_input_tokens: 200000,
         max_output_tokens: 4000,
         multimodal: true
@@ -99,66 +149,34 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
         name: "Claude 3.5 Haiku (Latest)",
         id: "claude-3-5-haiku-latest",
         model_name: "claude-3.5-haiku-latest",
-        description: "Anthropic's Claude Haiku (Latest)",
+        description: "Anthropic's Claude Haiku 3.5 (Latest)",
         max_input_tokens: 200000,
         max_output_tokens: 4000,
-      },
-      "claude-3-opus-latest": {
-        name: "Claude 3 Opus (Latest)",
-        id: "claude-3-opus-latest",
-        model_name: "claude-3-opus-latest",
-        description: "Anthropic's Claude Opus (Latest)",
-        max_input_tokens: 200000,
-        max_output_tokens: 4000,
-      },
-      "claude-3-7-sonnet-20250219": {
-        name: "Claude 3.7 Sonnet (2025-02-19)",
-        id: "claude-3-7-sonnet-20250219",
-        model_name: "claude-3-7-sonnet-20250219",
-        description: "Anthropic's Claude Sonnet (2025-02-19)",
-        max_input_tokens: 200000,
-        max_output_tokens: 4000,
-      },
-      "claude-3-5-sonnet-20241022": {
-        name: "Claude 3.5 Sonnet (2024-10-22)",
-        id: "claude-3-5-sonnet-20241022",
-        model_name: "claude-3-5-sonnet-20241022",
-        description: "Anthropic's Claude Sonnet (2024-10-22)",
-        max_input_tokens: 200000,
-        max_output_tokens: 4000,
-        multimodal: true
-      },
-      "claude-3-5-sonnet-20240620": {
-        name: "Claude 3.5 Sonnet (2024-06-20)",
-        id: "claude-3.5-sonnet-20240620",
-        model_name: "claude-3.5-sonnet-20240620",
-        description: "Anthropic's Claude Sonnet (2024-06-20)",
-        max_input_tokens: 200000,
-        max_output_tokens: 4000,
-        multimodal: true
       },
       "claude-3-5-haiku-20241022": {
         name: "Claude 3.5 Haiku (2024-10-22)",
         id: "claude-3-5-haiku-20241022",
         model_name: "claude-3-5-haiku-20241022",
-        description: "Anthropic's Claude Haiku (2024-10-22)",
+        description: "Anthropic's Claude Haiku 3.5 (2024-10-22)",
         max_input_tokens: 200000,
         max_output_tokens: 4000,
+      },
+
+      // ── Claude 3 family ─────────────────────────────────────────────────────
+      "claude-3-opus-latest": {
+        name: "Claude 3 Opus (Latest)",
+        id: "claude-3-opus-latest",
+        model_name: "claude-3-opus-latest",
+        description: "Anthropic's Claude Opus 3 (Latest)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
       },
       "claude-3-opus-20240229": {
         name: "Claude 3 Opus (2024-02-29)",
         id: "claude-3-opus-20240229",
         model_name: "claude-3-opus-20240229",
-        description: "Anthropic's Claude Opus",
-        max_input_tokens: 200000,
-        max_output_tokens: 4000,
-        multimodal: true
-      },
-      "claude-3-haiku-20240307": {
-        name: "Claude 3 Haiku (2024-03-07)",
-        id: "claude-3-haiku-20240307",
-        model_name: "claude-3-haiku-20240307",
-        description: "Anthropic's Claude Haiku (2024-03-07)",
+        description: "Anthropic's Claude Opus 3 (2024-02-29)",
         max_input_tokens: 200000,
         max_output_tokens: 4000,
         multimodal: true
@@ -167,11 +185,20 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
         name: "Claude 3 Sonnet (2024-02-29)",
         id: "claude-3-sonnet-20240229",
         model_name: "claude-3-sonnet-20240229",
-        description: "Anthropic's Claude Sonnet",
+        description: "Anthropic's Claude Sonnet 3 (2024-02-29)",
         max_input_tokens: 200000,
         max_output_tokens: 4000,
         multimodal: true
       },
+      "claude-3-haiku-20240307": {
+        name: "Claude 3 Haiku (2024-03-07)",
+        id: "claude-3-haiku-20240307",
+        model_name: "claude-3-haiku-20240307",
+        description: "Anthropic's Claude Haiku 3 (2024-03-07)",
+        max_input_tokens: 200000,
+        max_output_tokens: 4000,
+        multimodal: true
+      }
     };
   }
 }
@@ -479,7 +506,7 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
         ...chunk.usage
       };
     }
-
+  
   }
 
 
