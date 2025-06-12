@@ -57,6 +57,10 @@ export class ActionCompletionAdapter extends SmartCompletionAdapter {
     this.insert_tools(tools, { force: true });
   }
 
+  get default_action_params() {
+    return this.data.action_opts || {};
+  }
+
   /**
    * @returns {Promise<void>}
    */
@@ -88,7 +92,11 @@ export class ActionCompletionAdapter extends SmartCompletionAdapter {
     }
 
     // Run the action
-    const result = await action_item.run_action(parsed_args);
+    const action_params = {
+      ...this.default_action_params,
+      ...parsed_args,
+    }
+    const result = await action_item.run_action(action_params);
     // If the tool returns an object with a 'final' key, treat it as the final assistant message
     if (result && typeof result === 'object' && result.final) {
       // Ensure we have a response object in completion
