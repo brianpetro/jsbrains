@@ -159,7 +159,8 @@ export class SmartChatModelOllamaRequestAdapter extends SmartChatModelRequestAda
       // Extract images if present
       const images = this._extract_images_from_content(message.content);
       if (images.length > 0) {
-        ollama_message.images = images;
+        // remove preceeding data:image/*;base64,
+        ollama_message.images = images.map(img => img.replace(/^data:image\/[^;]+;base64,/, ''));
       }
 
       return ollama_message;
