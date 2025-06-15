@@ -43,19 +43,16 @@ export class SmartContexts extends Collection {
       max_len: 0, // 0 => no enforced limit
       templates: {
         '-1': {
-          before: '{{FILE_TREE}}'
+          before: `<context>\n<file_tree>\n{{FILE_TREE}}\n</file_tree>`,
+          after: `</context>`
         },
         '0': {
-          before: '{{ITEM_PATH}}\n```{{ITEM_EXT}}',
-          after: '```'
+          before: `<context_primary path="{{ITEM_PATH}}" mtime="{{ITEM_TIME_AGO}}">`,
+          after: `</context_primary>`
         },
         '1': {
-          before: 'LINK: {{ITEM_NAME}}\n```{{ITEM_EXT}}',
-          after: '```'
-        },
-        '1': {
-          before: 'REF: {{ITEM_NAME}}\n```{{ITEM_EXT}}',
-          after: '```'
+          before: `<context_linked path="{{ITEM_PATH}}" mtime="{{ITEM_TIME_AGO}}">`,
+          after: `</context_linked>`
         },
       },
     };
