@@ -33,7 +33,7 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
     const { before_raw, after_raw } = get_templates_for_depth(depth, merged_opts);
 
     for (const [path, item] of Object.entries(items)) {
-      const placeholders = build_item_placeholders(path, depth);
+      const placeholders = build_item_placeholders(path, depth, item.mtime);
       chunks.push({
         path,
         mtime: item.mtime,
@@ -162,7 +162,14 @@ function build_item_placeholders(path, depth, mtime) {
 }
 
 function convert_to_time_ago(timestamp) {
-  const seconds = Math.floor(Date.now() - timestamp);
+  // Ensure timestamp is in milliseconds, and compute seconds difference
+  const now = Date.now();
+  let diffMs = now - timestamp;
+  // If timestamp is in seconds (10-digit), convert to ms
+  if (timestamp < 1e12) {
+    diffMs = now - (timestamp * 1000);
+  }
+  const seconds = Math.floor(diffMs / 1000);
 
   const intervals = [
     { label: 'year', seconds: 31536000 },
