@@ -429,10 +429,6 @@ export class SmartSources extends SmartEntities {
         item.reason = "is_gone";
         return true;
       }
-      if(!item.should_embed) {
-        item.reason = "!should_embed";
-        return true;
-      }
       return false;
     });
     // Remove identified blocks
