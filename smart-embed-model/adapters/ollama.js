@@ -88,7 +88,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     models_endpoint: "/api/tags",
     api_key: 'na', // Not required for local instance
     streaming: false, // Ollama's embed API does not support streaming
-    max_tokens: 8192, // Example default, adjust based on model capabilities
+    max_tokens: 512, // Example default, adjust based on model capabilities
     signup_url: null, // Not applicable for local instance
     batch_size: 30,
     models: {},
@@ -236,7 +236,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
       return this.model_data;
     }
 
-    return model_data.reduce((acc, model) => {
+    this.model_data = model_data.reduce((acc, model) => {
       const info = model.model_info || {};
       const ctx = Object.entries(info).find(([k]) => k.includes('context_length'))?.[1];
       const dims = Object.entries(info).find(([k]) => k.includes('embedding_length'))?.[1];
@@ -244,12 +244,27 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
         model_name: model.name,
         id: model.name,
         multimodal: false,
-        max_input_tokens: ctx || this.max_tokens,
+        max_tokens: ctx || this.max_tokens,
         dims,
         description: model.description || `Model: ${model.name}`,
       };
       return acc;
     }, {});
+    this._models = this.model_data;
+    return this.model_data;
+  }
+  /**
+   * Get the models.
+   * @returns {Object} Map of model objects
+   */
+  get models() {
+    if(
+      typeof this._models === 'object'
+      && Object.keys(this._models || {}).length > 0
+    ) return this._models;
+    else {
+      return {};
+    }
   }
 
   /**

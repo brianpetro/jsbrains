@@ -138,7 +138,8 @@ export class SmartSource extends SmartEntity {
     }
     const breadcrumbs = this.path.split("/").join(" > ").replace(".md", "");
     const max_tokens = this.collection.embed_model.model_config.max_tokens || 500; // Prevent loading too much content
-    this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_tokens * 4);
+    const max_chars = Math.floor(max_tokens * 3.7); // more conservative estimate for characters
+    this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_chars);
     return this._embed_input;
   }
 
