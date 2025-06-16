@@ -139,6 +139,11 @@ export class SmartChatModelLmStudioRequestAdapter extends SmartChatModelRequestA
         type: 'text',
         text: `Use the "${this.tool_choice.function.name}" tool.`
       });
+      // Set tool_choice to a supported string value
+      body.tool_choice = "required";
+    } else if (body.tool_choice && typeof body.tool_choice === "object") {
+      // Fallback: if tool_choice is an object, set to "auto"
+      body.tool_choice = "auto";
     }
 
     req.body = JSON.stringify(body);
