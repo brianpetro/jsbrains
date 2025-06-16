@@ -1,19 +1,20 @@
-// C:/Users/brian/Documents/jsbrains/smart-utils/parse_xml_fragments.js
 import { coerce_primitives } from './coerce_primitives.js';
 
 /**
  * Parses XML fragments into a nested plain-object representation.
  *
- * Each XML element becomes a key whose value is an object that may contain
- *   - attributes  – an object of coerced attribute values (omitted when empty)
- *   - contents    – either:
+ * Each XML element becomes a key whose value may contain
+ *   – attributes  → an object of coerced attribute values (omitted when empty)
+ *   – contents    → either:
  *       • another map of child elements
  *       • a coerced primitive/text value
  *       • null for self-closing or empty elements
  *
- * Repeated sibling tags collapse into arrays. Text outside any tag is ignored.
+ * Repeated sibling tags collapse into arrays. Text outside tags is ignored.
  * Unclosed tags are treated as implicitly closed at the end of input.
- * Mismatched closing tags return null.
+ * Mismatched closing tags return null … except for elements declared
+ * “verbatim” (see VERBATIM_TAGS) whose inner text may legally contain
+ * unescaped “<” or “>”.
  *
  * @param {string} xml_input raw XML string or fragment
  * @returns {object|null} structured representation or null if invalid
@@ -23,53 +24,53 @@ export function parse_xml_fragments (xml_input) {
     return null;
   }
 
+  /* configuration ---------------------------------------------------- */
+  /** tags whose contents should be preserved verbatim (raw text)        */
+  const VERBATIM_TAGS = new Set(['think']);
+
   /* helpers ----------------------------------------------------------- */
   const compress_whitespace = (str) => str.replace(/\s+/g, ' ').trim();
 
   const parse_attributes = (str) => {
     if (!str) return {};
-    const attr_map = {};
+    const attrs = {};
     const attr_re = /(\w[\w.\-]*)\s*=\s*"([^"]*)"/g;
     let m;
     while ((m = attr_re.exec(str)) !== null) {
       const [, key, raw_val] = m;
-      attr_map[key] = coerce_primitives(raw_val);
+      attrs[key] = coerce_primitives(raw_val);
     }
-    return attr_map;
+    return attrs;
   };
 
   const attach_child = (map, tag, node) => {
     if (tag in map) {
       const existing = map[tag];
-      if (Array.isArray(existing)) {
-        existing.push(node);
-      } else {
-        map[tag] = [existing, node];
-      }
+      map[tag] = Array.isArray(existing) ? [...existing, node] : [existing, node];
     } else {
       map[tag] = node;
     }
   };
 
   const finalize_node = (ctx) => {
-    const trimmed_text = compress_whitespace(ctx.text);
+    const text_raw = ctx.verbatim
+      ? ctx.text.replace(/^\s*\n/, '').replace(/\s+$/, '')
+      : compress_whitespace(ctx.text);
 
     if (Object.keys(ctx.children_map).length) {
       ctx.node.contents = ctx.children_map;
-    } else if (trimmed_text !== '') {
-      ctx.node.contents = coerce_primitives(trimmed_text);
+    } else if (text_raw !== '') {
+      ctx.node.contents = ctx.verbatim ? text_raw : coerce_primitives(text_raw);
     } else {
       ctx.node.contents = null;
     }
   };
 
-  /* main parsing loop ------------------------------------------------- */
-  const comment_re = /<!--[\s\S]*?-->/g;
-  const cleaned = xml_input.replace(comment_re, '');
+  /* remove XML comments upfront -------------------------------------- */
+  const cleaned = xml_input.replace(/<!--[\s\S]*?-->/g, '');
 
-  /* negative look-behind ensures we avoid comment internals ----------- */
-  const token_re =
-    /<\/?[A-Za-z_][\w.\-]*(?:\s+[^<>]*?)?\/?>(?<!<![^>]*>)|[^<>]+/g;
+  /* tokeniser: keep “>” inside text ---------------------------------- */
+  const token_re = /<[^>]+>|[^<]+/g;
 
   const root_map = {};
   const stack = [];
@@ -78,26 +79,41 @@ export function parse_xml_fragments (xml_input) {
   while ((match = token_re.exec(cleaned)) !== null) {
     const token = match[0];
 
+    /* verbatim containers: take everything until their explicit close - */
+    if (stack.length) {
+      const top = stack[stack.length - 1];
+      if (top.verbatim) {
+        if (token.startsWith(`</${top.tag_name}`)) {
+          stack.pop();
+          finalize_node(top);
+          if (stack.length === 0) {
+            attach_child(root_map, top.tag_name, top.node);
+          } else {
+            attach_child(stack[stack.length - 1].children_map, top.tag_name, top.node);
+          }
+          continue;
+        }
+        top.text += token;
+        continue;
+      }
+    }
+
     if (token.startsWith('<')) {
       /* tag token ---------------------------------------------------- */
       if (token.startsWith('</')) {
         /* closing tag ------------------------------------------------ */
         const tag_name = token.slice(2, -1).trim();
-        if (stack.length === 0) return null; // stray close
-
+        if (!stack.length) return null;                         // stray close
         const ctx = stack.pop();
-        if (ctx.tag_name !== tag_name) return null; // mismatched
-
+        if (ctx.tag_name !== tag_name) return null;             // mismatched
         finalize_node(ctx);
-
         if (stack.length === 0) {
           attach_child(root_map, tag_name, ctx.node);
         } else {
-          const parent_ctx = stack[stack.length - 1];
-          attach_child(parent_ctx.children_map, tag_name, ctx.node);
+          attach_child(stack[stack.length - 1].children_map, tag_name, ctx.node);
         }
       } else {
-        /* opening / self-closing tag -------------------------------- */
+        /* opening or self-closing ----------------------------------- */
         const self_closing = token.endsWith('/>');
         const body = self_closing ? token.slice(1, -2) : token.slice(1, -1);
         const first_space = body.indexOf(' ');
@@ -112,36 +128,33 @@ export function parse_xml_fragments (xml_input) {
           if (stack.length === 0) {
             attach_child(root_map, tag_name, node);
           } else {
-            const parent_ctx = stack[stack.length - 1];
-            attach_child(parent_ctx.children_map, tag_name, node);
+            attach_child(stack[stack.length - 1].children_map, tag_name, node);
           }
         } else {
           stack.push({
             tag_name,
             node,
             text: '',
-            children_map: {}
+            children_map: {},
+            verbatim: VERBATIM_TAGS.has(tag_name)
           });
         }
       }
     } else {
       /* text token --------------------------------------------------- */
-      if (stack.length > 0) {
-        stack[stack.length - 1].text += token;
-      }
-      /* text outside all tags ignored */
+      if (stack.length) stack[stack.length - 1].text += token;
+      /* text outside all tags is ignored                              */
     }
   }
 
-  /* finalize any unclosed tags at EOF -------------------------------- */
-  while (stack.length !== 0) {
+  /* close any unclosed tags at EOF ----------------------------------- */
+  while (stack.length) {
     const ctx = stack.pop();
     finalize_node(ctx);
     if (stack.length === 0) {
       attach_child(root_map, ctx.tag_name, ctx.node);
     } else {
-      const parent_ctx = stack[stack.length - 1];
-      attach_child(parent_ctx.children_map, ctx.tag_name, ctx.node);
+      attach_child(stack[stack.length - 1].children_map, ctx.tag_name, ctx.node);
     }
   }
 

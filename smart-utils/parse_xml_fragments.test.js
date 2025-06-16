@@ -195,3 +195,18 @@ test('should handle mixed content with text and tags', t => {
 
   t.deepEqual(out, expected);
 });
+
+test('parses xml wrapped in ```xml', t => {
+  const xml =
+    '```xml\n<action><msg>Hello</msg><count>3</count><flag>true</flag></action>\n```';
+  const out = parse_xml_fragments(xml);
+  t.deepEqual(out, {
+    action: {
+      contents: {
+        msg: { contents: 'Hello' },
+        count: { contents: 3 },
+        flag: { contents: true }
+      }
+    }
+  });
+});
