@@ -111,7 +111,7 @@ export class SmartModelAdapter {
       this.get_models(true); // refresh models
       return [{value: '', name: 'No models currently available'}];
     }
-    return Object.values(models).map(model => ({ value: model.id, name: model.name || model.id })).sort((a, b) => a.name.localeCompare(b.name));
+    return Object.entries(models).map(([id, model]) => ({ value: id, name: model.name || id })).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
