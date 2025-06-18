@@ -36,7 +36,7 @@ export class CollectionItem {
     this.merge_defaults();
 
     if (data) deep_merge(this.data, data);
-    if (!this.data.class_name) this.data.class_name = this.constructor.name;
+    if (!this.data.class_name) this.data.class_name = this.collection.item_class_name;
   }
 
   /**

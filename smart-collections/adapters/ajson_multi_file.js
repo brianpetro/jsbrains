@@ -318,7 +318,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
         }
         return await this.save(retries + 1);
       }
-      console.warn("Error saving item", this.data_path, e);
+      console.warn("Error saving item", this.data_path, this.item.key, e);
     }
   }
 
