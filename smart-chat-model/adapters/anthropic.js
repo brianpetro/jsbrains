@@ -337,7 +337,6 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
           };
         }
 
-        // Only handle PDF files for now
         if (item.type === 'file' && item.file?.filename?.toLowerCase().endsWith('.pdf')) {
           if (item.file?.file_data) {
             return {

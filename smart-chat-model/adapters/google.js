@@ -240,6 +240,16 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
             }
           };
         }
+        if (part.type === 'file' && part.file?.filename?.toLowerCase().endsWith('.pdf')) {
+          if (part.file?.file_data) {
+            return {
+              inline_data: {
+                mime_type: 'application/pdf',
+                data: part.file.file_data.split(',')[1]
+              }
+            };
+          }
+        }
         return part;
       });
     }
