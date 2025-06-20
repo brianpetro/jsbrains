@@ -97,6 +97,9 @@ async function process_depth(snapshot, curr_depth_keys, ctx, opts) {
         const image_exts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico'];
         if(image_exts.some(ext => file.path.endsWith(`.${ext}`))) {
           snapshot.images.push(file.path);
+        }else if(file.path.endsWith('.pdf')) {
+          if(!snapshot.pdfs) snapshot.pdfs = [];
+          snapshot.pdfs.push(file.path);
         }else{
           snapshot.missing_items.push(file.path);
         }

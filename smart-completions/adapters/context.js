@@ -1,5 +1,6 @@
 import { SmartCompletionAdapter } from './_adapter.js';
 import { insert_image } from '../utils/insert_image.js';
+import { insert_pdf } from '../utils/insert_pdf.js';
 
 /**
  * @class SmartCompletionContextAdapter
@@ -52,8 +53,11 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
         this.insert_user_message(this.data.user_message, {position: 'end'});
       }
     }
-    if(compiled.images.length > 0) {
+    if(compiled.images?.length > 0) {
       await this.insert_images(compiled.images);
+    }
+    if(compiled.pdfs?.length > 0) {
+      await this.insert_pdfs(compiled.pdfs);
     }
   }
 
@@ -61,6 +65,12 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
     if(!Array.isArray(image_paths) || !image_paths.length) return;
     for(const img_path of image_paths) {
       await insert_image(this.request, img_path, this.item.env.fs);
+    }
+  }
+  async insert_pdfs(pdf_paths) {
+    if(!Array.isArray(pdf_paths) || !pdf_paths.length) return;
+    for(const pdf_path of pdf_paths) {
+      await insert_pdf(this.request, pdf_path, this.item.env.fs);
     }
   }
 
