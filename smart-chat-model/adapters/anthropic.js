@@ -336,6 +336,21 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
             }
           };
         }
+
+        // Only handle PDF files for now
+        if (item.type === 'file' && item.file?.filename?.toLowerCase().endsWith('.pdf')) {
+          if (item.file?.file_data) {
+            return {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: item.file.file_data.split(',')[1]
+              }
+            };
+          }
+        }
+
         return item;
       });
     }

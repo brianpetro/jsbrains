@@ -127,7 +127,6 @@ export class SmartChatModel extends SmartModel {
         options_callback: 'get_platforms_as_options',
         is_scope: true, // trigger re-render of settings when changed
         callback: 'adapter_changed',
-        default: 'open_router',
       },
       // Merge adapter-specific settings
       ...(this.adapter.settings_config || {}),
