@@ -4,7 +4,9 @@ import {
   SmartEmbedModelResponseAdapter,
 } from "./_api.js";
 import { Tiktoken } from "js-tiktoken/lite";
-import cl100k_base from "../cl100k_base.json" with { type: "json" };
+import { fetch_json_cached } from '../utils/fetch_cache.js';
+
+const CL100K_URL = 'https://raw.githubusercontent.com/brianpetro/jsbrains/refs/heads/main/smart-embed-model/cl100k_base.json';
 
 /**
  * Adapter for OpenAI's embedding API
@@ -24,7 +26,7 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
    */
   constructor(smart_embed) {
     super(smart_embed);
-    /** @type {Tiktoken|null} Tokenizer instance */
+    /** @type {Tiktoken|null} */
     this.enc = null;
   }
 
@@ -33,6 +35,10 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<void>}
    */
   async load() {
+    // console.log("Loading OpenAI tokenizer...");
+    // console.time("load_openai_tokenizer");
+    const cl100k_base = await fetch_json_cached(CL100K_URL, 'cl100k_base.json');
+    // console.timeEnd("load_openai_tokenizer");
     this.enc = new Tiktoken(cl100k_base);
   }
 
