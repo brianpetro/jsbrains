@@ -24,6 +24,7 @@ export const NOTICES = {
     },
     timeout: 10000
   },
+  /** @deprecated in favor of in-component insctructions (2025-06-22) */
   missing_entity: {
     en: 'No entity found for key: {{key}}'
   },
