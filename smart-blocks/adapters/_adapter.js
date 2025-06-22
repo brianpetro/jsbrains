@@ -97,7 +97,7 @@ export class BlockContentAdapter {
    */
   async update_last_read(content){
     this.data.last_read = {
-      hash: await this.create_hash(content),
+      hash: this.create_hash(content),
       at: Date.now(),
     };
   }

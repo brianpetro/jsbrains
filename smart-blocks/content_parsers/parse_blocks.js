@@ -1,6 +1,7 @@
 import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
 import { get_line_range } from "smart-sources/utils/get_line_range.js";
 import { parse_markdown_blocks } from "../parsers/markdown.js";
+import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 /**
  * @method parse_blocks
  * @description Imports blocks for a given source by parsing the content. Delegates parsing to a parser
@@ -12,6 +13,7 @@ import { parse_markdown_blocks } from "../parsers/markdown.js";
 export function parse_blocks(source, content) {
   // if(source.file_type === 'md' || source.data.content?.length > 0) {
     let blocks_obj = parse_markdown_blocks(content);
+    const last_read_at =  source.data.last_read?.at || Date.now();
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
       // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
       const block_key = source.key + sub_key;
@@ -32,6 +34,10 @@ export function parse_blocks(source, content) {
         lines: line_range,
         size: block_content.length,
         outlinks: block_outlinks,
+        last_read: {
+          at: last_read_at,
+          hash: murmur_hash_32_alphanumeric(block_content),
+        },
       };
       // prevent premature save by not using create_or_update
       const new_item = new source.block_collection.item_type(source.env, block_data);

@@ -96,6 +96,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     embeddings.forEach((emb, i) => {
       const entity = entities[i];
       entity.vec = emb.vec;
+      entity.data.last_embed = entity.data.last_read;
       if (emb.tokens !== undefined) entity.tokens = emb.tokens;
     });
   }
