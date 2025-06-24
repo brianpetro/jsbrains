@@ -232,26 +232,6 @@ Used by `get_snapshot` or as a direct utility.
     ```
     
 
----
-
-## Codeblock Expansions
-
-If a file’s content includes code blocks labeled with ```smart-context, each line in that code block is treated as an additional path or folder reference at the same depth. This allows a file to dynamically pull in more references.
-
-## Folder References
-
-When a path in `context_items` (or from a code block) is a folder, the snapshot logic expands that folder, adding its subfiles at the same depth. Hidden files or those excluded by ignore patterns (like `.scignore`) may be skipped.
-
-## `max_len` Behavior Recap
-
-- Minimal or no skipping is done in `get_snapshot`, though future code may add partial logic there.
-- Main enforcement occurs in the compiler:
-    - Template must fit or the item is skipped.
-    - If template fits but the content is too big, partial truncation occurs.
-    - Finally, tries wrapping the entire string with `templates[-1]`.
-
----
-
 # Smart Contexts Data Specification
 
 ## `context_item.data.context_items` (Object)
@@ -330,19 +310,3 @@ From `compile(context_snapshot, opts)` =>
   }
 }
 ```
-
----
-
-## Notes on Codeblock and Folder Expansion
-
-- **Codeblock** expansions: If `content` contains a fenced block with ```smart-context, lines inside are treated as additional references at the same depth.
-- **Folder** expansions: If a path is a folder, subfiles appear at the same depth. Hidden/excluded files can be omitted.
-
----
-
-## Example Flow
-
-1. Create or retrieve a `SmartContext` item with `context_items = { 'docs/intro.md': true }`.
-2. Call `get_snapshot({ link_depth: 1, inlinks: false, excluded_headings: ['Draft'] })`.
-3. The code reads `docs/intro.md`, finds any codeblock references or outlinks, places them at the appropriate depth, and returns a snapshot with `items[0]` and `items[1]`.
-4. Then `compile(snapshot, { max_len: 10000, templates: ... })` does final trimming and returns `{ context, stats }`.
