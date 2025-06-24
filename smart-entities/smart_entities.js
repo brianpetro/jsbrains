@@ -386,37 +386,37 @@ export const connections_filter_config = {
   "smart_view_filter.show_full_path": {
     "name": "Show full path",
     "type": "toggle",
-    "description": "Show full path in view.",
+    "description": "Turning on will include the folder path in the connections results.",
   },
   "smart_view_filter.render_markdown": {
     "name": "Render markdown",
     "type": "toggle",
-    "description": "Render markdown in results.",
+    "description": "Turn off to prevent rendering markdown and display connection results as plain text.",
   },
   "smart_view_filter.results_limit": {
     "name": "Results limit",
     "type": "number",
-    "description": "Limit the number of results.",
+    "description": "Adjust the number of connections displayed in the connections view (default 20).",
     "default": 20,
   },
   "smart_view_filter.exclude_inlinks": {
     "name": "Exclude inlinks (backlinks)",
     "type": "toggle",
-    "description": "Exclude notes that link to the current note.",
+    "description": "Exclude notes that already link to the current note from the connections results.",
   },
   "smart_view_filter.exclude_outlinks": {
     "name": "Exclude outlinks",
     "type": "toggle",
-    "description": "Exclude links already in the current document.",
+    "description": "Exclude notes that are already linked from within the current note from appearing in the connections results.",
   },
   "smart_view_filter.include_filter": {
     "name": "Include filter",
     "type": "text",
-    "description": "Require that result file path matches this value.",
+    "description": "Notes must match this value in their file/folder path. Matching notes will be included in the connections results.",
   },
   "smart_view_filter.exclude_filter": {
     "name": "Exclude filter",
     "type": "text",
-    "description": "Exclude results with file path that matches this value.",
+    "description": "Notes must *not* match this value in their file/folder path. Matching notes will be *excluded* from the connections results.",
   }
 };
