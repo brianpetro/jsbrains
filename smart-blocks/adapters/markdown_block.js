@@ -4,6 +4,7 @@
  */
 
 import { BlockContentAdapter } from "./_adapter.js";
+import { get_line_range } from "smart-sources/utils/get_line_range.js";
 
 /**
  * @class MarkdownBlockContentAdapter
@@ -158,9 +159,7 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
     if (!line_start || !line_end) {
       throw new Error(`BLOCK NOT FOUND: ${this.item.key} has invalid line references.`);
     }
-    const lines = source_content.split("\n");
-    const selected = lines.slice(line_start - 1, line_end);
-    return selected.join("\n");
+    return get_line_range(source_content, line_start, line_end);
   }
 
   /**
