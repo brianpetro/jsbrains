@@ -34,9 +34,21 @@ export function deep_merge_no_overwrite(target, source, path = []) {
 
     const val = source[key];
 
-    // Merge arrays by concatenation
+    // Merge arrays by concatenation, but prevent duplicate functions by name
     if (Array.isArray(target[key]) && Array.isArray(val)) {
-      target[key].push(...val);
+      for (const item of val) {
+        if (typeof item === 'function') {
+          const item_name = item.name;
+          const has_same_fn = target[key].some(
+            (el) => typeof el === 'function' && el.name === item_name
+          );
+          if (!has_same_fn) {
+            target[key].push(item);
+          }
+        } else {
+          target[key].push(item);
+        }
+      }
     }
     else if (is_plain_object(val)) {
       if (!is_plain_object(target[key])) {

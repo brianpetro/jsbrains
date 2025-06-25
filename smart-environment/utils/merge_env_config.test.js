@@ -105,6 +105,18 @@ test('newer collection version replaces older one', t => {
        'non-conflicting props are preserved');
 });
 
+function a_parser() {}
+test('same collection version doesn\'t duplicate existing same function in array', t => {
+  const target   = { collections: { foo: { class: ColV1, parsers: [a_parser] } } };
+  const incoming = { collections: { foo: { class: ColV1, parsers: [a_parser] } } };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.collections.foo.parsers.length, 1,
+       'parsers array should not duplicate existing function');
+
+});
+
 test('older or same version does NOT replace BUT includes extra props', t => {
   const target   = { collections: { foo: { class: ColV2 } } };
   const incoming = { collections: { foo: { class: ColV1, extra: 123 } } };

@@ -104,3 +104,23 @@ test('should handle merging array of functions', (t) => {
   deep_merge_no_overwrite(target, source);
   t.deepEqual(target.a.b.content_parsers, [parse_links, parse_blocks], 'content_parsers merged');
 });
+
+test('merging array of functions prevents duplicates', (t) => {
+  const parse_blocks = () => {};
+  const target = {
+    a: {
+      b: {
+        content_parsers: [parse_blocks],
+      },
+    },
+  };
+  const source = {
+    a: {
+      b: {
+        content_parsers: [parse_blocks],
+      },
+    },
+  };
+  deep_merge_no_overwrite(target, source);
+  t.deepEqual(target.a.b.content_parsers, [parse_blocks], 'content_parsers merged');
+});

@@ -16,7 +16,6 @@ export async function fetch_json_cached(url, cache_key = url) {
     window.localStorage.setItem(cache_key, JSON.stringify(remote));
     return remote;
   }
-  // Node – persist in $HOME/.cache/smart‑embed‑model
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
   const os = await import('node:os');
