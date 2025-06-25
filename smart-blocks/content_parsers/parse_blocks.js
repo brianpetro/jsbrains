@@ -39,11 +39,19 @@ export function parse_blocks(source, content) {
           hash: murmur_hash_32_alphanumeric(block_content),
         },
       };
-      // prevent premature save by not using create_or_update
-      const new_item = new source.block_collection.item_type(source.env, block_data);
-      // blocks.push(this.create_or_update(block_data));
-      new_item.queue_embed();
-      source.block_collection.set(new_item);
+      // Check hash AFTER building new data since lines updated
+      // if no lines change than continues above
+      if(!existing_block || (existing_block?.data.last_read?.hash !== block_data.last_read.hash)) {
+        // prevent premature save by not using create_or_update
+        const new_item = new source.block_collection.item_type(source.env, block_data);
+        new_item.queue_embed();
+        source.block_collection.set(new_item);
+      }else{
+        existing_block.data = {
+          ...existing_block.data,
+          ...block_data, // overwrites lines, last_read
+        }
+      }
     }
     // await Promise.all(blocks);
     clean_and_update_source_blocks(source, blocks_obj);
