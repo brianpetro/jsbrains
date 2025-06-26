@@ -204,6 +204,33 @@ export const transformers_models = {
     "description": "Local, 512 tokens, 384 dim (recommended)",
     "adapter": "transformers"
   },
+  "Snowflake/snowflake-arctic-embed-xs": {
+    "id": "Snowflake/snowflake-arctic-embed-xs",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Snowflake Arctic Embed XS",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Snowflake/snowflake-arctic-embed-s": {
+    "id": "Snowflake/snowflake-arctic-embed-s",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Snowflake Arctic Embed Small",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Snowflake/snowflake-arctic-embed-m": {
+    "id": "Snowflake/snowflake-arctic-embed-m",
+    "batch_size": 1,
+    "dims": 768,
+    "max_tokens": 512,
+    "name": "Snowflake Arctic Embed Medium",
+    "description": "Local, 512 tokens, 768 dim",
+    "adapter": "transformers"
+  },
   "TaylorAI/gte-tiny": {
     "id": "TaylorAI/gte-tiny",
     "batch_size": 1,

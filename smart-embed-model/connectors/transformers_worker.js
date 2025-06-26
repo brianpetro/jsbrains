@@ -1,6 +1,9 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
 
 // ../smart-model/smart_model.js
 var SmartModel = class {
@@ -35,17 +38,20 @@ var SmartModel = class {
    * @param {Object} opts - Configuration options
    */
   validate_opts(opts) {
-    if (!opts.adapters) throw new Error("opts.adapters is required");
-    if (!opts.settings) throw new Error("opts.settings is required");
+    if (!opts.adapters)
+      throw new Error("opts.adapters is required");
+    if (!opts.settings)
+      throw new Error("opts.settings is required");
   }
   /**
    * Get the current settings
    * @returns {Object} Current settings
    */
   get settings() {
-    if (!this.opts.settings) this.opts.settings = {
-      ...this.constructor.defaults
-    };
+    if (!this.opts.settings)
+      this.opts.settings = {
+        ...this.constructor.defaults
+      };
     return this.opts.settings;
   }
   /**
@@ -65,7 +71,8 @@ var SmartModel = class {
    * @returns {Object} Settings for current adapter
    */
   get adapter_settings() {
-    if (!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
+    if (!this.settings[this.adapter_name])
+      this.settings[this.adapter_name] = {};
     return this.settings[this.adapter_name];
   }
   get adapter_config() {
@@ -111,7 +118,8 @@ var SmartModel = class {
     };
   }
   get model_settings() {
-    if (!this.settings[this.model_key]) this.settings[this.model_key] = {};
+    if (!this.settings[this.model_key])
+      this.settings[this.model_key] = {};
     return this.settings[this.model_key];
   }
   /**
@@ -121,8 +129,21 @@ var SmartModel = class {
    */
   async load() {
     this.set_state("loading");
-    if (!this.adapter?.is_loaded) {
-      await this.invoke_adapter_method("load");
+    try {
+      if (!this.adapter?.is_loaded) {
+        await this.invoke_adapter_method("load");
+      }
+    } catch (err) {
+      this.set_state("unloaded");
+      if (!this.reload_model_timeout) {
+        this.reload_model_timeout = setTimeout(async () => {
+          this.reload_model_timeout = null;
+          await this.load();
+          this.set_state("loaded");
+          this.notices?.show("Loaded model: " + this.model_key);
+        }, 6e4);
+      }
+      throw new Error(`Failed to load model: ${err.message}`);
     }
     this.set_state("loaded");
   }
@@ -250,7 +271,6 @@ var SmartModel = class {
    * @returns {Array<Object>} Array of {value, name} option objects
    */
   get_platforms_as_options() {
-    console.log("get_platforms_as_options", this.adapters);
     return Object.entries(this.adapters).map(([key, AdapterClass]) => ({ value: key, name: AdapterClass.defaults.description || key }));
   }
   // SETTINGS
@@ -295,17 +315,19 @@ var SmartModel = class {
     return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
   re_render_settings() {
-    console.log("re_render_settings", this.opts);
-    if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
-    else console.warn("re_render_settings is not a function (must be passed in model opts)");
+    if (typeof this.opts.re_render_settings === "function")
+      this.opts.re_render_settings();
+    else
+      console.warn("re_render_settings is not a function (must be passed in model opts)");
   }
   /**
    * Reload model.
    */
   reload_model() {
-    console.log("reload_model", this.opts);
-    if (typeof this.opts.reload_model === "function") this.opts.reload_model();
-    else console.warn("reload_model is not a function (must be passed in model opts)");
+    if (typeof this.opts.reload_model === "function")
+      this.opts.reload_model();
+    else
+      console.warn("reload_model is not a function (must be passed in model opts)");
   }
   adapter_changed() {
     this.reload_model();
@@ -315,34 +337,6 @@ var SmartModel = class {
     this.reload_model();
     this.re_render_settings();
   }
-  // /**
-  //  * Render settings.
-  //  * @param {HTMLElement} [container] - Container element
-  //  * @param {Object} [opts] - Render options
-  //  * @returns {Promise<HTMLElement>} Container element
-  //  */
-  // async render_settings(container=this.settings_container, opts = {}) {
-  //   if(!this.settings_container || container !== this.settings_container) this.settings_container = container;
-  //   const model_type = this.constructor.name.toLowerCase().replace('smart', '').replace('model', '');
-  //   let model_settings_container;
-  //   if(this.settings_container) {
-  //     const container_id = `#${model_type}-model-settings-container`;
-  //     model_settings_container = this.settings_container.querySelector(container_id);
-  //     if(!model_settings_container) {
-  //       model_settings_container = document.createElement('div');
-  //       model_settings_container.id = container_id;
-  //       this.settings_container.appendChild(model_settings_container);
-  //     }
-  //     model_settings_container.innerHTML = '<div class="sc-loading">Loading ' + this.adapter_name + ' settings...</div>';
-  //   }
-  //   const frag = await this.render_settings_component(this, opts);
-  //   if(model_settings_container) {
-  //     model_settings_container.innerHTML = '';
-  //     model_settings_container.appendChild(frag);
-  //     this.smart_view.on_open_overlay(model_settings_container);
-  //   }
-  //   return frag;
-  // }
 };
 __publicField(SmartModel, "defaults", {
   // override in sub-class if needed
@@ -398,7 +392,8 @@ var SmartEmbedModel = class extends SmartModel {
    * ```
    */
   async embed(input) {
-    if (typeof input === "string") input = { embed_input: input };
+    if (typeof input === "string")
+      input = { embed_input: input };
     return (await this.embed_batch([input]))[0];
   }
   /**
@@ -454,15 +449,15 @@ var SmartEmbedModel = class extends SmartModel {
   get_embedding_model_options() {
     return Object.entries(this.models).map(([key, model2]) => ({ value: key, name: key }));
   }
-  /**
-   * Get embedding model options including 'None' option
-   * @returns {Array<Object>} Array of model options with value and name
-   */
-  get_block_embedding_model_options() {
-    const options = this.get_embedding_model_options();
-    options.unshift({ value: "None", name: "None" });
-    return options;
-  }
+  // /**
+  //  * Get embedding model options including 'None' option
+  //  * @returns {Array<Object>} Array of model options with value and name
+  //  */
+  // get_block_embedding_model_options() {
+  //   const options = this.get_embedding_model_options();
+  //   options.unshift({ value: 'None', name: 'None' });
+  //   return options;
+  // }
 };
 __publicField(SmartEmbedModel, "defaults", {
   adapter: "transformers"
@@ -540,7 +535,8 @@ var SmartModelAdapter = class {
    * @returns {Object} Map of model objects
    */
   get models() {
-    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0) return this.adapter_config.models;
+    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0)
+      return this.adapter_config.models;
     else {
       return {};
     }
@@ -568,15 +564,17 @@ var SmartModelAdapter = class {
   get_models_as_options() {
     const models = this.models;
     const params_valid = this.validate_get_models_params();
-    if (params_valid !== true) return params_valid;
+    if (params_valid !== true)
+      return params_valid;
     if (!Object.keys(models || {}).length) {
       this.get_models(true);
       return [{ value: "", name: "No models currently available" }];
     }
-    return Object.values(models).map((model2) => ({ value: model2.id, name: model2.name || model2.id })).sort((a, b) => a.name.localeCompare(b.name));
+    return Object.entries(models).map(([id, model2]) => ({ value: id, name: model2.name || id })).sort((a, b) => a.name.localeCompare(b.name));
   }
   /**
    * Set the adapter's state.
+   * @deprecated should be handled in SmartModel (only handle once)
    * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
    * @throws {Error} If the state is invalid
    */
@@ -668,8 +666,10 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
   // get batch_size() { return this.model_config.batch_size; }
   get use_gpu() {
     if (typeof this._use_gpu === "undefined") {
-      if (typeof this.model.opts.use_gpu !== "undefined") this._use_gpu = this.model.opts.use_gpu;
-      else this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
+      if (typeof this.model.opts.use_gpu !== "undefined")
+        this._use_gpu = this.model.opts.use_gpu;
+      else
+        this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
     }
     return this._use_gpu;
   }
@@ -677,7 +677,8 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
     this._use_gpu = value;
   }
   get batch_size() {
-    if (this.use_gpu && this.model_config?.gpu_batch_size) return this.model_config.gpu_batch_size;
+    if (this.use_gpu && this.model_config?.gpu_batch_size)
+      return this.model_config.gpu_batch_size;
     return this.model.opts.batch_size || this.model_config.batch_size || 1;
   }
 };
@@ -723,7 +724,8 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    */
   async unload() {
     if (this.pipeline) {
-      if (this.pipeline.destroy) this.pipeline.destroy();
+      if (this.pipeline.destroy)
+        this.pipeline.destroy();
       this.pipeline = null;
     }
     if (this.tokenizer) {
@@ -760,7 +762,8 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<Object>} Token count result
    */
   async count_tokens(input) {
-    if (!this.tokenizer) await this.load();
+    if (!this.tokenizer)
+      await this.load();
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
@@ -770,9 +773,11 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<Array<Object>>} Processed inputs with embeddings
    */
   async embed_batch(inputs) {
-    if (!this.pipeline) await this.load();
+    if (!this.pipeline)
+      await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
-    if (!filtered_inputs.length) return [];
+    if (!filtered_inputs.length)
+      return [];
     if (filtered_inputs.length > this.batch_size) {
       console.log(`Processing ${filtered_inputs.length} inputs in batches of ${this.batch_size}`);
       const results = [];
@@ -794,7 +799,8 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
   async _process_batch(batch_inputs) {
     const tokens = await Promise.all(batch_inputs.map((item) => this.count_tokens(item.embed_input)));
     const embed_inputs = await Promise.all(batch_inputs.map(async (item, i) => {
-      if (tokens[i].tokens < this.max_tokens) return item.embed_input;
+      if (tokens[i].tokens < this.max_tokens)
+        return item.embed_input;
       let token_ct = tokens[i].tokens;
       let truncated_input = item.embed_input;
       while (token_ct > this.max_tokens) {
@@ -862,6 +868,33 @@ var transformers_models = {
     "description": "Local, 512 tokens, 384 dim (recommended)",
     "adapter": "transformers"
   },
+  "Snowflake/snowflake-arctic-embed-xs": {
+    "id": "Snowflake/snowflake-arctic-embed-xs",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Snowflake Arctic Embed XS",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Snowflake/snowflake-arctic-embed-s": {
+    "id": "Snowflake/snowflake-arctic-embed-s",
+    "batch_size": 1,
+    "dims": 384,
+    "max_tokens": 512,
+    "name": "Snowflake Arctic Embed Small",
+    "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "Snowflake/snowflake-arctic-embed-m": {
+    "id": "Snowflake/snowflake-arctic-embed-m",
+    "batch_size": 1,
+    "dims": 768,
+    "max_tokens": 512,
+    "name": "Snowflake Arctic Embed Medium",
+    "description": "Local, 512 tokens, 768 dim",
+    "adapter": "transformers"
+  },
   "TaylorAI/gte-tiny": {
     "id": "TaylorAI/gte-tiny",
     "batch_size": 1,
@@ -889,6 +922,16 @@ var transformers_models = {
     "description": "Local, 4,096 tokens, 384 dim",
     "adapter": "transformers"
   },
+  // Too slow and persistent crashes
+  // "jinaai/jina-embeddings-v2-base-de": {
+  //   "id": "jinaai/jina-embeddings-v2-base-de",
+  //   "batch_size": 1,
+  //   "dims": 768,
+  //   "max_tokens": 4096,
+  //   "name": "jina-embeddings-v2-base-de",
+  //   "description": "Local, 4,096 tokens, 768 dim, German",
+  //   "adapter": "transformers"
+  // },
   "Xenova/jina-embeddings-v2-base-zh": {
     "id": "Xenova/jina-embeddings-v2-base-zh",
     "batch_size": 1,
@@ -981,15 +1024,21 @@ async function process_message(data) {
         result = { model_unloaded: true };
         break;
       case "embed_batch":
-        if (!model) throw new Error("Model not loaded");
-        if (processing_message) while (processing_message) await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!model)
+          throw new Error("Model not loaded");
+        if (processing_message)
+          while (processing_message)
+            await new Promise((resolve) => setTimeout(resolve, 100));
         processing_message = true;
         result = await model.embed_batch(params.inputs);
         processing_message = false;
         break;
       case "count_tokens":
-        if (!model) throw new Error("Model not loaded");
-        if (processing_message) while (processing_message) await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!model)
+          throw new Error("Model not loaded");
+        if (processing_message)
+          while (processing_message)
+            await new Promise((resolve) => setTimeout(resolve, 100));
         processing_message = true;
         result = await model.count_tokens(params);
         processing_message = false;
