@@ -16,10 +16,6 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
     return super.render_text_component(elm, path, value);
   }
   
-  async render_folder_select_component(elm, path, value) {
-    return super.render_text_component(elm, path, value);
-  }
-
   async render_markdown(markdown, scope) {
     const component = scope.env.smart_connections_plugin?.connections_view || new Component();
     if(!scope) return console.warn("Scope required for rendering markdown in Obsidian adapter");
@@ -43,6 +39,25 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
   get_icon_html(name) { return getIcon(name).outerHTML; }
   // Obsidian Specific
   is_mod_event(event) { return Keymap.isModEvent(event); }
+
+  render_folder_select_component(elm, path, value, scope, settings_scope) {
+    const smart_setting = new this.setting_class(elm);
+    const folders = scope.env.plugin.app.vault.getAllFolders().sort((a, b) => a.path.localeCompare(b.path));
+        
+    smart_setting.addDropdown(dropdown => {
+      if (elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
+      dropdown.addOption("", "No folder selected");
+      folders.forEach(folder => {
+        dropdown.addOption(folder.path, folder.path);
+      });
+      dropdown.onChange((value) => {
+        this.handle_on_change(path, value, elm, scope, settings_scope);
+      });
+      dropdown.setValue(value);
+    });
+    return smart_setting;
+  }
+
 }
 
 // export class SmartViewObsidianAdapter extends SmartViewNodeAdapter {
