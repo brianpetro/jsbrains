@@ -43,7 +43,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139232;
+  static version = 2.139233;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -276,8 +276,8 @@ export class SmartEnv {
     await this.init_collections();
     for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
       this[main_key] = main;
-      await this.ready_to_load_collections(main);
     }
+    await this.ready_to_load_collections();
     await this.load_collections();
     this.state = 'loaded';
   }
@@ -303,14 +303,11 @@ export class SmartEnv {
     }
   }
   /**
-   * Hook for main classes that optionally implement `ready_to_load_collections()`.
+   * Hook/Override this method to wait for any conditions before loading collections. 
    * @param {Object} main
    */
-  async ready_to_load_collections(main) {
-    if (typeof main?.ready_to_load_collections === 'function') {
-      await main.ready_to_load_collections();
-    }
-    return true;
+  async ready_to_load_collections() {
+    // OVVERRIDE IF NEEDED TO WAIT BEFORE LOADING COLLECTIONS
   }
   /**
    * Loads any available collections, processing their load queues.
