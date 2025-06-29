@@ -94,7 +94,7 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
       "[CHAT_ADAPTER].model_key": {
         name: 'Chat Model',
         type: "dropdown",
-        description: "Select a chat model to use with Smart Chat.",
+        description: "Select a chat model.",
         options_callback: 'adapter.get_models_as_options',
         callback: 'reload_model',
         default: this.constructor.defaults.default_model,

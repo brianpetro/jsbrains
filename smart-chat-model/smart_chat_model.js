@@ -123,7 +123,7 @@ export class SmartChatModel extends SmartModel {
       adapter: {
         name: 'Chat Model Platform',
         type: "dropdown",
-        description: "Select a chat model platform to use with Smart Chat.",
+        description: "Select a platform/provider for chat models.",
         options_callback: 'get_platforms_as_options',
         is_scope: true, // trigger re-render of settings when changed
         callback: 'adapter_changed',
