@@ -1,7 +1,19 @@
+/**
+ * 
+ * 
+ * 
+ * @deprecated moved to smart-templates-obsidian TemplateCompletionAdapter
+ * 
+ * 
+ * 
+ * 
+ */
+
 import { SmartCompletionAdapter } from './_adapter.js';
 
 /**
  * @class SmartCompletionTemplateAdapter
+ * @deprecated moved to smart-templates-obsidian TemplateCompletionAdapter
  * @extends SmartCompletionAdapter
  *
  * This adapter checks `item.data.template`, looks for a matching SmartTemplate item

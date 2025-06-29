@@ -1,7 +1,7 @@
 import { SmartCompletions } from "./smart_completions.js";
 import { SmartCompletion } from "./smart_completion.js";
 import { AjsonSingleFileCollectionDataAdapter } from "smart-collections/adapters/ajson_single_file.js";
-import { SmartCompletionTemplateAdapter } from "./adapters/template.js";
+// import { SmartCompletionTemplateAdapter } from "./adapters/template.js";
 import { SmartCompletionContextAdapter } from "./adapters/context.js";
 import { SmartCompletionUserAdapter } from "./adapters/user.js";
 import { ActionCompletionAdapter } from "./adapters/action.js";
@@ -14,7 +14,7 @@ export const smart_completions_default_config = {
   data_adapter: AjsonSingleFileCollectionDataAdapter,
   item_type: SmartCompletion,
   completion_adapters: {
-    SmartCompletionTemplateAdapter,
+    // SmartCompletionTemplateAdapter,
     SmartCompletionContextAdapter,
     SmartCompletionUserAdapter,
     ActionCompletionAdapter,
