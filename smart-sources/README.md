@@ -66,7 +66,6 @@ Below is an outline of core classes, primary methods, and how to configure and u
    ```
    The adapter reads raw data (e.g. from disk), then the source calls:
    - `source.parse_content(content)` internally
-   - Inside `parse_content`, the system can optionally parse blocks (`parse_blocks`), parse links (`parse_links`), and call any custom parser functions defined in `env.opts.collections.smart_sources.content_parsers`.
 
 4. **Reading & Writing**  
    - **Read**:  

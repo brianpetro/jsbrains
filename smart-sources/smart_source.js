@@ -64,6 +64,9 @@ export class SmartSource extends SmartEntity {
       }
     }
   }
+  /**
+   * @deprecated likely extraneous
+   */
   async parse_content(content=null){
     // // 1) parse blocks (DEPRECATED handling: should be moved to content_parsers)
     // if(this.block_collection && typeof this.block_collection.import_source === 'function') {
