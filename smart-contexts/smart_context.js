@@ -8,9 +8,15 @@
 import { CollectionItem } from 'smart-collections';
 import { get_snapshot } from './utils/get_snapshot.js';
 import { merge_context_opts } from './utils/merge_context_opts.js';
-import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
-
+import {
+  BaseContextItem,
+  SourceContextItem,
+  ImageContextItem,
+  PdfContextItem,
+} from './context_item.js';
+import { image_extension_regex } from './utils/image_extension_regex.js';
 export class SmartContext extends CollectionItem {
+  static version = 1;
   static get defaults() {
     return {
       data: {
@@ -51,6 +57,27 @@ export class SmartContext extends CollectionItem {
     }
     items.forEach(item => this.add_item(item));
   }
+  /**
+   * Return *ContextItem* instances (any depth) for a given key array.
+   * @param {string[]} keys
+   */
+  get_context_items(keys = this.context_item_keys) {
+    return keys
+      .map(k => this.get_context_item(k))
+      .filter(Boolean);
+  }
+
+  /** Map any key to ContextItem subclass */
+  get_context_item(key) {
+    const ctx_item = this.data?.context_items?.[key];
+    if (ctx_item && typeof ctx_item === 'object' && 'content' in ctx_item) {
+      return new BaseContextItem(this, key);
+    }
+    if (image_extension_regex.test(key)) return new ImageContextItem(this, key);
+    if (key.endsWith(".pdf")) return new PdfContextItem(this, key);
+    const src = this.env.smart_sources.get(key) || this.env.smart_blocks.get(key);
+    return src ? new SourceContextItem(this, src) : null;
+  }
 
   /**
    * get_snapshot
@@ -84,6 +111,7 @@ export class SmartContext extends CollectionItem {
 
   /**
    * @method get_ref
+   * @deprecated moving to using ContextItem instances
    * Looks up a reference in the environment. Distinguishes block vs source by '#' presence.
    */
   get_ref(key) {
@@ -91,7 +119,6 @@ export class SmartContext extends CollectionItem {
   }
 
   get_item_keys_by_depth(depth) {
-    this.convert_data_context_items_bool_to_object(); // TEMPORARY for backwards compatibility
     return Object.keys(this.data.context_items)
       .filter(k => {
         const item_depth = this.data.context_items[k].d;
@@ -102,7 +129,9 @@ export class SmartContext extends CollectionItem {
     ;
   }
 
-
+  get context_item_keys() {
+    return Object.keys(this.data?.context_items || {});
+  }
   /**
    * If no user-provided key, fallback to a stable hash of the context_items.
    */
@@ -116,17 +145,4 @@ export class SmartContext extends CollectionItem {
     return Object.keys(this.data.context_items || {}).length > 0;
   }
 
-
-  /**
-   * Backwards compatibility (remove in v2)
-   * Converts context_items from boolean to object with depth d=0
-   */
-  convert_data_context_items_bool_to_object() {
-    if(Object.values(this.data.context_items).every(v => v === true)){
-      Object.keys(this.data.context_items).forEach(k => {
-        this.data.context_items[k] = { d: 0 }
-      })
-      this.queue_save()
-    }
-  }
 }
