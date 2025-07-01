@@ -1,5 +1,25 @@
 import { SmartChatModelApiAdapter, SmartChatModelResponseAdapter } from "./_api.js";
 
+const EXCLUDED_PREFIXES = [
+  'text-', 
+  'davinci',
+  'babbage',
+  'ada',
+  'curie',
+  'dall-e',
+  'whisper',
+  'omni',
+  'tts',
+  'computer-use',
+  'codex',
+  'gpt-4o-transcribe',
+  'gpt-4o-mini-transcribe',
+  'gpt-4o-mini-realtime',
+  'gpt-4o-realtime',
+  'o4-mini-deep-research',
+  'o3-deep-research',
+  'gpt-image'
+];
 /**
  * Adapter for OpenAI's chat API.
  * Handles token counting and API communication for OpenAI chat models.
@@ -38,9 +58,8 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
    * @returns {Object} Map of model objects with capabilities and limits
    */
   parse_model_data(model_data) {
-    console.log("OpenAI model data:", model_data);
     return model_data.data
-      .filter(model => ['gpt-', 'o1', 'o3', 'o4', 'chatgpt-'].some(m => model.id.startsWith(m)) && !model.id.includes('-instruct'))
+      .filter(model => !EXCLUDED_PREFIXES.some(m => model.id.startsWith(m)) && !model.id.includes('-instruct'))
       .reduce((acc, model) => {
         const out = {
           model_name: model.id,
