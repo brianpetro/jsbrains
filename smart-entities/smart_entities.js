@@ -221,19 +221,24 @@ export class SmartEntities extends Collection {
       opts.exclude_key_starts_with_any.push((entity.source_key || entity.key)); // exclude current entity
       // include/exclude filters
       if (exclude_filter) {
-        // if (typeof exclude_filter === "string") opts.exclude_key_starts_with_any.push(exclude_filter);
-        // else if (Array.isArray(exclude_filter)) opts.exclude_key_starts_with_any.push(...exclude_filter);
         if (!Array.isArray(opts.exclude_key_includes_any)) opts.exclude_key_includes_any = [];
-        if (typeof exclude_filter === "string") opts.exclude_key_includes_any.push(exclude_filter);
-        else if (exclude_filter.includes(",")) opts.exclude_key_includes_any.push(...exclude_filter.split(","));
+        if (typeof exclude_filter === "string"){
+          if (exclude_filter.includes(",")) {
+            opts.exclude_key_includes_any.push(...exclude_filter.split(","));
+          }else{
+            opts.exclude_key_includes_any.push(exclude_filter);
+          }
+        }
       }
       if (include_filter) {
-        // if (!Array.isArray(opts.key_starts_with_any)) opts.key_starts_with_any = [];
-        // if (typeof include_filter === "string") opts.key_starts_with_any.push(include_filter);
-        // else if (Array.isArray(include_filter)) opts.key_starts_with_any.push(...include_filter);
         if (!Array.isArray(opts.key_includes_any)) opts.key_includes_any = [];
-        if (typeof include_filter === "string") opts.key_includes_any.push(include_filter);
-        else if (include_filter.includes(",")) opts.key_includes_any.push(...include_filter.split(","));
+        if (typeof include_filter === "string"){
+          if (include_filter.includes(",")){
+            opts.key_includes_any.push(...include_filter.split(","));
+          }else {
+            opts.key_includes_any.push(include_filter);
+          }
+        }
       }
       // exclude inlinks
       if (exclude_inlinks && entity?.inlinks?.length) {
@@ -412,11 +417,11 @@ export const connections_filter_config = {
   "smart_view_filter.include_filter": {
     "name": "Include filter",
     "type": "text",
-    "description": "Notes must match this value in their file/folder path. Matching notes will be included in the connections results.",
+    "description": "Notes must match this value in their file/folder path. Matching notes will be included in the connections results. Separate multiple values with commas.",
   },
   "smart_view_filter.exclude_filter": {
     "name": "Exclude filter",
     "type": "text",
-    "description": "Notes must *not* match this value in their file/folder path. Matching notes will be *excluded* from the connections results.",
+    "description": "Notes must *not* match this value in their file/folder path. Matching notes will be *excluded* from the connections results. Separate multiple values with commas.",
   }
 };
