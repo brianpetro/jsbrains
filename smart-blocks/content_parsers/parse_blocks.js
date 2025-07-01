@@ -11,51 +11,56 @@ import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
  * @returns {Promise<void>}
  */
 export function parse_blocks(source, content) {
-  // if(source.file_type === 'md' || source.data.content?.length > 0) {
-    let blocks_obj = parse_markdown_blocks(content);
-    const last_read_at =  source.data.last_read?.at || Date.now();
-    for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
-      // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
-      const block_key = source.key + sub_key;
-      const existing_block = source.block_collection.get(block_key);
-      const block_content = get_line_range(content, line_range[0], line_range[1]);
-      if(
-        existing_block
-        && existing_block.lines[0] === line_range[0]
-        && existing_block.lines[1] === line_range[1]
-        && existing_block.size === block_content.length
-        && existing_block.vec
-      ){
-        continue;
-      }
-      const block_outlinks = get_markdown_links(block_content);
-      const block_data = {
-        key: block_key,
-        lines: line_range,
-        size: block_content.length,
-        outlinks: block_outlinks,
-        last_read: {
-          at: last_read_at,
-          hash: murmur_hash_32_alphanumeric(block_content),
-        },
-      };
-      // Check hash AFTER building new data since lines updated
-      // if no lines change than continues above
-      if(!existing_block || (existing_block?.data.last_read?.hash !== block_data.last_read.hash)) {
-        // prevent premature save by not using create_or_update
-        const new_item = new source.block_collection.item_type(source.env, block_data);
-        new_item.queue_embed();
-        source.block_collection.set(new_item);
-      }else{
-        existing_block.data = {
-          ...existing_block.data,
-          ...block_data, // overwrites lines, last_read
-        }
+  let blocks_obj = parse_markdown_blocks(content);
+  const last_read_at =  source.data.last_read?.at || Date.now();
+  for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
+    // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
+    const block_key = source.key + sub_key;
+    const existing_block = source.block_collection.get(block_key);
+    const block_content = get_line_range(content, line_range[0], line_range[1]);
+    if(
+      existing_block
+      && existing_block.lines[0] === line_range[0]
+      && existing_block.lines[1] === line_range[1]
+      && existing_block.size === block_content.length
+      && existing_block.vec
+    ){
+      continue;
+    }
+    const block_outlinks = get_markdown_links(block_content);
+    const block_data = {
+      key: block_key,
+      lines: line_range,
+      size: block_content.length,
+      outlinks: block_outlinks,
+      last_read: {
+        at: last_read_at,
+        hash: murmur_hash_32_alphanumeric(block_content),
+      },
+    };
+    // Check hash AFTER building new data since lines updated
+    // if no lines change than continues above
+    if(!existing_block || (existing_block?.data.last_read?.hash !== block_data.last_read.hash)) {
+      // prevent premature save by not using create_or_update
+      const new_item = new source.block_collection.item_type(source.env, block_data);
+      source.block_collection.set(new_item);
+    }else{
+      existing_block.data = {
+        ...existing_block.data,
+        ...block_data, // overwrites lines, last_read
       }
     }
-    // await Promise.all(blocks);
-    clean_and_update_source_blocks(source, blocks_obj);
-  // }
+  }
+  
+  clean_and_update_source_blocks(source, blocks_obj);
+  
+  // Queue embedding for blocks that should be embedded but are not yet embedded
+  // MUST LOOP AFTER creating all blocks because should_embed logic checks adjecent blocks
+  for (const block of source.blocks) {
+    if(!block.vec) {
+      block.queue_embed(); // only queues if should_embed
+    }
+  }
 }
 
 /**
