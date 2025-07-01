@@ -38,14 +38,15 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
    * @returns {Object} Map of model objects with capabilities and limits
    */
   parse_model_data(model_data) {
+    console.log("OpenAI model data:", model_data);
     return model_data.data
-      .filter(model => ['gpt-', 'o1-'].some(m => model.id.startsWith(m)) && !model.id.includes('-instruct'))
+      .filter(model => ['gpt-', 'o1', 'o3', 'o4', 'chatgpt-'].some(m => model.id.startsWith(m)) && !model.id.includes('-instruct'))
       .reduce((acc, model) => {
         const out = {
           model_name: model.id,
           id: model.id,
-          multimodal: model.id.includes('vision') || model.id.includes('gpt-4-turbo') || model.id.startsWith('gpt-4o'),
-          can_use_tools: model.id.startsWith('o1-') ? false : true,
+          multimodal: true,
+          can_use_tools: true,
           max_input_tokens: get_max_input_tokens(model.id),
         };
         // const m = Object.entries(model_context).find(m => m[0] === model.id || model.id.startsWith(m[0] + '-'));
@@ -89,6 +90,11 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
         option_2: 'high',
         default: 'low',
       };
+    }
+    config['[CHAT_ADAPTER].open_ai_note'] = {
+      name: 'Note about using OpenAI',
+      type: "html",
+      value: "<b>OpenAI models:</b> Some models require extra verification steps in your OpenAI account for them to appear in the model list.",
     }
     return config;
   }
