@@ -10,6 +10,7 @@ const EXCLUDED_PREFIXES = [
   'whisper',
   'omni',
   'tts',
+  'gpt-4o-mini-tts',
   'computer-use',
   'codex',
   'gpt-4o-transcribe',
