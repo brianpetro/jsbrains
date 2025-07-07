@@ -17,25 +17,6 @@ export class SmartActions extends Collection {
     action.module = module;
     return action;
   }
-  async register_mjs_action(file_path) {
-    if(typeof file_path !== 'string') return;
-    const action_key = path.basename(file_path, '.mjs');
-    const source_type = 'mjs';
-    return await this.create_or_update({
-      key: action_key,
-      source_type,
-      file_path,
-    });
-  }
-  async register_cjs_action(file_path) {
-    const action_key = path.basename(file_path, '.js');
-    const source_type = 'cjs';
-    return this.create_or_update({
-      key: action_key,
-      source_type,
-      file_path,
-    });
-  }
 
   get default_pre_processes() { return Object.values(this.opts.default_pre_processes || {}); }
   get default_post_processes() { return Object.values(this.opts.default_post_processes || {}); }
