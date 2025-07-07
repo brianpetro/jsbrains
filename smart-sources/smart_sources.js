@@ -190,12 +190,25 @@ export class SmartSources extends SmartEntities {
       || 10
     ;
     if(params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
+    if(params.collection){
+      const collection = this.env[params.collection];
+      if(collection && collection.lookup) {
+        delete params.collection; // Remove to prevent passing collection name to lookup
+        params.skip_blocks = true; // Skip blocks in this lookup
+        const results = await collection.lookup(params);
+        if(results.error) {
+          console.warn(results.error);
+          return [];
+        }
+        return results.slice(0, limit);
+      }
+    }
     let results = await super.lookup(params);
     if(results.error) {
       console.warn(results.error);
       return [];
     }
-    if(this.block_collection?.settings?.embed_blocks) {
+    if(this.block_collection?.settings?.embed_block && !params.skip_blocks) {
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
