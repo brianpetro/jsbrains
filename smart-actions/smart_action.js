@@ -3,21 +3,20 @@ export class SmartAction extends CollectionItem {
   static collection_key = 'smart_actions';
   collection_key = 'smart_actions';
   async init() {
+    if(!this.action_adapter) {
+      delete this.collection.items[this.key];
+      return;
+    }
     await this.action_adapter.load();
   }
-
   async run_action(params = {}) {
     params = await this.pre_process(params);
-    if(this.active === false && !this.opts.official) return { message: 'This action is disabled by the user' };
-    if(params.group?.settings?.actions?.[this.key]?.active === false) return { message: 'This action is disabled by the group' };
     let result = await this.action_adapter.run(params);
     result = await this.post_process(params, result);
     return result;
   }
+
   async pre_process(params) {
-    for(const pre_process of this.default_pre_processes){
-      params = await pre_process.call(this, params);
-    }
     for(const pre_process of this.action_pre_processes){
       params = await pre_process.call(this, params);
     }
@@ -25,9 +24,6 @@ export class SmartAction extends CollectionItem {
   }
   async post_process(params, result) {
     for(const post_process of this.action_post_processes){
-      result = await post_process.call(this, params, result);
-    }
-    for(const post_process of this.default_post_processes){
       result = await post_process.call(this, params, result);
     }
     return result;
@@ -46,8 +42,6 @@ export class SmartAction extends CollectionItem {
   get action_pre_processes() { return Object.values(this.module.pre_processes || {}); }
   get active() { return this.data.active !== false; }
   set active(val) { this.data.active = !!val; }
-  get default_post_processes() { return this.collection.default_post_processes; }
-  get default_pre_processes() { return this.collection.default_pre_processes; }
   get endpoint() { return Object.keys(this.module.openapi?.paths || {})[0] || `/${this.key}`; }
   get module() { return this.action_adapter.module; }
   set module(module) { this.action_adapter.module = module; }

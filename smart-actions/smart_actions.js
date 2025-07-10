@@ -1,4 +1,7 @@
 import { Collection } from 'smart-collections';
+import ajson_single_file_data_adapter from 'smart-collections/adapters/ajson_single_file.js';
+import { SmartActionAdapter } from 'smart-actions/adapters/_adapter.js';
+import { SmartAction } from './smart_action.js';
 
 export class SmartActions extends Collection {
   collection_key = "smart_actions";
@@ -18,27 +21,13 @@ export class SmartActions extends Collection {
     return action;
   }
 
-  get default_pre_processes() { return Object.values(this.opts.default_pre_processes || {}); }
-  get default_post_processes() { return Object.values(this.opts.default_post_processes || {}); }
-
-  // v1 backwards compatibility
-  get custom_actions() {
-    return Object.values(this.items).filter(a => a.data.file_path);
-  }
-  get action_groups_official() {
-    return Object.values(this.env.smart_action_groups.items || {})
-      .filter(g => g.key !== 'test')
-      .filter(g => g.official === true);
-  }
-  get action_groups_custom() {
-    return Object.values(this.env.smart_action_groups.items || {})
-      .filter(g => g.key !== 'test')
-      .filter(g => g.official !== true)
-      .sort((a, b) => {
-        if (a.key === 'default') return -1;
-        if (b.key === 'default') return 1;
-        return a.key.localeCompare(b.key);
-      });
-  }
 }
 
+export default {
+  class: SmartActions,
+  item_type: SmartAction,
+  data_adapter: ajson_single_file_data_adapter,
+  action_adapters: {
+    default: SmartActionAdapter,
+  },
+};
