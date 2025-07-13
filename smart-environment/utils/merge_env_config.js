@@ -70,7 +70,33 @@ export function merge_env_config (target, incoming) {
 
     /* ───────────────────────────── Default path ──────────────────────────── */
     if (Array.isArray(value)) {
-      target[key] = [...(target[key] || []), ...value];
+      if (Array.isArray(target[key])) {
+        // Merge arrays, deduplicate for primitives (string/number/boolean)
+        if (
+          value.length > 0 &&
+          (typeof value[0] === 'string' ||
+            typeof value[0] === 'number' ||
+            typeof value[0] === 'boolean')
+        ) {
+          // Only deduplicate for primitive arrays
+          target[key] = Array.from(new Set([...target[key], ...value]));
+        } else {
+          // For arrays of objects, just concatenate
+          target[key] = [...target[key], ...value];
+        }
+      } else {
+        // If target[key] does not exist, just assign a deduplicated array for primitives
+        if (
+          value.length > 0 &&
+          (typeof value[0] === 'string' ||
+            typeof value[0] === 'number' ||
+            typeof value[0] === 'boolean')
+        ) {
+          target[key] = Array.from(new Set(value));
+        } else {
+          target[key] = [...value];
+        }
+      }
     } else if (value && typeof value === 'object') {
       if (!target[key]) target[key] = {};
       deep_merge_no_overwrite(target[key], value);

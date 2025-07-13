@@ -45,6 +45,14 @@ export function deep_merge_no_overwrite(target, source, path = []) {
           if (!has_same_fn) {
             target[key].push(item);
           }
+        } else if (
+          item === null ||
+          ['string', 'number', 'boolean', 'undefined'].includes(typeof item)
+        ) {
+          // Prevent duplicate primitives
+          if (!target[key].includes(item)) {
+            target[key].push(item);
+          }
         } else {
           target[key].push(item);
         }

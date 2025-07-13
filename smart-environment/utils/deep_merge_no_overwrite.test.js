@@ -124,3 +124,11 @@ test('merging array of functions prevents duplicates', (t) => {
   deep_merge_no_overwrite(target, source);
   t.deepEqual(target.a.b.content_parsers, [parse_blocks], 'content_parsers merged');
 });
+
+// Prevent duplicate primitive values when merging arrays
+test('merging array of primitives prevents duplicates', (t) => {
+  const target = { arr: [1, 2, 3] };
+  const source = { arr: [2, 3, 4, 5] };
+  deep_merge_no_overwrite(target, source);
+  t.deepEqual(target.arr, [1, 2, 3, 4, 5], 'No duplicate primitives in merged array');
+});
