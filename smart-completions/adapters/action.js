@@ -23,7 +23,7 @@ export class ActionCompletionAdapter extends SmartCompletionAdapter {
     if (!action_key) return;
 
     const thread = this.item.thread;
-    if (thread.current_completion !== this.item) return console.log('ActionCompletionAdapter: skipping tools, not the current completion');
+    if (thread && thread.current_completion !== this.item) return console.log('ActionCompletionAdapter: skipping tools, not the current completion');
 
     const action_opts = this.data.action_opts;
 
