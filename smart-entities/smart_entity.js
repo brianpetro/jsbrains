@@ -237,11 +237,11 @@ export class SmartEntity extends CollectionItem {
   get embed_model() { return this.collection.embed_model; }
 
   /**
-   * Determines if the entity should be embedded.
+   * Determines if the entity should be embedded if unembedded. NOT the same as is_unembedded.
    * @readonly
    * @returns {boolean} True if no vector is set, false otherwise.
    */
-  get should_embed() { return !this.vec && this.size > (this.settings?.min_chars || 300); }
+  get should_embed() { return this.size > (this.settings?.min_chars || 300); }
 
   /**
    * Sets the error for the embedding model.

@@ -342,7 +342,11 @@ export class SmartEntities extends Collection {
    * @returns {Array<Object>} The embed queue.
    */
   get embed_queue() {
-    if(!this._embed_queue?.length) this._embed_queue = Object.values(this.items).filter(item => item._queue_embed && item.should_embed);
+    if(!this._embed_queue?.length){
+      console.time(`Building embed queue`);
+      this._embed_queue = Object.values(this.items).filter(item => item._queue_embed || (item.is_unembedded && item.should_embed));
+      console.timeEnd(`Building embed queue`);
+    }
     return this._embed_queue;
   }
 

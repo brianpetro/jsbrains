@@ -422,7 +422,7 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {number} The size.
    */
-  get size() { return this.file?.stat?.size || 0; }
+  get size() { return this.source_adapter.size || 0; }
 
   /**
    * Retrieves the last import stat of the SmartSource.
@@ -499,9 +499,6 @@ export class SmartSource extends SmartEntity {
   }
 
   get path() { return this.data.path || this.data.key; }
-  get should_embed() {
-    return !this.vec || !this.embed_hash || (this.embed_hash !== this.read_hash);
-  }
   get source_adapters() { return this.collection.source_adapters; }
   get source_adapter() {
     if(this._source_adapter) return this._source_adapter;

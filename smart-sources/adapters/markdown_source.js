@@ -52,7 +52,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     // also queue saving
     this.item.queue_save();
     // queue embed
-    this.item.queue_embed();
+    if(this.item.should_embed) this.item.queue_embed();
   }
 
   // // WIP: move block parsing here

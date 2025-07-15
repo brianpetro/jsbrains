@@ -280,6 +280,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
 
     await this.update(new_content);
   }
+  get size() { return this.item.file?.stat?.size || 0; }
 }
 
 export default {
