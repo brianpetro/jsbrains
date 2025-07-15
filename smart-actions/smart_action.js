@@ -38,8 +38,8 @@ export class SmartAction extends CollectionItem {
     }
     return this._action_adapter;
   }
-  get action_post_processes() { return Object.values(this.module.post_processes || {}); }
-  get action_pre_processes() { return Object.values(this.module.pre_processes || {}); }
+  get action_post_processes() { return Object.values(this.module?.post_processes || {}); }
+  get action_pre_processes() { return Object.values(this.module?.pre_processes || {}); }
   get active() { return this.data.active !== false; }
   set active(val) { this.data.active = !!val; }
   get endpoint() { return Object.keys(this.module.openapi?.paths || {})[0] || `/${this.key}`; }
