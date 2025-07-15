@@ -196,6 +196,9 @@ export class CollectionItem {
    * @param {string} [filter_opts.exclude_key_starts_with] - Exclude keys starting with this string.
    * @param {string[]} [filter_opts.exclude_key_starts_with_any] - Exclude keys starting with any of these strings.
    * @param {string} [filter_opts.exclude_key_includes] - Exclude keys that include this string.
+   * @param {string[]} [filter_opts.exclude_key_includes_any] - Exclude keys that include any of these strings.
+   * @param {string} [filter_opts.exclude_key_ends_with] - Exclude keys ending with this string.
+   * @param {string[]} [filter_opts.exclude_key_ends_with_any] - Exclude keys ending with any of these strings.
    * @param {string} [filter_opts.key_ends_with] - Include only keys ending with this string.
    * @param {string} [filter_opts.key_starts_with] - Include only keys starting with this string.
    * @param {string[]} [filter_opts.key_starts_with_any] - Include only keys starting with any of these strings.
@@ -211,6 +214,7 @@ export class CollectionItem {
       exclude_key_includes,
       exclude_key_includes_any,
       exclude_key_ends_with,
+      exclude_key_ends_with_any,
       key_ends_with,
       key_starts_with,
       key_starts_with_any,
@@ -235,6 +239,9 @@ export class CollectionItem {
 
     // Exclude keys that end with a specific string
     if (exclude_key_ends_with && this.key.endsWith(exclude_key_ends_with)) return false;
+
+    // Exclude keys that end with any of the provided suffixes
+    if (exclude_key_ends_with_any && exclude_key_ends_with_any.some((suffix) => this.key.endsWith(suffix))) return false;
 
     // Include only keys that end with a specific string
     if (key_ends_with && !this.key.endsWith(key_ends_with)) return false;
