@@ -8,6 +8,7 @@ import { SmartChatModelCustomAdapter } from './adapters/_custom.js';
 import { SmartChatModelOllamaAdapter } from './adapters/ollama.js';
 import { SmartChatModelLmStudioAdapter } from './adapters/lm_studio.js';
 import { SmartChatModelGroqAdapter } from './adapters/groq.js';
+import { SmartChatModelXaiAdapter }  from './adapters/xai.js';
 export {
   SmartChatModelAnthropicAdapter,
   SmartChatModelAzureAdapter,
@@ -19,6 +20,7 @@ export {
   SmartChatModelOllamaAdapter,
   SmartChatModelLmStudioAdapter,
   SmartChatModelGroqAdapter,
+  SmartChatModelXaiAdapter,
   SmartChatModelAnthropicAdapter as anthropic,
   SmartChatModelAzureAdapter as azure,
   SmartChatModelCohereAdapter as cohere,
@@ -29,4 +31,5 @@ export {
   SmartChatModelOllamaAdapter as ollama,
   SmartChatModelOpenaiAdapter as openai,
   SmartChatModelOpenRouterAdapter as open_router,
+  SmartChatModelXaiAdapter as xai
 };
