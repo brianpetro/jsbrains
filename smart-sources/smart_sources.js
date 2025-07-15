@@ -61,6 +61,13 @@ export class SmartSources extends SmartEntities {
       // console.warn(`No recognized extension for ${file_path}`);
       return;
     }
+    if(this.fs.is_excluded(file_path)) {
+      console.warn(`File ${file_path} is excluded from processing.`);
+      return;
+    }
+    if(!this.fs.files[file_path]) {
+      this.fs.include_file(file_path); // Ensure file is included in the fs
+    }
     // If item already exists, return it
     if (this.items[file_path]) return this.items[file_path];
 
