@@ -80,6 +80,10 @@ High-level flow:
 4. Post-process
 	- `result = await this.post_process(params, result)`
 5. Return the final result (and logs it to the console).
+
+#### `get as_tool()`
+Returns an OpenAI formatted tool definition. This delegates to the action's
+adapter and is useful when populating `request.tools[]` for chat models.
 #### `pre_process(params)`
 - Collects and runs:
 	1. Default pre-process callbacks from the parent collection (`this.collection.default_pre_processes`).
@@ -165,4 +169,14 @@ Because `SmartActions` extends `Collection`, it inherits:
 		```js
 		const groupResult = await myGroup.run_action("someKey", { foo: "bar" });
 		```
-	- The corresponding adapter is loaded (`mjs`, `cjs`, `api`, etc.), the pre-process hooks run, the underlying function/endpoint is called, then post-process hooks run.
+        - The corresponding adapter is loaded (`mjs`, `cjs`, `api`, etc.), the pre-process hooks run, the underlying function/endpoint is called, then post-process hooks run.
+
+```mermaid
+sequenceDiagram
+    actor Caller
+    Caller->>SmartAction: run_action(params)
+    SmartAction->>ActionAdapter: load()
+    SmartAction->>ActionAdapter: run(params)
+    ActionAdapter-->>SmartAction: result
+    SmartAction-->>Caller: result
+```

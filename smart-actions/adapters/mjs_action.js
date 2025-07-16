@@ -15,4 +15,10 @@ export class MjsActionAdapter extends SmartActionAdapter {
     console.log('MjsActionAdapter: file_url: ' + file_url);
     this.module = await import(file_url);
   }
+
+  /**
+   * Delegate tool retrieval to base adapter.
+   * @returns {object|null}
+   */
+  get as_tool() { return super.as_tool; }
 }

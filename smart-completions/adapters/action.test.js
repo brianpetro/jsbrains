@@ -1,5 +1,5 @@
 import test from 'ava';
-import { ActionCompletionAdapter } from '../adapters/action.js';
+import { ActionCompletionAdapter, convert_openapi_to_tools } from '../adapters/action.js';
 
 /**
  * Fake SmartAction collection item
@@ -15,7 +15,7 @@ function create_test_action_item(key) {
           '/test': {
             post: {
               summary: 'Test endpoint',
-              operationId: 'test_action',
+              operationId: 'my_test_action',
               parameters: [
                 {
                   name: 'msg',
@@ -40,6 +40,12 @@ function create_test_action_item(key) {
     },
     run(args) {
       return Promise.resolve(`Result for key=${key}, args=${JSON.stringify(args)}`);
+    },
+    run_action(args) {
+      return this.run(args);
+    },
+    get as_tool() {
+      return convert_openapi_to_tools(this.module.openapi)[0];
     }
   };
 }
@@ -69,10 +75,20 @@ test('ActionCompletionAdapter - end-to-end', async t => {
       }
     },
     response: {
-      tool_call: {
-        name: 'test_action',
-        arguments: '{"msg":"hello","extra":10}'
-      }
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                function: {
+                  name: 'my_test_action',
+                  arguments: '{"msg":"hello","extra":10}'
+                }
+              }
+            ]
+          }
+        }
+      ]
     }
   };
 

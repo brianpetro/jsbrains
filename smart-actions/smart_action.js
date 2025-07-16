@@ -53,4 +53,11 @@ export class SmartAction extends CollectionItem {
   }
   get source_type() { return this.data.source_type; }
 
+  /**
+   * OpenAI tool definition for this action.
+   * Delegates to the action adapter.
+   * @returns {object|null}
+   */
+  get as_tool() { return this.action_adapter.as_tool; }
+
 }

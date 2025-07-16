@@ -50,12 +50,12 @@ export class ActionXmlCompletionAdapter extends ActionCompletionAdapter {
 
     let tools;
     try {
-      const mod = action_item.module;
-      tools = mod.tool ? [mod.tool] : convert_openapi_to_tools(mod.openapi);
+      const tool = action_item.as_tool;
+      tools = tool ? [tool] : [];
     } catch (err) {
       return console.warn('Unable to compile OpenAPI → tools', err);
     }
-    if (!tools?.length) return;
+    if (!tools.length) return;
 
     const func_def        = tools[0].function;
     const param_props     = func_def.parameters?.properties || {};

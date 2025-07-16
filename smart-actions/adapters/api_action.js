@@ -28,4 +28,10 @@ export class ApiActionAdapter extends SmartActionAdapter {
     }
     return await resp.json();
   }
+
+  /**
+   * Delegates tool generation to the base adapter.
+   * @returns {object|null}
+   */
+  get as_tool() { return super.as_tool; }
 }

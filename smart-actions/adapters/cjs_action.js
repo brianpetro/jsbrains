@@ -31,4 +31,10 @@ export class CjsActionAdapter extends SmartActionAdapter {
     const resolved_path = path.resolve(__dirname, file_path);
     this.module = require(resolved_path);
   }
+
+  /**
+   * Expose tool definition via base adapter.
+   * @returns {object|null}
+   */
+  get as_tool() { return super.as_tool; }
 }

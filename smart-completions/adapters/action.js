@@ -41,14 +41,14 @@ export class ActionCompletionAdapter extends SmartCompletionAdapter {
 
     let tools;
     try {
-      const action_module = action_item.module;
-      tools = action_module.tool ? [action_module.tool] : convert_openapi_to_tools(action_module.openapi);
+      const tool = action_item.as_tool;
+      tools = tool ? [tool] : [];
     } catch (err) {
-      console.warn('Error compiling ephemeral action', err);
+      console.warn('Error generating action tool', err);
       return;
     }
 
-    if (!tools) return;
+    if (!tools.length) return;
 
     // Mark that this action is being requested (before completion)
     if (!this.data.actions) this.data.actions = {};
