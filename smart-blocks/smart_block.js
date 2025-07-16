@@ -190,7 +190,7 @@ export class SmartBlock extends SmartEntity {
   get excluded() {
     const block_headings = this.path.split("#").slice(1); // Remove first element (file path)
     if(this.source_collection.excluded_headings.some(heading => block_headings.includes(heading))) return true;
-    return this.source.excluded;
+    return this.source?.excluded;
   }
 
   /**
