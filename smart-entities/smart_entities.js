@@ -427,5 +427,11 @@ export const connections_filter_config = {
     "name": "Exclude filter",
     "type": "text",
     "description": "Notes must *not* match this value in their file/folder path. Matching notes will be *excluded* from the connections results. Separate multiple values with commas.",
-  }
+  },
+  // should be better scoped at source-level (leaving here for now since connections_filter_config needs larger refactor)
+  "smart_view_filter.exclude_blocks_from_source_connections": {
+    "name": "Hide blocks in results",
+    "type": "toggle",
+    "description": "Show only sources in the connections results (no blocks).",
+  },
 };

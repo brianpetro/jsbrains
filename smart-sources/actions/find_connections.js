@@ -4,13 +4,12 @@ import { find_connections as entities_find_connections } from "smart-entities/ac
  * Finds connections relevant to this SmartSource based on provided parameters.
  * @async
  * @param {Object} [params={}] - Parameters for finding connections.
- * @param {boolean} [params.exclude_source_connections=false] - Whether to exclude source connections.
  * @param {boolean} [params.exclude_blocks_from_source_connections=false] - Whether to exclude block connections from source connections.
  * @returns {Array<SmartSource>} An array of relevant SmartSource entities.
  */
 export async function find_connections(params={}) {
   let connections;
-  if(this.block_collection.settings.embed_blocks && params.exclude_source_connections) connections = [];
+  if(this.block_collection.settings.embed_blocks && !params.exclude_blocks_from_source_connections) connections = [];
   else connections = await entities_find_connections.call(this, params);
   const filter_opts = this.prepare_find_connections_filter_opts(params);
   const limit = params.filter?.limit
