@@ -93,14 +93,16 @@ export class SmartSources extends SmartEntities {
     // if there's no dot, or only one piece, we have no extension
     if (pcs.length < 2) return undefined;
     // shift off the first portion so we only look at possible extension combos
+    let last_ext;
     pcs.shift(); // remove the first piece (like a base name)
     while (pcs.length) {
-      const test_ext = pcs.join('.').toLowerCase();
-      if (this.source_adapters[test_ext]) {
-        return test_ext;
+      const supported_ext = pcs.join('.').toLowerCase();
+      if (this.source_adapters[supported_ext]) {
+        return supported_ext;
       }
-      pcs.shift();
+      last_ext = pcs.shift();
     }
+    return last_ext;
     return undefined;
   }
 

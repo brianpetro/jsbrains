@@ -126,7 +126,7 @@ class SmartFs {
     const gitignore_path = '.gitignore';
     // use adapter method directly to skip exclusion checks
     const gitignore_exists = await this.adapter.exists(gitignore_path);
-    if (gitignore_exists) {
+    if (gitignore_exists && !this.env.settings.skip_excluding_gitignore) {
       const gitignore_content = await this.adapter.read(gitignore_path, 'utf-8');
       gitignore_content
         .split('\n')

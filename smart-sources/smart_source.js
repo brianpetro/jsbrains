@@ -53,7 +53,7 @@ export class SmartSource extends SmartEntity {
     this._queue_import = false;
     try{
       // await this.data_adapter.load_item_if_updated(this);
-      await this.source_adapter.import();
+      await this.source_adapter?.import();
     }catch(err){
       if(err.code === "ENOENT"){
         console.log(`Smart Connections: Deleting ${this.path} data because it no longer exists on disk`);
@@ -394,7 +394,7 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {number} The size.
    */
-  get size() { return this.source_adapter.size || 0; }
+  get size() { return this.source_adapter?.size || 0; }
 
   /**
    * Retrieves the last import stat of the SmartSource.
@@ -476,8 +476,7 @@ export class SmartSource extends SmartEntity {
     if(this._source_adapter) return this._source_adapter;
     if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
     else {
-      console.log("No source adapter found for " + this.file_type);
-      // this._source_adapter = new this.source_adapters["default"](this);
+      // console.log("No source adapter found for " + this.file_type);
     }
     return this._source_adapter;
   }
