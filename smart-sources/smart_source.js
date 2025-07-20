@@ -101,6 +101,10 @@ export class SmartSource extends SmartEntity {
   async get_embed_input(content=null) {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // Return cached (temporary) input
     if(!content) content = await this.read(); // Get content from file
+    if(!content) {
+      console.warn("SmartSource.get_embed_input: No content available for embedding: " + this.path);
+      return ''; // No content to embed
+    }
     if(this.excluded_lines.length){
       const content_lines = content.split("\n");
       this.excluded_lines.forEach(lines => {
