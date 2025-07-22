@@ -1,6 +1,6 @@
 import { Collection } from 'smart-collections';
 import ajson_single_file_data_adapter from 'smart-collections/adapters/ajson_single_file.js';
-import { SmartActionAdapter } from 'smart-actions/adapters/_adapter.js';
+import { SmartActionAdapter } from './adapters/_adapter.js';
 import { SmartAction } from './smart_action.js';
 
 export class SmartActions extends Collection {
