@@ -87,6 +87,7 @@ export class SmartSource extends SmartEntity {
    * @async
    * @param {Object} [params={}] - Parameters for finding connections.
    * @param {boolean} [params.exclude_blocks_from_source_connections=false] - Whether to exclude block connections from source connections.
+   * @param {Object} [params.exclude_frontmatter_blocks=true] - Whether to exclude frontmatter blocks from source connections.
    * @returns {Array<SmartSource>} An array of relevant SmartSource entities.
    */
   async find_connections(params={}) {

@@ -118,6 +118,10 @@ export class SmartEntity extends CollectionItem {
     };
     if (opts.filter?.limit) delete opts.filter.limit; // remove to prevent limiting in initial filter
     if (opts.limit) delete opts.limit; // backwards compatibility
+    if(opts.exclude_frontmatter_blocks) {
+      if(!opts.exclude_key_ends_with_any) opts.exclude_key_ends_with_any = [];
+      opts.exclude_key_ends_with_any.push('---frontmatter---');
+    }
     return opts;
   }
 

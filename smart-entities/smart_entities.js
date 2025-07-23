@@ -434,4 +434,10 @@ export const connections_filter_config = {
     "type": "toggle",
     "description": "Show only sources in the connections results (no blocks).",
   },
+  // hide frontmatter blocks from connections results
+  "smart_view_filter.exclude_frontmatter_blocks": {
+    "name": "Hide frontmatter blocks in results",
+    "type": "toggle",
+    "description": "Show only sources in the connections results (no frontmatter blocks).",
+  },
 };
