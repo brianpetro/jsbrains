@@ -26,6 +26,8 @@ export class CjsActionAdapter extends SmartActionAdapter {
     const { file_path } = this.item.data || {};
     console.log('CjsActionAdapter: file_path: ' + file_path);
     if (!file_path) {
+      // remove this item from the collection if no file_path is specified
+      delete this.collection.items[this.item.key];
       throw new Error(`CjsActionAdapter: No file_path specified for action ${this.item.key}`);
     }
     const resolved_path = path.resolve(__dirname, file_path);

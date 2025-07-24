@@ -9,6 +9,8 @@ export class MjsActionAdapter extends SmartActionAdapter {
   async load() {
     const { file_path } = this.item.data || {};
     if (!file_path) {
+      // remove this item from the collection if no file_path is specified
+      delete this.collection.items[this.item.key];
       throw new Error(`MjsActionAdapter: No file_path specified for action ${this.item.key}`);
     }
     const file_url = pathToFileURL(file_path).href;
