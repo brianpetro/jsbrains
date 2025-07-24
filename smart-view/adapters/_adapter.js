@@ -106,6 +106,7 @@ export class SmartViewAdapter {
       slider: this.render_slider_component,
       html: this.render_html_component,
       button_with_confirm: this.render_button_with_confirm_component,
+      json: this.render_json_component, // <-- add this line
     };
   }
 
@@ -350,6 +351,125 @@ export class SmartViewAdapter {
     // render html into a div
     this.safe_inner_html(elm, value);
     return elm;
+  }
+
+  render_json_component(elm, path, value, scope, settings_scope) {
+    const smart_setting = new this.setting_class(elm);
+    // Ensure value is an object
+    let obj = (typeof value === "object" && value !== null) ? { ...value } : {};
+
+    // Container for pairs
+    const pairsContainer = document.createElement('div');
+    pairsContainer.className = 'json-pairs-container';
+    pairsContainer.style.display = 'flex';
+    pairsContainer.style.flexDirection = 'column';
+    pairsContainer.style.gap = '0px'; // No gap, use margin for rows
+
+    // Helper to render all pairs
+    const renderPairs = () => {
+      // Clear previous
+      pairsContainer.innerHTML = '';
+      Object.entries(obj).forEach(([key, val], idx) => {
+        const pair_div = document.createElement('div');
+        pair_div.className = 'json-pair-row';
+        pair_div.style.display = 'flex';
+        pair_div.style.flexDirection = 'row';
+        pair_div.style.gap = '4px';
+        pair_div.style.marginBottom = '4px'; // Each pair on its own line
+
+        // Property input
+        const key_i = document.createElement('input');
+        key_i.type = 'text';
+        key_i.value = key;
+        key_i.placeholder = 'Property';
+        key_i.style.flex = '1';
+        // Value input
+        const value_i = document.createElement('input');
+        value_i.type = 'text';
+        value_i.value = val;
+        value_i.placeholder = 'Value';
+        value_i.style.flex = '1';
+        // Remove button
+        const remove_btn = document.createElement('button');
+        remove_btn.textContent = '✕';
+        remove_btn.title = 'Remove';
+        remove_btn.style.flex = 'none';
+
+        // Handlers
+        key_i.addEventListener('change', () => {
+          const newKey = key_i.value.trim();
+          if (!newKey) return;
+          if (newKey !== key) {
+            // Rename property
+            obj[newKey] = obj[key];
+            delete obj[key];
+            renderPairs();
+            triggerChange();
+          }
+        });
+        value_i.addEventListener('change', () => {
+          obj[key_i.value] = value_i.value;
+          triggerChange();
+        });
+        remove_btn.addEventListener('click', () => {
+          delete obj[key_i.value];
+          renderPairs();
+          triggerChange();
+        });
+
+        pair_div.appendChild(key_i);
+        pair_div.appendChild(value_i);
+        pair_div.appendChild(remove_btn);
+        pairsContainer.appendChild(pair_div);
+      });
+    };
+
+    // Add new pair row
+    const add_div = document.createElement('div');
+    add_div.className = 'json-add-row';
+    add_div.style.display = 'flex';
+    add_div.style.gap = '4px';
+    add_div.style.marginTop = '8px'; // Space above add row
+    const new_key_i = document.createElement('input');
+    new_key_i.type = 'text';
+    new_key_i.placeholder = 'Property';
+    new_key_i.style.flex = '1';
+    const new_val_i = document.createElement('input');
+    new_val_i.type = 'text';
+    new_val_i.placeholder = 'Value';
+    new_val_i.style.flex = '1';
+    const add_btn = document.createElement('button');
+    add_btn.textContent = '+';
+    add_btn.title = 'Add property';
+    add_btn.style.flex = 'none';
+
+    add_btn.addEventListener('click', () => {
+      const k = new_key_i.value.trim();
+      if (!k || k in obj) return;
+      obj[k] = new_val_i.value;
+      new_key_i.value = '';
+      new_val_i.value = '';
+      renderPairs();
+      triggerChange();
+    });
+
+    add_div.appendChild(new_key_i);
+    add_div.appendChild(new_val_i);
+    add_div.appendChild(add_btn);
+
+    // Append to setting element
+    smart_setting.settingEl.querySelector('.setting-item-control').appendChild(pairsContainer);
+    smart_setting.settingEl.querySelector('.setting-item-control').appendChild(add_div);
+    smart_setting.settingEl.querySelector('.setting-item-control').style.flexDirection = 'column';
+
+    // Change handler
+    const triggerChange = () => {
+      this.handle_on_change(path, { ...obj }, elm, scope, settings_scope);
+    };
+
+    renderPairs();
+
+    return smart_setting;
   }
 
   add_button_if_needed(smart_setting, elm, path, scope) {
