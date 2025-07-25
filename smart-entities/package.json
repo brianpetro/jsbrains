@@ -31,7 +31,8 @@
     "smart-embed-model": "*",
     "smart-http-request": "*",
     "smart-model": "*",
-    "smart-sources": "*"
+    "smart-sources": "*",
+    "smart-utils": "*"
   },
   "ava": {
     "files": [

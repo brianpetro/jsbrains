@@ -24,7 +24,9 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "homepage": "https://jsbrains.org",
-  "dependencies": {},
+  "dependencies": {
+    "smart-utils": "*"
+  },
   "devDependencies": {
     "ava": "^5.3.1",
     "smart-file-system": "*",

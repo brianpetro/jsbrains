@@ -1,4 +1,6 @@
-import { create_uid, deep_merge } from './utils/helpers.js';
+import { create_uid } from './utils/helpers.js';
+import { deep_merge } from 'smart-utils/deep_merge.js';
+import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.js';
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 import { deep_equal } from "./utils/deep_equal.js";
 
@@ -393,11 +395,4 @@ export class CollectionItem {
  * @function camel_case_to_snake_case
  * @description Convert CamelCase => snake_case for consistent environment keys.
  */
-export function camel_case_to_snake_case(str) {
-  const result = str
-    .replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`)
-    .replace(/^_/, '') // remove leading underscore
-    .replace(/2$/, '') // remove trailing 2 (bundled subclasses)
-    ;
-  return result;
-}
+export { camel_case_to_snake_case };

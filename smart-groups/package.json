@@ -24,7 +24,8 @@
     "ava": "^6.0.1"
   },
   "dependencies": {
-    "smart-entities": "*"
+    "smart-entities": "*",
+    "smart-utils": "*"
   },
   "ava": {
     "files": [

@@ -1,4 +1,4 @@
-import { camel_case_to_snake_case } from "./camel_case_to_snake_case.js";
+import { camel_case_to_snake_case } from "smart-utils/camel_case_to_snake_case.js";
 
 /**
  * Normalizes the options for the SmartEnv instance (mutates the object)

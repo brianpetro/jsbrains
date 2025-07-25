@@ -1,4 +1,4 @@
-import { deep_merge } from './utils/helpers.js';
+import { deep_merge } from 'smart-utils/deep_merge.js';
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 

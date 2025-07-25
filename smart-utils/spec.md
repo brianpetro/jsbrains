@@ -12,15 +12,16 @@ Utility functions with no dependencies. Exports:
 | `compute_centroid(points)` | Arithmetic mean of N-dimensional points. |
 | `compute_medoid(points)` | Point with minimal sum of distances to others. |
 | `escape_html(str)` | Escape HTML special characters. |
-| `convert_to_time_ago(timestamp)` | Convert timestamp (ms or s) to human readable difference. |
-| `convert_to_human_readable_size(size)` | Format byte size to KB/MB string. |
+| `camel_case_to_snake_case(str)` | Convert CamelCase to snake_case. |
+| `deep_merge(target, source)` | Deep merge plain objects. |
+| `cos_sim(vector1, vector2)` | Cosine similarity of two vectors. |
+| `sleep(ms)` | Promise that resolves after given milliseconds. |
 
 ```mermaid
 flowchart TD
 				A[Input] --> B(escape_html) --> C[Escaped]
-
-		subgraph Size
-				BYTES[bytes] -->|>1000| KB[Kilobytes]
-				KB -->|>1000| MB[Megabytes]
+		subgraph Vector
+				V1[vector1] -- cos_sim --> Out[score]
+				V2[vector2] --> Out
 		end
 ```

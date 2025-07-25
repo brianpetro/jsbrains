@@ -4,10 +4,10 @@
  */
 
 import test from 'ava';
-import { cos_sim } from './cos_sim.js';
+import { cos_sim } from 'smart-utils/cos_sim.js';
 
 /**
- * @description Tests whether cos_sim calculates the correct cosine similarity 
+ * @description Tests whether cos_sim calculates the correct cosine similarity
  * for two identical vectors (positive integers).
  */
 test('cos_sim: identical vectors, positive integers', t => {
@@ -18,7 +18,7 @@ test('cos_sim: identical vectors, positive integers', t => {
 });
 
 /**
- * @description Tests whether cos_sim calculates the correct cosine similarity 
+ * @description Tests whether cos_sim calculates the correct cosine similarity
  * for vectors with both positive and negative values (allows for floating-point rounding).
  */
 test('cos_sim: mixed sign vectors', t => {

@@ -30,7 +30,8 @@
   "dependencies": {
     "smart-clusters": "*",
     "smart-collections": "*",
-    "smart-entities": "*"
+    "smart-entities": "*",
+    "smart-utils": "*"
   },
   "ava": {
     "files": [

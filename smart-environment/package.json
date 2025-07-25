@@ -28,6 +28,7 @@
     "smart-notices": "*",
     "smart-settings": "*",
     "smart-sources": "*",
+    "smart-utils": "*",
     "smart-view": "*"
   }
 }

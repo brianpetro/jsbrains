@@ -21,8 +21,8 @@
 
 import { render as settings_template } from './components/settings.js';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
-import { deep_merge } from './utils/deep_merge.js';
-import { camel_case_to_snake_case } from './utils/camel_case_to_snake_case.js';
+import { deep_merge } from 'smart-utils/deep_merge.js';
+import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';

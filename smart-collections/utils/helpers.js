@@ -1,5 +1,6 @@
 import { collection_instance_name_from } from "./collection_instance_name_from.js";
-export { collection_instance_name_from };
+import { deep_merge } from "smart-utils/deep_merge.js";
+export { collection_instance_name_from, deep_merge };
 /**
  * Creates a unique identifier for the given data without using cryptographic methods.
  * @param {Object} data - The data object to create a UID for.
@@ -25,17 +26,7 @@ export function create_uid(data) {
  * @param {Object} source - The source object from which properties are sourced.
  * @returns {Object} The merged object.
  */
-export function deep_merge(target, source) {
-  for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      // both exist and are objects
-      if (is_obj(source[key]) && is_obj(target[key])) deep_merge(target[key], source[key]);
-      else target[key] = source[key]; // precedence to source
-    }
-  }
-  return target;
-  function is_obj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
-}
+// deep_merge provided by smart-utils
 
 /**
  * Calculates the cosine similarity between two vectors.
@@ -43,12 +34,7 @@ export function deep_merge(target, source) {
  * @param {Array<number>} vector2 - The second vector.
  * @returns {number} The cosine similarity between the two vectors.
  */
-export function cos_sim(vector1, vector2) {
-  const dotProduct = vector1.reduce((acc, val, i) => acc + val * vector2[i], 0);
-  const normA = Math.sqrt(vector1.reduce((acc, val) => acc + val * val, 0));
-  const normB = Math.sqrt(vector2.reduce((acc, val) => acc + val * val, 0));
-  return normA === 0 || normB === 0 ? 0 : dotProduct / (normA * normB);
-}
+// cos_sim provided by smart-utils
 
 // /**
 //  * Maintains a collection of top items based on their similarity measure.
@@ -72,4 +58,4 @@ export function cos_sim(vector1, vector2) {
  * @param {number} ms - The number of milliseconds to delay.
  * @returns {Promise} A promise that resolves after the specified delay.
  */
-export function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+// sleep provided by smart-utils

@@ -4,7 +4,7 @@
  *              overriding get_key to use sim_hash for the cluster key.
  */
 import { CollectionItem } from 'smart-collections';
-import { cos_sim } from 'smart-entities/utils/cos_sim.js';
+import { cos_sim } from 'smart-utils/cos_sim.js';
 import { compute_centroid } from 'smart-utils/geom.js';
 import { sim_hash } from 'smart-utils/sim_hash.js';
 
