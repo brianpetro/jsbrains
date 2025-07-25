@@ -9,6 +9,7 @@
 import { empty } from './utils/empty.js';
 import { safe_inner_html } from './utils/safe_inner_html.js';
 
+import { escape_html as util_escape_html } from 'smart-utils';
 export class SmartView {
   /**
    * @constructor
@@ -126,14 +127,7 @@ export class SmartView {
    * @returns {string} The escaped string.
    */
   escape_html(str) {
-    if (typeof str !== 'string') return str;
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-    ;
+    return util_escape_html(str);
   }
 
   /**
