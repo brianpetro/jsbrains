@@ -8,17 +8,12 @@
  *   - Concatenate all items.
  *   - Finally, optionally apply top-level wrap (templates[-1]) if it still fits; skip otherwise.
  *
- *   - After building, we call `compress_single_child_dirs(...)` to collapse
- *     directories with only one child. For example:
- *       docs/
- *         subdir/
- *           single.md
- *     becomes:
- *       docs/subdir/
- *         single.md
- *
- *   - The final ASCII tree output is then created via `build_tree_string(...)`.
- */
+ *   - Directory lists are collapsed to avoid single-child chains.
+ *   - The final ASCII tree output is generated via
+ *     `build_file_tree_string(...)` from `smart-utils`.
+*/
+
+import { build_file_tree_string } from 'smart-utils/file_tree.js';
 
 export async function compile_snapshot(context_snapshot, merged_opts) {
   const depths = Object.keys(context_snapshot.items)
@@ -91,7 +86,7 @@ export async function compile_snapshot(context_snapshot, merged_opts) {
   if (want_tree) {
     const all_paths = chunks.map(c => c.path);
     // TODO add mtime for rendering FILE_TREE_MTIME var replacement
-    file_tree_str = create_file_tree_string(all_paths);
+    file_tree_str = build_file_tree_string(all_paths);
   }
 
   const wrap_before = replace_vars(top_before_raw, { FILE_TREE: file_tree_str });
@@ -205,115 +200,4 @@ function replace_vars(template, replacements) {
     out = out.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), safe_v);
   }
   return out;
-}
-
-
-/**
- * Creates a directory/file tree string for {{FILE_TREE}} placeholders.
- * Incorporates single-child directory compression for cleaner output.
- * @param {string[]} all_paths
- * @returns {string}
- */
-function create_file_tree_string(all_paths) {
-  // Build a nested object structure
-  const root = {};
-  for (const p of all_paths) {
-    let cursor = root;
-    const parts = p.split('/');
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (i === parts.length - 1) {
-        // Final part => file
-        cursor[part] = null;
-      } else {
-        // Directory
-        if (!cursor[part]) cursor[part] = {};
-        cursor = cursor[part];
-      }
-    }
-  }
-
-  // Compress any single-child directory chains
-  compress_single_child_dirs(root);
-
-  // Then convert to ASCII tree
-  return build_tree_string(root);
-}
-
-
-/**
- * Recursively compress single-child directories within the tree.
- * @param {object} node - The current portion of the tree (key -> subnode).
- */
-function compress_single_child_dirs(node) {
-  if (!node || typeof node !== 'object') return;
-
-  const keys = Object.keys(node);
-  for (const k of keys) {
-    const child = node[k];
-    if (child && typeof child === 'object') {
-      // Count children of `child`
-      const childKeys = Object.keys(child);
-      if (childKeys.length === 1) {
-        // Only one subnode => compress
-        const subKey = childKeys[0];
-        const subChild = child[subKey];
-        // Form new combined name if subKey is a directory
-        // If subChild !== null => it's a directory
-        if (subChild !== null) {
-          // Combine "k" + "/" + subKey
-          const combined = k + '/' + subKey;
-          // Move that subChild up
-          node[combined] = subChild;
-          delete node[k];
-          // Recurse deeper on the newly created node
-          compress_single_child_dirs(node[combined]);
-        } else {
-          // subChild === null means child is a single file
-          // => do not combine
-          // but we can still rename "k + '/' + subKey" if we want a slash
-          // Typically though, that suggests a "folder" containing one file
-          // We'll skip that to keep file name on a separate leaf.
-        }
-      } else {
-        // Recurse on the child as is
-        compress_single_child_dirs(child);
-      }
-    }
-  }
-}
-
-
-/**
- * Recursively builds an ASCII tree from a node object,
- * sorting directories first, then files, in alphabetical order.
- * @param {object|null} node
- * @param {string} prefix
- * @returns {string}
- */
-function build_tree_string(node, prefix = '') {
-  let res = '';
-  const entries = Object.entries(node).sort((a, b) => {
-    const a_is_dir = a[1] !== null;
-    const b_is_dir = b[1] !== null;
-    if (a_is_dir && !b_is_dir) return -1;
-    if (!a_is_dir && b_is_dir) return 1;
-    return a[0].localeCompare(b[0]);
-  });
-
-  entries.forEach(([name, subnode], idx) => {
-    const is_last = (idx === entries.length - 1);
-    const connector = is_last ? '└── ' : '├── ';
-
-    if (subnode === null) {
-      // File
-      res += prefix + connector + name + '\n';
-    } else {
-      // Directory
-      res += prefix + connector + name + '/\n';
-      const next_prefix = prefix + (is_last ? '    ' : '│   ');
-      res += build_tree_string(subnode, next_prefix);
-    }
-  });
-  return res;
 }

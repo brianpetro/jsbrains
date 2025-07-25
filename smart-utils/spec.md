@@ -11,3 +11,4 @@ Utility functions with no dependencies. Exports:
 | `fnv1a_32_alphanumeric(input_string)` | FNV-1a result converted to base36. |
 | `compute_centroid(points)` | Arithmetic mean of N-dimensional points. |
 | `compute_medoid(points)` | Point with minimal sum of distances to others. |
+| `build_file_tree_string(paths)` | Turn an array of paths into an ASCII folder tree. |
