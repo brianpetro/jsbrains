@@ -12,8 +12,15 @@ Utility functions with no dependencies. Exports:
 | `compute_centroid(points)` | Arithmetic mean of N-dimensional points. |
 | `compute_medoid(points)` | Point with minimal sum of distances to others. |
 | `escape_html(str)` | Escape HTML special characters. |
+| `convert_to_time_ago(timestamp)` | Convert timestamp (ms or s) to human readable difference. |
+| `convert_to_human_readable_size(size)` | Format byte size to KB/MB string. |
 
 ```mermaid
 flowchart TD
-	A[Input] --> B(escape_html) --> C[Escaped]
+				A[Input] --> B(escape_html) --> C[Escaped]
+
+		subgraph Size
+				BYTES[bytes] -->|>1000| KB[Kilobytes]
+				KB -->|>1000| MB[Megabytes]
+		end
 ```

@@ -14,6 +14,7 @@
 */
 
 import { build_file_tree_string } from 'smart-utils/file_tree.js';
+import { convert_to_time_ago } from 'smart-utils/convert_to_time_ago.js';
 
 export async function compile_snapshot(context_snapshot, merged_opts) {
   const depths = Object.keys(context_snapshot.items)
@@ -157,34 +158,6 @@ function build_item_placeholders(path, depth, mtime) {
   };
 }
 
-function convert_to_time_ago(timestamp) {
-  // Ensure timestamp is in milliseconds, and compute seconds difference
-  const now = Date.now();
-  let diffMs = now - timestamp;
-  // If timestamp is in seconds (10-digit), convert to ms
-  if (timestamp < 1e12) {
-    diffMs = now - (timestamp * 1000);
-  }
-  const seconds = Math.floor(diffMs / 1000);
-
-  const intervals = [
-    { label: 'year', seconds: 31536000 },
-    { label: 'month', seconds: 2592000 },
-    { label: 'day', seconds: 86400 },
-    { label: 'hour', seconds: 3600 },
-    { label: 'minute', seconds: 60 },
-    { label: 'second', seconds: 1 }
-  ];
-
-  for (const interval of intervals) {
-    const count = Math.floor(seconds / interval.seconds);
-    if (count >= 1) {
-      return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
-    }
-  }
-  
-  return 'just now';
-}
 
 /**
  * Replaces {{KEY}} in a string with the provided replacements object.

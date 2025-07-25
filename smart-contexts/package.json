@@ -28,7 +28,8 @@
     "smart-blocks": "*",
     "smart-collections": "*",
     "smart-file-system": "*",
-    "smart-sources": "*"
+    "smart-sources": "*",
+    "smart-utils": "*"
   },
   "devDependencies": {
     "ava": "^6.3.0",
