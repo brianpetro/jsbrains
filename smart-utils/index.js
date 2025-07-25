@@ -6,6 +6,7 @@ import { convert_to_human_readable_size } from './convert_to_human_readable_size
 import { deep_merge } from './deep_merge.js';
 import { cos_sim } from './cos_sim.js';
 import { sleep } from './sleep.js';
+import { to_pascal_case } from './to_pascal_case.js';
 
 export {
   camel_case_to_snake_case,
@@ -15,5 +16,6 @@ export {
   deep_merge,
   escape_html,
   murmur_hash_32_alphanumeric,
-  sleep
+  sleep,
+  to_pascal_case
 };

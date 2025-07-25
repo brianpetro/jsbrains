@@ -2,6 +2,7 @@ import { SmartViewAdapter } from "./_adapter.js";
 import * as lucide from 'lucide-static';
 import { safe_inner_html } from '../utils/safe_inner_html.js';
 import { empty } from '../utils/empty.js';
+import { to_pascal_case } from 'smart-utils/to_pascal_case.js';
 
 export class SmartViewNodeAdapter extends SmartViewAdapter {
   /**
@@ -317,6 +318,3 @@ export class Setting {
 }
 
 // convert lower-hyphenated-words to PascalCase
-function to_pascal_case(str) {
-  return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
-}

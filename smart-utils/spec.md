@@ -13,6 +13,7 @@ Utility functions with no dependencies. Exports:
 | `compute_medoid(points)` | Point with minimal sum of distances to others. |
 | `escape_html(str)` | Escape HTML special characters. |
 | `camel_case_to_snake_case(str)` | Convert CamelCase to snake_case. |
+| `to_pascal_case(str)` | Convert strings with dashes, spaces or underscores to PascalCase. |
 | `deep_merge(target, source)` | Deep merge plain objects. |
 | `cos_sim(vector1, vector2)` | Cosine similarity of two vectors. |
 | `sleep(ms)` | Promise that resolves after given milliseconds. |
