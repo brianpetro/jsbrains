@@ -17,6 +17,9 @@ Utility functions with no dependencies. Exports:
 | `deep_merge(target, source)` | Deep merge plain objects. |
 | `cos_sim(vector1, vector2)` | Cosine similarity of two vectors. |
 | `sleep(ms)` | Promise that resolves after given milliseconds. |
+| `get_by_path(obj, path, scope?)` | Retrieve nested value. Returns bound function if value is callable. |
+| `set_by_path(obj, path, value, scope?)` | Set nested value, creating objects as needed. |
+| `delete_by_path(obj, path, scope?)` | Delete nested value if present. |
 
 ```mermaid
 flowchart TD

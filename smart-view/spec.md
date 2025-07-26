@@ -14,6 +14,9 @@ Scans `container` for elements with `data-smart-setting` and updates `scope.sett
 smart_view.add_settings_listeners(scope, someContainer);
 ```
 
+Path helpers `get_by_path`, `set_by_path`, and `delete_by_path` are
+re-exported from `smart-utils` for reuse across packages.
+
 ### `data-smart-setting` Attribute
 - **Type**: `string`
 - **Format**: Dot-notation path, e.g. `data-smart-setting="env_settings.deep.nestedKey"`

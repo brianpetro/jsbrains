@@ -30,7 +30,7 @@ import { SmartView } from 'smart-view';
 import { SmartViewNodeAdapter } from 'smart-view/adapters/node';
 
 const smartView = new SmartView({
-  adapter: SmartViewNodeAdapter
+	adapter: SmartViewNodeAdapter
 });
 ```
 
@@ -48,8 +48,8 @@ The `build_html` function generates the HTML string for a component:
 
 ```js
 async function build_html(scope, opts = {}) {
-  // Generate and return HTML string
-  return html;
+	// Generate and return HTML string
+	return html;
 }
 ```
 
@@ -59,9 +59,9 @@ The `render` function builds the HTML and post-processes it:
 
 ```js
 async function render(scope, opts = {}) {
-  let html = await build_html.call(this, scope, opts);
-  const frag = this.create_doc_fragment(html);
-  return await post_process.call(this, scope, frag, opts);
+	let html = await build_html.call(this, scope, opts);
+	const frag = this.create_doc_fragment(html);
+	return await post_process.call(this, scope, frag, opts);
 }
 ```
 
@@ -71,8 +71,8 @@ The `post_process` function adds event listeners and performs other necessary op
 
 ```js
 async function post_process(scope, frag, opts = {}) {
-  // Add event listeners, perform additional operations
-  return frag;
+	// Add event listeners, perform additional operations
+	return frag;
 }
 ```
 
@@ -124,10 +124,10 @@ You can create settings programmatically or directly in HTML:
 Programmatically:
 ```js
 const settingConfig = {
-  setting: 'user.email',
-  type: 'text',
-  name: 'Email Address',
-  description: 'Enter your email address'
+	setting: 'user.email',
+	type: 'text',
+	name: 'Email Address',
+	description: 'Enter your email address'
 };
 
 const settingHtml = smartView.render_setting_html(settingConfig);
@@ -138,10 +138,10 @@ await smartView.render_setting_components(container);
 In HTML:
 ```html
 <div class="setting-component" 
-     data-setting="user.name" 
-     data-type="text" 
-     data-name="User Name" 
-     data-description="Enter your full name">
+		 data-setting="user.name" 
+		 data-type="text" 
+		 data-name="User Name" 
+		 data-description="Enter your full name">
 </div>
 ```
 
@@ -158,16 +158,16 @@ await smartView.render_setting_components(container);
 #### Constructor
 
 - `new SmartView(options)`
-  - `options.adapter`: The adapter class to use for rendering
+	- `options.adapter`: The adapter class to use for rendering
 
 #### Methods
 
 - `render_setting_components(container, options)`: Renders all setting components within a container
 - `render_setting_component(settingElement, options)`: Renders a single setting component
 - `render_setting_html(settingConfig)`: Generates HTML for a setting component
-- `get_by_path(obj, path)`: Gets a value from an object by path
-- `set_by_path(obj, path, value)`: Sets a value in an object by path
-- `delete_by_path(obj, path)`: Deletes a value from an object by path
+- `get_by_path(obj, path)` / `set_by_path(obj, path, value)` /
+	`delete_by_path(obj, path)` are re-exported from `smart-utils` for
+	use across packages.
 - `escape_html(str)`: Escapes HTML special characters in a string
 - `add_toggle_listeners(fragment, callback)`: Adds toggle listeners to elements with data-toggle attribute
 - `validate_setting(scope, opts, settingKey, settingConfig)`: Validates the setting config and determines if it should be rendered
@@ -208,19 +208,19 @@ Example:
 
 ```js
 class MyCustomAdapter extends SmartViewAdapter {
-  get_icon_html(icon_name) {
-    // Custom implementation
-  }
+	get_icon_html(icon_name) {
+		// Custom implementation
+	}
 
-  async render_markdown(markdown, scope) {
-    // Custom implementation
-  }
+	async render_markdown(markdown, scope) {
+		// Custom implementation
+	}
 
-  // Implement other required methods
+	// Implement other required methods
 }
 
 const smartView = new SmartView({
-  adapter: MyCustomAdapter
+	adapter: MyCustomAdapter
 });
 ```
 
@@ -262,12 +262,12 @@ Each component exports three functions:
  * @returns {string} HTML markup string.
  */
 export function build_html(scope, opts = {}) {
-  return `
-    <div class="my-component">
-      <button class="refresh-btn">Refresh</button>
-      <p>${scope.text}</p>
-    </div>
-  `;
+	return `
+		<div class="my-component">
+			<button class="refresh-btn">Refresh</button>
+			<p>${scope.text}</p>
+		</div>
+	`;
 }
 ```
 
@@ -283,9 +283,9 @@ export function build_html(scope, opts = {}) {
  * @returns {Promise<DocumentFragment>} Rendered fragment.
  */
 export async function render(scope, opts = {}) {
-  const html = build_html.call(this, scope, opts);
-  const frag = this.create_doc_fragment(html);
-  return await post_process.call(this, scope, frag, opts);
+	const html = build_html.call(this, scope, opts);
+	const frag = this.create_doc_fragment(html);
+	return await post_process.call(this, scope, frag, opts);
 }
 ```
 
@@ -304,23 +304,23 @@ Always preserve context using `const self = this;` for event listeners.
  * @returns {Promise<DocumentFragment>} Fragment ready for DOM insertion.
  */
 export async function post_process(scope, frag, opts = {}) {
-  const self = this;
+	const self = this;
 
-  const refresh_btn = frag.querySelector('.refresh-btn');
-  refresh_btn.addEventListener('click', async () => {
-    await self.re_render();
-  });
+	const refresh_btn = frag.querySelector('.refresh-btn');
+	refresh_btn.addEventListener('click', async () => {
+		await self.re_render();
+	});
 
-  return frag;
+	return frag;
 }
 ```
 
 ## Key Guidelines
 
 - Always clearly separate responsibilities:
-  - HTML generation (`build_html`).
-  - DOM construction (`render`).
-  - Event handling and DOM updates (`post_process`).
+	- HTML generation (`build_html`).
+	- DOM construction (`render`).
+	- Event handling and DOM updates (`post_process`).
 
 - Explicitly pass `this` context using `.call(this, scope, opts)`.
 - Always capture `this` as `const self = this;` in event listeners.

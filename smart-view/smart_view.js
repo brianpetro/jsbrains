@@ -9,7 +9,12 @@
 import { empty } from './utils/empty.js';
 import { safe_inner_html } from './utils/safe_inner_html.js';
 
-import { escape_html as util_escape_html } from 'smart-utils';
+import {
+  escape_html as util_escape_html,
+  get_by_path as util_get_by_path,
+  set_by_path as util_set_by_path,
+  delete_by_path as util_delete_by_path
+} from 'smart-utils';
 export class SmartView {
   /**
    * @constructor
@@ -98,8 +103,8 @@ export class SmartView {
    * @param {string} path - The path to the value.
    * @returns {*}
    */
-  get_by_path(obj, path, settings_scope = null) { 
-    return get_by_path(obj, path, settings_scope); 
+  get_by_path(obj, path, settings_scope = null) {
+    return util_get_by_path(obj, path, settings_scope);
   }
 
   /**
@@ -108,8 +113,8 @@ export class SmartView {
    * @param {string} path - The path to set the value.
    * @param {*} value - The value to set.
    */
-  set_by_path(obj, path, value, settings_scope = null) { 
-    set_by_path(obj, path, value, settings_scope); 
+  set_by_path(obj, path, value, settings_scope = null) {
+    util_set_by_path(obj, path, value, settings_scope);
   }
 
   /**
@@ -117,8 +122,8 @@ export class SmartView {
    * @param {Object} obj - The object to modify.
    * @param {string} path - The path to delete.
    */
-  delete_by_path(obj, path, settings_scope = null) { 
-    delete_by_path(obj, path, settings_scope); 
+  delete_by_path(obj, path, settings_scope = null) {
+    util_delete_by_path(obj, path, settings_scope);
   }
 
   /**
@@ -240,63 +245,5 @@ export class SmartView {
   }
   safe_inner_html(elm, html){
     safe_inner_html(elm, html);
-  }
-}
-
-/**
- * Recursively gets a value from `obj` by a dot-notation string `path`.
- * @param {Object} obj 
- * @param {string} path 
- * @returns {*}
- */
-function get_by_path(obj, path, settings_scope = null) {
-  if (!path) return '';
-  const keys = path.split('.');
-  if(settings_scope) {
-    keys.unshift(settings_scope);
-  }
-  const finalKey = keys.pop();
-  const instance = keys.reduce((acc, key) => acc && acc[key], obj);
-  if (instance && typeof instance[finalKey] === 'function') {
-    return instance[finalKey].bind(instance);
-  }
-  return instance ? instance[finalKey] : undefined;
-}
-
-/**
- * Recursively sets a value in `obj` at the dot-notation string `path`.
- * @param {Object} obj 
- * @param {string} path 
- * @param {*} value 
- */
-function set_by_path(obj, path, value, settings_scope = null) {
-  const keys = path.split('.');
-  if(settings_scope) {
-    keys.unshift(settings_scope);
-  }
-  const final_key = keys.pop();
-  const target = keys.reduce((acc, key) => {
-    if (!acc[key] || typeof acc[key] !== 'object') {
-      acc[key] = {};
-    }
-    return acc[key];
-  }, obj);
-  target[final_key] = value;
-}
-
-/**
- * Recursively deletes a value in `obj` at the dot-notation string `path`.
- * @param {Object} obj 
- * @param {string} path 
- */
-function delete_by_path(obj, path, settings_scope = null) {
-  const keys = path.split('.');
-  if(settings_scope) {
-    keys.unshift(settings_scope);
-  }
-  const finalKey = keys.pop();
-  const instance = keys.reduce((acc, key) => acc && acc[key], obj);
-  if (instance) {
-    delete instance[finalKey];
   }
 }

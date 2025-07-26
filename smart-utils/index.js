@@ -7,6 +7,9 @@ import { deep_merge } from './deep_merge.js';
 import { cos_sim } from './cos_sim.js';
 import { sleep } from './sleep.js';
 import { to_pascal_case } from './to_pascal_case.js';
+import { get_by_path } from './get_by_path.js';
+import { set_by_path } from './set_by_path.js';
+import { delete_by_path } from './delete_by_path.js';
 
 export {
   camel_case_to_snake_case,
@@ -17,5 +20,8 @@ export {
   escape_html,
   murmur_hash_32_alphanumeric,
   sleep,
-  to_pascal_case
+  to_pascal_case,
+  get_by_path,
+  set_by_path,
+  delete_by_path
 };
