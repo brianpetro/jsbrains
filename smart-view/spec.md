@@ -1,49 +1,42 @@
 # API
 
 ## SmartView Class
+
 ### `add_settings_listeners(scope, container = document)`
+Scans `container` for elements with `data-smart-setting` and updates `scope.settings` when the element changes using `SmartView.set_by_path()`.
 
-Scans the given `container` for any form element (e.g. `input`, `select`, `textarea`) that has the attribute `data-smart-setting`. Each element is expected to have a dot-notation path in the attribute `data-smart-setting="env_settings.some.deep.path"`.
+#### Parameters
+- `scope` **Object** – Contains a `settings` property.
+- `container` **HTMLElement** *(optional)* – Element within which to search. Defaults to `document`.
 
-When a change event occurs on that element, this method updates the corresponding path within `scope.settings` using the `SmartView.set_by_path()` helper.
-
-**Parameters**
-
-- `scope` (Object): The scope object that must contain a `settings` property (an object).  
-- `container` (HTMLElement, optional): The container within which to look for elements that have `data-smart-setting`. Defaults to the global `document`.
-
-**Usage**
-
+#### Usage
 ```js
 smart_view.add_settings_listeners(scope, someContainer);
 ```
 
-# data
-
-## `scope` Object
-
-The `scope` object is a flexible structure provided by the calling application. The only requirement for this method is that `scope` has a `settings` property (type: `Object`).
-
-Example:
-
-```js
-const scope = {
-	settings: {
-		env_settings: {
-			some: {
-				deep: {
-					path: 'initialValue'
-				}
-			}
-		}
-	},
-	// ... any additional properties needed by the application
-};
-```
 ### `data-smart-setting` Attribute
-
 - **Type**: `string`
-- **Format**: A dot-notation path indicating where the user-input data should be stored within `scope.settings`.
-		- Example: `data-smart-setting="env_settings.deep.nestedKey"`
-- **Behavior**: On an input change, the method `add_settings_listeners` updates `scope.settings` at that path to the latest input value.---\n### `escape_html(str)`\nEscapes HTML special characters.\n
-```mermaid\nflowchart LR\n  input-->escape_html-->output\n```
+- **Format**: Dot-notation path, e.g. `data-smart-setting="env_settings.deep.nestedKey"`
+- **Behavior**: Updates the corresponding path in `scope.settings` on change.
+
+## Node Adapter
+
+### `SmartViewNodeAdapter`
+Implements a minimal DOM environment for Node.js and browsers without Obsidian.
+
+- `setting_class` – returns the `Setting` helper used by the adapter.
+- `get_icon_html(icon_name)` – returns SVG markup from `lucide-static`. Falls back to PascalCase.
+- `is_mod_event(event)` – detects `Ctrl` or `Cmd` key presses.
+- `render_markdown(markdown, scope)` – basic fallback rendering returning a `<pre>` element.
+
+### `Setting` helper
+Replicates Obsidian's settings API with pure DOM elements.
+
+- `add_text(fn)` – single line text input
+- `add_dropdown(fn)` – `<select>` element
+- `add_button(fn)` – simple button
+- `add_toggle(fn)` – checkbox toggle
+- `add_text_area(fn)` – multiline textarea
+- `add_folder_select(fn)` – folder picker stub
+- `add_file_select(fn)` – file picker stub
+- `add_slider(fn)` – range slider
