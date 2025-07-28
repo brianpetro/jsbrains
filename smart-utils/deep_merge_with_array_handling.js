@@ -1,5 +1,5 @@
 // merge two objects, overwriting existing properties with new_obj properties
-export function deep_merge(existing, new_obj) {
+export function deep_merge_with_array_handling(existing, new_obj) {
   for (const key in new_obj) {
     if (Array.isArray(existing[key]) && Array.isArray(new_obj[key])) {
       // Determine if arrays are nested arrays or arrays of primitives
@@ -39,4 +39,4 @@ function isObject(obj) {
 }
 
 // Exports
-export default deep_merge;
+export default deep_merge_with_array_handling;
