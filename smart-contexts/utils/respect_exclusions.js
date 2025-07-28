@@ -100,7 +100,6 @@ export function strip_excluded_headings(content, excluded_list) {
     }
   }
 
-  lines = lines.filter(Boolean);
   const new_content = lines.join('\n');
   const removed_char_count = content.length - new_content.length;
   return [new_content, exclusions, removed_char_count];
