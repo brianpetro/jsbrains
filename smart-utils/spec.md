@@ -23,7 +23,7 @@ Utility functions with no dependencies. Exports:
 | `delete_by_path(obj, path, scope?)` | Delete nested value if present. |
 | `convert_to_human_readable_size(bytes)` | Convert bytes to a readable string like `2 MB`. |
 | `convert_to_time_ago(date)` | Return relative time string like `3h ago`. |
-| `sequential_async_processor(funcs, initial, opts)` | Run async functions sequentially. |
+| `sequential_async_processor(funcs, initial, opts?)` | Execute each async function in order, passing the previous result and `opts`. Throws if a list item is not callable. |
 | `parse_xml_fragments(xml_input)` | Convert XML fragments to plain objects. |
 | `build_file_tree_string(paths)` | Render an ASCII tree from a list of file paths. |
 
