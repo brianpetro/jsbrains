@@ -102,6 +102,9 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
   get models_endpoint() {
     return `${this.model_config.host}${this.model_config.models_endpoint}`;
   }
+  get model_show_endpoint() {
+    return `${this.model_config.host}/api/show`;
+  }
 
   async load() {
     await this.get_models();
@@ -190,7 +193,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
       const models_raw = [];
       for (const m of filter_embedding_models(list_data.models || [])) {
         const detail_resp = await this.http_adapter.request({
-          url: 'http://localhost:11434/api/show',
+          url: this.model_show_endpoint,
           method: 'POST',
           body: JSON.stringify({ model: m.name }),
         });
