@@ -7,7 +7,7 @@ export function deep_merge_with_array_handling(existing, new_obj) {
         // For arrays of objects, merge objects at corresponding indices
         existing[key] = existing[key].map((item, index) => {
           if (typeof new_obj[key][index] === 'object') {
-            return deep_merge(item, new_obj[key][index]);
+            return deep_merge_with_array_handling(item, new_obj[key][index]);
           }
           return item;
         }).concat(new_obj[key].slice(existing[key].length));
@@ -25,7 +25,7 @@ export function deep_merge_with_array_handling(existing, new_obj) {
       }
     } else if (typeof existing[key] === 'object' && typeof new_obj[key] === 'object' && !Array.isArray(existing[key])) {
       // Recursively merge objects
-      existing[key] = deep_merge(existing[key], new_obj[key]);
+      existing[key] = deep_merge_with_array_handling(existing[key], new_obj[key]);
     } else {
       // Directly set the value for non-object and non-array types
       existing[key] = new_obj[key];
