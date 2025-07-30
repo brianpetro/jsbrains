@@ -160,7 +160,12 @@ It has two main hooks:
 		- Checks `item.data.action_key` for a single `SmartAction` key.
 		- Inserts the corresponding action tool via `insert_tools()` before the request.
 		- After completion, parses the `tool_call` and calls `action_item.run_action()`.
-		- Stores the result in `data.actions[action_key]` and updates the assistant message when `result.final` is present.
+								- Stores the result in `data.actions[action_key]` and updates the assistant message when `result.final` is present.
+6. **`SmartCompletionVariableAdapter`**
+
+								- Replaces variables like `{{folder_tree}}`, `{{folders_top}}`, `{{tags}}` and `{{recent_N}}` in all request messages.
+								- Built‑in replacements are registered from the Obsidian Smart Environment.
+								- Register custom variables via `SmartCompletionVariableAdapter.register(matcher, replacer)`.
 
 ```mermaid
 sequenceDiagram

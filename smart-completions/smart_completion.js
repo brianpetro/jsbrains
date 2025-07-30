@@ -98,12 +98,12 @@ export class SmartCompletion extends CollectionItem {
         AdapterClass,
         order: AdapterClass.order ?? 0
       }))
-      .sort((a, b) => a.order - b.order);
-
+      .sort((a, b) => a.order - b.order)
+    ;
     // Check each adapter's property_name against data
     for (const {AdapterClass, key} of adapters) {
       const property = AdapterClass.property_name;
-      if (property && this.data[property]) {
+      if (!property || (property && this.data[property])) {
         const adapter = new AdapterClass(this);
         await adapter.to_request?.();
       }

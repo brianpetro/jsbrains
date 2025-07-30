@@ -7,6 +7,7 @@ import { SmartCompletionUserAdapter } from "./adapters/user.js";
 import { ActionCompletionAdapter } from "./adapters/action.js";
 import { ActionXmlCompletionAdapter } from "./adapters/action_xml.js";
 import { SmartCompletionSystemAdapter } from "./adapters/system.js";
+import { SmartCompletionVariableAdapter } from "./adapters/variable.js";
 
 // default config for smart_completions
 export const smart_completions_default_config = {
@@ -20,6 +21,7 @@ export const smart_completions_default_config = {
     ActionCompletionAdapter,
     ActionXmlCompletionAdapter,
     SmartCompletionSystemAdapter,
+    SmartCompletionVariableAdapter,
   }
 }
 

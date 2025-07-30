@@ -64,8 +64,8 @@ export class SmartCompletions extends Collection {
   get completion_adapters() {
     if(!this._completion_adapters) {
       this._completion_adapters = {};
-      Object.values(this.opts.completion_adapters).forEach(adapter => {
-        this._completion_adapters[adapter.property_name] = adapter;
+      Object.entries(this.opts.completion_adapters).forEach(([key, adapter]) => {
+        this._completion_adapters[adapter.property_name || key] = adapter;
       });
     }
     return this._completion_adapters;
