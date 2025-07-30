@@ -4,8 +4,12 @@ export class SmartCompletionVariableAdapter extends SmartCompletionAdapter {
   static order = 10; // Default order, can be overridden by specific adapters
   static registry = [];
 
-  static register(matcher_fx, replacement_fx) {
-    this.registry.push({ matcher_fx, replacement_fx });
+  static register(matcher_fx, replacement_fx, var_example) {
+    this.registry.push({ matcher_fx, replacement_fx, var_example });
+  }
+
+  static get available_vars() {
+    return this.registry.map(({ var_example }) => var_example);
   }
 
   static async replace_vars(env, text) {
