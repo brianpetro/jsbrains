@@ -3,6 +3,7 @@ import { deep_merge } from 'smart-utils/deep_merge.js';
 import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.js';
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 import { deep_equal } from "./utils/deep_equal.js";
+import { get_item_display_name } from "./utils/get_item_display_name.js";
 
 /**
  * @class CollectionItem
@@ -360,20 +361,6 @@ export class CollectionItem {
     this.env.smart_settings.save();
   }
 
-  // /**
-  //  * Render this item into a container using the item's component.
-  //  * @deprecated 2024-12-02 Use explicit component pattern from environment
-  //  * @param {HTMLElement} container
-  //  * @param {Object} opts
-  //  * @returns {Promise<HTMLElement>}
-  //  */
-  // async render_item(container, opts = {}) {
-  //   const frag = await this.component.call(this.smart_view, this, opts);
-  //   this.env.smart_view.empty(container);
-  //   container.appendChild(frag);
-  //   return container;
-  // }
-
   /**
    * @deprecated use env.smart_view
    * @returns {Object}
@@ -383,12 +370,18 @@ export class CollectionItem {
     return this._smart_view;
   }
 
-  // /**
-  //  * Override in child classes to set the component for this item
-  //  * @deprecated 2024-12-02
-  //  * @returns {Function} The render function for this component
-  //  */
-  // get component() { return item_component; }
+  /**
+   * Retrieves the display name of the collection item.
+   * @readonly
+   * @deprecated Use `get_item_display_name(key, show_full_path)` instead (keep UI logic out of collections).
+   * @returns {string} The display name.
+   */
+  get name() {
+    return get_item_display_name(
+      this.key,
+      this.env.settings.smart_view_filter?.show_full_path
+    );
+  }
 }
 
 /**

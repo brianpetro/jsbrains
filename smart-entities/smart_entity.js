@@ -213,20 +213,6 @@ export class SmartEntity extends CollectionItem {
   get embed_model_key() { return this.collection.embed_model_key; }
 
   /**
-   * Gets the name of the entity, formatted based on settings.
-   * @readonly
-   * @returns {string} The entity name.
-   */
-  get name() { return (!this.should_show_full_path ? this.path.split("/").pop() : this.path.split("/").join(" > ")).split("#").join(" > ").replace(".md", ""); }
-
-  /**
-   * Determines whether to show the full path of the entity.
-   * @readonly
-   * @returns {boolean} True if the full path should be shown, false otherwise.
-   */
-  get should_show_full_path() { return this.env.settings.smart_view_filter?.show_full_path; }
-
-  /**
    * @deprecated Use embed_model instead.
    * @readonly
    * @returns {Object} The smart embedding model.

@@ -1,7 +1,7 @@
 import { SmartEntity } from "smart-entities";
-import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
 import { render as render_source_component } from "./components/source.js";
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
+import { find_connections } from "./actions/find_connections.js";
 
 /**
  * @class SmartSource
@@ -447,15 +447,6 @@ export class SmartSource extends SmartEntity {
   get last_read() { return this.data.last_read; }
 
   get metadata() { return this.data.metadata; }
-  /**
-   * Retrieves the display name of the SmartSource.
-   * @readonly
-   * @returns {string} The display name.
-   */
-  get name() {
-    if(this.should_show_full_path) return this.path.split("/").join(" > ").replace(".md", "");
-    return this.path.split("/").pop().replace(".md", "");
-  }
 
   get outdated() { return this.source_adapter.outdated; }
   /**
@@ -563,7 +554,6 @@ export class SmartSource extends SmartEntity {
 
 }
 
-import { find_connections } from "./actions/find_connections.js";
 export default {
   class: SmartSource,
   actions: {

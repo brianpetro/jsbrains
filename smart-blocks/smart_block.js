@@ -1,4 +1,6 @@
 import { SmartEntity } from "smart-entities";
+import { find_connections } from "smart-entities/actions/find_connections.js";
+import { get_block_display_name } from "./utils/get_block_display_name.js";
 
 /**
  * @class SmartBlock
@@ -294,19 +296,6 @@ export class SmartBlock extends SmartEntity {
     }
   }
 
-  /**
-   * Retrieves the display name of the block.
-   * @readonly
-   * @returns {string} The display name.
-   */
-  get name() {
-    const source_name = this.source?.name;
-    if(!source_name) return "MISSING SOURCE";
-    const block_path_parts = this.key.split("#").slice(1);
-    if(this.should_show_full_path) return [source_name, ...block_path_parts].join(" > ");
-    if(block_path_parts[block_path_parts.length-1][0] === "{") block_path_parts.pop(); // Remove block index
-    return [source_name, block_path_parts.pop()].join(" > ");
-  }
   // uses data.lines to get next block
   get next_block() {
     if (!this.data.lines) return null;
@@ -395,21 +384,31 @@ export class SmartBlock extends SmartEntity {
 
   // DEPRECATED
   /**
-   * @deprecated Use `source` instead.
+   * Retrieves the display name of the block.
+   * @readonly
+   * @returns {string} The display name.
+   */
+  get name() {
+    return get_block_display_name(
+      this.key,
+      this.env.settings.smart_view_filter?.show_full_path
+    );
+  }
+  /**
+   * @deprecated Use `source` instead. Removing after 2025-09-01.
    * @readonly
    * @returns {SmartSource} The associated SmartSource instance.
    */
   get note() { return this.source; }
 
   /**
-   * @deprecated Use `source.key` instead.
+   * @deprecated Use `source.key` instead. Removing after 2025-09-01.
    * @readonly
    * @returns {string} The source key.
    */
   get note_key() { return this.key.split("#")[0]; }
 }
 
-import { find_connections } from "smart-entities/actions/find_connections.js";
 export default {
   class: SmartBlock,
   actions: {
