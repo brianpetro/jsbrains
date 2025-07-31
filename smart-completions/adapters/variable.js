@@ -1,7 +1,7 @@
 import { SmartCompletionAdapter } from './_adapter.js';
 
 export class SmartCompletionVariableAdapter extends SmartCompletionAdapter {
-  static order = 10; // Default order, can be overridden by specific adapters
+  static order = 100; // Default order, can be overridden by specific adapters
   static registry = [];
 
   static register(matcher_fx, replacement_fx, var_example) {

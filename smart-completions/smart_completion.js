@@ -108,6 +108,24 @@ export class SmartCompletion extends CollectionItem {
         await adapter.to_request?.();
       }
     }
+    // clean-up and merge messages
+    if(Object.keys(this.data.completion.request).length > 0) {
+      this.data.completion.request.messages = this.data.completion.request.messages
+        .map(msg => {
+          if (typeof msg.content === 'string' && msg.content.trim().length === 0) return null; // remove empty strings
+          if(Array.isArray(msg.content)) {
+            msg.content = msg.content.filter(part => {
+              if(part.type !== 'text') return true; // keep non-text parts
+              if(part.text && part.text.trim().length > 0) return true; // keep non-empty text
+              return false; // remove empty text parts
+            });
+            if(msg.content.length === 0) return null; // remove empty arrays
+          }
+          return msg; // keep non-null messages
+        })
+        .filter(msg => msg !== null); // remove null messages
+      ;
+    }
     return this.data.completion.request;
   }
   async parse_response(){

@@ -26,6 +26,12 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
       console.warn("No 'smart_contexts' collection found; skipping context adapter.");
       return;
     }
+    // check if subsequent completion has the same context_key (include context only once in most recent completion)
+    const completions = this.item.thread.completions;
+    const last_context_completion = completions.findLast(comp => comp.data.context_key === context_key);
+    if(last_context_completion && last_context_completion.key !== this.item.key) {
+      return;
+    }
     const ctx_item = context_collection.get(context_key);
     if(!ctx_item) {
       console.warn(`SmartContext not found for key '${context_key}'`);
@@ -49,8 +55,11 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
     if(compiled.context){
       this.insert_user_message(compiled.context);
       // append user message (again, after the context)
-      if(this.data.user_message) {
-        this.insert_user_message(this.data.user_message, {position: 'end'});
+      const last_user_message = this.data.user_message
+        ?? completions.findLast(comp => comp.data.user_message)?.data.user_message
+      ;
+      if(last_user_message) {
+        this.insert_user_message(last_user_message, {position: 'end'});
       }
     }
     if(compiled.images?.length > 0) {
