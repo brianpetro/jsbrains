@@ -38,3 +38,11 @@ test('sequential_async_processor should handle options correctly', async (t) => 
   const result = await sequential_async_processor(funcs, initial_value, opts);
   t.is(result, expected);
 });
+test('throws TypeError when funcs includes non-function elements', async (t) => {
+  const funcs = [addOne, null, multiplyByTwo];
+  const initial_value = 2;
+
+  await t.throwsAsync(async () => {
+    await sequential_async_processor(funcs, initial_value);
+  }, { instanceOf: TypeError });
+});
