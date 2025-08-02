@@ -23,7 +23,7 @@ export function normalize_opts(opts) {
     }
     if(!opts.collections[new_key].collection_key) opts.collections[new_key].collection_key = new_key;
     if(val.item_type){
-      opts.items[camel_case_to_snake_case(val.item_type.name)] = {
+      opts.items[val.item_type.key || camel_case_to_snake_case(val.item_type.name)] = {
         class: val.item_type,
       };
     }
