@@ -1,6 +1,7 @@
 import { FileSourceContentAdapter } from "./_file.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
 import { parse_frontmatter } from "../utils/parse_frontmatter.js";
+import { get_markdown_tags } from "../utils/get_markdown_tags.js";
 /**
  * @class MarkdownSourceContentAdapter
  * @extends FileSourceContentAdapter
@@ -83,7 +84,19 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   async get_metadata(content=null) {
     if(!content) content = await this.read();
     if(!content) return;
-    const {frontmatter} = parse_frontmatter(content);
+    const { frontmatter, body } = parse_frontmatter(content);
+    const tag_set = new Set();
+
+    let fm_tags = frontmatter.tags;
+    if(typeof fm_tags === 'string'){
+      fm_tags = fm_tags.replace(/[\[\]]/g, '').split(',').map(t => t.trim()).filter(Boolean);
+    }
+    if(Array.isArray(fm_tags)){
+      fm_tags.forEach(tag => tag_set.add(tag.startsWith('#') ? tag : `#${tag}`));
+    }
+
+    get_markdown_tags(body).forEach(tag => tag_set.add(tag));
+    if(tag_set.size) frontmatter.tags = [...tag_set];
     return frontmatter;
   }
 
