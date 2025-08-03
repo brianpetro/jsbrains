@@ -219,3 +219,11 @@ test('parses xml wrapped in ```xml', t => {
     }
   });
 });
+
+test('parses xml wrapped in generic code fence', t => {
+  const xml = '```\n<action><msg>Hello</msg></action>\n```';
+  const out = parse_xml_fragments(xml);
+  t.deepEqual(out, {
+    action: { contents: { msg: { contents: 'Hello' } } }
+  });
+});

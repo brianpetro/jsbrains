@@ -1,6 +1,20 @@
 import { coerce_primitives } from './coerce_primitives.js';
 
 /**
+ * Strip wrapping triple backtick fences (with optional language hint)
+ * from a string. Returns the inner content when fenced, otherwise the
+ * original string.
+ *
+ * @param {string} raw_input
+ * @returns {string}
+ */
+function strip_code_fence (raw_input) {
+  const fence_re = /^\s*```[a-z]*\n([\s\S]*?)\n```\s*$/i;
+  const m = fence_re.exec(raw_input);
+  return m ? m[1] : raw_input;
+}
+
+/**
  * Parses XML fragments into a nested plain-object representation.
  *
  * Each XML element becomes a key whose value may contain
@@ -23,6 +37,8 @@ export function parse_xml_fragments (xml_input) {
   if (typeof xml_input !== 'string' || xml_input.trim() === '') {
     return null;
   }
+
+  const stripped_input = strip_code_fence(xml_input);
 
   /* configuration ---------------------------------------------------- */
   /** tags whose contents should be preserved verbatim (raw text)        */
@@ -68,7 +84,7 @@ export function parse_xml_fragments (xml_input) {
   };
 
   /* remove XML comments upfront -------------------------------------- */
-  const cleaned = xml_input.replace(/<!--[\s\S]*?-->/g, '');
+  const cleaned = stripped_input.replace(/<!--[\s\S]*?-->/g, '');
 
   /* tokeniser: keep “>” inside text ---------------------------------- */
   const token_re = /<[^>]+>|[^<]+/g;
