@@ -115,6 +115,15 @@ test('attributes remain strings unless explicitly numeric', t => {
   });
 });
 
+/* single-quoted attributes ------------------------------------------- */
+test('handles single-quoted attribute values', t => {
+  const xml = "<root data='alpha' count='7'></root>";
+  const out = parse_xml_fragments(xml);
+  t.deepEqual(out, {
+    root: { attributes: { data: 'alpha', count: 7 }, contents: null }
+  });
+});
+
 /* repeated top-level same tag → array ------------------------------- */
 test('duplicate top-level elements collapse into array', t => {
   const xml = '<item>1</item><item>2</item>';

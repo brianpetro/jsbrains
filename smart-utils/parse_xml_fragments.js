@@ -34,10 +34,11 @@ export function parse_xml_fragments (xml_input) {
   const parse_attributes = (str) => {
     if (!str) return {};
     const attrs = {};
-    const attr_re = /(\w[\w.\-]*)\s*=\s*"([^"]*)"/g;
+    const attr_re = /(\w[\w.\-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
     let m;
     while ((m = attr_re.exec(str)) !== null) {
-      const [, key, raw_val] = m;
+      const [, key, val_dq, val_sq] = m;
+      const raw_val = val_dq ?? val_sq;
       attrs[key] = coerce_primitives(raw_val);
     }
     return attrs;
