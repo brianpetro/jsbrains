@@ -196,6 +196,13 @@ Smart View supports various setting types:
 - `folder`: Folder selection
 - `text-file`: Text file selection
 
+### callbacks
+```js
+if (callback) callback(path, value, elm, scope);
+```
+- [ ] TODO: clarify the purpose and usage of the callback function.
+
+
 ## Custom Adapters
 
 To create a custom adapter for a specific environment:
