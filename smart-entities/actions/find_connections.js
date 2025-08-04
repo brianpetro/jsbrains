@@ -5,7 +5,7 @@ import { sort_by_score } from "../utils/sort_by_score.js";
  * @param {Object} [params={}] - Parameters for finding connections.
  * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
  */
-export async function find_connections(params = {}) {
+async function find_connections(params = {}) {
   const filter_opts = this.prepare_find_connections_filter_opts(params);
   const limit = params.filter?.limit
     || params.limit // DEPRECATED: for backwards compatibility
@@ -22,3 +22,4 @@ export async function find_connections(params = {}) {
   return this.connections_from_cache(cache_key);
 }
 find_connections.action_type = "connections";
+export { find_connections };

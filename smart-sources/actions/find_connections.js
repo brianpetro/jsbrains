@@ -7,7 +7,7 @@ import { find_connections as entities_find_connections } from "smart-entities/ac
  * @param {boolean} [params.exclude_blocks_from_source_connections=false] - Whether to exclude block connections from source connections.
  * @returns {Array<SmartSource>} An array of relevant SmartSource entities.
  */
-export async function find_connections(params={}) {
+async function find_connections(params={}) {
   let connections;
   const filter_settings = this.env.settings.smart_view_filter;
   const exclude_blocks_from_source_connections = params.exclude_blocks_from_source_connections ?? filter_settings?.exclude_blocks_from_source_connections ?? false;
@@ -39,3 +39,5 @@ export async function find_connections(params={}) {
   return connections;
 }
 find_connections.action_type = "connections";
+
+export { find_connections };
