@@ -21,3 +21,4 @@ export async function find_connections(params = {}) {
   }
   return this.connections_from_cache(cache_key);
 }
+find_connections.action_type = "connections";

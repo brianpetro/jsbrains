@@ -38,3 +38,4 @@ export async function find_connections(params={}) {
   }
   return connections;
 }
+find_connections.action_type = "connections";
