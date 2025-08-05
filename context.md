@@ -263,7 +263,7 @@ Per-item counter-part of `EntitiesVectorAdapter`.
 
 ##### Methods / API
 
-###### `get_vec()` `set_vec(vec)` `delete_vec()`
+###### `get_vec()` `set_vec(vec)` `delete_vec()`
 CRUD for the stored vector; overridden by concrete adapters.
 
 
@@ -501,14 +501,14 @@ Builds `"breadcrumbs\n\ncontent"` payload; prunes or re-uses cache depending on 
 ###### `read()`
 Safe wrapper around `block_adapter.read()` that converts “not found” errors to sentinel text for display.
 
-###### `append(content)` `update(new_content)` `remove()` `move_to(to_key)`
+###### `append(content)` `update(new_content)` `remove()` `move_to(to_key)`
 Thin façades that delegate the heavy lifting to the adapter then `queue_save()` the entity.
 
 ###### `queue_embed()` / `queue_import()`
 Bubble block-level requests up to `SmartSources` so related source and sibling blocks stay consistent.
 
 ###### *computed getters*  
-`breadcrumbs` `should_embed` `next_block` `sub_blocks` … expose rich state without extra allocations.
+`breadcrumbs` `should_embed` `next_block` `sub_blocks` … expose rich state without extra allocations.
 
 # `SmartModel`
 Adapter-centric wrapper that standardises model configuration, state transitions, and settings plumbing.
@@ -561,7 +561,7 @@ Back-reference to the owning `SmartModel` instance.
 Lifecycle flag identical to the parent model (`'unloaded'`, `'loaded'`, …).
 
 ##### Methods / API
-###### `load()` `unload()`
+###### `load()` `unload()`
 Optional async hooks where adapters open HTTP clients, warm caches, or tear them down.
 
 ###### `get_models(refresh?)`
@@ -620,7 +620,7 @@ Returns `{ valid, message }` from the adapter’s own checks.
 ###### `get settings_config()`
 Composes root dropdown (`adapter`) with `adapter.settings_config`; placeholder `[CHAT_ADAPTER]` tokens are post-processed per selection.
 
-###### `get models()` `get can_stream()` `get can_use_tools()`
+###### `get models()` `get can_stream()` `get can_use_tools()`
 Syntactic sugar exposing adapter capabilities.
 
 
@@ -643,7 +643,7 @@ Back-reference to owning `SmartChatModel` instance.
 
 ##### Methods / API
 
-###### `complete(req)` `stream(req, handlers)` `count_tokens(input)` `test_api_key()`
+###### `complete(req)` `stream(req, handlers)` `count_tokens(input)` `test_api_key()`
 Declared abstract – must be implemented by provider adapters.
 
 ###### `settings_config`
@@ -770,14 +770,14 @@ Root dropdown (`adapter`) + adapter-specific config via `process_settings_config
 *Abstract* superclass; concrete adapters (Transformers, OpenAI, Ollama, …) share:
 
 ##### Methods / API
-###### `count_tokens(input)` `embed(input)` `embed_batch(inputs)`
+###### `count_tokens(input)` `embed(input)` `embed_batch(inputs)`
 Declared abstract – must be implemented by subclasses.
 
 ###### `settings_config`
 Base dropdown for `[ADAPTER].model_key`; subclasses merge extras.
 
 ###### *helpers*
-`dims` `max_tokens` `batch_size` dynamic getters that respect GPU & user overrides.
+`dims` `max_tokens` `batch_size` dynamic getters that respect GPU & user overrides.
 
 # `SmartEmbedModelApiAdapter`
 HTTP-centric subclass for **remote** services (OpenAI, Ollama, Cohere …).
@@ -793,7 +793,7 @@ Lazy `SmartHttpRequest` (Fetch by default).
 3. Retries with back-off on 4 × errors
 4. Parses with `new res_adapter(this, resp).to_openai()`
 
-###### `prepare_request_headers()` `validate_api_key()` `handle_request_err()` generic helpers.
+###### `prepare_request_headers()` `validate_api_key()` `handle_request_err()` generic helpers.
 
 ### `SmartEmbedModelRequestAdapter`
 Stateless translator for **outgoing** payloads.
