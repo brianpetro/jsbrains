@@ -15,6 +15,7 @@ import {
   PdfContextItem,
 } from './context_item.js';
 import { image_extension_regex } from './utils/image_extension_regex.js';
+import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
 export class SmartContext extends CollectionItem {
   static version = 1;
   static get defaults() {
@@ -62,9 +63,10 @@ export class SmartContext extends CollectionItem {
    * @param {string[]} keys
    */
   get_context_items(keys = this.context_item_keys) {
-    return keys
+    return filter_redundant_context_items(keys
       .map(k => this.get_context_item(k))
-      .filter(Boolean);
+      .filter(Boolean)
+    );
   }
 
   /** Map any key to ContextItem subclass */

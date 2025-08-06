@@ -523,6 +523,18 @@ test.serial('Nonexistent file references should be skipped gracefully', async t 
   t.falsy(Object.keys(snapshot.items[0]).length, 'No valid items at depth=0');
   t.true(snapshot.missing_items.includes('missingFile.md'), 'Missing file should be in missing_files');
 });
+
+test('add_to_snapshot failure is recorded as missing', async t => {
+  const fake_ctx = {
+    get_item_keys_by_depth: () => ['a.md'],
+    get_context_items: () => [{
+      path: 'a.md',
+      async add_to_snapshot() { throw new Error('ENOENT'); }
+    }]
+  };
+  const snapshot = await get_snapshot(fake_ctx, {});
+  t.true(snapshot.missing_items.includes('a.md'));
+});
 /**
  * NEW TEST (12) - verify that outlinks inside an excluded heading are NOT followed
  * when 'follow_links_in_excluded' is false.

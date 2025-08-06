@@ -16,8 +16,16 @@ export class BaseContextItem {
   get name () {
     return this.path.split('/').pop();
   }
+
+  /**
+   * @deprecated use key
+   */
   get path () {
     return this.key;
+  }
+
+  get exists () {
+    return true;
   }
 
   /* fallback empty link arrays so link‑depth traversal works */
@@ -78,6 +86,9 @@ export class SourceContextItem extends BaseContextItem {
   }
   get outlinks() {
     return this.ref.outlinks || [];
+  }
+  get exists () {
+    return !!(this.ref && !this.ref?.is_gone);
   }
   async add_to_snapshot(snapshot, opts) {
     let raw = await this.ref.read();

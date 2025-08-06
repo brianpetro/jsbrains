@@ -37,9 +37,12 @@ export async function get_snapshot(ctx, opts = {}) {
 
     /* ── add items (mutates `snapshot`) ─────────────────────────────────── */
     for (const item of ctx_items) {
-      await item.add_to_snapshot(snapshot, { ...opts, depth });
-
-      seen.add(item.path);
+      try {
+        await item.add_to_snapshot(snapshot, { ...opts, depth });
+        seen.add(item.path);
+      } catch (err) {
+        snapshot.missing_items.push(item.path);
+      }
     }
 
     /* ── schedule keys for next depth ──────────────────────────────────── */
