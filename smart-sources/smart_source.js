@@ -193,6 +193,17 @@ export class SmartSource extends SmartEntity {
   /**
    * ADAPTER METHODS
    */
+  use_source_adapter(method, ...args) {
+    if(!this.source_adapter){
+      console.warn(`No source adapter available for ${this.key}. Cannot use method ${method}.`);
+      return;
+    }
+    if(typeof this.source_adapter[method] !== 'function') {
+      console.warn(`Source adapter for ${this.key} does not implement method ${method}.`);
+      return;
+    }
+    return this.source_adapter[method](...args);
+  }
   /**
    * Appends content to the end of the source file.
    * @async
@@ -200,7 +211,8 @@ export class SmartSource extends SmartEntity {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   async append(content) {
-    await this.source_adapter.append(content);
+    // await this.source_adapter.append(content);
+    await this.use_source_adapter('append', content);
     await this.import();
   }
 
@@ -213,11 +225,12 @@ export class SmartSource extends SmartEntity {
    */
   async update(full_content, opts = {}) {
     try {
-      await this.source_adapter.update(full_content, opts);
+      // await this.source_adapter.update(full_content, opts);
+      await this.use_source_adapter('update', full_content, opts);
       await this.import(); // Also queues embed
     } catch (error) {
-      console.error('Error during update:', error);
-      throw error;
+      console.error(`Error during update for ${this.key}:`, error);
+      // throw error;
     }
   }
 
@@ -229,11 +242,11 @@ export class SmartSource extends SmartEntity {
    */
   async read(opts = {}) {
     try {
-      const content = await this.source_adapter.read(opts);
-      return content;
+      // return await this.source_adapter.read(opts) || '';
+      return await this.use_source_adapter('read', opts) || '';
     } catch (error) {
-      console.error('Error during read:', error);
-      throw error;
+      console.error(`Error during reading ${this.key} (returning empty string)`, error);
+      return '';
     }
   }
 
@@ -245,10 +258,11 @@ export class SmartSource extends SmartEntity {
    */
   async remove() {
     try {
-      await this.source_adapter.remove();
+      // await this.source_adapter.remove();
+      await this.use_source_adapter('remove');
     } catch (error) {
-      console.error('Error during remove:', error);
-      throw error;
+      console.error(`Error during remove for ${this.key}:`, error);
+      // throw error;
     }
   }
 
@@ -263,10 +277,11 @@ export class SmartSource extends SmartEntity {
    */
   async move_to(entity_ref) {
     try {
-      await this.source_adapter.move_to(entity_ref);
+      // await this.source_adapter.move_to(entity_ref);
+      await this.use_source_adapter('move_to', entity_ref);
     } catch (error) {
-      console.error('error_during_move:', error);
-      throw error;
+      console.error(`Error during move for ${this.key}:`, error);
+      // throw error;
     }
   }
 
@@ -282,11 +297,12 @@ export class SmartSource extends SmartEntity {
    */
   async merge(content, opts = {}) {
     try {
-      await this.source_adapter.merge(content, opts);
+      // await this.source_adapter.merge(content, opts);
+      await this.use_source_adapter('merge', content, opts);
       await this.import();
     } catch (error) {
-      console.error('Error during merge:', error);
-      throw error;
+      console.error(`Error during merge for ${this.key}:`, error);
+      // throw error;
     }
   }
 
