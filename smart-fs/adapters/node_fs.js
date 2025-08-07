@@ -161,6 +161,18 @@ export class NodeFsSmartFsAdapter {
     }
   }
 
+  exists_sync(rel_path) {
+    try {
+      fs.accessSync(this.#resolve_path(rel_path));
+      return true;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return false;
+      }
+      throw error; // Re-throw the error if it's not a 'file not found' error
+    }
+  }
+
   /**
    * List contents of a directory
    * @param {string} rel_path - Relative path of the directory to list

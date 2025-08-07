@@ -225,6 +225,13 @@ class SmartFs {
     return this.post_process(resp);
   }
 
+  use_adapter_sync(method, paths, ...args) {
+    if(!this.adapter[method]) throw new Error(`Method ${method} not found in adapter`);
+    paths = this.pre_process(paths ?? []);
+    let resp = this.adapter[method](...paths, ...args);
+    return this.post_process(resp);
+  }
+
   /**
    * Append content to a file
    * 
@@ -249,6 +256,8 @@ class SmartFs {
    * @returns {Promise<boolean>} True if the path exists, false otherwise
    */
   async exists(rel_path) { return await this.use_adapter('exists', [rel_path]); }
+
+  exists_sync(rel_path) { return this.use_adapter_sync('exists_sync', [rel_path]); }
 
   /**
    * List files in a directory

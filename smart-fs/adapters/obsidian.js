@@ -86,6 +86,10 @@ export class SmartFsObsidianAdapter {
     return await this.obsidian_adapter.exists(rel_path);
   }
 
+  exists_sync(rel_path) {
+    return !!(this.obsidian_app.vault.getAbstractFileByPath(rel_path));
+  }
+
   /**
    * List files in a directory (NOT up-to-date with list_recursive)
    * 
