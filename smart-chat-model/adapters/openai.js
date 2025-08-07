@@ -129,7 +129,7 @@ function get_max_input_tokens(model_id){
     return 200_000;
   }
   if(model_id.startsWith('gpt-5')){
-    return 272_000;
+    return 400_000;
   }
   if(model_id.startsWith('gpt-4o') || model_id.startsWith('gpt-4.5') || model_id.startsWith('gpt-4-turbo')){
     return 128_000;
