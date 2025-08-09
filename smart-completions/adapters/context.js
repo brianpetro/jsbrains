@@ -68,6 +68,7 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
     if(compiled.pdfs?.length > 0) {
       await this.insert_pdfs(compiled.pdfs);
     }
+    this.data.completion.used_context = true;
   }
 
   async insert_images(image_paths) {
