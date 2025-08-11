@@ -30,17 +30,6 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
   }
 
   /**
-   * Process inputs in batches
-   * @param {Array<string>} inputs - Array of texts to embed
-   * @param {Object} options - Embedding options
-   * @returns {Promise<Array<Object>>} Embedding results
-   */
-  async batch_embed(inputs, options = {}) {
-    console.log(`Gemini batch embedding ${inputs.length} inputs`);
-    return await super.embed(inputs, options);
-  }
-
-  /**
    * Initialize tokenizer
    * @returns {Promise<void>}
    */
@@ -180,14 +169,26 @@ class SmartEmbedGeminiRequestAdapter extends SmartEmbedModelRequestAdapter {
   prepare_request_body() {
     const requests = this.embed_inputs.map(input => {
       const [title, ...content] = input.split("\n");
-      return {
-        model: this.adapter.model_config.id,
-        content: {
-          parts: [{text: content.join("\n")}]
-        },
-        outputDimensionality: this.adapter.model_config.dims,
-        taskType: "RETRIEVAL_DOCUMENT",
-        title: title,
+      const doc_content = content.join("\n").trim() || "";
+      if (doc_content.length) {
+        return {
+          model: this.adapter.model_config.id,
+          content: {
+            parts: [{text: doc_content}]
+          },
+          outputDimensionality: this.adapter.model_config.dims,
+          taskType: "RETRIEVAL_DOCUMENT",
+          title: title,
+        }
+      }else{
+        return {
+          model: this.adapter.model_config.id,
+          content: {
+            parts: [{text: title}]
+          },
+          outputDimensionality: this.adapter.model_config.dims,
+          taskType: "RETRIEVAL_DOCUMENT",
+        }
       }
     });
 
