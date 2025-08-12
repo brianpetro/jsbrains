@@ -65,11 +65,22 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
   }
 
   /**
-   * Get available models (hardcoded list)
+   * Get available models (hardcoded list) and enrich via models.dev
    * @returns {Promise<Object>} Map of model objects
    */
-  get_models() {
-    return Promise.resolve(this.models);
+  async get_models() {
+    try {
+      this.model_data = this.anthropic_models;
+      this.model_data = await this.get_enriched_model_data();
+      this.model_data_loaded_at = Date.now();
+      this.adapter_settings.models = this.model_data;
+      setTimeout(() => {
+        this.model.re_render_settings();
+      }, 100);
+      return this.model_data;
+    } catch {
+      return this.anthropic_models;
+    }
   }
 
   is_end_of_stream(event) {
@@ -80,7 +91,7 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
    * Get hardcoded list of available models
    * @returns {Object} Map of model objects with capabilities and limits
    */
-  get models() {
+  get anthropic_models() {
     return {
       // ── Claude 4 family ──────────────────────────────────────────────────────
 

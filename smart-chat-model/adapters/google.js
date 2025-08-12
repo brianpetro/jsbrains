@@ -5,11 +5,11 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  * Handles API communication with Gemini models, including token counting and multimodal inputs.
  * @extends SmartChatModelApiAdapter
  */
-export class SmartChatModelGeminiAdapter extends SmartChatModelApiAdapter {
-  static key = "gemini";
+export class SmartChatModelGoogleAdapter extends SmartChatModelApiAdapter {
+  static key = "google";
 
   static defaults = {
-    description: "Google Gemini",
+    description: "Google (Gemini)",
     type: "API", 
     api_key_header: "none",
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
@@ -410,4 +410,26 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
     
   }
 
+}
+
+
+/**
+ * Included for backward compatibility.
+ * @deprecated use SmartChatModelGoogleAdapter instead
+ */
+export class SmartChatModelGeminiAdapter extends SmartChatModelGoogleAdapter {
+  static key = 'gemini';
+  static defaults = {
+    description: "Gemini (SWITCH TO **GOOGLE** ADAPTER)",
+    type: "API", 
+    api_key_header: "none",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:generateContent",
+    endpoint_streaming: "https://generativelanguage.googleapis.com/v1beta/models/MODEL_NAME:streamGenerateContent",
+    streaming: true,
+    adapter: "Gemini",
+    models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+    default_model: "gemini-1.5-pro",
+    signup_url: "https://ai.google.dev/",
+    can_use_tools: true,
+  };
 }

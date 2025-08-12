@@ -11,9 +11,12 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
   static defaults = {
     description: "Ollama (Local)",
     type: "API",
-    models_endpoint: "http://localhost:11434/api/tags",
-    endpoint: "http://localhost:11434/api/chat",
+    // models_endpoint: "http://localhost:11434/api/tags",
+    // endpoint: "http://localhost:11434/api/chat",
     api_key: 'na',
+    host: "http://localhost:11434",
+    endpoint: "/api/embed",
+    models_endpoint: "/api/tags",
     // streaming: false, // TODO: Implement streaming
     streaming: true,
   }
@@ -21,15 +24,16 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
   req_adapter = SmartChatModelOllamaRequestAdapter;
   res_adapter = SmartChatModelOllamaResponseAdapter;
 
-  /**
-   * Get parameters for models request - no auth needed for local instance
-   * @returns {Object} Request parameters
-   */
-  get models_request_params() {
-    return {
-      url: this.adapter_config.models_endpoint,
-    };
+  get endpoint() {
+    return `${this.model_config.host}${this.model_config.endpoint}`;
   }
+  get models_endpoint() {
+    return `${this.model_config.host}${this.model_config.models_endpoint}`;
+  }
+  get model_show_endpoint() {
+    return `${this.model_config.host}/api/show`;
+  }
+  get models_endpoint_method () { return 'GET'; }
 
   /**
    * Get available models from local Ollama instance
@@ -38,10 +42,11 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
    */
   async get_models(refresh=false) {
     if(!refresh
-      && this.adapter_config?.models
-      && typeof this.adapter_config.models === 'object'
-      && Object.keys(this.adapter_config.models).length > 0
-    ) return this.adapter_config.models; // return cached models if not refreshing
+      && typeof this.model_data === 'object'
+      && Object.keys(this.model_data || {}).length > 0
+      && this.model_data_loaded_at
+      && (time_now - this.model_data_loaded_at < 1 * 60 * 60 * 1000) // cache fresh for 1 hour
+    ) return this.model_data; // return cached models if not refreshing
     try {
       const list_resp = await this.http_adapter.request(this.models_request_params);
       const list_data = await list_resp.json();
@@ -49,17 +54,19 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       const models_raw_data = [];
       for(const model of list_data.models){
         const model_details_resp = await this.http_adapter.request({
-          url: `http://localhost:11434/api/show`,
+          url: this.model_show_endpoint,
           method: 'POST',
           body: JSON.stringify({model: model.name}),
         });
         const model_details_data = await model_details_resp.json();
         models_raw_data.push({...model_details_data, name: model.name});
       }
-      const model_data = this.parse_model_data(models_raw_data);
-      this.adapter_settings.models = model_data; // set to adapter_settings to persist
+      this.model_data = this.parse_model_data(models_raw_data);
+      await this.get_enriched_model_data();
+      this.adapter_settings.models = this.model_data; // set to adapter_settings to persist
       this.model.re_render_settings(); // re-render settings to update models dropdown
-      return model_data;
+      this.model_data_loaded_at = Date.now();
+      return this.model_data;
 
     } catch (error) {
       console.error('Failed to fetch model data:', error);
@@ -108,6 +115,12 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
   get settings_config() {
     const config = super.settings_config;
     delete config['[CHAT_ADAPTER].api_key'];
+    config['[CHAT_ADAPTER].host'] = {
+      name: 'Ollama host',
+      type: 'text',
+      description: 'Enter the host for your Ollama instance',
+      default: this.constructor.defaults.host,
+    };
     return config;
   }
   is_end_of_stream(event) {

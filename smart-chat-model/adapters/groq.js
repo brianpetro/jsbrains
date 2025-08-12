@@ -31,35 +31,7 @@ export class SmartChatModelGroqAdapter extends SmartChatModelApiAdapter {
    */
   get res_adapter() { return SmartChatModelGroqResponseAdapter; }
 
-  /**
-   * Retrieve the list of models from Groq's API.
-   * @returns {Promise<Object>} A dictionary of models keyed by their id
-   */
-  async get_models(refresh = false) {
-    if (!refresh && this.adapter_config?.models && Object.keys(this.adapter_config.models).length > 0) {
-      return this.adapter_config.models;
-    }
-
-    const request_params = {
-      url: this.models_endpoint,
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.api_key}`
-      }
-    };
-
-    try {
-      const resp = await this.http_adapter.request(request_params);
-      const data = await resp.json();
-      const model_data = this.parse_model_data(data);
-      this.adapter_settings.models = model_data;
-      this.model.re_render_settings();
-      return model_data;
-    } catch (error) {
-      console.error('Failed to fetch Groq model data:', error);
-      return {"_": {id: "Failed to fetch models from Groq"}};
-    }
-  }
+  get models_endpoint_method () { return 'GET'; }
 
   /**
    * Parse model data from Groq API format to a dictionary keyed by model ID.

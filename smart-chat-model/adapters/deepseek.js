@@ -12,12 +12,12 @@ export class SmartChatModelDeepseekAdapter extends SmartChatModelApiAdapter {
   static defaults = {
     description: 'DeepSeek',
     type: 'API',
-    endpoint: 'https://api.deepseek.ai/v1/chat/completions',
+    endpoint: 'https://api.deepseek.com/chat/completions',
     streaming: true,
     adapter: 'DeepSeek',
-    models_endpoint: 'https://api.deepseek.ai/v1/models',
+    models_endpoint: 'https://api.deepseek.com/models',
     default_model: 'deepseek-base',
-    signup_url: 'https://deepseek.ai/signup',
+    signup_url: 'https://deepseek.com/signup',
     can_use_tools: true
   };
 
@@ -123,43 +123,4 @@ export class SmartChatModelDeepseekRequestAdapter extends SmartChatModelRequestA
  * @extends SmartChatModelResponseAdapter
  */
 export class SmartChatModelDeepseekResponseAdapter extends SmartChatModelResponseAdapter {
-  /**
-   * Handle streaming chunk in raw form
-   * @param {string} chunk - SSE data chunk
-   */
-  handle_chunk(chunk) {
-    if(!chunk.trim()) return;
-    // Typically chunk starts with 'data: '
-    let raw = chunk.trim();
-    if(raw.startsWith('data: ')) {
-      raw = raw.slice(6);
-    }
-    if(raw === '[DONE]') return; // typical finish indicator
-
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch(err) {
-      console.warn('DeepSeek invalid JSON chunk:', raw);
-      return;
-    }
-    // Initialize base structure if missing
-    if(!this._res.choices?.[0]) {
-      this._res.choices = [ { index: 0, message: { role: 'assistant', content: '' } } ];
-    }
-    // Fill in response ID / model if present
-    if(parsed.id && !this._res.id) this._res.id = parsed.id;
-    if(parsed.model && !this._res.model) this._res.model = parsed.model;
-
-    // If partial content is in "choices[0].delta.content" style, accumulate
-    if(parsed.choices && Array.isArray(parsed.choices)) {
-      const delta = parsed.choices[0]?.delta;
-      if(delta?.content) {
-        this._res.choices[0].message.content += delta.content;
-      }
-      if(parsed.usage && !this._res.usage) {
-        this._res.usage = parsed.usage;
-      }
-    }
-  }
 }

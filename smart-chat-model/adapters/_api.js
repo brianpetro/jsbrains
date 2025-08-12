@@ -3,6 +3,9 @@ import { SmartStreamer } from '../streamer.js'; // move to smart-http-request???
 import { SmartChatModelAdapter } from './_adapter.js';
 import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
 
+const MODEL_ADAPTER_CACHE = {}; // this is gross but makes it easy
+const MODELS_DEV_CACHE = { data: null, fetched_at: 0 };
+
 /**
  * Base API adapter class for SmartChatModel.
  * Handles HTTP requests and response processing for remote chat services.
@@ -15,6 +18,10 @@ import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.
  * @property {SmartChatModelResponseAdapter} res_adapter - The response adapter class
  */
 export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
+  constructor(model){
+    super(model);
+    this.model_data_loaded_at = 0;
+  }
   
   /**
    * Get the request adapter class.
@@ -97,27 +104,72 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     return true;
   }
 
+  async get_enriched_model_data() {
+    const provider_key = this.constructor.key;
+    await this.get_models_dev_index();
+    const provider_data = MODELS_DEV_CACHE.data[provider_key] || {};
+    const get_limit_i = (model) => model.limit?.context || 10000;
+    const get_limit_o = (model) => model.limit?.output || 10000;
+    const get_multimodal = (model) => model.modalities?.input?.includes('image') || false;
+    if(Object.keys(this.model_data || {}).length > 0) {
+      for (const [key, model] of Object.entries(this.model_data)) {
+        const enriched = provider_data?.models?.[model.id];
+        if (!enriched) continue;
+        this.model_data[key].models_dev = enriched;
+        this.model_data[key].name = enriched.name || model.name;
+        this.model_data[key].max_input_tokens = get_limit_i(enriched);
+        this.model_data[key].max_output_tokens = get_limit_o(enriched);
+        this.model_data[key].multimodal = get_multimodal(enriched);
+        this.model_data[key].can_use_tools = enriched.tool_call;
+        this.model_data[key].cost = enriched.cost;
+      }
+    }else{
+      for(const [key, model] of Object.entries(provider_data?.models || {})) {
+        this.model_data[key] = {
+          ...model,
+          model_name: model.name,
+          description: model.name,
+          max_input_tokens: get_limit_i(model),
+          max_output_tokens: get_limit_o(model),
+          multimodal: get_multimodal(model),
+          can_use_tools: model.tool_call,
+        };
+      }
+    }
+
+    return this.model_data;
+
+  }
+
   /**
    * Get available models from the API.
    * @param {boolean} [refresh=false] - Whether to refresh cached models
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh=false) {
+    const time_now = Date.now();
     if(!refresh
-      && this.adapter_config?.models
-      && typeof this.adapter_config.models === 'object'
-      && Object.keys(this.adapter_config.models).length > 0
-    ) return this.adapter_config.models; // return cached models if not refreshing
-    try {
-      const response = await this.http_adapter.request(this.models_request_params);
-      const model_data = this.parse_model_data(await response.json());
-      this.adapter_settings.models = model_data; // set to adapter_settings to persist
-      this.model.re_render_settings(); // re-render settings to update models dropdown
-      return model_data;
-    } catch (error) {
-      console.error('Failed to fetch model data:', error);
-      return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
+      && typeof this.model_data === 'object'
+      && Object.keys(this.model_data || {}).length > 0
+      && this.model_data_loaded_at
+      && ((time_now - this.model_data_loaded_at) < 1 * 60 * 60 * 1000) // cache fresh for 1 hour
+    ) return this.model_data; // return cached models if not refreshing
+    if(this.api_key) {
+      try {
+        const response = await this.http_adapter.request(this.models_request_params);
+        this.model_data = this.parse_model_data(await response.json());
+      } catch (error) {
+        console.error('Failed to fetch model data:', error);
+        // return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
+      }
     }
+    this.model_data = await this.get_enriched_model_data();
+    this.model_data_loaded_at = Date.now();
+    this.adapter_settings.models = this.model_data;
+    setTimeout(() => {
+      this.model.re_render_settings();
+    }, 100);
+    return this.model_data;
   }
 
   /**
@@ -300,6 +352,47 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {number} The temperature.
    */
   get temperature() { return this.adapter_config.temperature; }
+
+  async get_models_dev_index(ttl_ms = 60 * 60 * 1000) {
+    const now = Date.now();
+    if (MODELS_DEV_CACHE?.data && (now - MODELS_DEV_CACHE?.fetched_at < ttl_ms)) {
+      return MODELS_DEV_CACHE.data;
+    }
+    try {
+      const req = {
+        url: 'https://models.dev/api.json',
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      };
+      const resp = await this.http_adapter.request(req);
+      const data = await resp.json();
+      MODELS_DEV_CACHE.data = data;
+      MODELS_DEV_CACHE.fetched_at = now;
+      return data;
+    } catch (err) {
+      console.warn('models.dev fetch failed; continuing without enrichment', err);
+      return MODELS_DEV_CACHE.data || [];
+    }
+  }
+  /**
+   * Get available models as dropdown options synchronously.
+   * @returns {Array<Object>} Array of model options.
+   */
+  get_models_as_options() {
+    if(Object.keys(this.model_data || {}).length){
+      return Object.entries(this.model_data).map(([id, model]) => ({ value: id, name: model.name || id })).sort((a, b) => a.name.localeCompare(b.name));
+    }
+    this.get_models(true); // refresh models
+    return [{value: '', name: 'No models currently available'}];
+  }
+  get model_data () {
+    if(!MODEL_ADAPTER_CACHE[this.constructor.key]) MODEL_ADAPTER_CACHE[this.constructor.key] = {};
+    return MODEL_ADAPTER_CACHE[this.constructor.key];
+  }
+  set model_data(data) {
+    if(!MODEL_ADAPTER_CACHE[this.constructor.key]) MODEL_ADAPTER_CACHE[this.constructor.key] = {};
+    MODEL_ADAPTER_CACHE[this.constructor.key] = data;
+  }
 }
 
 /**
@@ -423,7 +516,7 @@ export class SmartChatModelRequestAdapter {
     const body = {
       messages: this._transform_messages_to_openai(),
       model: this.model,
-      max_tokens: this.max_tokens,
+      // TODO max_completion_tokens
       temperature: this.temperature,
       stream: streaming,
       ...(this.tools && { tools: this._transform_tools_to_openai() }),

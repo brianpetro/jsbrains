@@ -1,7 +1,7 @@
 import test from 'ava';
 import dotenv from 'dotenv';
 import { SmartChatModel } from '../smart_chat_model.js';
-import { SmartChatModelGeminiAdapter, SmartChatModelGeminiRequestAdapter, SmartChatModelGeminiResponseAdapter } from './google.js';
+import { SmartChatModelGoogleAdapter, SmartChatModelGeminiRequestAdapter, SmartChatModelGeminiResponseAdapter } from './google.js';
 
 dotenv.config({ path: '../.env' });
 
@@ -17,7 +17,7 @@ const smart_chat_model = new SmartChatModel({
     }
   },
   adapters: {
-    google_gemini: SmartChatModelGeminiAdapter
+    google_gemini: SmartChatModelGoogleAdapter
   }
 });
 
@@ -180,7 +180,7 @@ test.serial('Live Google Gemini Integration Test', async t => {
       }
     },
     adapters: {
-      google_gemini: SmartChatModelGeminiAdapter
+      google_gemini: SmartChatModelGoogleAdapter
     }
   });
 
@@ -221,7 +221,7 @@ test.serial('Live Google Gemini get_models Integration Test', async t => {
       }
     },
     adapters: {
-      google_gemini: SmartChatModelGeminiAdapter
+      google_gemini: SmartChatModelGoogleAdapter
     }
   });
 
