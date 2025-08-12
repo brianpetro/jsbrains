@@ -1,0 +1,9 @@
+{
+  "name": "smart-events",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "main": "index.js",
+  "license": "MIT",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Zero-dependency event bus for the Smart Environment."
+}
