@@ -217,7 +217,7 @@ export class SmartSources extends SmartEntities {
       console.warn(results.error);
       return [];
     }
-    if(this.block_collection?.settings?.embed_block && !params.skip_blocks) {
+    if(this.block_collection?.settings?.embed_blocks && !params.skip_blocks) {
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
