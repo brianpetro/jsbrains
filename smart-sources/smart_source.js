@@ -491,7 +491,7 @@ export class SmartSource extends SmartEntity {
       // console.log("No source adapter found for " + this.file_type);
       for(const Adapter of Object.values(this.source_adapters)) {
         if (typeof Adapter.detect_type !== 'function') continue;
-        if (Adapter.detect_type(this.key)) {
+        if (Adapter.detect_type(this)) {
           this._source_adapter = new Adapter(this);
           break;
         }

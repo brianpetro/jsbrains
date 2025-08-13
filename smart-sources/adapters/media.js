@@ -25,8 +25,8 @@ export const infer_mime_type = name => {
 };
 
 export class MediaSourceContentAdapter extends FileSourceContentAdapter {
-  static detect_type(key) {
-    return media_extension_regex.test(key);
+  static detect_type(source) {
+    return media_extension_regex.test(source.key);
   }
 
   /**
