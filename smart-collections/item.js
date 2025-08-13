@@ -4,6 +4,7 @@ import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.j
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 import { deep_equal } from "./utils/deep_equal.js";
 import { get_item_display_name } from "./utils/get_item_display_name.js";
+import { compare } from './utils/compare.js';
 
 /**
  * @class CollectionItem
@@ -268,7 +269,20 @@ export class CollectionItem {
   }
 
   /**
+   * Compares this item with another item using a custom comparison function.
+   * @param {Item} to_item - The item to compare with.
+   * @param {function} [compare_fn] - The comparison function that takes two items and returns an object with comparison results.
+   * @returns {Object} An object containing the original item and the comparison results.
+   */
+  compare(to_item, compare_fn) {
+    return compare(this, to_item, compare_fn)
+  }
+
+
+
+  /**
    * Parses item data for additional processing. Override as needed.
+   * @deprecated is this used anywhere?
    */
   parse() { /* NO-OP by default */ }
 
@@ -383,9 +397,3 @@ export class CollectionItem {
     );
   }
 }
-
-/**
- * @function camel_case_to_snake_case
- * @description Convert CamelCase => snake_case for consistent environment keys.
- */
-export { camel_case_to_snake_case };
