@@ -6,9 +6,9 @@ Base class for smart-*-model packages.
 
 ## Features
 - Base `SmartModel` class manages:
-  - Adapter lifecycle (load/unload)
-  - Settings configuration and schema processing
-  - State transitions (`unloaded`, `loading`, `loaded`, `unloading`)
+	- Adapter lifecycle (load/unload)
+	- Settings configuration and schema processing
+	- State transitions (`unloaded`, `loading`, `loaded`, `unloading`)
 - Extensible architecture for multiple adapters
 - Centralized settings management and re-rendering triggers
 
@@ -30,9 +30,9 @@ smart-model
 import { SmartModel } from 'smart-model';
 
 const model = new SmartModel({
-  adapters: { myAdapter: MyAdapterClass },
-  settings: { model_key: 'my_model' },
-  model_config: { adapter: 'myAdapter' }
+	adapters: { myAdapter: MyAdapterClass },
+	settings: { model_key: 'my_model' },
+	model_config: { adapter: 'myAdapter' }
 });
 await model.initialize(); // Loads adapter
 ```
@@ -41,10 +41,10 @@ await model.initialize(); // Loads adapter
 Subclass `SmartModel` to add domain logic:
 ```javascript
 class MyCustomModel extends SmartModel {
-  get default_model_key() { return 'my_model'; }
-  async custom_method() {
-    return await this.invoke_adapter_method('some_adapter_method');
-  }
+	get default_model_key() { return 'my_model'; }
+	async custom_method() {
+		return await this.invoke_adapter_method('some_adapter_method');
+	}
 }
 ```
 
@@ -59,3 +59,10 @@ npm test
 
 ## License
 MIT
+## Architecture
+```mermaid
+flowchart TD
+	M[Smart Model] --> API[AI Service]
+	M --> Mods[Smart Modules]
+```
+The base model mediates requests to external AI services for downstream modules.

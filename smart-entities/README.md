@@ -56,8 +56,8 @@ const smartEntities = new SmartEntities(environment, options);
 
 // Create a new entity
 const entity = new SmartEntity(environment, {
-  path: 'path/to/file.md',
-  content: 'This is the content of the entity.'
+	path: 'path/to/file.md',
+	content: 'This is the content of the entity.'
 });
 
 // Add the entity to the collection
@@ -68,7 +68,7 @@ const nearestNeighbors = await smartEntities.nearest(entity.vec);
 
 // Perform a lookup based on hypotheticals
 const results = await smartEntities.lookup({
-  hypotheticals: ['What is the meaning of life?']
+	hypotheticals: ['What is the meaning of life?']
 });
 ```
 
@@ -89,3 +89,11 @@ When performing nearest neighbor searches or lookups, you can apply custom filte
 ## Extending Smart Entities
 
 You can extend the `SmartEntity` and `SmartEntities` classes to add custom functionality for specific types of content or use cases. For example, you might create a `SmartNote` class that extends `SmartEntity` with additional methods for working with markdown notes.
+
+## Architecture
+```mermaid
+flowchart TD
+	En[Smart Entities] --> M[Smart Model]
+	En --> S[Smart Sources]
+```
+Entities couple model capabilities with their originating sources.

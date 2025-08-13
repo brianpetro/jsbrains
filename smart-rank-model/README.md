@@ -36,16 +36,16 @@ import { SmartRankModel } from 'smart-rank-model';
 import { cohere as CohereAdapter } from 'smart-rank-model/adapters.js';
 
 const rankModel = new SmartRankModel({
-  model_key: 'cohere-rerank-english-v3.0',
-  adapters: { cohere: CohereAdapter },
-  model_config: { api_key: 'YOUR_COHERE_API_KEY', endpoint: "https://api.cohere.ai/v1/rerank" }
+	model_key: 'cohere-rerank-english-v3.0',
+	adapters: { cohere: CohereAdapter },
+	model_config: { api_key: 'YOUR_COHERE_API_KEY', endpoint: "https://api.cohere.ai/v1/rerank" }
 });
 await rankModel.initialize();
 
 const query = "What is the capital of the United States?";
 const documents = [
-  "Carson City is the capital city of Nevada.",
-  "Washington, D.C. is the capital of the United States."
+	"Carson City is the capital city of Nevada.",
+	"Washington, D.C. is the capital of the United States."
 ];
 const results = await rankModel.rank(query, documents);
 console.log(results);
@@ -60,8 +60,8 @@ Use `transformers` adapter to run local ranking models via WebAssembly, WebGPU, 
 import { transformers as TransformersAdapter } from 'smart-rank-model/adapters.js';
 
 const localModel = new SmartRankModel({
-  model_key: 'jinaai/jina-reranker-v1-tiny-en',
-  adapters: { transformers: TransformersAdapter },
+	model_key: 'jinaai/jina-reranker-v1-tiny-en',
+	adapters: { transformers: TransformersAdapter },
 });
 await localModel.initialize();
 const response = await localModel.rank("organic skincare", ["Some doc", "Another doc"]);
@@ -75,3 +75,11 @@ npm test
 
 ## License
 MIT
+
+## Architecture
+```mermaid
+flowchart TD
+	R[Smart Rank Model] --> M[Smart Model]
+	R --> Col[Smart Collections]
+```
+The rank model scores collections using a base model before surfacing results.

@@ -56,22 +56,29 @@ The library uses the adapter pattern to normalize different LLM APIs into a cons
 
 ```javascript
 const chatModel = new SmartChatModel({
-  platform_key: 'anthropic', // Select provider
-  adapters: {
-    anthropic: AnthropicAdapter
-  },
-  settings: {
-    anthropic: {
-      api_key: 'your-api-key',
-      model_key: 'claude-3-opus-20240229'
-    }
-  }
+	platform_key: 'anthropic', // Select provider
+	adapters: {
+		anthropic: AnthropicAdapter
+	},
+	settings: {
+		anthropic: {
+			api_key: 'your-api-key',
+			model_key: 'claude-3-opus-20240229'
+		}
+	}
 });
 
 // Use OpenAI format regardless of provider
 const response = await chatModel.complete({
-  messages: [
-    { role: 'user', content: 'Hello!' }
-  ]
+	messages: [
+		{ role: 'user', content: 'Hello!' }
+	]
 });
 ```
+## Architecture
+```mermaid
+flowchart TD
+	C[Smart Chat Model] --> M[Smart Model]
+	M --> LLM[Chat Service]
+```
+The chat model wraps the base model with dialogue-specific helpers that call external chat services.

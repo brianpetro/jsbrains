@@ -30,7 +30,7 @@ import { Cluster, Clusters } from 'smart-clusters';
 ```js
 env.item_types.Cluster = Cluster;
 env.collections.clusters = new Clusters(env, {
-  collection_key: 'clusters'
+	collection_key: 'clusters'
 });
 ```
 
@@ -41,11 +41,11 @@ Or if your environment dynamically loads modules, ensure `Cluster` and `Clusters
 ```js
 // Create a new cluster with an initial center
 const new_cluster = await env.clusters.create_or_update({
-  data: {
-    center: {
-      'some_item_key.md': { weight: 1 }
-    }
-  }
+	data: {
+		center: {
+			'some_item_key.md': { weight: 1 }
+		}
+	}
 });
 
 // Retrieve an existing cluster
@@ -84,19 +84,26 @@ const { new_cluster, new_cluster_group } = await existing.add_center(another_ite
 Extends `CollectionItem`. Represents a single cluster.
 
 - **Key Properties**
-    - `data.center`: Object keyed by center item keys, each value like `{ weight: number }`.
-    - `data.center_vec`: Cached centroid.
-    - `data.members`: Tracks membership states for each item.
-    - `data.sim_key`: Stores the stable sim-hash key after the first calculation.
+		- `data.center`: Object keyed by center item keys, each value like `{ weight: number }`.
+		- `data.center_vec`: Cached centroid.
+		- `data.members`: Tracks membership states for each item.
+		- `data.sim_key`: Stores the stable sim-hash key after the first calculation.
 - **Methods**
-    - `get_key()`: Returns a 32-bit sim-hash of the centroid vector.
-    - `add_member(item)`: Adds an item to the cluster.
-    - `add_members(items)`: Adds multiple items to the cluster.
-    - `remove_member(item)`: Removes an item from the cluster.
-    - `remove_members(items)`: Removes multiple items from the cluster.
-    - `add_center(item)`, `add_centers(items)`: Clones to a new cluster with additional center(s).
-    - `remove_center(item)`, `remove_centers(items)`: Clones to a new cluster without certain center(s).
+		- `get_key()`: Returns a 32-bit sim-hash of the centroid vector.
+		- `add_member(item)`: Adds an item to the cluster.
+		- `add_members(items)`: Adds multiple items to the cluster.
+		- `remove_member(item)`: Removes an item from the cluster.
+		- `remove_members(items)`: Removes multiple items from the cluster.
+		- `add_center(item)`, `add_centers(items)`: Clones to a new cluster with additional center(s).
+		- `remove_center(item)`, `remove_centers(items)`: Clones to a new cluster without certain center(s).
 
 ### `Clusters`
 
 Extends `Collection`. Manages a set of `Cluster` items.
+## Architecture
+```mermaid
+flowchart TD
+	S[Smart Sources] --> C[Smart Clusters]
+	C --> G[Smart Groups]
+```
+Clusters group similar sources before handing them to higher-level groupings.

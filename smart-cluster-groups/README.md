@@ -21,7 +21,7 @@ Similar to other collections:
 ```js
 env.item_types.ClusterGroup = ClusterGroup;
 env.collections.cluster_groups = new ClusterGroups(env, {
-  collection_key: 'cluster_groups'
+	collection_key: 'cluster_groups'
 });
 ```
 
@@ -35,13 +35,13 @@ const c1 = env.clusters.get('hash1234');
 const c2 = env.clusters.get('hash5678');
 
 const new_group = env.cluster_groups.create_or_update({
-  data: {
-    clusters: {
-      [c1.key]: { filters: {} },
-      [c2.key]: { filters: {} }
-    },
-    filters: { some_global_filter: true }
-  }
+	data: {
+		clusters: {
+			[c1.key]: { filters: {} },
+			[c2.key]: { filters: {} }
+		},
+		filters: { some_global_filter: true }
+	}
 });
 ```
 
@@ -54,17 +54,17 @@ const snapshot = await new_group.get_snapshot(/* optional array of items */);
 console.log(snapshot.members);
 /*
 {
-  clusters: [ ... ],
-  members: [
-    {
-      item: <ref>,
-      clusters: {
-        [cluster.key]: { score },
-        ...
-      }
-    }
-  ],
-  filters: { ...group-level filters }
+	clusters: [ ... ],
+	members: [
+		{
+			item: <ref>,
+			clusters: {
+				[cluster.key]: { score },
+				...
+			}
+		}
+	],
+	filters: { ...group-level filters }
 }
 */
 ```
@@ -75,8 +75,8 @@ Cluster groups are commonly "cloned" when you want to add or remove certain clus
 
 ```js
 const cloned_group = await new_group.clone({
-  remove_clusters: ['hash5678'],
-  add_clusters: ['hash9999']
+	remove_clusters: ['hash5678'],
+	add_clusters: ['hash9999']
 });
 ```
 
@@ -127,39 +127,48 @@ Extends `Collection`. Manages multiple `ClusterGroup` items. Basic usage:
 ## Example Flow
 
 1. **Create or Fetch Clusters** in `smart-clusters`:
-    
-    ```js
-    const cluster_a = env.clusters.create_or_update({ data: { center: { 'item_a': { weight: 1 } } } });
-    const cluster_b = env.clusters.create_or_update({ data: { center: { 'item_b': { weight: 2 } } } });
-    ```
-    
+		
+		```js
+		const cluster_a = env.clusters.create_or_update({ data: { center: { 'item_a': { weight: 1 } } } });
+		const cluster_b = env.clusters.create_or_update({ data: { center: { 'item_b': { weight: 2 } } } });
+		```
+		
 2. **Create a Cluster Group** referencing these clusters:
-    
-    ```js
-    const group = env.cluster_groups.create_or_update({
-      data: {
-        clusters: {
-          [cluster_a.key]: { filters: {} },
-          [cluster_b.key]: { filters: {} }
-        },
-        filters: { some_global_filter: true }
-      }
-    });
-    ```
-    
+		
+		```js
+		const group = env.cluster_groups.create_or_update({
+			data: {
+				clusters: {
+					[cluster_a.key]: { filters: {} },
+					[cluster_b.key]: { filters: {} }
+				},
+				filters: { some_global_filter: true }
+			}
+		});
+		```
+		
 3. **Retrieve a Snapshot** to see how items score against each cluster:
-    
-    ```js
-    const snapshot = await group.get_snapshot();
-    console.log(snapshot.members);
-    ```
-    
+		
+		```js
+		const snapshot = await group.get_snapshot();
+		console.log(snapshot.members);
+		```
+		
 4. **Clone the Group** when you want to add or remove clusters without overwriting the existing group:
-    
-    ```js
-    const new_group = await group.clone({
-      add_clusters: ['cluster_c_key'],
-      remove_clusters: ['cluster_a_key']
-    });
-    ```
-    
+		
+		```js
+		const new_group = await group.clone({
+			add_clusters: ['cluster_c_key'],
+			remove_clusters: ['cluster_a_key']
+		});
+		```
+		
+
+## Architecture
+```mermaid
+flowchart TD
+	CG[Smart Cluster Groups] --> C[Smart Clusters]
+	CG --> G[Smart Groups]
+	C --> S[Smart Sources]
+```
+Cluster groups combine clustering and grouping layers to organize sources.

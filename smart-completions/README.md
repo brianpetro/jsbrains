@@ -5,20 +5,20 @@ Smart Completions is a **smart-collections**-based module for managing completio
 ## Key Components
 
 - **SmartCompletions**  
-    A collection (extending `Collection` from `smart-collections`) that manages multiple completion items.
-    
-    - Exposes a shared `chat_model` (if configured) for all items.
-    - Provides `completion_adapters` to transform item data prior to sending a request.
+		A collection (extending `Collection` from `smart-collections`) that manages multiple completion items.
+		
+		- Exposes a shared `chat_model` (if configured) for all items.
+		- Provides `completion_adapters` to transform item data prior to sending a request.
 - **SmartCompletion**  
-    A single completion item (extending `CollectionItem`), storing:
-    
-    - `completion.request`: Data in a chat-model-friendly format (e.g. OpenAI-like messages).
-    - `completion.responses[]`: The returned data from the model.
-    - `completion.chat_model`: (Optional) An override specifying a dedicated model instance.
-    - Adapters can modify the request or the response.
+		A single completion item (extending `CollectionItem`), storing:
+		
+		- `completion.request`: Data in a chat-model-friendly format (e.g. OpenAI-like messages).
+		- `completion.responses[]`: The returned data from the model.
+		- `completion.chat_model`: (Optional) An override specifying a dedicated model instance.
+		- Adapters can modify the request or the response.
 - **Adapters** (in `adapters/`)  
-    Small classes extending `SmartCompletionAdapter`. Each checks for certain properties in `item.data` (e.g. `user_message`, `context_key`, etc.) and transforms `item.data.completion.request` or processes the response.
-    
+		Small classes extending `SmartCompletionAdapter`. Each checks for certain properties in `item.data` (e.g. `user_message`, `context_key`, etc.) and transforms `item.data.completion.request` or processes the response.
+		
 
 Examples:
 
@@ -33,17 +33,17 @@ Examples:
 
 ```
 {
-  collections: {
-    smart_completions: {
-      class: SmartCompletions
-      // optional data_adapter, etc.
-    }
-  },
-  modules: {
-    smart_chat_model: {
-      // chat model class & adapters
-    }
-  }
+	collections: {
+		smart_completions: {
+			class: SmartCompletions
+			// optional data_adapter, etc.
+		}
+	},
+	modules: {
+		smart_chat_model: {
+			// chat model class & adapters
+		}
+	}
 }
 ```
 
@@ -52,23 +52,23 @@ Examples:
 ```
 const completions = env.smart_completions;
 const item = completions.create_or_update({
-  key: 'my_completion_1',
-  data: {
-    user_message: 'Hello AI, how are you?',
-    completion: {
-      request: {
-        messages: []
-      }
-      // optional chat_model overrides
-    }
-  }
+	key: 'my_completion_1',
+	data: {
+		user_message: 'Hello AI, how are you?',
+		completion: {
+			request: {
+				messages: []
+			}
+			// optional chat_model overrides
+		}
+	}
 });
 ```
 
 - Once created, the item calls its `init()` method, which:
-    - Runs each adapter (e.g. user adapter adds a user message).
-    - Calls the chat model to get a response.
-    - Stores the response in `completion.responses`.
+		- Runs each adapter (e.g. user adapter adds a user message).
+		- Calls the chat model to get a response.
+		- Stores the response in `completion.responses`.
 
 1. **Get the final text**:
 
@@ -99,14 +99,14 @@ Register it in your environment config:
 
 ```
 {
-  collections: {
-    smart_completions: {
-      class: SmartCompletions,
-      completion_adapters: {
-        MyCustomAdapter
-      }
-    }
-  }
+	collections: {
+		smart_completions: {
+			class: SmartCompletions,
+			completion_adapters: {
+				MyCustomAdapter
+			}
+		}
+	}
 }
 ```
 
@@ -119,10 +119,10 @@ By default, the code references `smart-collections/adapters/ajson_single_file.js
 ```
 const completions = env.smart_completions;
 const item = completions.create_or_update({
-  data: {
-    user_message: "What's the weather?",
-    completion: { request: { messages: [] } }
-  }
+	data: {
+		user_message: "What's the weather?",
+		completion: { request: { messages: [] } }
+	}
 });
 console.log("Response text:", item.response_text);
 ```
@@ -132,3 +132,10 @@ No separate `new_completion` method is strictly required; you can just use `crea
 ## License
 
 MIT
+## Architecture
+```mermaid
+flowchart TD
+	Comp[Smart Completions] --> M[Smart Model]
+	M --> LLM[LLM API]
+```
+Completions leverage the base model to request suggestions from external language models.

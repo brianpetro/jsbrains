@@ -14,17 +14,24 @@ import { SmartHttpRequest } from './smart_http_request.js';
 const smart_http = new SmartHttpRequest();
 // Making a GET request
 const response = await smart_http.request({
-  url: 'https://api.example.com/data',
-  method: 'GET',
-  headers: { 'Content-Type': 'application/json' }
+	url: 'https://api.example.com/data',
+	method: 'GET',
+	headers: { 'Content-Type': 'application/json' }
 });
 console.log(await response.json());
 // Making a POST request
 const post_response = await smart_http.request({
-  url: 'https://api.example.com/create',
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ key: 'value' })
+	url: 'https://api.example.com/create',
+	method: 'POST',
+	headers: { 'Content-Type': 'application/json' },
+	body: JSON.stringify({ key: 'value' })
 });
 console.log(await post_response.text());
 ```
+## Architecture
+```mermaid
+flowchart TD
+	H[Smart HTTP Request] --> F[fetch]
+	H --> M[Smart Model]
+```
+HTTP requests wrap native fetch and route responses into models.

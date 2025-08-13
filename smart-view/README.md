@@ -335,3 +335,12 @@ export async function post_process(scope, frag, opts = {}) {
 
 Adhering to these guidelines ensures code maintainability, modularity, and ease of debugging across SmartView components.
 
+
+## Architecture
+```mermaid
+flowchart TD
+	A[Smart Actions] --> V[Smart View]
+	S[Smart Sources] --> V
+	V --> DOM[Browser DOM]
+```
+Smart View renders data from sources and actions into the user interface.

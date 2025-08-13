@@ -109,3 +109,11 @@ smart_fs.add_ignore_pattern('temp_*');
 - `add_ignore_pattern(pattern, opts={})`: Add a custom ignore pattern
 - `is_excluded(path)`: Check if a path is excluded based on ignore patterns
 
+
+## Architecture
+```mermaid
+flowchart TD
+	Node[Node FS] --> FS[Smart FS]
+	FS --> S[Smart Sources]
+```
+Smart FS wraps Node's file system to feed content into Smart Sources.

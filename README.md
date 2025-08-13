@@ -34,6 +34,21 @@ JS Brains is a collection of lightweight modules for building intelligent applic
 
 - [**smart-view/**](https://github.com/brianpetro/jsbrains/tree/main/smart-view#readme)  
   Handles UI and rendering tasks for settings interfaces, markdown previewing, and icon sets, with adapters tailored to Node.js, Obsidian, or browser environments.
+- [**smart-events/**](https://github.com/brianpetro/jsbrains/tree/main/smart-events#readme)
+  Event bus coordinating module communication.
+
+- [**smart-settings/**](https://github.com/brianpetro/jsbrains/tree/main/smart-settings#readme)
+  Centralized configuration accessible across modules.
+
+- [**smart-groups/**](https://github.com/brianpetro/jsbrains/tree/main/smart-groups#readme)
+  Organizes items into labeled groups with vector-based summaries.
+
+- [**smart-directories/**](https://github.com/brianpetro/jsbrains/tree/main/smart-directories#readme)
+  Generates directory structures from collections and sources.
+
+- [**smart-notices/**](https://github.com/brianpetro/jsbrains/tree/main/smart-notices#readme)
+  Delivers predefined notices through adapters to the DOM.
+
 
 ---
 
@@ -64,15 +79,15 @@ Below is a **condensed** but **comprehensive** reference to these libraries, det
 ### Contents
 - [Overview & Intent](#overview--intent)
 - [Repository Summaries](#repository-summaries)  
-  - [smart-groups](#smart-groups)  
-  - [smart-directories](#smart-directories)  
-  - [smart-model](#smart-model)  
-  - [smart-embed-model](#smart-embed-model)  
-  - [smart-chat-model](#smart-chat-model)  
-  - [smart-rank-model](#smart-rank-model)  
-  - [smart-http-request](#smart-http-request)  
-  - [smart-clusters](#smart-clusters)  
-  - [smart-view](#smart-view)  
+	- [smart-groups](#smart-groups)  
+	- [smart-directories](#smart-directories)  
+	- [smart-model](#smart-model)  
+	- [smart-embed-model](#smart-embed-model)  
+	- [smart-chat-model](#smart-chat-model)  
+	- [smart-rank-model](#smart-rank-model)  
+	- [smart-http-request](#smart-http-request)  
+	- [smart-clusters](#smart-clusters)  
+	- [smart-view](#smart-view)  
 
 - [Key Concepts & Core Classes](#key-concepts--core-classes)
 - [Directory & File Structures](#directory--file-structures)
@@ -102,16 +117,16 @@ The **"smart-*"** set of libraries in JS Brains comprise a modular ecosystem for
 #### smart-directories
 - Specializes in **managing embedded directories** (folder structures with embeddings).
 - Extends `SmartGroups` with:
-  - `SmartDirectories` (collection),
-  - `SmartDirectory` (item).
+	- `SmartDirectories` (collection),
+	- `SmartDirectory` (item).
 - Ensures parent directories, read from a file system, track directory stats, etc.
 
 #### smart-model
 - Base classes for "smart" model packages.
 - `SmartModel` handles:
-  - Adapter lifecycle,
-  - Settings config,
-  - State transitions.
+	- Adapter lifecycle,
+	- Settings config,
+	- State transitions.
 - Acts as a foundation for specialized model classes (chat, embed, rank).
 
 #### smart-embed-model
@@ -169,7 +184,7 @@ smart-xyz
 ├── package.json
 ├── [library_name].js
 └── test
-    └── ...
+		└── ...
 ```
 
 ---
@@ -197,9 +212,9 @@ smart-xyz
 - “env” object (SmartEnv) orchestrates references: `env.smart_sources`, `env.smart_clusters`, etc.
 - The system heavily uses the **adapter** pattern.
 - Some advanced features:
-  - Median vectors or center embeddings in groups/clusters.
-  - Function calling in chat models.
-  - AI-based variable completions in templates (`var_prompts`).
+	- Median vectors or center embeddings in groups/clusters.
+	- Function calling in chat models.
+	- AI-based variable completions in templates (`var_prompts`).
 
 ---
 
@@ -208,19 +223,19 @@ smart-xyz
 JS Brains adopts the adapter pattern as a core architectural principle, granting **flexibility** and **extensibility** across various AI models and platforms. This approach provides several key advantages:
 
 1. **Unified Interface**  
-   Developers can operate with a single, consistent API—regardless of the underlying AI model or service—drastically reducing complexity and mental overhead.
+	 Developers can operate with a single, consistent API—regardless of the underlying AI model or service—drastically reducing complexity and mental overhead.
 
 2. **Straightforward Integration**  
-   New AI models or services can be added simply by authoring new adapters. This means no need to modify core modules, enabling fast growth of features and capabilities.
+	 New AI models or services can be added simply by authoring new adapters. This means no need to modify core modules, enabling fast growth of features and capabilities.
 
 3. **Configurable & Agile**  
-   Switching between AI providers or models is as easy as pointing to a different adapter. This makes testing, optimization, and experimentation effortless.
+	 Switching between AI providers or models is as easy as pointing to a different adapter. This makes testing, optimization, and experimentation effortless.
 
 4. **Future-Proofing**  
-   As new AI models emerge, JS Brains can adopt them quickly through dedicated adapters—staying current with cutting-edge AI developments.
+	 As new AI models emerge, JS Brains can adopt them quickly through dedicated adapters—staying current with cutting-edge AI developments.
 
 5. **Abstracted Complexity**  
-   The adapter layer hides the intricate differences in AI services, allowing developers to concentrate on crafting product features rather than juggling integrations.
+	 The adapter layer hides the intricate differences in AI services, allowing developers to concentrate on crafting product features rather than juggling integrations.
 
 By employing the adapter pattern, JS Brains remains both **highly extensible** and **developer-friendly**, evolving with a rapidly shifting AI landscape while providing a stable foundation for building sophisticated applications.
 
@@ -231,19 +246,19 @@ By employing the adapter pattern, JS Brains remains both **highly extensible** a
 A prime example of JS Brains in action is the **Smart Connections** plugin for Obsidian, showcasing how various modules work together to create an AI-driven knowledge management environment:
 
 1. **Semantic Search**  
-   Leveraging the Smart Embed Model and Smart Rank Model, Smart Connections allows users to discover semantically similar notes and content within their knowledge base.
+	 Leveraging the Smart Embed Model and Smart Rank Model, Smart Connections allows users to discover semantically similar notes and content within their knowledge base.
 
 2. **AI-Powered Chat**  
-   The Smart Chat Model integrates with personal notes to offer natural language interactions, letting users query and receive AI-generated responses from their own knowledge pool.
+	 The Smart Chat Model integrates with personal notes to offer natural language interactions, letting users query and receive AI-generated responses from their own knowledge pool.
 
 3. **Dynamic Knowledge Graphs**  
-   Combining Smart Entities with Smart Collections yields live knowledge graphs, helping users navigate and understand relationships between different ideas.
+	 Combining Smart Entities with Smart Collections yields live knowledge graphs, helping users navigate and understand relationships between different ideas.
 
 4. **Automated Tagging & Categorization**  
-   Using Smart Chunks and Smart Entities, Smart Connections automatically analyzes and classifies content, streamlining the user’s organizational efforts.
+	 Using Smart Chunks and Smart Entities, Smart Connections automatically analyzes and classifies content, streamlining the user’s organizational efforts.
 
 5. **Personalized Recommendations**  
-   By fusing ranking, embedding, and knowledge of user data, Smart Connections can suggest relevant, personalized notes and materials.
+	 By fusing ranking, embedding, and knowledge of user data, Smart Connections can suggest relevant, personalized notes and materials.
 
 These capabilities illustrate how JS Brains modules can be orchestrated to form a robust, AI-based workflow that significantly enhances both productivity and knowledge exploration.
 
@@ -254,15 +269,15 @@ These capabilities illustrate how JS Brains modules can be orchestrated to form 
 JS Brains centers on empowering users with AI tools that protect privacy and increase productivity. Our guiding principles include:
 
 1. **User-Focused AI**  
-   Our solutions are designed to align with user interests and goals, not corporate agendas.
+	 Our solutions are designed to align with user interests and goals, not corporate agendas.
 
 2. **Privacy First**  
-   We prioritize secure data handling and transparency in every AI integration we create.
+	 We prioritize secure data handling and transparency in every AI integration we create.
 
 3. **Open-Source Innovation**  
-   By open-sourcing core modules, we foster collective advancement in AI tech—any developer can contribute or benefit.
+	 By open-sourcing core modules, we foster collective advancement in AI tech—any developer can contribute or benefit.
 
 4. **Accessibility**  
-   We strive to make advanced AI techniques accessible to all developers, lowering barriers to entry and increasing adoption.
+	 We strive to make advanced AI techniques accessible to all developers, lowering barriers to entry and increasing adoption.
 
 Adhering to these ideals, JS Brains aims to provide AI tools that users can trust and leverage to enhance their personal and professional projects.

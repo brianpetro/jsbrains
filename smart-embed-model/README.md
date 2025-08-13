@@ -26,8 +26,8 @@ import { SmartEmbedModel } from 'smart-embed';
 
 // Create model instance
 const embed_model = new SmartEmbedModel({
-  model_key: 'TaylorAI/bge-micro-v2', // Default local model
-  use_gpu: true, // Enable WebGPU acceleration if available
+	model_key: 'TaylorAI/bge-micro-v2', // Default local model
+	use_gpu: true, // Enable WebGPU acceleration if available
 });
 
 // Generate embeddings
@@ -44,26 +44,26 @@ SmartEmbedModel can be configured with various options:
 
 ```javascript
 const model = new SmartEmbedModel({
-  // Model Selection
-  model_key: 'TaylorAI/bge-micro-v2', // Model identifier
-  
-  // Performance Options
-  use_gpu: true, // Enable WebGPU acceleration
-  batch_size: 32, // Default batch size
-  gpu_batch_size: 10, // Batch size when using GPU
-  
-  // Model Configuration
-  model_config: {
-    adapter: 'transformers', // Override default adapter
-    dims: 384, // Override embedding dimensions
-    max_tokens: 512 // Maximum tokens per input
-  },
-  
-  // Custom Settings
-  settings: {
-    api_key: 'YOUR_API_KEY', // For API-based models
-    min_chars: 300 // Minimum text length to embed
-  }
+	// Model Selection
+	model_key: 'TaylorAI/bge-micro-v2', // Model identifier
+	
+	// Performance Options
+	use_gpu: true, // Enable WebGPU acceleration
+	batch_size: 32, // Default batch size
+	gpu_batch_size: 10, // Batch size when using GPU
+	
+	// Model Configuration
+	model_config: {
+		adapter: 'transformers', // Override default adapter
+		dims: 384, // Override embedding dimensions
+		max_tokens: 512 // Maximum tokens per input
+	},
+	
+	// Custom Settings
+	settings: {
+		api_key: 'YOUR_API_KEY', // For API-based models
+		min_chars: 300 // Minimum text length to embed
+	}
 });
 ```
 
@@ -74,10 +74,10 @@ const model = new SmartEmbedModel({
 import { SmartEmbedTransformersAdapter } from 'smart-embed-model/adapters/transformers';
 
 const model = new SmartEmbedModel({
-  model_key: 'TaylorAI/bge-micro-v2',
-  adapters: {
-    transformers: SmartEmbedTransformersAdapter
-  }
+	model_key: 'TaylorAI/bge-micro-v2',
+	adapters: {
+		transformers: SmartEmbedTransformersAdapter
+	}
 });
 ```
 
@@ -86,15 +86,15 @@ const model = new SmartEmbedModel({
 import { SmartEmbedOpenAIAdapter } from 'smart-embed-model/adapters/openai';
 
 const model = new SmartEmbedModel({
-  model_key: 'text-embedding-3-small',
-  settings: {
-    openai: {
-      api_key: 'YOUR_API_KEY'
-    }
-  },
-  adapters: {
-    openai: SmartEmbedOpenAIAdapter
-  }
+	model_key: 'text-embedding-3-small',
+	settings: {
+		openai: {
+			api_key: 'YOUR_API_KEY'
+		}
+	},
+	adapters: {
+		openai: SmartEmbedOpenAIAdapter
+	}
 });
 ```
 
@@ -103,10 +103,10 @@ const model = new SmartEmbedModel({
 import { SmartEmbedTransformersIframeAdapter } from 'smart-embed-model/adapters/transformers_iframe';
 
 const model = new SmartEmbedModel({
-  model_key: 'TaylorAI/bge-micro-v2',
-  adapters: {
-    transformers_iframe: SmartEmbedTransformersIframeAdapter
-  }
+	model_key: 'TaylorAI/bge-micro-v2',
+	adapters: {
+		transformers_iframe: SmartEmbedTransformersIframeAdapter
+	}
 });
 ```
 
@@ -134,8 +134,8 @@ const result = await model.embed("Your text here");
 
 // Process multiple inputs in batch
 const results = await model.embed_batch([
-  { embed_input: "First text" },
-  { embed_input: "Second text" }
+	{ embed_input: "First text" },
+	{ embed_input: "Second text" }
 ]);
 
 // Count tokens in text
@@ -147,11 +147,11 @@ const tokens = await model.count_tokens("Your text here");
 ```javascript
 // GPU acceleration with custom batch size
 const model = new SmartEmbedModel({
-  use_gpu: true,
-  gpu_batch_size: 16,
-  model_config: {
-    max_tokens: 1024
-  }
+	use_gpu: true,
+	gpu_batch_size: 16,
+	model_config: {
+		max_tokens: 1024
+	}
 });
 
 // Automatic token truncation
@@ -166,3 +166,10 @@ This project is licensed under the MIT License - see the [LICENSE](MIT_LICENSE) 
 ## Author
 
 Brian Joseph Petro (🌴 Brian)
+## Architecture
+```mermaid
+flowchart TD
+	Em[Smart Embed Model] --> M[Smart Model]
+	M --> API[Embedding Service]
+```
+Embedding models extend the base model to generate vector representations via external services.
