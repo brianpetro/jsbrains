@@ -80,6 +80,8 @@ export class Collection {
    * If validation succeeds for a new item, it is added to the collection and marked for saving.
    *
    * If the item’s `init()` method is async, a promise is returned that resolves once init completes.
+   * 
+   * NOTE: wrapping in try/catch seems to fail to catch errors thrown in async init functions when awaiting create_or_update
    *
    * @param {Object} [data={}] - Data for creating/updating an item.
    * @returns {Promise<Item>|Item} The created or updated item. May return a promise if `init()` is async.
