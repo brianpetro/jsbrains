@@ -181,7 +181,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
    */
   async merge(content, opts = {}) {
     const { mode = 'append_blocks' } = opts;
-    const blocks_obj = parse_markdown_blocks(content);
+    const {blocks: blocks_obj, task_lines} = parse_markdown_blocks(content);
 
     if (typeof blocks_obj !== 'object' || Array.isArray(blocks_obj)) {
       console.warn("merge error: Expected an object from parse_markdown_blocks, but received:", blocks_obj);

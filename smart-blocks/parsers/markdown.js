@@ -17,6 +17,7 @@
  * @param {boolean} [opts.line_keys=false] - If true, top-level list items get a key based on the line's first 30 characters instead of a sequence number
  * @returns {Object.<string, [number, number]>} A mapping of string keys (representing headings or sub-blocks)
  *   to an array of two numbers indicating the inclusive start and end line indices (1-based) in the Markdown text.
+ *   The returned object exposes a non-enumerable `task_lines` array of line numbers containing markdown tasks.
  *
  * @example
  * {
@@ -47,6 +48,9 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
   // For tracking duplicate subheadings under the same parent (appended as "#{x}" at the end).
   const subheading_counts = {};
+
+  // Tracks markdown task line numbers.
+  const task_lines = [];
 
   // Tracks the currently open top-level list item block if any.
   let current_list_item = null;
@@ -91,6 +95,10 @@ export function parse_markdown_blocks(markdown, opts={}) {
     // If we are within frontmatter lines, skip further processing.
     if (in_frontmatter) {
       continue;
+    }
+
+    if (!in_code_block && /^[-*+]\s+\[(?: |x|X)\]/.test(trimmed_line)) {
+      task_lines.push(line_number);
     }
 
     // Check for code block start/end using triple backticks.
@@ -263,8 +271,9 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
         let key;
         if (line_keys) {
-          // Use the first three longest words of the list item content in the key (same order as in the line)
-          const words = get_longest_words_in_order(list_match[3], 10);
+          // Use the first N longest words of the list item content in the key (same order as in the line)
+          const content_without_task = list_match[3].replace(/^\[(?: |x|X)\]\s*/, "");
+          const words = get_longest_words_in_order(content_without_task, 10);
           key = `${parent_key}#${words}`;
         } else {
           key = `${parent_key}#{${n}}`;
@@ -363,7 +372,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
     result[key] = heading_lines[key];
   }
 
-  return result;
+  return {blocks: result, task_lines};
 }
 
 export function get_longest_words_in_order(line, n=3) {

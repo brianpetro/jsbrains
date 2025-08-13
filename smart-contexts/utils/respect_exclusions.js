@@ -74,7 +74,7 @@ export async function respect_exclusions(context_snapshot = {}, opts = {}) {
  * @returns {[string, string[], number]}  [new_content, exclusions, removed_char_count]
  */
 export function strip_excluded_headings(content, excluded_list) {
-  const blocks_map = parse_markdown_blocks(content, { start_index: 0 });
+  const {blocks: blocks_map, task_lines} = parse_markdown_blocks(content, { start_index: 0 });
   if (!Object.keys(blocks_map).length) return [content, [], 0];
 
   const exclusions = [];

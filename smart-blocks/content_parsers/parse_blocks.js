@@ -11,7 +11,7 @@ import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
  * @returns {Promise<void>}
  */
 export function parse_blocks(source, content) {
-  let blocks_obj = parse_markdown_blocks(content);
+  let {blocks: blocks_obj, task_lines} = parse_markdown_blocks(content);
   const last_read_at =  source.data.last_read?.at || Date.now();
   for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
     // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
@@ -52,7 +52,7 @@ export function parse_blocks(source, content) {
     }
   }
   
-  clean_and_update_source_blocks(source, blocks_obj);
+  clean_and_update_source_blocks(source, blocks_obj, task_lines);
   
   // Queue embedding for blocks that should be embedded but are not yet embedded
   // MUST LOOP AFTER creating all blocks because should_embed logic checks adjecent blocks
@@ -69,8 +69,9 @@ export function parse_blocks(source, content) {
  * 
  * @param {SmartSource} source - The source that was re-imported.
  * @param {Object} blocks_obj - The newly parsed blocks object.
+ * @param {Array} task_lines - The newly parsed task lines.
  */
-function clean_and_update_source_blocks(source, blocks_obj) {
+function clean_and_update_source_blocks(source, blocks_obj, task_lines=[]) {
   const current_block_keys = new Set(Object.keys(blocks_obj).map(sk => source.key + sk));
   const blocks = source.blocks;
   for(let i = 0; i < blocks.length; i++){
@@ -81,5 +82,6 @@ function clean_and_update_source_blocks(source, blocks_obj) {
   }
   // Update source data with new blocks
   source.data.blocks = blocks_obj;
+  source.data.task_lines = task_lines;
   source.queue_save();
 }

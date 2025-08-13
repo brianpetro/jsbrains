@@ -62,7 +62,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   //   const content = await super.read();
   //   if(!content) return console.warn(`MarkdownSourceContentAdapter: Skipping missing-file: ${this.file_path}`);
   //   if(current_last_read_hash === this.data.last_read?.hash) return content;
-  //   const blocks = parse_markdown_blocks(content);
+  //   const {blocks: blocks, task_lines} = parse_markdown_blocks(content);
   //   this.handle_excluded_headings(blocks);
   // }
 

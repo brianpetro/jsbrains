@@ -29,10 +29,5 @@
     "smart-collections": "*",
     "smart-entities": "*",
     "smart-sources": "*"
-  },
-  "ava": {
-    "files": [
-      "test/**/*.test.js"
-    ]
   }
 }

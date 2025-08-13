@@ -87,7 +87,7 @@ In this case, \`#Another Top-Level Heading[2]\`. No \`#\` separates the heading 
     "#Another Top-Level Heading[2]#{1}": [53, 55]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -111,7 +111,7 @@ Thank you for reading.`;
     "#Conclusion#{1}": [8, 8]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -151,7 +151,7 @@ test('convert markdown with deeply nested headings to flat JS object', t => {
     "#Chapter 3": [19, 20]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -185,7 +185,7 @@ Overview detailed information.
     "#Overview[3]#Details#{1}": [14, 15]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -232,7 +232,7 @@ Final thoughts.`;
     "#Conclusion#{1}": [24, 24]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -258,7 +258,7 @@ Content under second occurrence of top-level heading.
     "#Heading[2]#{1}": [10, 11]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -275,7 +275,7 @@ Content under heading one
     "#Heading One#{1}": [4, 5]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -298,7 +298,7 @@ Content under heading one
     "#Heading One#{1}": [10, 11]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -318,7 +318,7 @@ Content under heading one
     "#Heading One#{1}": [5, 6]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 test('content prior to first heading with multiple nested list items', t => {
@@ -342,7 +342,7 @@ Content under heading one
     "#Heading One#{1}": [10, 11]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -365,7 +365,7 @@ Some text
     "#Another Heading#{1}": [9, 10]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -379,7 +379,7 @@ Content under heading.
     "#\"Heading\"#{1}": [2, 3]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -394,7 +394,7 @@ Content under heading.
     "#": [1, 5]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -434,7 +434,7 @@ test('should handle nested list items with line break between items', t => {
     "#Heading####New Environment#{2}": [19, 25]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -472,7 +472,7 @@ Dolor Sit Amet
     "###Lorem Ipsum#{8}": [17, 20]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -498,7 +498,7 @@ Content under second occurrence of top-level heading.
     "#####Heading[2]#{1}": [10, 11]
   };
 
-  const result = parse_markdown_blocks(markdown);
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(result, expected);
 });
 
@@ -524,7 +524,7 @@ Content under heading one
     "#Heading One#{1}": [9, 10]
   };
 
-  const result = parse_markdown_blocks(markdown, {start_index: 0});
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown, {start_index: 0});
   t.deepEqual(result, expected);
 });
 
@@ -537,7 +537,7 @@ test('opts.line_keys uses the first three longest words of line in block path ke
 * non-sensical list item three has extremely sophisticated words
   - sublist item three
 `.trim();
-  const result = parse_markdown_blocks(markdown, {line_keys: true});
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown, { line_keys: true });
   const expected = {
     "#Heading": [1, 7],
     "#Heading#longest list item": [2, 3],
@@ -545,4 +545,11 @@ test('opts.line_keys uses the first three longest words of line in block path ke
     "#Heading#non-sensical extremely sophisticated": [6, 7]
   };
   t.deepEqual(result, expected);
-})
+  t.deepEqual(task_lines, [2]);
+});
+
+test('task_lines captures markdown tasks', t => {
+  const markdown = `# Heading\n- [ ] todo\ntext\n- [x] done`;
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
+  t.deepEqual(task_lines, [2, 4]);
+});
