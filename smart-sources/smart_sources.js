@@ -293,9 +293,10 @@ export class SmartSources extends SmartEntities {
    */
   get source_adapters() {
     if(!this._source_adapters){
-      const source_adapters = Object.values(this.env.opts.collections?.[this.collection_key]?.source_adapters || {});
-      const _source_adapters = source_adapters.reduce((acc, adapter) => {
-        adapter.extensions?.forEach(ext => acc[ext] = adapter);
+      const source_adapters = Object.entries(this.env.opts.collections?.[this.collection_key]?.source_adapters || {});
+      const _source_adapters = source_adapters.reduce((acc, [key, Adapter]) => {
+        if(Adapter.extensions) Adapter.extensions?.forEach(ext => acc[ext] = Adapter);
+        else if(typeof Adapter.detect_type === 'function') acc[key] = Adapter;
         return acc;
       }, {});
       if(Object.keys(_source_adapters).length){
