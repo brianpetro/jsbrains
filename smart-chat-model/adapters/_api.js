@@ -141,19 +141,21 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
 
   }
 
+  valid_model_data(){
+    return typeof this.model_data === 'object'
+      && Object.keys(this.model_data || {}).length > 0
+      && this.model_data_loaded_at
+      && ((Date.now() - this.model_data_loaded_at) < 1 * 60 * 60 * 1000) // cache fresh for 1 hour
+    ;
+  }
+
   /**
    * Get available models from the API.
    * @param {boolean} [refresh=false] - Whether to refresh cached models
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh=false) {
-    const time_now = Date.now();
-    if(!refresh
-      && typeof this.model_data === 'object'
-      && Object.keys(this.model_data || {}).length > 0
-      && this.model_data_loaded_at
-      && ((time_now - this.model_data_loaded_at) < 1 * 60 * 60 * 1000) // cache fresh for 1 hour
-    ) return this.model_data; // return cached models if not refreshing
+    if(!refresh && this.valid_model_data()) return this.model_data; // return cached models if not refreshing
     if(this.api_key) {
       try {
         const response = await this.http_adapter.request(this.models_request_params);
@@ -166,10 +168,12 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     this.model_data = await this.get_enriched_model_data();
     this.model_data_loaded_at = Date.now();
     this.adapter_settings.models = this.model_data;
-    setTimeout(() => {
+    if(this.valid_model_data()) setTimeout(() => {
       this.model.re_render_settings();
     }, 100);
+    else console.warn('Invalid model data, not re-rendering settings');
     return this.model_data;
+
   }
 
   /**
