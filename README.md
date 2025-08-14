@@ -13,11 +13,9 @@ JS Brains is a collection of lightweight modules for building intelligent applic
   Generalized collection framework for persisting items (sources, blocks, messages) using JSON, AJSON, or SQLite, offering CRUD, filtering, and batch processing utilities.
   - [**smart-entities/**](https://github.com/brianpetro/jsbrains/tree/main/smart-entities#readme)  
     Adds embeddings, semantic searches, and nearest-neighbor lookups for items within collections, enhancing entities with vector-based intelligence.
-    - [**smart-sources/**](https://github.com/brianpetro/jsbrains/tree/main/smart-sources#readme)  
+    - [**smart-sources/**](https://github.com/brianpetro/jsbrains/tree/main/smart-sources#readme)
       Handles structured documents (sources) and their embedded blocks, integrating with embeddings and semantic lookups.
-        - [**smart-chats/**](https://github.com/brianpetro/jsbrains/tree/main/smart-chats#readme)  
-          Manages chat threads, messages, and system or user prompts, integrating with LLM-based chat models for dynamic conversation handling.
-    - [**smart-blocks/**](https://github.com/brianpetro/jsbrains/tree/main/smart-blocks#readme)  
+    - [**smart-blocks/**](https://github.com/brianpetro/jsbrains/tree/main/smart-blocks#readme)
       Manages block-level granularity within sources, representing distinct sections or pieces of content for targeted embedding, search, and tool integration.
 
 - [**smart-model/**](https://github.com/brianpetro/jsbrains/tree/main/smart-model#readme)  
@@ -29,10 +27,19 @@ JS Brains is a collection of lightweight modules for building intelligent applic
   - [**smart-rank-model/**](https://github.com/brianpetro/jsbrains/tree/main/smart-rank-model#readme)  
     Specializes in ranking documents using LLM-based rerankers (Cohere, local Transformer models), enabling sorting of candidate answers or documents by relevance.
 
-- [**smart-fs/**](https://github.com/brianpetro/jsbrains/tree/main/smart-fs#readme)  
+- [**smart-fs/**](https://github.com/brianpetro/jsbrains/tree/main/smart-fs#readme)
   Abstracts file system operations through multiple adapters (Node.js FS, Obsidian Vault, Web File System Access), adding support for ignore patterns, AJSON, and other features.
 
-- [**smart-view/**](https://github.com/brianpetro/jsbrains/tree/main/smart-view#readme)  
+- [**smart-actions/**](https://github.com/brianpetro/jsbrains/tree/main/smart-actions#readme)
+  Registers and executes reusable actions, enabling automation workflows and command dispatching across modules.
+
+- [**smart-contexts/**](https://github.com/brianpetro/jsbrains/tree/main/smart-contexts#readme)
+  Builds and merges context templates for prompts or configuration generation, supporting variable interpolation and adapters.
+
+- [**smart-settings/**](https://github.com/brianpetro/jsbrains/tree/main/smart-settings#readme)
+  Persists user-facing configuration with schema-driven forms and hot-reload support.
+
+- [**smart-view/**](https://github.com/brianpetro/jsbrains/tree/main/smart-view#readme)
   Handles UI and rendering tasks for settings interfaces, markdown previewing, and icon sets, with adapters tailored to Node.js, Obsidian, or browser environments.
 - [**smart-events/**](https://github.com/brianpetro/jsbrains/tree/main/smart-events#readme)
   Event bus coordinating module communication.
@@ -78,22 +85,37 @@ Below is a **condensed** but **comprehensive** reference to these libraries, det
 
 ### Contents
 - [Overview & Intent](#overview--intent)
-- [Repository Summaries](#repository-summaries)  
-	- [smart-groups](#smart-groups)  
-	- [smart-directories](#smart-directories)  
-	- [smart-model](#smart-model)  
-	- [smart-embed-model](#smart-embed-model)  
-	- [smart-chat-model](#smart-chat-model)  
-	- [smart-rank-model](#smart-rank-model)  
-	- [smart-http-request](#smart-http-request)  
-	- [smart-clusters](#smart-clusters)  
-	- [smart-view](#smart-view)  
+- [Module Summaries](#module-summaries)
+	- [smart-environment](#smart-environment)
+	- [smart-collections](#smart-collections)
+	- [smart-entities](#smart-entities)
+	- [smart-sources](#smart-sources)
+	- [smart-blocks](#smart-blocks)
+	- [smart-actions](#smart-actions)
+	- [smart-contexts](#smart-contexts)
+	- [smart-settings](#smart-settings)
+	- [smart-fs](#smart-fs)
+	- [smart-groups](#smart-groups)
+	- [smart-directories](#smart-directories)
+	- [smart-model](#smart-model)
+	- [smart-embed-model](#smart-embed-model)
+	- [smart-chat-model](#smart-chat-model)
+	- [smart-rank-model](#smart-rank-model)
+	- [smart-http-request](#smart-http-request)
+	- [smart-clusters](#smart-clusters)
+	- [smart-view](#smart-view)
 
 - [Key Concepts & Core Classes](#key-concepts--core-classes)
 - [Directory & File Structures](#directory--file-structures)
 - [Usage Flow & Adapters](#usage-flow--adapters)
 - [Testing & Scripts](#testing--scripts)
 - [Additional Implementation Notes](#additional-implementation-notes)
+- [Design Patterns](#design-patterns)
+	- [Adapter Pattern](#adapter-pattern)
+	- [Collection Pattern](#collection-pattern)
+- [High-Level Flow](#high-level-flow)
+- [Use Cases: Smart Connections](#use-cases-smart-connections)
+- [Our Mission: Empowering Individuals with AI](#our-mission-empowering-individuals-with-ai)
 
 ---
 
@@ -107,53 +129,75 @@ The **"smart-*"** set of libraries in JS Brains comprise a modular ecosystem for
 
 ---
 
-### Repository Summaries
+### Module Summaries
+
+#### smart-environment
+- Coordinates configuration and lifecycle for all modules.
+- Exposes a shared context where collections, file systems, and models register.
+
+#### smart-collections
+- Generic collection framework with CRUD, filtering, and adapter-backed load/save queues.
+- `Collection` and `CollectionItem` form the base for higher-level collections.
+
+#### smart-entities
+- Extends collections with embeddings and semantic search utilities.
+- Supports nearest-neighbor lookups and vector-based comparisons.
+
+#### smart-sources
+- Manages structured documents and their metadata.
+- Integrates with embeddings to link sources with relevant entities.
+
+#### smart-blocks
+- Tracks block-level segments inside sources.
+- Enables targeted embedding, search, and tool integration per block.
+
+#### smart-actions
+- Registers commands and automation actions.
+- Dispatches actions across modules via a lightweight registry.
+
+#### smart-contexts
+- Builds prompt and config templates with variable interpolation.
+- Merges contexts from multiple sources or scopes.
+
+#### smart-settings
+- Persists user-visible settings with schema-driven forms.
+- Supports hot reloading when configuration changes.
+
+#### smart-fs
+- Abstract file-system layer with pluggable adapters (Node, Obsidian, Web).
+- Adds ignore patterns, AJSON helpers, and cache utilities.
 
 #### smart-groups
-- A library for grouping items (like sources, files).
-- `SmartGroups` manages multiple `SmartGroup` items.  
-- Provides logic to batch update, compute median vectors, label management, etc.
+- Groups items like sources or files.
+- `SmartGroups` manages multiple `SmartGroup` instances and supports batch updates and labeling.
 
 #### smart-directories
-- Specializes in **managing embedded directories** (folder structures with embeddings).
-- Extends `SmartGroups` with:
-	- `SmartDirectories` (collection),
-	- `SmartDirectory` (item).
-- Ensures parent directories, read from a file system, track directory stats, etc.
+- Manages embedded directory trees using `SmartGroups` primitives.
+- Tracks parent relationships and directory statistics.
 
 #### smart-model
-- Base classes for "smart" model packages.
-- `SmartModel` handles:
-	- Adapter lifecycle,
-	- Settings config,
-	- State transitions.
-- Acts as a foundation for specialized model classes (chat, embed, rank).
+- Base class for AI model abstractions.
+- Handles adapter lifecycle, settings config, and state transitions for specialized models.
 
 #### smart-embed-model
-- Focuses on **embedding** logic: local or API-based.
-- `SmartEmbedModel` extends `SmartModel`.
-- Provides `embed()` or `embed_batch()` for text → vector.
-- Integrations: OpenAI Embeddings, local Transformers, Ollama, etc.
+- Embedding-focused model built on `SmartModel`.
+- Provides `embed()` and `embed_batch()` to produce vectors via local or remote adapters.
 
 #### smart-chat-model
-- A universal chat model API with multi-provider support (OpenAI, Anthropic, etc.).
-- Normalizes requests/responses to an "OpenAI-like" schema.
-- Supports streaming, function calling, tools, and more.
+- Unified chat-completion API across providers.
+- Normalizes requests/responses and supports streaming, tools, and function calling.
 
 #### smart-rank-model
-- Specialized for **ranking** tasks, e.g., re-ordering documents by relevance.
-- `SmartRankModel` extends `SmartModel`, offering `rank(query, documents)`.
-- Adapters for local or remote rerank endpoints (Cohere, Transformers).
+- Reranks documents or answers by relevance.
+- Extends `SmartModel` with `rank(query, documents)` and adapters for Cohere or Transformers.
 
 #### smart-http-request
-- Minimal, flexible library for making HTTP requests with adapters.
-- `SmartHttpRequest` main class, plus adapters for `fetch`, `Obsidian requestUrl`, etc.
-- Standardizes the request/response flow.
+- Minimal HTTP client with swappable adapters.
+- Includes wrappers for `fetch`, Obsidian's `requestUrl`, and more.
 
 #### smart-clusters
-- Manages **clusters** of vectorized items.
-- `SmartClusters` extends `SmartGroups`; each cluster is a `SmartCluster`.
-- Adapters can build clusters from items with vectors (`cluster_sources()` logic).
+- Clusters vectorized items and computes centroids.
+- Built atop `SmartGroups` for grouping semantics.
 
 #### smart-view
 - Renders dynamic settings/UI across various environments.
@@ -201,8 +245,8 @@ smart-xyz
 
 ### Testing & Scripts
 
-- Uses **AVA** for tests (`npm test`).
-- Example: `smart-clusters/test/source_clusters.test.js` tests building clusters from embedded sources.
+- Uses **AVA** for unit tests (`npx ava`).
+- Example: `smart-sources/test/ajson_multi_file.test.js` verifies multi-file storage.
 - Some integration tests generate content (like `test_content.js`).
 
 ---
@@ -218,26 +262,46 @@ smart-xyz
 
 ---
 
-## Architecture: The Adapter Pattern
+## Design Patterns
+
+### Adapter Pattern
 
 JS Brains adopts the adapter pattern as a core architectural principle, granting **flexibility** and **extensibility** across various AI models and platforms. This approach provides several key advantages:
 
-1. **Unified Interface**  
+1. **Unified Interface**
 	 Developers can operate with a single, consistent API—regardless of the underlying AI model or service—drastically reducing complexity and mental overhead.
 
-2. **Straightforward Integration**  
+2. **Straightforward Integration**
 	 New AI models or services can be added simply by authoring new adapters. This means no need to modify core modules, enabling fast growth of features and capabilities.
 
-3. **Configurable & Agile**  
+3. **Configurable & Agile**
 	 Switching between AI providers or models is as easy as pointing to a different adapter. This makes testing, optimization, and experimentation effortless.
 
-4. **Future-Proofing**  
+4. **Future-Proofing**
 	 As new AI models emerge, JS Brains can adopt them quickly through dedicated adapters—staying current with cutting-edge AI developments.
 
-5. **Abstracted Complexity**  
+5. **Abstracted Complexity**
 	 The adapter layer hides the intricate differences in AI services, allowing developers to concentrate on crafting product features rather than juggling integrations.
 
-By employing the adapter pattern, JS Brains remains both **highly extensible** and **developer-friendly**, evolving with a rapidly shifting AI landscape while providing a stable foundation for building sophisticated applications.
+By isolating provider quirks behind adapters, JS Brains stays extensible and developer-friendly.
+
+### Collection Pattern
+
+Collections expose a unified CRUD interface backed by data adapters. Items derive from `CollectionItem`, gaining lifecycle hooks and validation. Higher-level modules like SmartEntities, SmartSources, and SmartBlocks build on this foundation, layering domain-specific behavior without changing persistence logic.
+
+## High-Level Flow
+
+```mermaid
+graph TD
+	Env[SmartEnv] --> Collections[SmartCollections]
+	Collections --> Entities[SmartEntities]
+	Entities --> Sources[SmartSources]
+	Sources --> Blocks[SmartBlocks]
+	Env --> Models[SmartModel]
+	Models --> Chat[SmartChatModel]
+	Models --> Embed[SmartEmbedModel]
+	Models --> Rank[SmartRankModel]
+```
 
 ---
 
@@ -254,8 +318,8 @@ A prime example of JS Brains in action is the **Smart Connections** plugin for O
 3. **Dynamic Knowledge Graphs**  
 	 Combining Smart Entities with Smart Collections yields live knowledge graphs, helping users navigate and understand relationships between different ideas.
 
-4. **Automated Tagging & Categorization**  
-	 Using Smart Chunks and Smart Entities, Smart Connections automatically analyzes and classifies content, streamlining the user’s organizational efforts.
+4. **Automated Tagging & Categorization**
+	 Using Smart Blocks and Smart Entities, Smart Connections automatically analyzes and classifies content, streamlining the user’s organizational efforts.
 
 5. **Personalized Recommendations**  
 	 By fusing ranking, embedding, and knowledge of user data, Smart Connections can suggest relevant, personalized notes and materials.
