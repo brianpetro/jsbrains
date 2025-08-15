@@ -37,3 +37,15 @@ test('off removes listener', t => {
   env.events.emit('ping');
   t.is(count, 0);
 });
+
+test('emit appends received_at timestamp', t => {
+  const env = {};
+  SmartEvents.create(env);
+  let captured;
+  const payload = { foo: 'bar' };
+  env.events.on('ping', event => { captured = event; });
+  env.events.emit('ping', payload);
+  t.truthy(captured.received_at);
+  t.is(payload.received_at, undefined);
+  t.is(captured.foo, 'bar');
+});

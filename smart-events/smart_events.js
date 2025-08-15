@@ -40,8 +40,15 @@ export class SmartEvents {
     return this.adapter.off(event_key, event_callback);
   }
 
+  /**
+   * Emit an event with a `received_at` timestamp.
+   * @param {string} event_key
+   * @param {Record<string, unknown>} [event]
+   * @returns {void}
+   */
   emit(event_key, event = {}) {
-    return this.adapter.emit(event_key, event);
+    const payload = { received_at: new Date().toISOString(), ...event };
+    return this.adapter.emit(event_key, payload);
   }
 }
 

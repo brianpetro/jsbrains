@@ -10,3 +10,6 @@ flowchart TD
 	Evt --> A[Smart Actions]
 ```
 Smart Events centralize event propagation, letting actions react to changes from any module.
+
+## Event Payload
+Each emitted event automatically includes a `received_at` ISO timestamp indicating when the bus processed the event.
