@@ -157,3 +157,17 @@ test('newer component version replaces older one', t => {
   t.is(target.components.test_component, new_component,
        'newer component replaces older one');
 });
+
+test('merges item actions without overwriting', t => {
+  const target = { items: { note: { actions: { a: 1 } } } };
+  const incoming = { items: { note: { actions: { b: 2, a: 3 } } } };
+  merge_env_config(target, incoming);
+  t.deepEqual(target.items.note.actions, { a: 1, b: 2 });
+});
+
+test('adds new item definition when missing', t => {
+  const target = { items: {} };
+  const incoming = { items: { block: { actions: { c: 3 } } } };
+  merge_env_config(target, incoming);
+  t.deepEqual(target.items.block.actions, { c: 3 });
+});
