@@ -1,4 +1,4 @@
-import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { sort_by_score } from "smart-utils/sort_by_score.js";
 import { find_connections as entities_find_connections } from "smart-entities/actions/find_connections.js";
 /**
  * Finds connections relevant to this SmartSource based on provided parameters.

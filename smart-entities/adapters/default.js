@@ -7,8 +7,8 @@
 
 import { EntitiesVectorAdapter, EntityVectorAdapter } from "./_adapter.js";
 import { cos_sim } from 'smart-utils/cos_sim.js';
-import { results_acc, furthest_acc } from "../utils/results_acc.js";
-import { sort_by_score_ascending, sort_by_score_descending } from "../utils/sort_by_score.js";
+import { results_acc, furthest_acc } from "smart-utils/results_acc.js";
+import { sort_by_score_ascending, sort_by_score_descending } from "smart-utils/sort_by_score.js";
 
 /**
  * @class DefaultEntitiesVectorAdapter

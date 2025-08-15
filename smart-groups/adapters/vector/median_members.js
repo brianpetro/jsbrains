@@ -1,7 +1,7 @@
 import { DefaultEntitiesVectorAdapter, DefaultEntityVectorAdapter } from "smart-entities/adapters/default.js";
-import { sort_by_score_ascending, sort_by_score_descending } from "smart-entities/utils/sort_by_score.js";
+import { sort_by_score_ascending, sort_by_score_descending } from "smart-utils/sort_by_score.js";
 import { cos_sim } from 'smart-utils/cos_sim.js';
-import { results_acc, furthest_acc } from "smart-entities/utils/results_acc.js";
+import { results_acc, furthest_acc } from "smart-utils/results_acc.js";
 
 
 export class MedianMemberVectorsAdapter extends DefaultEntitiesVectorAdapter {

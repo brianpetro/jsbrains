@@ -5,7 +5,7 @@
  */
 
 import { Collection } from "smart-collections";
-import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { sort_by_score } from "smart-utils/sort_by_score.js";
 import { DefaultEntitiesVectorAdapter } from "./adapters/default.js";
 
 /**

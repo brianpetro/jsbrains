@@ -1,4 +1,4 @@
-import { sort_by_score } from "../utils/sort_by_score.js";
+import { sort_by_score } from "smart-utils/sort_by_score.js";
 /**
  * Finds connections relevant to this entity based on provided parameters.
  * @async

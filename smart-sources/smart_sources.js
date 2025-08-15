@@ -1,5 +1,5 @@
 import { SmartEntities } from "smart-entities";
-import { sort_by_score } from "smart-entities/utils/sort_by_score.js";
+import { sort_by_score } from "smart-utils/sort_by_score.js";
 /**
  * @class SmartSources
  * @extends SmartEntities
