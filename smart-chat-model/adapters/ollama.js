@@ -15,7 +15,7 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     // endpoint: "http://localhost:11434/api/chat",
     api_key: 'na',
     host: "http://localhost:11434",
-    endpoint: "/api/embed",
+    endpoint: "/api/chat",
     models_endpoint: "/api/tags",
     // streaming: false, // TODO: Implement streaming
     streaming: true,
