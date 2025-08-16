@@ -271,11 +271,11 @@ export class CollectionItem {
   /**
    * Compares this item with another item using a custom comparison function.
    * @param {Item} to_item - The item to compare with.
-   * @param {function} [compare_fn] - The comparison function that takes two items and returns an object with comparison results.
+   * @param {Object} [params={}] - Additional parameters for the comparison.
    * @returns {Object} An object containing the original item and the comparison results.
    */
-  compare(to_item, compare_fn) {
-    return compare(this, to_item, compare_fn)
+  compare(to_item, params={}) {
+    return compare(this, to_item, params)
   }
 
 
