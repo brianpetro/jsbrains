@@ -481,5 +481,15 @@ export class Collection {
       this.env.notices?.remove(process);
     }
   }
+
+  get actions() {
+    if(!this._actions) {
+      this._actions = Object.entries(this.opts.actions || {}).reduce((acc, [k,v]) => {
+        acc[k] = v.bind(this);
+        return acc;
+      }, {});
+    }
+    return this._actions;
+  }
 }
 
