@@ -44,6 +44,7 @@ export class SmartCompletion extends CollectionItem {
    */
   static get defaults() {
     return {
+      response_i: 0,
       data: {
         completion: {
           request: {},
@@ -228,15 +229,18 @@ export class SmartCompletion extends CollectionItem {
     }
   }
 
+  /**
+   * @returns {Object|undefined} Currently selected response based on `response_i`.
+   */
   get response() {
-    return this.data.completion.responses[0]; // TODO: index based on this.response_i
+    return this.data.completion.responses[this.response_i];
   }
   /**
    * @method response_text
    * @returns {string} The best guess at the main text from the model's first response.
    */
   get response_text() {
-    const resp = this.data?.completion?.responses[0];
+    const resp = this.response;
     if (!resp) return '';
     if (Array.isArray(resp.choices) && resp.choices[0]) {
       const choice = resp.choices[0];
