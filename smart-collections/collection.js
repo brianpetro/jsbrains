@@ -151,14 +151,14 @@ export class Collection {
     if (typeof filter_opts === 'function') {
       return Object.values(this.items).filter(filter_opts);
     }
-    filter_opts = this.prepare_filter(filter_opts);
+    const prepared_filter_opts = this.prepare_filter(filter_opts);
 
     const results = [];
-    const { first_n } = filter_opts;
+    const { first_n } = prepared_filter_opts;
 
     for (const item of Object.values(this.items)) {
       if (first_n && results.length >= first_n) break;
-      if (item.filter(filter_opts)) results.push(item);
+      if (item.filter(prepared_filter_opts)) results.push(item);
     }
     return results;
   }
