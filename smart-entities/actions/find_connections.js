@@ -1,4 +1,5 @@
 import { sort_by_score } from "smart-utils/sort_by_score.js";
+import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 /**
  * Finds connections relevant to this entity based on provided parameters.
  * @async
@@ -11,7 +12,7 @@ async function find_connections(params = {}) {
     || params.limit // DEPRECATED: for backwards compatibility
     || this.env.settings.smart_view_filter?.results_limit
     || 10;
-  const cache_key = this.key + JSON.stringify(params); // no objects/instances in cache key
+  const cache_key = this.key + murmur_hash_32_alphanumeric(JSON.stringify({...filter_opts, entity: null})); // no objects/instances in cache key
   if (!this.env.connections_cache) this.env.connections_cache = {};
   if (!this.env.connections_cache[cache_key]) {
     const connections = (await this.nearest(filter_opts))

@@ -1,5 +1,6 @@
 import { sort_by_score } from "smart-utils/sort_by_score.js";
 import { find_connections as entities_find_connections } from "smart-entities/actions/find_connections.js";
+import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 /**
  * Finds connections relevant to this SmartSource based on provided parameters.
  * @async
@@ -22,7 +23,7 @@ async function find_connections(params={}) {
   if(params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
   if(params.limit) delete params.limit; // Backwards compatibility
   if(!exclude_blocks_from_source_connections) {
-    const cache_key = this.key + JSON.stringify(params) + "_blocks";
+    const cache_key = this.key + murmur_hash_32_alphanumeric(JSON.stringify({...filter_opts, entity: null})) + "_blocks";
     if(!this.env.connections_cache) this.env.connections_cache = {};
     if(!this.env.connections_cache[cache_key]){
       const nearest = (await this.env.smart_blocks.nearest(this.vec, filter_opts))
