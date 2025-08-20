@@ -217,6 +217,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @returns {void}
    */
   _show_embed_progress_notice(embed_queue_length) {
+    if(embed_queue_length < 100) return; // return early if not enough items
     if (!this.should_show_embed_progress_notice) return;
     this.last_notice_time = Date.now();
     this.last_notice_embedded_total = this.embedded_total;
@@ -235,11 +236,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    */
   _show_embed_completion_notice() {
     this.notices?.remove('embedding_progress');
-    this.notices?.show('embedding_complete', {
-      total_embeddings: this.embedded_total,
-      tokens_per_second: this._calculate_embed_tokens_per_second(),
-      model_name: this.collection.embed_model_key
-    });
+    if(this.embedded_total > 100) {
+      this.notices?.show('embedding_complete', {
+        total_embeddings: this.embedded_total,
+        tokens_per_second: this._calculate_embed_tokens_per_second(),
+        model_name: this.collection.embed_model_key
+      });
+    }
   }
 
   /**
