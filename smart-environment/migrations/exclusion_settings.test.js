@@ -12,7 +12,7 @@ test('migrate_exclusion_settings moves root exclusions to modules', t => {
   migrate_exclusion_settings_2025_08_22(settings);
   t.is(settings.smart_sources.file_exclusions, 'a.md');
   t.is(settings.smart_sources.folder_exclusions, 'Foo');
-  t.is(settings.smart_blocks.excluded_headings, 'Secret');
+  t.is(settings.smart_sources.excluded_headings, 'Secret');
   t.false('file_exclusions' in settings);
   t.false('folder_exclusions' in settings);
   t.false('excluded_headings' in settings);
