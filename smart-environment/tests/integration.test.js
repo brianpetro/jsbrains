@@ -4,12 +4,12 @@
  */
 
 import test from 'ava';
-import { SmartEnv } from './smart_env.js';
-import { SmartFs } from '../smart-fs/smart_fs.js';
-import { NodeFsSmartFsAdapter } from '../smart-fs/adapters/node_fs.js';
-import { Collection } from '../smart-collections/collection.js';
-import { CollectionItem } from '../smart-collections/item.js';
-import ajson_multi_file from '../smart-collections/adapters/ajson_multi_file.js';
+import { SmartEnv } from '../smart_env.js';
+import { SmartFs } from '../../smart-fs/smart_fs.js';
+import { NodeFsSmartFsAdapter } from '../../smart-fs/adapters/node_fs.js';
+import { Collection } from 'smart-collections/collection.js';
+import { CollectionItem } from 'smart-collections/item.js';
+import ajson_multi_file from 'smart-collections/adapters/ajson_multi_file.js';
 
 import path from 'path';
 /**

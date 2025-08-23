@@ -19,19 +19,20 @@ const env = await SmartEnv.create(main, {
 - `SmartEnv.create(main, opts)` – initialize or update the singleton environment
 - `init_module(key, opts)` – register a module such as smart_fs or smart_view
 - `render_settings(container)` – build settings UI for all modules and collections
+- `to_json()` – return plain object of all collection item data
 
 ### Key Components of `smart_env_config`
 
 - **`env_path`**: The base path for the environment, important for file system operations.
 - **`collections`**: Defines the data collections managed by the environment.
-  - Each collection should have:
-    - **`class`**: The constructor function or class for the collection.
-    - **`data_adapter`**: Adapter for handling data persistence.
-    - **`item_types`**: Definitions of item classes within the collection.
+	- Each collection should have:
+		- **`class`**: The constructor function or class for the collection.
+		- **`data_adapter`**: Adapter for handling data persistence.
+		- **`item_types`**: Definitions of item classes within the collection.
 - **`modules`**: Specifies additional functionalities or services.
-  - Each module should have:
-    - **`class`**: The constructor function or class for the module.
-    - **`adapter`**: Adapter specific to the module's operation.
+	- Each module should have:
+		- **`class`**: The constructor function or class for the module.
+		- **`adapter`**: Adapter specific to the module's operation.
 - **`default_settings`**: Default configuration settings that can be overridden by user preferences.
 - **`components`**: UI components for rendering settings, views, and other interactive elements.
 
@@ -81,6 +82,7 @@ export const smart_env_config = {
 	}
 };
 ```
+
 
 ## Usage Example
 ```js

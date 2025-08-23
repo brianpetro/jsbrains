@@ -170,6 +170,18 @@ export class SmartEnv {
     if(!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
     return this.global_ref.smart_env_configs;
   }
+
+  /**
+   * Serializes all collection data in the environment into a plain object.
+   * @returns {object}
+   */
+  to_json() {
+    return Object.fromEntries(
+      Object.entries(this).filter(([, val]) => typeof val?.collection_key !== 'undefined')
+        .map(([key, collection]) => [key, collection_to_plain(collection)]),
+    );
+  }
+
   /**
    * Waits for either a specific main to be registered in the environment,
    * or (if `opts.main` is not specified) waits for environment collections to load.
@@ -639,4 +651,12 @@ export class SmartEnv {
   get plugin() {
     return this.main;
   }
+}
+
+function collection_to_plain(collection) {
+  return {
+    items: Object.fromEntries(
+      Object.entries(collection.items || {}).map(([key, item]) => [key, item.data]),
+    ),
+  };
 }
