@@ -1,9 +1,8 @@
 {
   "smart_sources": {
     "data_dir": "multi",
-    "folder_exclusions": [
-      "excluded_source.md"
-    ]
+    "file_exclusions": "excluded_source.md",
+    "folder_exclusions": ""
   },
   "smart_blocks": {}
 }
