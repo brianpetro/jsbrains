@@ -492,7 +492,8 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<string>} An array of file exclusion patterns.
    */
   get file_exclusions() {
-    return (this.env.settings?.file_exclusions?.length) ? this.env.settings.file_exclusions.split(",").map((file) => file.trim()) : [];
+    const csv = this.env.settings?.smart_sources?.file_exclusions;
+    return csv?.length ? csv.split(",").map(file => file.trim()) : [];
   }
 
   /**
@@ -501,7 +502,8 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<string>} An array of folder exclusion patterns.
    */
   get folder_exclusions() {
-    return (this.env.settings?.folder_exclusions?.length) ? this.env.settings.folder_exclusions.split(",").map((folder) => {
+    const csv = this.env.settings?.smart_sources?.folder_exclusions;
+    return csv?.length ? csv.split(",").map((folder) => {
       folder = folder.trim();
       if (folder === "") return false;
       if (folder === "/") return false;
@@ -517,7 +519,8 @@ export class SmartSources extends SmartEntities {
    */
   get excluded_headings() {
     if (!this._excluded_headings){
-      this._excluded_headings = (this.env.settings?.excluded_headings?.length) ? this.env.settings.excluded_headings.split(",").map((heading) => heading.trim()) : [];
+      const csv = this.env.settings?.smart_sources?.excluded_headings;
+      this._excluded_headings = csv?.length ? csv.split(",").map(heading => heading.trim()) : [];
     }
     return this._excluded_headings;
   }
@@ -553,10 +556,24 @@ export class SmartSources extends SmartEntities {
 }
 
 export const settings_config = {
-  // "smart_change.active": {
-  //   "name": "Smart Change (change safety)",
-  //   "description": "Enable Smart Changes (prevents accidental deletions/overwrites).",
-  //   "type": "toggle",
-  //   "default": true,
-  // },
+  file_exclusions: {
+    name: 'File Exclusions',
+    description: 'Comma-separated list of files to exclude.',
+    type: 'text',
+    default: '',
+    callback: 'update_exclusions',
+  },
+  folder_exclusions: {
+    name: 'Folder Exclusions',
+    description: 'Comma-separated list of folders to exclude.',
+    type: 'text',
+    default: '',
+    callback: 'update_exclusions',
+  },
+  excluded_headings: {
+    name: 'Excluded Headings',
+    description: 'Comma-separated list of headings to exclude.',
+    type: 'text',
+    default: '',
+  },
 };

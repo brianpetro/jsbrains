@@ -24,58 +24,61 @@ const env = await SmartEnv.create(main, {
 
 - **`env_path`**: The base path for the environment, important for file system operations.
 - **`collections`**: Defines the data collections managed by the environment.
-    - Each collection should have:
-        - **`class`**: The constructor function or class for the collection.
-        - **`data_adapter`**: Adapter for handling data persistence.
-        - **`item_types`**: Definitions of item classes within the collection.
+  - Each collection should have:
+    - **`class`**: The constructor function or class for the collection.
+    - **`data_adapter`**: Adapter for handling data persistence.
+    - **`item_types`**: Definitions of item classes within the collection.
 - **`modules`**: Specifies additional functionalities or services.
-    - Each module should have:
-        - **`class`**: The constructor function or class for the module.
-        - **`adapter`**: Adapter specific to the module's operation.
+  - Each module should have:
+    - **`class`**: The constructor function or class for the module.
+    - **`adapter`**: Adapter specific to the module's operation.
 - **`default_settings`**: Default configuration settings that can be overridden by user preferences.
 - **`components`**: UI components for rendering settings, views, and other interactive elements.
 
 ```js
 export const smart_env_config = {
-  
-  // Base path for the environment
-  env_path: '',
-  
-  // Collections to initialize
-  collections: {
-    smart_sources: {
-      class: SmartSources,
-      data_adapter: SmartCollectionMultiFileDataAdapter,
-      // Collection-specific options...
-    },
-    // Other collections...
-  },
+	
+	// Base path for the environment
+	env_path: '',
+	
+	// Collections to initialize
+	collections: {
+		smart_sources: {
+			class: SmartSources,
+			data_adapter: SmartCollectionMultiFileDataAdapter,
+			// Collection-specific options...
+		},
+		// Other collections...
+	},
 
-  // Available item types
-  item_types: {
-    SmartSource,
-    SmartBlock,
-  },
+	// Available item types
+	item_types: {
+		SmartSource,
+		SmartBlock,
+	},
 
-  // Module configurations
-  modules: {
-    smart_fs: {
-      class: SmartFs,
-      adapter: SmartFsAdapter,
-    },
-    smart_view: {
-      class: SmartView,
-      adapter: ViewAdapter,
-    },
-    // Other modules...
-  },
+	// Module configurations
+	modules: {
+		smart_fs: {
+			class: SmartFs,
+			adapter: SmartFsAdapter,
+		},
+		smart_view: {
+			class: SmartView,
+			adapter: ViewAdapter,
+		},
+		// Other modules...
+	},
 
-  // Default settings
-  default_settings: {
-    file_exclusions: 'Untitled',
-    folder_exclusions: 'smart-chats',
-    // Other default settings...
-  }
+	// Default settings
+	default_settings: {
+		smart_sources: {
+			file_exclusions: 'Untitled',
+			folder_exclusions: 'smart-chats',
+			excluded_headings: '',
+		},
+		// Other default settings...
+	}
 };
 ```
 

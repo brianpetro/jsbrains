@@ -27,6 +27,7 @@ import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
 import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
+import { migrate_exclusion_settings_2025_08_22 } from './migrations/exclusion_settings.js';
 
 const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
 
@@ -43,7 +44,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139270;
+  static version = 2.139271;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -268,6 +269,7 @@ export class SmartEnv {
     this.state = 'loading';
     await this.fs.load_files(); // skip exclusions; detect env_data_dir
     if(!this.settings) await SmartSettings.create(this);
+    migrate_exclusion_settings_2025_08_22(this.settings);
     if(this.config.default_settings){
       // takes precedence over default_settings in collection classes (merged by subsequent init_collections)
       deep_merge_no_overwrite(this.settings, this.config.default_settings);
@@ -480,26 +482,7 @@ export class SmartEnv {
         type: 'toggle',
         default: false
       },
-      file_exclusions: {
-        name: 'File Exclusions',
-        description: 'Comma-separated list of files to exclude.',
-        type: 'text',
-        default: '',
-        callback: 'update_exclusions'
-      },
-      folder_exclusions: {
-        name: 'Folder Exclusions',
-        description: 'Comma-separated list of folders to exclude.',
-        type: 'text',
-        default: '',
-        callback: 'update_exclusions'
-      },
-      excluded_headings: {
-        name: 'Excluded Headings',
-        description: 'Comma-separated list of headings to exclude. Note: currently only applies to blocks (2025-04-07).',
-        type: 'text',
-        default: ''
-      }
+
     };
   }
 
@@ -597,8 +580,8 @@ export class SmartEnv {
     deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings (DEPRECATED????)
     this._saved = true;
     if(this.fs.auto_excluded_files) {
-      const existing_file_exclusions = settings.file_exclusions.split(',').map(s => s.trim()).filter(Boolean);
-      settings.file_exclusions = [...existing_file_exclusions, ...this.fs.auto_excluded_files]
+      const existing_file_exclusions = settings.smart_sources.file_exclusions.split(',').map(s => s.trim()).filter(Boolean);
+      settings.smart_sources.file_exclusions = [...existing_file_exclusions, ...this.fs.auto_excluded_files]
         .filter((value, index, self) => self.indexOf(value) === index)
         .join(',')
       ;
