@@ -9,6 +9,7 @@
 import { CollectionItem } from "smart-collections";
 import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 import { parse_xml_fragments } from "smart-utils/parse_xml_fragments.js";
+import { run_adapters } from "./utils/run_adapters.js";
 
 /**
  * @class SmartCompletion
@@ -92,23 +93,7 @@ export class SmartCompletion extends CollectionItem {
    */
   async build_request() {
     this.data.completion.request = {};
-    // Get all adapter classes and sort by order
-    const adapters = Object.entries(this.completion_adapters)
-      .map(([key, AdapterClass]) => ({
-        key,
-        AdapterClass,
-        order: AdapterClass.order ?? 0
-      }))
-      .sort((a, b) => a.order - b.order)
-    ;
-    // Check each adapter's property_name against data
-    for (const {AdapterClass, key} of adapters) {
-      const property = AdapterClass.property_name;
-      if (!property || (property && this.data[property])) {
-        const adapter = new AdapterClass(this);
-        await adapter.to_request?.();
-      }
-    }
+    await run_adapters({ item: this, adapters: this.completion_adapters, adapter_method: "to_request" });
     // clean-up and merge messages
     if(Object.keys(this.data.completion.request).length > 0) {
       this.data.completion.request.messages = this.data.completion.request.messages
@@ -130,14 +115,7 @@ export class SmartCompletion extends CollectionItem {
     return this.data.completion.request;
   }
   async parse_response(){
-    const data_keys = Object.keys(this.data);
-    for (const key of data_keys) {
-      const AdapterClass = this.completion_adapters[key];
-      if (AdapterClass) {
-        const adapter = new AdapterClass(this);
-        await adapter.from_response?.();
-      }
-    }
+    await run_adapters({ item: this, adapters: this.completion_adapters, adapter_method: "from_response" });
     return this.data.completion.responses;
   }
 

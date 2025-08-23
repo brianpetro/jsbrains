@@ -58,25 +58,21 @@ Represents a single completion request/response pair. Stores the initial request
 **Key Methods**
 
 1. **`init()`**  
-		Basic initialization logic (often empty).
-		
-2. **`run_completion_adapters()`**  
-		Calls each adapter class in the parent collection’s `completion_adapters` array.  
-		Each adapter’s `to_request()` manipulates `data.completion.request` based on the presence of certain fields in `item.data`.
-		
+Basic initialization logic (often empty).
+2. **`build_request()`**
+Utilizes `run_adapters()` to inspect each key in `item.data` and invoke `to_request()` on matching adapters before sending to the model.
 3. **`get_chat_model()`**
-		
-		- If `data.completion.chat_model` is present with a valid `platform` and `model_key`, dynamically create a dedicated chat model instance.
-		- Otherwise, return the parent collection’s shared `chat_model`.
+	- If `data.completion.chat_model` is present with a valid `platform` and `model_key`, dynamically create a dedicated chat model instance.
+	- Otherwise, return the parent collection’s shared `chat_model`.
 4. **`complete()`**
-		
-		- Invokes `run_completion_adapters()` to transform the request.
-		- Gets or creates a chat model.
-		- Calls `chat_model.complete(requestPayload)` to get the model’s response.
-		- Stores the response in `data.completion.response` (including a `timestamp`).
-		- Queues a save of the item.
-5. **`get response_text()`**  
-		Returns a best-effort extracted text from `data.completion.response` (handles typical OpenAI-like `choices[0].message.content` or `.text`).
+	- Builds the request via `build_request()`.
+	- Gets or creates a chat model.
+	- Calls `chat_model.complete(requestPayload)` to get the model’s response.
+	- Runs `run_adapters()` with `from_response` to parse data from the response.
+	- Stores the response in `data.completion.response` (including a `timestamp`).
+	- Queues a save of the item.
+5. **`get response_text()`**
+Returns a best-effort extracted text from `data.completion.response` (handles typical OpenAI-like `choices[0].message.content` or `.text`).
 		
 
 ---
@@ -126,15 +122,15 @@ Because `SmartCompletions` often orchestrates a single chat model for all items,
 
 ### Adapters Overview
 
-Each adapter is a small class extending `SmartCompletionAdapter`.  
-It has two main hooks:
+Each adapter is a small class extending `SmartCompletionAdapter`.
+`run_adapters()` inspects `item.data` and executes adapter hooks:
 
 1. `to_request()`
-		
-		- Reads from `item.data` to manipulate `item.data.completion.request`.
+
+							 - Reads from `item.data` to manipulate `item.data.completion.request`.
 2. `from_response()` (optional)
-		
-		- Reads the raw response from `item.data.completion.response` after `complete()` to do additional processing or cleanup.
+
+							 - Reads the raw response from `item.data.completion.response` after `complete()` to do additional processing or cleanup.
 
 **Default Adapters**
 
@@ -170,13 +166,10 @@ It has two main hooks:
 ```mermaid
 sequenceDiagram
 	participant I as SmartCompletion
-	participant A as Action
-	I->>I: to_request()
-	I->>A: insert_tools(action_key)
+	participant R as run_adapters
+	I->>R: to_request
 	I->>I: complete()
-	I-->>I: from_response()
-	I->>A: run_action(parsed_args)
-	A-->>I: result
+	I->>R: from_response
 ```
 
 In practice, you can chain multiple adapters by listing them in `SmartCompletions.completion_adapters`.
