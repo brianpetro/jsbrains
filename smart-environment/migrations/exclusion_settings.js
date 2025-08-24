@@ -10,17 +10,23 @@ export function migrate_exclusion_settings_2025_08_22(settings = {}) {
   if (file_exclusions !== undefined || folder_exclusions !== undefined || excluded_headings !== undefined) {
     settings.smart_sources = settings.smart_sources || {};
     if (file_exclusions !== undefined) {
-      settings.smart_sources.file_exclusions = file_exclusions;
-      delete settings.file_exclusions;
+      if (file_exclusions.length && file_exclusions !== 'Untitled' && (!settings.smart_sources?.file_exclusions?.length || settings.smart_sources?.file_exclusions === 'Untitled')) {
+        settings.smart_sources.file_exclusions = file_exclusions;
+      }
     }
     if (folder_exclusions !== undefined) {
-      settings.smart_sources.folder_exclusions = folder_exclusions;
-      delete settings.folder_exclusions;
+      if (folder_exclusions.length && !settings.smart_sources.folder_exclusions?.length) {
+        settings.smart_sources.folder_exclusions = folder_exclusions;
+      }
     }
     if (excluded_headings !== undefined) {
-      settings.smart_sources.excluded_headings = excluded_headings;
-      delete settings.excluded_headings;
+      if (excluded_headings.length && !settings.smart_sources.excluded_headings?.length) {
+        settings.smart_sources.excluded_headings = excluded_headings;
+      }
     }
   }
+  delete settings.file_exclusions;
+  delete settings.folder_exclusions;
+  delete settings.excluded_headings;
   return settings;
 }
