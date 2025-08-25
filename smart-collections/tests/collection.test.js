@@ -3,6 +3,9 @@ import { Collection } from '../collection.js';
 import { CollectionItem } from '../item.js';
 
 class TestItem extends CollectionItem {
+  static get defaults() {
+    return { data: { class_name: 'TestItem' } };
+  }
   init(input_data) {
     this.data.initialized = true;
   }
@@ -23,7 +26,7 @@ const default_adapter_export = {
 };
 
 // Create an environment with the specified item type and mock data adapter
-function create_env_and_collection(itemType = CollectionItem) {
+function create_env_and_collection(itemType = TestItem, collection_opts = {}) {
   const env = {
     create_env_getter(obj) {
       Object.defineProperty(obj, 'env', { value: env });
@@ -69,11 +72,14 @@ function create_env_and_collection(itemType = CollectionItem) {
 
   }
 
-  const collection = new TestItems(env);
+  const collection = new TestItems(env, collection_opts);
   return { env, collection };
 }
 
 class AsyncInitItem extends CollectionItem {
+  static get defaults() {
+    return { data: { class_name: 'AsyncInitItem' } };
+  }
   async init(data) {
     await new Promise(resolve => setTimeout(resolve, 10));
     this.data.initialized = true;
@@ -266,4 +272,52 @@ test('creating a new item with async init should return a promise and initialize
   t.truthy(item, 'Item should resolve');
   t.is(item.data.foo, 'bar', 'Data should be updated');
   t.true(item.data.initialized, 'Item should be marked as initialized after async init');
+});
+
+test('actions getter binds provided actions and memoizes result', t => {
+  const action = function() { return this.collection_key; };
+  const { collection } = create_env_and_collection(CollectionItem, { actions: { get_key: action } });
+  t.is(collection.actions.get_key(), collection.collection_key, 'Bound action should use collection context');
+  t.is(collection.actions, collection.actions, 'Actions getter should memoize bound actions');
+});
+
+test.serial('show_process_notice displays notice after delay', t => {
+  const { collection } = create_env_and_collection();
+  const calls = [];
+  collection.env.notices = { show(process, opts) { calls.push({ process, opts }); }, remove() {} };
+  const original_set_timeout = globalThis.setTimeout;
+  const original_clear_timeout = globalThis.clearTimeout;
+  const timers = [];
+  globalThis.setTimeout = (fn) => { timers.push(fn); return timers.length; };
+  globalThis.clearTimeout = (id) => { timers[id - 1] = null; };
+  try {
+    collection.show_process_notice('load', { a: 1 });
+    t.is(calls.length, 0, 'Notice should not show immediately');
+    timers.forEach(fn => fn && fn());
+    t.is(calls.length, 1, 'Notice should show after delay');
+    t.deepEqual(calls[0], { process: 'load', opts: { collection_key: 'test_items', a: 1 } });
+  } finally {
+    globalThis.setTimeout = original_set_timeout;
+    globalThis.clearTimeout = original_clear_timeout;
+  }
+});
+
+test.serial('clear_process_notice prevents pending notice from showing', t => {
+  const { collection } = create_env_and_collection();
+  let show_called = false;
+  collection.env.notices = { show() { show_called = true; }, remove() {} };
+  const original_set_timeout = globalThis.setTimeout;
+  const original_clear_timeout = globalThis.clearTimeout;
+  const timers = [];
+  globalThis.setTimeout = (fn) => { timers.push(fn); return timers.length; };
+  globalThis.clearTimeout = (id) => { timers[id - 1] = null; };
+  try {
+    collection.show_process_notice('save');
+    collection.clear_process_notice('save');
+    timers.forEach(fn => fn && fn());
+    t.false(show_called, 'Notice callback should not execute after being cleared');
+  } finally {
+    globalThis.setTimeout = original_set_timeout;
+    globalThis.clearTimeout = original_clear_timeout;
+  }
 });

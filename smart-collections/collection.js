@@ -464,7 +464,12 @@ export class Collection {
     this.env.collections[this.collection_key] = null;
   }
 
-  // only show process notice if taking longer than 1 second
+  /**
+   * Displays a process notice if the operation exceeds one second.
+   *
+   * @param {string} process - Identifier for the ongoing process.
+   * @param {Object} [opts={}] - Additional options passed to the notice.
+   */
   show_process_notice(process, opts = {}) {
     if(!this.debounce_process_notice) this.debounce_process_notice = {};
     this.debounce_process_notice[process] = setTimeout(() => {
@@ -473,6 +478,11 @@ export class Collection {
     }, 1000);
   }
 
+  /**
+   * Clears any pending process notice timers and removes active notices.
+   *
+   * @param {string} process - Identifier for the process notice to clear.
+   */
   clear_process_notice(process) {
     if (this.debounce_process_notice?.[process]) {
       clearTimeout(this.debounce_process_notice[process]);
@@ -482,6 +492,11 @@ export class Collection {
     }
   }
 
+  /**
+   * Lazily binds action functions to the collection instance.
+   *
+   * @returns {Object} Bound action functions keyed by name.
+   */
   get actions() {
     if(!this._actions) {
       this._actions = Object.entries(this.opts.actions || {}).reduce((acc, [k,v]) => {
