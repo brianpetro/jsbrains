@@ -1,6 +1,6 @@
 import { FileSourceContentAdapter } from "./_file.js";
 
-const media_extension_regex = /\.(png|jpe?g|gif|bmp|webp|svg|ico|mp4|pdf)$/i;
+const media_extension_regex = /\.(png|jpe?g|gif|bmp|webp|svg|ico|mp4|webm|pdf|mp3|wav|ogg|flac|aac)$/i;
 const mime_types = {
   png: 'image/png',
   jpg: 'image/jpeg',
@@ -11,7 +11,13 @@ const mime_types = {
   svg: 'image/svg+xml',
   ico: 'image/x-icon',
   mp4: 'video/mp4',
-  pdf: 'application/pdf'
+  webm: 'video/webm',
+  pdf: 'application/pdf',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  flac: 'audio/flac',
+  aac: 'audio/aac'
 };
 
 /**
@@ -24,9 +30,16 @@ export const infer_mime_type = name => {
   return mime_types[ext] || 'application/octet-stream';
 };
 
+/**
+ * Determine if a key references a supported media file.
+ * @param {string} key - Source key or filename.
+ * @returns {boolean} True when extension matches known media types.
+ */
+export const is_media_key = key => media_extension_regex.test(key);
+
 export class MediaSourceContentAdapter extends FileSourceContentAdapter {
   static detect_type(source) {
-    return media_extension_regex.test(source.key);
+    return is_media_key(source.key);
   }
 
   /**
