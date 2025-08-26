@@ -40,21 +40,19 @@ test('off removes listener', t => {
 
 test('emit appends at timestamp', t => {
   const env = {};
-  const now = () => 'now';
-  SmartEvents.create(env, { now });
+  SmartEvents.create(env);
   let captured;
   const payload = { foo: 'bar' };
   env.events.on('ping', event => { captured = event; });
   env.events.emit('ping', payload);
-  t.is(captured.at, 'now');
+  t.truthy(captured.at);
   t.is(payload.at, undefined);
   t.is(captured.foo, 'bar');
 });
 
 test('emit preserves existing at', t => {
   const env = {};
-  const now = () => 'now';
-  SmartEvents.create(env, { now });
+  SmartEvents.create(env);
   let captured;
   const payload = { at: 'before' };
   env.events.on('ping', event => { captured = event; });
@@ -71,11 +69,3 @@ test('emit freezes payload', t => {
   t.throws(() => env.events.emit('ping', { foo: 'bar' }), { instanceOf: TypeError });
 });
 
-test('emit rejects non JSON-safe payloads', t => {
-  const env = {};
-  SmartEvents.create(env);
-  t.throws(() => env.events.emit('fn', { bad: () => {} }));
-  t.throws(() => env.events.emit('nested', { bad: { foo: 'bar' } }));
-  class Foo {}
-  t.throws(() => env.events.emit('instance', { bad: new Foo() }));
-});

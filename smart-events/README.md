@@ -1,17 +1,25 @@
 # Smart Events
 
-## Overview
-Coordinate asynchronous events across JSBrains modules.
+Tiny, opinionated event bus for JSBrains modules.
 
-## Architecture
 ```mermaid
-flowchart TD
-	M[Smart Modules] --> Evt[Smart Events]
-	Evt --> A[Smart Actions]
+graph TD
+	Emitter --> Bus --> Handler
 ```
-Smart Events centralize event propagation, letting actions react to changes from any module.
 
-## Features
-- Appends an `at` timestamp when emitting.
-- Freezes payload objects to keep handlers pure.
-- Validates payloads are JSON‑safe (primitives or arrays of primitives).
+## Usage
+
+```js
+import { SmartEvents } from 'smart-events';
+
+const env = {};
+SmartEvents.create(env);
+
+env.events.on('user:logged_in', event => {
+	console.log(event.id); // 1
+});
+
+env.events.emit('user:logged_in', { id: 1 });
+```
+
+Emitted payloads automatically gain an `at` timestamp and are frozen to keep handlers pure.

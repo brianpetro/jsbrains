@@ -15,15 +15,13 @@ No env, no functions, no class instances
 No nested objects in payload values
 
 ## Bus API
-create_event_bus(opts) -> { on, off, once, emit, handlers }
-Default opts: append_at=true, freeze_payload=true, validate_payload=true
-Clock can be injected via opts.now for deterministic tests
+create_event_bus() -> { on, off, once, emit }
+The bus is configured with opinionated defaults; no runtime options.
 
 ## Semantics
 emit delivers a frozen shallow copy of the payload
-If append_at is on and payload.at is missing, the bus fills it using now()
+When payload.at is missing, the bus fills it with the current ISO timestamp
 The bus never overrides an existing payload.at
-The bus never coerces or projects class instances; it throws with a helpful suggestion
 
 ## Signals (escape hatch)
 create_signal_bus() for in-process coordination payloads that may contain instances
@@ -39,9 +37,7 @@ Handlers colocated with emitters for readability
 
 ## Testing
 Unit test emitters and listeners together
-Validate name format and payload shape
 Assert timestamp behavior and immutability
-Assert instance rejection and suggestion text
 
 ## Non-goals
 Background orchestration inside the bus

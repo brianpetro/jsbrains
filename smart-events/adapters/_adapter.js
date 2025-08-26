@@ -2,8 +2,8 @@
  * Base adapter outlining the event bus interface.
  */
 export class SmartEventsAdapter {
-  constructor(config = {}) {
-    this.config = config;
+  constructor(instance) {
+    this.instance = instance;
     this.handlers = {};
   }
 
