@@ -23,9 +23,9 @@ export class SmartEvents {
     return smart_events;
   }
 
-  get adapter () {
-    if(!this._adapter) {
-      this.adapter = this.opts.adapter_class
+  get adapter() {
+    if (!this._adapter) {
+      this._adapter = this.opts.adapter_class
         ? new this.opts.adapter_class(this)
         : new DefaultEventsAdapter(this)
       ;
