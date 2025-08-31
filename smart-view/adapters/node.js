@@ -53,6 +53,9 @@ export class Setting {
   constructor(element) {
     this.element = element;
     this.container = this.createSettingItemContainer();
+    // compatibility with Obsidian
+    this.settingEl = this.container;
+    this.controlEl = this.container.querySelector('.control');
   }
   safe_inner_html(elm, html){
     safe_inner_html(elm, html);
@@ -113,7 +116,7 @@ export class Setting {
     const container = document.createElement('div');
     container.classList.add('setting-item');
     const infoContainer = document.createElement('div');
-    infoContainer.classList.add('info');
+    infoContainer.classList.add('info', 'setting-item-info');
     container.appendChild(infoContainer);
     // Placeholders for name and description
     const namePlaceholder = document.createElement('div');
@@ -126,7 +129,7 @@ export class Setting {
     // descPlaceholder.classList.add('description');
     // infoContainer.appendChild(descPlaceholder);
     const controlContainer = document.createElement('div');
-    controlContainer.classList.add('control');
+    controlContainer.classList.add('control', 'setting-item-control');
     container.appendChild(controlContainer);
     return container;
   }
