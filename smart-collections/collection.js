@@ -493,6 +493,17 @@ export class Collection {
   }
 
   /**
+   * Emits an event with collection metadata.
+   *
+   * @param {string} event_key
+   * @param {Object} [payload={}]
+   * @returns {void}
+   */
+  emit_event(event_key, payload = {}) {
+    this.env.events?.emit(event_key, { collection_key: this.collection_key, ...payload });
+  }
+
+  /**
    * Lazily binds action functions to the collection instance.
    *
    * @returns {Object} Bound action functions keyed by name.

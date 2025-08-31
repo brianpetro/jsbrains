@@ -348,9 +348,20 @@ export class CollectionItem {
   }
 
   /**
+   * Emits an event with item metadata.
+   *
+   * @param {string} event_key
+   * @param {Object} [payload={}]
+   * @returns {void}
+   */
+  emit_event(event_key, payload = {}) {
+    this.env.events?.emit(event_key, { collection_key: this.collection_key, item_key: this.key, ...payload });
+  }
+
+  /**
    * @returns {Object} The data adapter for this item's collection.
    */
-  get data_adapter() { 
+  get data_adapter() {
     return this.collection.data_adapter; 
   }
 
