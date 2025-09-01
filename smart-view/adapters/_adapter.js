@@ -106,7 +106,8 @@ export class SmartViewAdapter {
       slider: this.render_slider_component,
       html: this.render_html_component,
       button_with_confirm: this.render_button_with_confirm_component,
-      json: this.render_json_component, // <-- add this line
+      json: this.render_json_component,
+      array: this.render_array_component,
     };
   }
 
@@ -351,6 +352,103 @@ export class SmartViewAdapter {
     // render html into a div
     this.safe_inner_html(elm, value);
     return elm;
+  }
+
+  /**
+   * Renders an array setting component for managing a list of strings.
+   * @param {HTMLElement} elm - Container element for the setting.
+   * @param {string} path - Dot-notation path to store the array.
+   * @param {Array<string>} value - Initial array value.
+   * @param {object} scope - Scope containing settings and actions.
+   * @param {object|null} settings_scope - Optional nested settings scope.
+   * @returns {object} smart_setting instance.
+   */
+  render_array_component(elm, path, value, scope, settings_scope) {
+    const smart_setting = new this.setting_class(elm);
+    let arr = Array.isArray(value) ? [...value] : [];
+
+    const items_container = document.createElement('div');
+    items_container.className = 'array-items-container';
+    items_container.style.display = 'flex';
+    items_container.style.flexDirection = 'column';
+    items_container.style.gap = '0px';
+
+    const render_items = () => {
+      items_container.innerHTML = '';
+      arr.forEach((val, idx) => {
+        const row = document.createElement('div');
+        row.className = 'array-item-row';
+        row.style.display = 'flex';
+        row.style.flexDirection = 'row';
+        row.style.gap = '4px';
+        row.style.marginBottom = '4px';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = val;
+        input.placeholder = 'Value';
+        input.style.flex = '1';
+
+        const remove_btn = document.createElement('button');
+        remove_btn.textContent = '✕';
+        remove_btn.title = 'Remove';
+        remove_btn.style.flex = 'none';
+
+        input.addEventListener('change', () => {
+          arr[idx] = input.value;
+          trigger_change();
+        });
+        remove_btn.addEventListener('click', () => {
+          arr.splice(idx, 1);
+          render_items();
+          trigger_change();
+        });
+
+        row.appendChild(input);
+        row.appendChild(remove_btn);
+        items_container.appendChild(row);
+      });
+    };
+
+    const add_row = document.createElement('div');
+    add_row.className = 'array-add-row';
+    add_row.style.display = 'flex';
+    add_row.style.gap = '4px';
+    add_row.style.marginTop = '8px';
+
+    const new_input = document.createElement('input');
+    new_input.type = 'text';
+    new_input.placeholder = 'Value';
+    new_input.style.flex = '1';
+
+    const add_btn = document.createElement('button');
+    add_btn.textContent = '+';
+    add_btn.title = 'Add value';
+    add_btn.style.flex = 'none';
+
+    add_btn.addEventListener('click', () => {
+      const v = new_input.value.trim();
+      if (!v) return;
+      arr.push(v);
+      new_input.value = '';
+      render_items();
+      trigger_change();
+    });
+
+    add_row.appendChild(new_input);
+    add_row.appendChild(add_btn);
+
+    smart_setting.controlEl.appendChild(items_container);
+    smart_setting.controlEl.appendChild(add_row);
+    smart_setting.controlEl.style.flexDirection = 'column';
+
+    const trigger_change = () => {
+      this.handle_on_change(path, [...arr], elm, scope, settings_scope);
+    };
+
+    render_items();
+    elm.appendChild(smart_setting.settingEl);
+    return smart_setting;
   }
 
   render_json_component(elm, path, value, scope, settings_scope) {

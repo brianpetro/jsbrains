@@ -195,6 +195,8 @@ Smart View supports various setting types:
 - `button`: Clickable button
 - `folder`: Folder selection
 - `text-file`: Text file selection
+- `json`: Key-value pairs
+- `array`: List of strings
 
 ### callbacks
 ```js
