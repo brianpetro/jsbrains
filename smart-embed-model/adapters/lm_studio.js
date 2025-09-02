@@ -4,7 +4,32 @@ import {
   SmartEmbedModelResponseAdapter,
 } from "./_api.js";
 
-export class SmartEmbedLmStudioAdapter extends SmartEmbedModelApiAdapter {
+/**
+ * Normalize LM Studio model data into SmartEmbedModel format.
+ * Pure and reusable.
+ * @param {Object} list - Response from LM Studio `/v1/models` endpoint
+ * @param {string} [adapter_key='lm_studio'] - Adapter identifier
+ * @returns {Object} Parsed models map
+ */
+export function parse_lm_studio_models(list, adapter_key = 'lm_studio') {
+  if (list.object !== "list" || !Array.isArray(list.data)) {
+    return { _: { id: "No models found." } };
+  }
+  return list.data.reduce((acc, m) => {
+    acc[m.id] = {
+      id: m.id,
+      model_name: m.id,
+      // LM Studio does not report dims/context; leave sensible defaults
+      dims: 768,
+      max_tokens: 512,
+      description: `LM Studio model: ${m.id}`,
+      adapter: adapter_key,
+    };
+    return acc;
+  }, {});
+}
+
+export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
   static key = "lm_studio";
 
   static defaults = {
@@ -57,21 +82,7 @@ export class SmartEmbedLmStudioAdapter extends SmartEmbedModelApiAdapter {
   }
 
   parse_model_data(list) {
-    if (list.object !== "list" || !Array.isArray(list.data)) {
-      return { _: { id: "No models found." } };
-    }
-    return list.data.reduce((acc, m) => {
-      acc[m.id] = {
-        id: m.id,
-        model_name: m.id,
-        // LM Studio does not report dims/context; leave sensible defaults
-        dims: 768,
-        max_tokens: 512,
-        description: `LM Studio model: ${m.id}`,
-        adapter: this.constructor.key,
-      };
-      return acc;
-    }, {});
+    return parse_lm_studio_models(list, this.constructor.key);
   }
 
   async count_tokens(input) {             // just a wrapper

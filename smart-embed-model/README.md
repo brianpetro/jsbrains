@@ -98,7 +98,19 @@ const model = new SmartEmbedModel({
 });
 ```
 
-3. **Iframe/Worker Adapters** - Isolated processing
+3. **LM Studio Adapter** - Local API using LM Studio
+```javascript
+import { LmStudioEmbedModelAdapter } from 'smart-embed-model/adapters/lm_studio';
+
+const model = new SmartEmbedModel({
+				adapter: 'lm_studio',
+				adapters: {
+								lm_studio: LmStudioEmbedModelAdapter
+				}
+});
+```
+
+4. **Iframe/Worker Adapters** - Isolated processing
 ```javascript
 import { SmartEmbedTransformersIframeAdapter } from 'smart-embed-model/adapters/transformers_iframe';
 
@@ -107,8 +119,8 @@ const model = new SmartEmbedModel({
 	adapters: {
 		transformers_iframe: SmartEmbedTransformersIframeAdapter
 	}
-});
-```
+ });
+ ```
 
 ## Available Models
 
