@@ -91,13 +91,13 @@ High-level flow:
 ### Internal Adapters
 `SmartAction` determines which adapter to instantiate based on `data.source_type`. Adapters load or call the underlying logic:
 - `SmartActionAdapter` (base)
-  - Generic runner. Expects the module to expose a function (usually `.default` or a named export matching the action key).
+	- Generic runner. Expects the module to expose a function (usually `.default` or a named export matching the action key).
 - `MjsActionAdapter`
-  - Dynamically imports an ES module (`.mjs` or `.js`) via `import()`.
+	- Dynamically imports an ES module (`.mjs` or `.js`) via `import()`.
 - `CjsActionAdapter`
-  - Uses `require()` (via `createRequire`) to load a CommonJS module (`.cjs` or `.js`).
+	- Uses `require()` (via `createRequire`) to load a CommonJS module (`.cjs` or `.js`).
 - `ApiActionAdapter`
-  - Makes a `fetch()` call (e.g. POST) to a remote `api_url`.
+	- Makes a `fetch()` call (e.g. POST) to a remote `api_url`.
 ## Class: `SmartActions`
 Extends `Collection` (from `smart-collections`).
 ### Purpose
@@ -107,26 +107,26 @@ A collection of `SmartAction` items. Provides:
 - Global pre-process and post-process callbacks that apply to all actions.
 ### Properties & Methods
 - `data_dir`
-  - Default: `'smart_actions'`
-  - The subfolder where action data may be stored (if using a file-based adapter).
+	- Default: `'smart_actions'`
+		- The subfolder where action data may be stored (if using a file-based adapter).
 - `init()`
-  - Called to initialize the collection. In the code, it can register any default actions from `this.opts.default_actions`.
+	- Called to initialize the collection. In the code, it can register any default actions from `this.opts.default_actions`.
 - `register_included_module(action_key, module)`
-  - Creates (or updates) a `SmartAction` with `source_type: 'included'`.
-  - Directly assigns the passed `module` as the action’s logic.
+	- Creates (or updates) a `SmartAction` with `source_type: 'included'`.
+		- Directly assigns the passed `module` as the action’s logic.
 - `register_mjs_action(file_path)`
-  - Creates/updates a `SmartAction` with `source_type: 'mjs'` and the given `file_path`.
+	- Creates/updates a `SmartAction` with `source_type: 'mjs'` and the given `file_path`.
 - `register_cjs_action(file_path)`
-  - Creates/updates a `SmartAction` with `source_type: 'cjs'` and the given `file_path`.
+	- Creates/updates a `SmartAction` with `source_type: 'cjs'` and the given `file_path`.
 - `register_included_module(action_key, module)`
-  - Creates (or updates) a `SmartAction` with `source_type: 'included'`.
-  - Directly assigns the passed `module` as the action’s logic.
+	- Creates (or updates) a `SmartAction` with `source_type: 'included'`.
+		- Directly assigns the passed `module` as the action’s logic.
 - `get default_pre_processes()`
-  - Returns an array/list of collection-level pre-process callbacks.
+	- Returns an array/list of collection-level pre-process callbacks.
 - `get default_post_processes()`
-  - Returns an array/list of collection-level post-process callbacks.
+	- Returns an array/list of collection-level post-process callbacks.
 - `run_action(actionKey, params)`
-  - Shortcut method (often inherited from the base `Collection` or used explicitly) that looks up the action by `key` and calls `action.run_action(params)`.
+	- Shortcut method (often inherited from the base `Collection` or used explicitly) that looks up the action by `key` and calls `action.run_action(params)`.
 #### Typical “smart-collections” Methods
 Because `SmartActions` extends `Collection`, it inherits:
 - `create_or_update(itemData)`
