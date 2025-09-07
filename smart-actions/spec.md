@@ -60,9 +60,9 @@ Represents one “action” that can be:
 - `data.source_type`
 - `data.file_path` (optional)
 - `data.api_url` (optional)
-	A remote endpoint for `source_type: "api"`.
+  A remote endpoint for `source_type: "api"`.
 - `data.active` (default `true`)
-	If `false`, the action is “disabled,” unless an override is in place (see below).
+  If `false`, the action is “disabled,” unless an override is in place (see below).
 - `data.api_spec` or `data.openapi` (optional)
 ### Methods
 #### `run_action(params = {})`
@@ -163,4 +163,4 @@ Because `SmartActions` extends `Collection`, it inherits:
 		```js
 		const groupResult = await myGroup.run_action("someKey", { foo: "bar" });
 		```
-	- The corresponding adapter is loaded (`mjs`, `cjs`, `api`, etc.), the pre-process hooks run, the underlying function/endpoint is called, then post-process hooks run.
+	- The corresponding adapter is loaded (`mjs`, `cjs`, `api`, etc.), the pre-process hooks run, the underlying function/endpoint is called, then post-process hooks run.
