@@ -163,4 +163,4 @@ Because `SmartActions` extends `Collection`, it inherits:
 		```js
 		const groupResult = await myGroup.run_action("someKey", { foo: "bar" });
 		```
-	- The corresponding adapter is loaded (`mjs`, `cjs`, `api`, etc.), the pre-process hooks run, the underlying function/endpoint is called, then post-process hooks run.
+	- The corresponding adapter is loaded (`mjs`, `cjs`, `api`, etc.), the pre-process hooks run, the underlying function/endpoint is called, then post-process hooks run.
