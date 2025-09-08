@@ -26,10 +26,10 @@
   },
   "homepage": "https://jsbrains.org",
   "devDependencies": {
-    "@huggingface/transformers": "^3.2.1",
+    "@huggingface/transformers": "^3.7.2",
     "ava": "^6.0.1",
     "dotenv": "^16.3.1",
-    "esbuild": "latest",
+    "esbuild": "^0.25.9",
     "jsdom": "^24.1.0"
   },
   "dependencies": {

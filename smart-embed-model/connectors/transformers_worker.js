@@ -1,9 +1,6 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
-};
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
 // ../smart-model/smart_model.js
 var SmartModel = class {
@@ -38,20 +35,17 @@ var SmartModel = class {
    * @param {Object} opts - Configuration options
    */
   validate_opts(opts) {
-    if (!opts.adapters)
-      throw new Error("opts.adapters is required");
-    if (!opts.settings)
-      throw new Error("opts.settings is required");
+    if (!opts.adapters) throw new Error("opts.adapters is required");
+    if (!opts.settings) throw new Error("opts.settings is required");
   }
   /**
    * Get the current settings
    * @returns {Object} Current settings
    */
   get settings() {
-    if (!this.opts.settings)
-      this.opts.settings = {
-        ...this.constructor.defaults
-      };
+    if (!this.opts.settings) this.opts.settings = {
+      ...this.constructor.defaults
+    };
     return this.opts.settings;
   }
   /**
@@ -71,8 +65,7 @@ var SmartModel = class {
    * @returns {Object} Settings for current adapter
    */
   get adapter_settings() {
-    if (!this.settings[this.adapter_name])
-      this.settings[this.adapter_name] = {};
+    if (!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
     return this.settings[this.adapter_name];
   }
   get adapter_config() {
@@ -118,8 +111,7 @@ var SmartModel = class {
     };
   }
   get model_settings() {
-    if (!this.settings[this.model_key])
-      this.settings[this.model_key] = {};
+    if (!this.settings[this.model_key]) this.settings[this.model_key] = {};
     return this.settings[this.model_key];
   }
   /**
@@ -315,19 +307,15 @@ var SmartModel = class {
     return key.replace(/\[ADAPTER\]/g, this.adapter_name);
   }
   re_render_settings() {
-    if (typeof this.opts.re_render_settings === "function")
-      this.opts.re_render_settings();
-    else
-      console.warn("re_render_settings is not a function (must be passed in model opts)");
+    if (typeof this.opts.re_render_settings === "function") this.opts.re_render_settings();
+    else console.warn("re_render_settings is not a function (must be passed in model opts)");
   }
   /**
    * Reload model.
    */
   reload_model() {
-    if (typeof this.opts.reload_model === "function")
-      this.opts.reload_model();
-    else
-      console.warn("reload_model is not a function (must be passed in model opts)");
+    if (typeof this.opts.reload_model === "function") this.opts.reload_model();
+    else console.warn("reload_model is not a function (must be passed in model opts)");
   }
   adapter_changed() {
     this.reload_model();
@@ -392,8 +380,7 @@ var SmartEmbedModel = class extends SmartModel {
    * ```
    */
   async embed(input) {
-    if (typeof input === "string")
-      input = { embed_input: input };
+    if (typeof input === "string") input = { embed_input: input };
     return (await this.embed_batch([input]))[0];
   }
   /**
@@ -535,8 +522,7 @@ var SmartModelAdapter = class {
    * @returns {Object} Map of model objects
    */
   get models() {
-    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0)
-      return this.adapter_config.models;
+    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0) return this.adapter_config.models;
     else {
       return {};
     }
@@ -564,8 +550,7 @@ var SmartModelAdapter = class {
   get_models_as_options() {
     const models = this.models;
     const params_valid = this.validate_get_models_params();
-    if (params_valid !== true)
-      return params_valid;
+    if (params_valid !== true) return params_valid;
     if (!Object.keys(models || {}).length) {
       this.get_models(true);
       return [{ value: "", name: "No models currently available" }];
@@ -666,10 +651,8 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
   // get batch_size() { return this.model_config.batch_size; }
   get use_gpu() {
     if (typeof this._use_gpu === "undefined") {
-      if (typeof this.model.opts.use_gpu !== "undefined")
-        this._use_gpu = this.model.opts.use_gpu;
-      else
-        this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
+      if (typeof this.model.opts.use_gpu !== "undefined") this._use_gpu = this.model.opts.use_gpu;
+      else this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
     }
     return this._use_gpu;
   }
@@ -677,8 +660,7 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
     this._use_gpu = value;
   }
   get batch_size() {
-    if (this.use_gpu && this.model_config?.gpu_batch_size)
-      return this.model_config.gpu_batch_size;
+    if (this.use_gpu && this.model_config?.gpu_batch_size) return this.model_config.gpu_batch_size;
     return this.model.opts.batch_size || this.model_config.batch_size || 1;
   }
 };
@@ -724,8 +706,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    */
   async unload() {
     if (this.pipeline) {
-      if (this.pipeline.destroy)
-        this.pipeline.destroy();
+      if (this.pipeline.destroy) this.pipeline.destroy();
       this.pipeline = null;
     }
     if (this.tokenizer) {
@@ -762,8 +743,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<Object>} Token count result
    */
   async count_tokens(input) {
-    if (!this.tokenizer)
-      await this.load();
+    if (!this.tokenizer) await this.load();
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
@@ -773,11 +753,9 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<Array<Object>>} Processed inputs with embeddings
    */
   async embed_batch(inputs) {
-    if (!this.pipeline)
-      await this.load();
+    if (!this.pipeline) await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
-    if (!filtered_inputs.length)
-      return [];
+    if (!filtered_inputs.length) return [];
     if (filtered_inputs.length > this.batch_size) {
       console.log(`Processing ${filtered_inputs.length} inputs in batches of ${this.batch_size}`);
       const results = [];
@@ -799,8 +777,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
   async _process_batch(batch_inputs) {
     const tokens = await Promise.all(batch_inputs.map((item) => this.count_tokens(item.embed_input)));
     const embed_inputs = await Promise.all(batch_inputs.map(async (item, i) => {
-      if (tokens[i].tokens < this.max_tokens)
-        return item.embed_input;
+      if (tokens[i].tokens < this.max_tokens) return item.embed_input;
       let token_ct = tokens[i].tokens;
       let truncated_input = item.embed_input;
       while (token_ct > this.max_tokens) {
@@ -902,6 +879,15 @@ var transformers_models = {
     "max_tokens": 512,
     "name": "GTE-tiny",
     "description": "Local, 512 tokens, 384 dim",
+    "adapter": "transformers"
+  },
+  "onnx-community/embeddinggemma-300m-ONNX": {
+    "id": "onnx-community/embeddinggemma-300m-ONNX",
+    "batch_size": 1,
+    "dims": 768,
+    "max_tokens": 2048,
+    "name": "EmbeddingGemma-300M",
+    "description": "Local, 2,048 tokens, 768 dim",
     "adapter": "transformers"
   },
   "Mihaiii/Ivysaur": {
@@ -1024,21 +1010,15 @@ async function process_message(data) {
         result = { model_unloaded: true };
         break;
       case "embed_batch":
-        if (!model)
-          throw new Error("Model not loaded");
-        if (processing_message)
-          while (processing_message)
-            await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!model) throw new Error("Model not loaded");
+        if (processing_message) while (processing_message) await new Promise((resolve) => setTimeout(resolve, 100));
         processing_message = true;
         result = await model.embed_batch(params.inputs);
         processing_message = false;
         break;
       case "count_tokens":
-        if (!model)
-          throw new Error("Model not loaded");
-        if (processing_message)
-          while (processing_message)
-            await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!model) throw new Error("Model not loaded");
+        if (processing_message) while (processing_message) await new Promise((resolve) => setTimeout(resolve, 100));
         processing_message = true;
         result = await model.count_tokens(params);
         processing_message = false;

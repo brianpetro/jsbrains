@@ -240,6 +240,15 @@ export const transformers_models = {
     "description": "Local, 512 tokens, 384 dim",
     "adapter": "transformers"
   },
+  "onnx-community/embeddinggemma-300m-ONNX": {
+    "id": "onnx-community/embeddinggemma-300m-ONNX",
+    "batch_size": 1,
+    "dims": 768,
+    "max_tokens": 2048,
+    "name": "EmbeddingGemma-300M",
+    "description": "Local, 2,048 tokens, 768 dim",
+    "adapter": "transformers"
+  },
   "Mihaiii/Ivysaur": {
     "id": "Mihaiii/Ivysaur",
     "batch_size": 1,
