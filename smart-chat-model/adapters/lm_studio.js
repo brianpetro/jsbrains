@@ -49,15 +49,9 @@ export class SmartChatModelLmStudioAdapter extends SmartChatModelApiAdapter {
         name: 'CORS required',
         type: 'html',
         value:
-          '<p>Before sending requests from the browser you must enable CORS ' +
-          'inside LM Studio:</p>' +
-          '<p>Open the LM Studio application, choose <strong>Settings > ' +
-          'OpenAI API Compatible</strong> and enable ' +
-          '<strong>Allow Cross‑Origin Requests (CORS)</strong>. Restart the ' +
-          'server afterwards.</p>' +
-          '<p>With CORS enabled the local endpoint ' +
-          '<code>http://localhost:1234</code> becomes reachable from web ' +
-          'contexts.</p>'
+          `<p>Before you can use LM Studio ` +
+          `you must <strong>Enable CORS</strong> ` +
+          `inside LM Studio → Developer → Settings</p>`,
       }
     };
   }

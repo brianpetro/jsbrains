@@ -89,9 +89,9 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
       type: "html",
       // The renderer treats `value` as innerHTML.
       value:
-        `<p>Before you can call the local endpoint from a browser ` +
-        `you must enable <strong>Allow Cross‑Origin Requests (CORS)</strong> ` +
-        `inside LM Studio → Settings → OpenAI API Compatible.</p>`,
+        `<p>Before you can use LM Studio ` +
+        `you must <strong>Enable CORS</strong> ` +
+        `inside LM Studio → Developer → Settings</p>`,
     };
     return cfg;
   }
