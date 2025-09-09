@@ -75,7 +75,14 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     };
     cfg["[ADAPTER].current_model"] = {
       type: "html",
-      value: `<p>Model Max Tokens: ${this.max_tokens}</p>`,
+      value: `<p>Embedding Model Max Tokens: ${this.max_tokens} (may be configured in LM Studio)</p>`,
+    };
+    cfg["[ADAPTER].batch_size"] = {
+      name: 'Embedding Batch Size',
+      type: "number",
+      description: "Number of embeddings to process in parallel. Adjusting this may improve performance.",
+      value: this.batch_size,
+      default: this.constructor.defaults.batch_size,
     };
     cfg["[ADAPTER].cors_note"] = {
       name: "CORS required",
