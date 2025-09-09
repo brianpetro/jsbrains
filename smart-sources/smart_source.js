@@ -176,6 +176,14 @@ export class SmartSource extends SmartEntity {
     if(limit && this.collection.search_results_ct >= limit) return 0;
     const lowercased_keywords = keywords.map(keyword => keyword.toLowerCase());
     const content = await this.read();
+    if(!content || typeof content !== 'string' || !content.length) {
+      if(content.mime_type) {
+        console.warn(`Entity.search: No content available for searching: ${this.path}, mime_type: ${content.mime_type}`);
+      }else{
+        console.warn(`Entity.search: No content available for searching: ${this.path}, content: ${content ? JSON.stringify(content) : 'empty'}`);
+      }
+      return 0;
+    }
     const lowercased_content = content.toLowerCase();
     const lowercased_path = this.path.toLowerCase();
 
