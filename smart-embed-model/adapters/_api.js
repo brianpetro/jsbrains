@@ -201,6 +201,23 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     const resp = await this.embed_batch([{ embed_input: "test" }]);
     return Array.isArray(resp) && resp.length > 0 && resp[0].vec !== null;
   }
+  /**
+   * Trim input text to satisfy `max_tokens`.
+   * @private
+   * @param {string} embed_input - Input text
+   * @param {number} tokens_ct - Existing token count
+   * @returns {Promise<string|null>} Trimmed text
+   */
+  async trim_input_to_max_tokens(embed_input, tokens_ct) {
+    const reduce_ratio = (tokens_ct - this.max_tokens) / tokens_ct;
+    const new_length = Math.floor(embed_input.length * (1 - reduce_ratio));
+    let trimmed_input = embed_input.slice(0, new_length);
+    const last_space_index = trimmed_input.lastIndexOf(' ');
+    if (last_space_index > 0) trimmed_input = trimmed_input.slice(0, last_space_index);
+    const prepared = await this.prepare_embed_input(trimmed_input);
+    if (prepared === null) return null;
+    return prepared;
+  }
 }
 
 /**
