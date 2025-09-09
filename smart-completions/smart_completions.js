@@ -16,6 +16,7 @@ import { Collection } from "smart-collections";
  * @extends Collection
  */
 export class SmartCompletions extends Collection {
+  static version = 0.1;
 
   /**
    * Lazily instantiates and returns a chat_model. Similar to how
@@ -65,6 +66,13 @@ export class SmartCompletions extends Collection {
     if(!this._completion_adapters) {
       this._completion_adapters = {};
       Object.entries(this.opts.completion_adapters).forEach(([key, adapter]) => {
+        // if already set, check static version and keep the higher one
+        if(this._completion_adapters[adapter.property_name || key]){
+          const existing = this._completion_adapters[adapter.property_name || key];
+          const existing_version = existing.version || 0;
+          const new_version = adapter.version || 0;
+          if(new_version < existing_version) return;
+        }
         this._completion_adapters[adapter.property_name || key] = adapter;
       });
     }
