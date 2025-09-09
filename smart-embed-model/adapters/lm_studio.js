@@ -143,8 +143,9 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
   async embed_batch(inputs) {
     const token_cts = inputs.map((item) => this.estimate_tokens(item.embed_input));
     const resp = await super.embed_batch(inputs);
-    return resp.map((item, idx) => ({ ...item, tokens: token_cts[idx] })); 
-  }  
+    resp.forEach((item, idx) => { item.tokens = token_cts[idx] });
+    return resp;
+  }
 
 }
 
@@ -179,14 +180,13 @@ class LmStudioEmbedModelResponseAdapter extends SmartEmbedModelResponseAdapter {
    */
   parse_response() {
     const resp = this.response;
-    if (!resp || !resp.data || !resp.usage) {
+    if (!resp || !resp.data) {
       console.error("Invalid response format", resp);
       return [];
     }
-    const avg_tokens = resp.usage.total_tokens / resp.data.length;
     return resp.data.map((item) => ({
       vec: item.embedding,
-      tokens: avg_tokens, // OpenAI doesn't provide tokens per item in batch requests
+      tokens: null, // LM Studio doesn't provide token usage
     }));
   }
 }
