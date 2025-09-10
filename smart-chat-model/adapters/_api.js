@@ -157,11 +157,12 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   async get_models(refresh=false) {
     if(!refresh && this.valid_model_data()) return this.model_data; // return cached models if not refreshing
     if(this.api_key) {
+      let response;
       try {
-        const response = await this.http_adapter.request(this.models_request_params);
+        response = await this.http_adapter.request(this.models_request_params);
         this.model_data = this.parse_model_data(await response.json());
       } catch (error) {
-        console.error('Failed to fetch model data:', error);
+        console.error('Failed to fetch model data:', { error, response });
         // return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
       }
     }

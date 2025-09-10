@@ -37,6 +37,7 @@ export class SmartChatModelDeepseekAdapter extends SmartChatModelApiAdapter {
     return SmartChatModelDeepseekResponseAdapter;
   }
 
+  get models_endpoint_method() { return 'GET'; }
   /**
    * Parse the raw model data from DeepSeek's /v1/models endpoint
    * into a structured map of model objects keyed by model ID.
