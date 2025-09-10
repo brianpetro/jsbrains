@@ -87,6 +87,7 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
     if (!load_queue.length) return;
 
     // Show notice if available
+    this.collection.emit_event('collection:load_started');
     this.collection.notices?.show('loading_collection', { collection_key: this.collection.collection_key });
 
 
@@ -103,6 +104,7 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
 
     this.collection.loaded = load_queue.length;
     this.collection.notices?.remove('loading_collection');
+    this.collection.emit_event('collection:load_completed');
 
   }
 
@@ -116,6 +118,7 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
     if (!save_queue.length) return;
 
     // Show notice if available
+    this.collection.emit_event('collection:save_started');
     this.collection.notices?.show('saving_collection', { collection_key: this.collection.collection_key });
 
 
@@ -130,6 +133,7 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
     }
 
     this.collection.notices?.remove('saving_collection');
+    this.collection.emit_event('collection:save_completed');
   }
 }
 

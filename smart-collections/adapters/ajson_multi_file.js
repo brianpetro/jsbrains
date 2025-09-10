@@ -65,6 +65,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    * @returns {Promise<void>}
    */
   async process_load_queue() {
+    this.collection.emit_event('collection:load_started');
     this.collection.show_process_notice('loading_collection');
 
 
@@ -96,6 +97,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
   
     this.collection.loaded = load_queue.length;
     this.collection.clear_process_notice('loading_collection');
+    this.collection.emit_event('collection:load_completed');
   }
   
   /**
@@ -104,6 +106,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    * @returns {Promise<void>}
    */
   async process_save_queue() {
+    this.collection.emit_event('collection:save_started');
     this.collection.show_process_notice('saving_collection');
   
 
@@ -131,6 +134,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
   
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
     this.collection.clear_process_notice('saving_collection');
+    this.collection.emit_event('collection:save_completed');
 
   }
 

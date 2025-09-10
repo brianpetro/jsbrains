@@ -37,6 +37,7 @@ export class SmartSources extends SmartEntities {
    * @returns {Promise<void>}
    */
   async init_items() {
+    this.emit_event('source:initial_scan_started');
     this.show_process_notice('initial_scan');
     for (const AdapterClass of Object.values(this.source_adapters)) {
       if (typeof AdapterClass.init_items === 'function') {
@@ -45,6 +46,7 @@ export class SmartSources extends SmartEntities {
       }
     }
     this.clear_process_notice('initial_scan');
+    this.emit_event('source:initial_scan_completed');
     this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
   }
 

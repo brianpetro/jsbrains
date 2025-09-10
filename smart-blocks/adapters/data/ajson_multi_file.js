@@ -29,6 +29,7 @@ export class AjsonMultiFileBlocksDataAdapter extends AjsonMultiFileCollectionDat
    * @returns {Promise<void>}
    */
   async process_save_queue() {
+    this.collection.emit_event('collection:save_started');
     this.collection.show_process_notice('saving_collection');
     const save_queue = Object.values(this.collection.items).filter(item => item._queue_save);
     console.log(`Saving ${this.collection.collection_key}: ${save_queue.length} items`);
@@ -50,6 +51,7 @@ export class AjsonMultiFileBlocksDataAdapter extends AjsonMultiFileCollectionDat
     }
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
     this.collection.clear_process_notice('saving_collection');
+    this.collection.emit_event('collection:save_completed');
   }
   process_load_queue(){
     // handled in sources

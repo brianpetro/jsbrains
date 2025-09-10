@@ -80,6 +80,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
    * @returns {Promise<void>}
    */
   async process_load_queue() {
+    this.collection.emit_event('collection:load_started');
     this.collection.show_process_notice('loading_collection');
 
 
@@ -98,6 +99,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
         }
       }
       this.collection.clear_process_notice('loading_collection');
+      this.collection.emit_event('collection:load_halted');
       return;
     }
 
@@ -111,6 +113,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
         }
       }
       this.collection.clear_process_notice('loading_collection');
+      this.collection.emit_event('collection:load_halted');
       return;
     }
 
@@ -133,6 +136,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
     }
 
     this.collection.clear_process_notice('loading_collection');
+    this.collection.emit_event('collection:load_completed');
   }
 
 
@@ -240,6 +244,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
    * @returns {Promise<void>}
    */
   async process_save_queue() {
+    this.collection.emit_event('collection:save_started');
     this.collection.show_process_notice('saving_collection');
 
 
@@ -266,6 +271,7 @@ export class AjsonSingleFileCollectionDataAdapter extends AjsonMultiFileCollecti
 
     console.log(`Saved (single-file) ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
     this.collection.clear_process_notice('saving_collection');
+    this.collection.emit_event('collection:save_completed');
   }
 }
 

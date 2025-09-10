@@ -119,6 +119,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         await this.collection.embed_model.load();
       }
     } catch (e) {
+      this.collection.emit_event('embed_model:load_failed');
       this.notices?.show('Failed to load embed_model');
       return;
     }
@@ -221,6 +222,12 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     if (!this.should_show_embed_progress_notice) return;
     this.last_notice_time = Date.now();
     this.last_notice_embedded_total = this.embedded_total;
+    this.collection.emit_event('embedding:progress_reported', {
+      progress: this.embedded_total,
+      total: embed_queue_length,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key
+    });
     this.notices?.show('embedding_progress', {
       progress: this.embedded_total,
       total: embed_queue_length,
@@ -237,6 +244,11 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   _show_embed_completion_notice() {
     this.notices?.remove('embedding_progress');
     if(this.embedded_total > 100) {
+      this.collection.emit_event('embedding:completed', {
+        total_embeddings: this.embedded_total,
+        tokens_per_second: this._calculate_embed_tokens_per_second(),
+        model_name: this.collection.embed_model_key
+      });
       this.notices?.show('embedding_complete', {
         total_embeddings: this.embedded_total,
         tokens_per_second: this._calculate_embed_tokens_per_second(),
@@ -253,6 +265,12 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.is_queue_halted = true;
     console.log("Embed queue processing halted");
     this.notices?.remove('embedding_progress');
+    this.collection.emit_event('embedding:paused', {
+      progress: this.embedded_total,
+      total: this.collection._embed_queue.length,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key
+    });
     this.notices?.show('embedding_paused', {
       progress: this.embedded_total,
       total: this.collection._embed_queue.length,
