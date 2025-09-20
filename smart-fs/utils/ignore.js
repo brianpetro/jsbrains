@@ -7,36 +7,8 @@
  */
 
 import { match_glob } from './match_glob.js';
+import { TEXT_FILE_EXTENSIONS, NO_EXTENSION_TEXT_FILES } from './TEXT_FILE_EXTENSIONS.js';
 
-/**
- * An array of recognized text file extensions for is_text_file().
- */
-const TEXT_FILE_EXTENSIONS = [
-  '.asm', '.bat', '.c', '.cfg', '.clj', '.conf', '.cpp', '.cs', '.css', '.csv',
-  '.d', '.dart', '.ejs', '.elm', '.erl', '.f', '.go', '.gradle', '.groovy', '.h',
-  '.hbs', '.hpp', '.hs', '.html', '.ini', '.jade', '.java', '.js', '.json', '.jsx',
-  '.kt', '.less', '.lisp', '.log', '.lua', '.m', '.makefile', '.md', '.mdx', '.ml',
-  '.mjs', '.mustache', '.pas', '.php', '.pl', '.properties', '.pug', '.py', '.r',
-  '.rb', '.rs', '.sass', '.scala', '.scheme', '.scss', '.sh', '.sql', '.svelte',
-  '.swift', '.tcl', '.tex', '.tpl', '.ts', '.tsx', '.twig', '.txt', '.vb', '.vue',
-  '.xml', '.yaml', '.yml',
-  '.canvas'
-];
-
-const NO_EXTENSION_TEXT_FILES = [
-  'Dockerfile',
-  'Appfile',
-  'Matchfile',
-  'Deliverfile',
-  'Gymfile',
-  'Fastfile',
-  'Gemfile',
-  'Guardfile',
-  'Jenkinsfile',
-  'Makefile',
-  'Procfile',
-  'Rakefile',
-];
 
 /**
  * Determine if a file is considered a "text file" by extension.
