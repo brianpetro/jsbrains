@@ -424,38 +424,6 @@ export class Collection {
   }
 
   /**
-   * Renders the settings for the collection into a given container.
-   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
-   * @param {HTMLElement} [container=this.settings_container]
-   * @param {Object} opts
-   * @returns {Promise<HTMLElement>}
-   */
-  async render_settings(container = this.settings_container, opts = {}) {
-    return await this.render_collection_settings(container, opts);
-  }
-
-  /**
-   * Helper function to render collection settings.
-   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
-   * @param {HTMLElement} [container=this.settings_container]
-   * @param {Object} opts
-   * @returns {Promise<HTMLElement>}
-   */
-  async render_collection_settings(container = this.settings_container, opts = {}) {
-    if (container && (!this.settings_container || this.settings_container !== container)) {
-      this.settings_container = container;
-    } else if (!container) {
-      // NOTE: Creating a fragment if no container provided. This depends on `env.smart_view`.
-      container = this.env.smart_view.create_doc_fragment('<div></div>');
-    }
-    this.env.smart_view.safe_inner_html(container, `<div class="sc-loading">Loading ${this.collection_key} settings...</div>`);
-    const frag = await this.env.render_component('settings', this, opts);
-    this.env.smart_view.empty(container);
-    container.appendChild(frag);
-    return container;
-  }
-
-  /**
    * Unloads collection data from memory.
    */
   unload() {
@@ -516,6 +484,39 @@ export class Collection {
       }, {});
     }
     return this._actions;
+  }
+
+  // BEGIN DEPRECATED
+  /**
+   * Renders the settings for the collection into a given container.
+   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
+   * @param {HTMLElement} [container=this.settings_container]
+   * @param {Object} opts
+   * @returns {Promise<HTMLElement>}
+   */
+  async render_settings(container = this.settings_container, opts = {}) {
+    return await this.render_collection_settings(container, opts);
+  }
+
+  /**
+   * Helper function to render collection settings.
+   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
+   * @param {HTMLElement} [container=this.settings_container]
+   * @param {Object} opts
+   * @returns {Promise<HTMLElement>}
+   */
+  async render_collection_settings(container = this.settings_container, opts = {}) {
+    if (container && (!this.settings_container || this.settings_container !== container)) {
+      this.settings_container = container;
+    } else if (!container) {
+      // NOTE: Creating a fragment if no container provided. This depends on `env.smart_view`.
+      container = this.env.smart_view.create_doc_fragment('<div></div>');
+    }
+    this.env.smart_view.safe_inner_html(container, `<div class="sc-loading">Loading ${this.collection_key} settings...</div>`);
+    const frag = await this.env.render_component('settings', this, opts);
+    this.env.smart_view.empty(container);
+    container.appendChild(frag);
+    return container;
   }
 }
 
