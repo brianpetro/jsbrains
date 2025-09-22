@@ -67,6 +67,24 @@ export function merge_env_config (target, incoming) {
       }
       continue; // done with this top-level key
     }
+    // DEPRECATED item_types handles (use items and config in collections instead)
+    /* ───────────────────────────── Item types ───────────────────────────── */
+    if (key === 'item_types' && value && typeof value === 'object') {
+      if (!target.item_types) target.item_types = {};
+      for (const [type_key, type_def] of Object.entries(value)) {
+        if (!target.item_types[type_key]) {
+          target.item_types[type_key] = type_def;
+          continue;
+        }
+        const new_ver = +(type_def?.version ?? 0);
+        const cur_ver = +(target.item_types[type_key]?.version ?? 0);
+        if (new_ver > cur_ver) {
+          target.item_types[type_key] = type_def;
+        } else {
+          deep_merge_no_overwrite(target.item_types[type_key], type_def);
+        }
+      }
+    }
 
     /* ───────────────────────────── Default path ──────────────────────────── */
     if (Array.isArray(value)) {

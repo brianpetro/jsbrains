@@ -18,6 +18,7 @@ import { compare } from './utils/compare.js';
  * - Can be filtered by a variety of key-based filters.
  */
 export class CollectionItem {
+  static version = 0.001;
   /**
    * Default properties for an instance of CollectionItem.
    * Override in subclasses to define different defaults.
@@ -270,12 +271,12 @@ export class CollectionItem {
 
   /**
    * Compares this item with another item using a custom comparison function.
-   * @param {Item} to_item - The item to compare with.
+   * @param {Item} to_target_item - The item to compare with.
    * @param {Object} [params={}] - Additional parameters for the comparison.
    * @returns {Object} An object containing the original item and the comparison results.
    */
-  compare(to_item, params={}) {
-    return compare(this, to_item, params)
+  compare(to_target_item, params={}) {
+    return compare(this, to_target_item, params)
   }
 
 

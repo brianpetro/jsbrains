@@ -19,6 +19,7 @@ const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
  * - Supports rendering settings and using components pattern for UI
  */
 export class Collection {
+  static version = 0.001;
   /**
    * Constructs a new Collection instance.
    *
