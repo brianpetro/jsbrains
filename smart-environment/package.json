@@ -22,6 +22,7 @@
     "smart-collections": "*",
     "smart-embed-model": "*",
     "smart-entities": "*",
+    "smart-events": "*",
     "smart-file-system": "*",
     "smart-http-request": "*",
     "smart-model": "*",

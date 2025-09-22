@@ -19,6 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import { SmartEvents } from 'smart-events';
 import { render as settings_template } from './components/settings.js';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { deep_merge } from 'smart-utils/deep_merge.js';
@@ -44,7 +45,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139273;
+  static version = 2.139274;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -55,6 +56,7 @@ export class SmartEnv {
     this.collections = {};
     this.load_timeout = null;
     this._collections_version_signature = null; // ← new
+    this._events = SmartEvents.create(this, build_events_opts(this.config?.modules?.smart_events));
     if (opts.primary_main_key) this.primary_main_key = opts.primary_main_key;
   }
 
@@ -659,4 +661,13 @@ function collection_to_plain(collection) {
       Object.entries(collection.items || {}).map(([key, item]) => [key, item.data]),
     ),
   };
+}
+
+function build_events_opts(module_config) {
+  if (!module_config) return {};
+  if (typeof module_config === 'function') {
+    return { adapter_class: module_config };
+  }
+  const adapter_class = module_config.adapter_class || module_config.adapter;
+  return adapter_class ? { adapter_class } : {};
 }

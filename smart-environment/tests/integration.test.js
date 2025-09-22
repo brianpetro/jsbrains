@@ -10,6 +10,7 @@ import { NodeFsSmartFsAdapter } from '../../smart-fs/adapters/node_fs.js';
 import { Collection } from 'smart-collections/collection.js';
 import { CollectionItem } from 'smart-collections/item.js';
 import ajson_multi_file from 'smart-collections/adapters/ajson_multi_file.js';
+import { SmartEvents } from '../../smart-events/smart_events.js';
 
 import path from 'path';
 /**
@@ -97,6 +98,17 @@ test.serial('SmartEnv.create() - throws if invalid main object provided', async 
     error.message.includes('Invalid main object'),
     'Should throw TypeError with "Invalid main object" in message.'
   );
+});
+
+test.serial('SmartEnv.create() - attaches SmartEvents to env.events', async (t) => {
+  clear_global_smart_env();
+
+  const main = new TheMain();
+  const env = await SmartEnv.create(main, main.smart_env_config);
+
+  t.truthy(env.events, 'SmartEnv should expose env.events.');
+  t.true(env.events instanceof SmartEvents, 'env.events should be a SmartEvents instance.');
+  t.is(env.events, env.events, 'env.events getter should return the same instance each time.');
 });
 
 test.serial('SmartEnv.create() - creates a new instance if none is in the global reference', async (t) => {
