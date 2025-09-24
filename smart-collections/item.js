@@ -4,7 +4,7 @@ import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.j
 import { collection_instance_name_from } from "./utils/collection_instance_name_from.js";
 import { deep_equal } from "./utils/deep_equal.js";
 import { get_item_display_name } from "./utils/get_item_display_name.js";
-import { compare } from './utils/compare.js';
+import { create_actions_proxy } from './utils/create_actions_proxy.js';
 
 /**
  * @class CollectionItem
@@ -18,7 +18,7 @@ import { compare } from './utils/compare.js';
  * - Can be filtered by a variety of key-based filters.
  */
 export class CollectionItem {
-  static version = 0.001;
+  static version = 0.002;
   /**
    * Default properties for an instance of CollectionItem.
    * Override in subclasses to define different defaults.
@@ -269,14 +269,15 @@ export class CollectionItem {
     return true;
   }
 
-  /**
-   * Compares this item with another item using a custom comparison function.
-   * @param {Item} to_target_item - The item to compare with.
-   * @param {Object} [params={}] - Additional parameters for the comparison.
-   * @returns {Object} An object containing the original item and the comparison results.
-   */
-  compare(to_target_item, params={}) {
-    return compare(this, to_target_item, params)
+  filter_and_score(params={}) {
+    if(this.filter(params.filter) === false) return null;
+    return this.score(params);
+  }
+  score(params={}) {
+    return {
+      ...(this.actions[params.score_algo_key]?.(params) || {}),
+      item: this,
+    };
   }
 
 
@@ -288,16 +289,14 @@ export class CollectionItem {
   parse() { /* NO-OP by default */ }
 
   get actions() {
-    if(!this._actions) {
-      this._actions = Object.entries(this.env.opts.items[this.item_type_key].actions || {}).reduce((acc, [k,v]) => {
-        acc[k] = v.bind(this);
-        return acc;
-      }, {});
+    if (!this._actions) {
+      this._actions = create_actions_proxy(this, {
+        ...(this.env.config.actions || {}), // main actions scope for actions/ exports
+        ...(this.env.opts.items?.[this.item_type_key]?.actions || {}), // DEPRECATED OR KEEP?
+      });
     }
     return this._actions;
   }
-
-
 
   /**
    * Derives the collection key from the class name.
