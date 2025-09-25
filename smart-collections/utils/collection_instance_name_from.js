@@ -17,7 +17,11 @@
 export function collection_instance_name_from(class_name) {
   // Handle special case for 'CollectionItem'
   if (class_name.endsWith('Item')) {
-    return class_name.replace(/Item$/, '').toLowerCase();
+    return class_name
+      .replace(/Item$/, '')
+      .replace(/([a-z])([A-Z])/g, '$1_$2') // convert camelCase to snake_case
+      .toLowerCase() // convert to lowercase
+    ;
   }
 
   return class_name
