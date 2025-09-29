@@ -95,6 +95,7 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     }
     return model_data
       .reduce((acc, model) => {
+        if(model.name.includes('embed')) return acc; // skip embedding models
         const out = {
           model_name: model.name,
           id: model.name,
