@@ -387,8 +387,7 @@ export class CollectionItem {
   }
 
   /**
-   * @deprecated use env.smart_view
-   * @returns {Object}
+   * @deprecated use env.smart_components~~env.smart_view~~ instead
    */
   get smart_view() {
     if (!this._smart_view) this._smart_view = this.env.init_module('smart_view');

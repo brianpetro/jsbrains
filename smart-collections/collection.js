@@ -406,14 +406,6 @@ export class Collection {
     return this.env.settings[this.collection_key];
   }
 
-  /**
-   * @deprecated use env.smart_view instead
-   * @returns {Object} smart_view instance
-   */
-  get smart_view() {
-    if(!this._smart_view) this._smart_view = this.env.init_module('smart_view');
-    return this._smart_view;
-  }
 
   /**
    * Unloads collection data from memory.
@@ -479,6 +471,14 @@ export class Collection {
   }
 
   // BEGIN DEPRECATED
+  /**
+   * @deprecated use env.smart_components~~env.smart_view~~ instead
+   * @returns {Object} smart_view instance
+   */
+  get smart_view() {
+    if(!this._smart_view) this._smart_view = this.env.init_module('smart_view');
+    return this._smart_view;
+  }
   /**
    * Renders the settings for the collection into a given container.
    * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)

@@ -6,20 +6,21 @@ import { CollectionItem } from 'smart-collections/item.js';
  * @description Thin wrapper around component metadata that delegates rendering to an adapter.
  */
 export class SmartComponent extends CollectionItem {
+  static key = 'smart_component';
   static collection_key = 'smart_components';
   collection_key = 'smart_components';
 
   get_key() {
     if (this.data?.key) return this.data.key;
-    const scope_key = this.scope_key || 'default';
-    const component_key = this.component_key || 'component';
+    const scope_key = this.scope_key;
+    const component_key = this.component_key;
     const version = Number.isFinite(this.data?.version) ? this.data.version : 0;
     const hash = this.data?.hash || 'nohash';
     return `${[scope_key, component_key].join('.')}#${[version, hash].join('#')}`;
   }
 
   get scope_key() {
-    return this.data?.scope_key || 'default';
+    return this.data?.scope_key;
   }
   get component_key() {
     return this.data?.component_key;

@@ -23,6 +23,7 @@ function flatten_components_config(config, path = [], acc = []) {
  * @extends Collection
  */
 export class SmartComponents extends Collection {
+  static key = 'smart_components';
   static collection_key = 'smart_components';
   collection_key = 'smart_components';
 

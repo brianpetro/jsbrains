@@ -473,16 +473,6 @@ export class SmartEnv {
     return this._components[_cache_key];
   }
 
-  /**
-   * Lazily instantiate the module 'smart_view'.
-   * @returns {object}
-   */
-  get smart_view() {
-    if (!this._smart_view) {
-      this._smart_view = this.init_module('smart_view');
-    }
-    return this._smart_view;
-  }
 
   /**
    * A built-in settings schema for this environment.
@@ -614,6 +604,18 @@ export class SmartEnv {
   }
 
   // DEPRECATED
+
+  /**
+   * Lazily instantiate the module 'smart_view'.
+   * @deprecated use env.smart_components instead (2025-09-30)
+   * @returns {object}
+   */
+  get smart_view() {
+    if (!this._smart_view) {
+      this._smart_view = this.init_module('smart_view');
+    }
+    return this._smart_view;
+  }
 
   /** @deprecated access `this.state` and `collection.state` directly instead */
   get collections_loaded(){
