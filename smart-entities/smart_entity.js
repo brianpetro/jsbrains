@@ -86,6 +86,7 @@ export class SmartEntity extends CollectionItem {
   /**
    * Finds the nearest entities to this entity.
    * @param {Object} [filter={}] - Optional filters to apply.
+   * @deprecated use actions (getter) instead
    * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
   async nearest(filter = {}) { return await this.collection.nearest_to(this, filter); }
@@ -129,6 +130,7 @@ export class SmartEntity extends CollectionItem {
    * Finds connections relevant to this entity based on provided parameters.
    * @async
    * @param {Object} [params={}] - Parameters for finding connections.
+   * @deprecated should be in actions (getter) but also see ConnectionsLists (smart-lists)
    * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
   async find_connections(params = {}) {
@@ -152,6 +154,7 @@ export class SmartEntity extends CollectionItem {
   /**
    * Retrieves connections from the cache based on the cache key.
    * @param {string} cache_key - The cache key.
+   * @deprecated migrating to ConnectionsLists (smart-lists)
    * @returns {Array<{item:Object, score:number}>} The cached connections.
    */
   connections_from_cache(cache_key) {
@@ -161,6 +164,7 @@ export class SmartEntity extends CollectionItem {
   /**
    * Stores connections in the cache with the provided cache key.
    * @param {string} cache_key - The cache key.
+   * @deprecated migrating to ConnectionsLists (smart-lists)
    * @param {Array<{item:Object, score:number}>} connections - The connections to cache.
    * @returns {void}
    */

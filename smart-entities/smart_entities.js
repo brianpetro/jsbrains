@@ -137,6 +137,7 @@ export class SmartEntities extends Collection {
    * Finds the nearest entities to a given entity.
    * @async
    * @param {Object} entity - The reference entity.
+   * @deprecated moved to action (type=score) and retrieve using filter_and_score()/get_results() patterns 
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
    */
@@ -145,6 +146,7 @@ export class SmartEntities extends Collection {
   /**
    * Finds the nearest entities to a vector using the default adapter.
    * @async
+   * @deprecated moved to action (type=score) and retrieve using filter_and_score()/get_results() patterns 
    * @param {Array<number>} vec - The vector to compare against.
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
@@ -161,6 +163,7 @@ export class SmartEntities extends Collection {
   /**
    * Finds the furthest entities from a vector using the default adapter.
    * @async
+   * @deprecated moved to action (type=score) and retrieve using filter_and_score()/get_results() patterns 
    * @param {Array<number>} vec - The vector to compare against.
    * @param {Object} [filter={}] - Optional filters to apply.
    * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
@@ -173,23 +176,10 @@ export class SmartEntities extends Collection {
   /**
    * Gets the file name based on collection key and embedding model key.
    * @readonly
+   * @deprecated likely unused (2025-09-29)
    * @returns {string} The constructed file name.
    */
   get file_name() { return this.collection_key + '-' + this.embed_model_key.split("/").pop(); }
-
-  /**
-   * Calculates the relevance of an item based on the search filter.
-   * @param {Object} item - The item to calculate relevance for.
-   * @param {Object} search_filter - The search filter containing keywords.
-   * @returns {number} The relevance score:
-   *                   1 if any keyword is found in the item's path,
-   *                   0 otherwise (default relevance for keyword in content).
-   */
-  calculate_relevance(item, search_filter) {
-    // if keyword in search_filter is in item.path, return 1
-    if(search_filter.keywords.some(keyword => item.path?.includes(keyword))) return 1;
-    return 0; // default relevance (keyword in content)
-  }
 
   /**
    * Prepares the filter options by incorporating entity-based filters.
@@ -256,6 +246,7 @@ export class SmartEntities extends Collection {
 
   /**
    * Looks up entities based on hypothetical content.
+   * @deprecated moved to action (type=score) and retrieve using get_results() (pre-process generates hypothetical vecs)
    * @async
    * @param {Object} [params={}] - The parameters for the lookup.
    * @param {Array<string>} [params.hypotheticals=[]] - The hypothetical content to lookup.
