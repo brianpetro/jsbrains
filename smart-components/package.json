@@ -1,0 +1,32 @@
+{
+  "name": "smart-components",
+  "author": "Brian Joseph Petro (🌴 Brian)",
+  "license": "MIT",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Component registry for SmartEnv collections.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx ava --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "brianpetro/jsbrains"
+  },
+  "bugs": {
+    "url": "https://github.com/brianpetro/jsbrains/issues"
+  },
+  "homepage": "https://jsbrains.org",
+  "dependencies": {
+    "smart-collections": "*",
+    "smart-utils": "*"
+  },
+  "devDependencies": {
+    "ava": "^6.0.1"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.js"
+    ]
+  }
+}
