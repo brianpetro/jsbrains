@@ -223,13 +223,6 @@ test('clear should remove all items', t => {
   t.is(collection.keys.length, 0, 'All items should be cleared');
 });
 
-test('prepare_filter should return filter_opts as is', t => {
-  const { collection } = create_env_and_collection();
-  const opts = { key_starts_with: 'test' };
-  const prepared = collection.prepare_filter(opts);
-  t.deepEqual(prepared, opts, 'prepare_filter returns the same object by default');
-});
-
 test('unload should clear items', t => {
   const { collection } = create_env_and_collection();
   collection.create_or_update({ key: 'to_unload' });

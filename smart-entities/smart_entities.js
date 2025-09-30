@@ -181,68 +181,6 @@ export class SmartEntities extends Collection {
    */
   get file_name() { return this.collection_key + '-' + this.embed_model_key.split("/").pop(); }
 
-  /**
-   * Prepares the filter options by incorporating entity-based filters.
-   * @param {Object} [opts={}] - The filter options.
-   * @param {Object} [opts.entity] - The entity to base the filters on.
-   * @param {string|string[]} [opts.exclude_filter] - Keys or prefixes to exclude.
-   * @param {string|string[]} [opts.include_filter] - Keys or prefixes to include.
-   * @param {boolean} [opts.exclude_inlinks] - Whether to exclude inlinks of the entity.
-   * @param {boolean} [opts.exclude_outlinks] - Whether to exclude outlinks of the entity.
-   * @returns {Object} The modified filter options.
-   */
-  prepare_filter(opts = {}) {
-    const {
-      entity,
-      exclude_filter,
-      include_filter,
-      exclude_inlinks,
-      exclude_outlinks,
-    } = opts;
-
-    if (entity) {
-      if (typeof opts.exclude_key_starts_with_any === 'undefined') opts.exclude_key_starts_with_any = [];
-      if (opts.exclude_key_starts_with) {
-        opts.exclude_key_starts_with_any = [
-          opts.exclude_key_starts_with,
-        ];
-        delete opts.exclude_key_starts_with;
-      }
-      opts.exclude_key_starts_with_any.push((entity.source_key || entity.key)); // exclude current entity
-      // include/exclude filters
-      if (exclude_filter) {
-        if (!Array.isArray(opts.exclude_key_includes_any)) opts.exclude_key_includes_any = [];
-        if (typeof exclude_filter === "string"){
-          if (exclude_filter.includes(",")) {
-            opts.exclude_key_includes_any.push(...exclude_filter.split(","));
-          }else{
-            opts.exclude_key_includes_any.push(exclude_filter);
-          }
-        }
-      }
-      if (include_filter) {
-        if (!Array.isArray(opts.key_includes_any)) opts.key_includes_any = [];
-        if (typeof include_filter === "string"){
-          if (include_filter.includes(",")){
-            opts.key_includes_any.push(...include_filter.split(","));
-          }else {
-            opts.key_includes_any.push(include_filter);
-          }
-        }
-      }
-      // exclude inlinks
-      if (exclude_inlinks && entity?.inlinks?.length) {
-        if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
-        opts.exclude_key_starts_with_any.push(...entity.inlinks);
-      }
-      // exclude outlinks
-      if (exclude_outlinks && entity?.outlinks?.length) {
-        if (!Array.isArray(opts.exclude_key_starts_with_any)) opts.exclude_key_starts_with_any = [];
-        opts.exclude_key_starts_with_any.push(...entity.outlinks);
-      }
-    }
-    return opts;
-  }
 
   /**
    * Looks up entities based on hypothetical content.

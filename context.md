@@ -322,9 +322,6 @@ Pass-through to `entities_vector_adapter`.
 ###### `lookup(params)`
 Hybrid “semantic + lexical” multi-hypothetical search.
 
-###### `prepare_filter(opts)`
-Key / link-aware include- & exclude-filter builder.
-
 ###### `process_embed_queue()`
 Delegates to adapter; cascades to block-collection when enabled.
 
@@ -818,3 +815,4 @@ Runs the full embed pipeline inside a hidden `<iframe>` for browser-only GPU / W
 Web-Worker counterpart for thread off-loading; re-uses shared workers keyed by `model_key` to avoid reload costs.
 
 
+
