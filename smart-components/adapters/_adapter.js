@@ -1,4 +1,4 @@
-import { murmur_hash_32_alphanumeric as create_hash } from 'smart-utils/create_hash.js';
+import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 
 function parse_component_properties(component_properties = []) {
   const parts = component_properties.filter(Boolean).map(part => part.toString());
@@ -16,7 +16,7 @@ async function build_component_data(component_properties, component_module) {
     : component_module?.render
   ;
   const version = typeof render_fn?.version === 'number' ? render_fn.version : 0;
-  const hash = await create_hash(render_fn.toString());
+  const hash = await murmur_hash_32_alphanumeric(render_fn.toString());
   return { scope_key, component_key, version, hash };
 }
 
