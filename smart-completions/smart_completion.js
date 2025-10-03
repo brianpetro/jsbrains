@@ -144,6 +144,7 @@ export class SmartCompletion extends CollectionItem {
         ? await chat_model.stream(request_payload, this.stream_handlers(opts.stream_handlers)) 
         : await chat_model.complete(request_payload)
       ;
+      if(!stream) this.emit_event('completion:done');
       // Store response
       if(!stream){
         this.data.completion.responses.push({
@@ -168,6 +169,7 @@ export class SmartCompletion extends CollectionItem {
           timestamp: Date.now(),
           ...resp
         }
+        this.emit_event('completion:chunk');
         await stream_handlers.chunk?.(this);
       },
       done: async (resp) => {
@@ -176,10 +178,12 @@ export class SmartCompletion extends CollectionItem {
           timestamp: Date.now(),
           ...resp
         }
+        this.emit_event('completion:done');
         await stream_handlers.done?.(this);
       },
       error: async (err) => {
         console.error('error', err);
+        this.emit_event('completion:error', { error: err.message });
         await stream_handlers.error?.(err);
       }
     }
