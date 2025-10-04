@@ -34,7 +34,12 @@ export function create_actions_proxy(ctx, actions_source) {
 
   const has_own = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
   const cache = Object.create(null);
-  const bind_or_pass = (val) => (typeof val === "function" ? val.bind(ctx) : val);
+  const bind_or_pass = (val) => {
+    if (val && typeof val === "object" && typeof val.action === "function") {
+      return val.action.bind(ctx);
+    }
+    return (typeof val === "function" ? val.bind(ctx) : val);
+  };
 
   const compute_and_cache = (target, prop) => {
     if (has_own(source, prop)) {

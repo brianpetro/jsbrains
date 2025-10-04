@@ -143,3 +143,24 @@ test("writes affect only the proxy cache, not the source", (t) => {
   t.true("y" in host.actions);
   t.false("y" in env.opts.items.t.actions);
 });
+
+test("handles when value is action object", (t) => {
+  const calls = [];
+  const actions = {
+    ping: {
+      action: function() {
+        calls.push(this.item_type_key);
+        return `ok:${this.item_type_key}`;
+      }
+    }
+  };
+  const host = new ItemHost(make_env(actions), "t");
+
+  const fn1 = host.actions.ping;
+  const fn2 = host.actions.ping;
+
+  t.is(fn1, fn2);
+  const out = fn1();
+  t.deepEqual(calls, ["t"]);
+  t.is(out, "ok:t");
+});
