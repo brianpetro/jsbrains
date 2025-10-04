@@ -1,4 +1,9 @@
-import { SmartRankModelApiAdapter, SmartRankModelRequestAdapter, SmartRankModelResponseAdapter } from './_api.js';
+import {
+  SmartRankModelApiAdapter,
+  SmartRankModelRequestAdapter,
+  SmartRankModelResponseAdapter
+} from './_api.js';
+import { settings_config as base_settings_config } from './_adapter.js';
 
 /**
  * Adapter for Cohere's ranking API.
@@ -78,20 +83,21 @@ export class SmartRankCohereAdapter extends SmartRankModelApiAdapter {
     return null;
   }
   get settings_config() {
-    return {
-      ...super.settings_config,
-      "[ADAPTER].api_key": {
-        name: 'Cohere API Key',
-        type: "password",
-        description: "Enter your Cohere API key for ranking.",
-        placeholder: "Enter Cohere API Key",
-      },
-    };
+    return settings_config;
   }
   get models() {
     return cohere_models;
   }
 }
+export const settings_config = {
+  ...base_settings_config,
+  "[ADAPTER].api_key": {
+    name: 'Cohere API Key',
+    type: "password",
+    description: "Enter your Cohere API key for ranking.",
+    placeholder: "Enter Cohere API Key",
+  },
+};
 
 export const cohere_models = {
   'rerank-v3.5': {

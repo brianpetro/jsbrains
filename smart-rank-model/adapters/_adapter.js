@@ -1,5 +1,14 @@
 import { SmartModelAdapter } from "smart-model/adapters/_adapter.js";
 
+export const settings_config = {
+  "[ADAPTER].model_key": {
+    name: 'Ranking Model',
+    type: "dropdown",
+    description: "Select a ranking model to use.",
+    options_callback: 'adapter.get_models_as_options',
+    callback: 'reload_model',
+  },
+};
 /**
  * Base adapter class for ranking models
  * @abstract
@@ -32,15 +41,6 @@ export class SmartRankAdapter extends SmartModelAdapter {
   }
 
   get settings_config() {
-    return {
-      "[ADAPTER].model_key": {
-        name: 'Ranking Model',
-        type: "dropdown",
-        description: "Select a ranking model to use.",
-        options_callback: 'adapter.get_models_as_options',
-        callback: 'reload_model',
-        default: this.constructor.defaults.default_model,
-      },
-    };
+    return settings_config;
   }
 }
