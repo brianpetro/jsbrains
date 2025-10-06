@@ -28,6 +28,7 @@ export class SmartComponentAdapter {
   constructor(item, component_module) {
     this.item = item;
     this.module = component_module;
+    this.item.env.create_env_getter(this);
   }
 
   static should_use_adapter(component_module) {
