@@ -45,7 +45,7 @@ export class SmartEnv {
    * If a newer version is loaded into a runtime that already has an older environment,
    * an automatic reload of all existing mains will occur.
    */
-  static version = 2.139278;
+  static version = 2.139279;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -417,6 +417,7 @@ export class SmartEnv {
 
   /**
    * Renders a named component using an optional scope and options.
+   * @deprecated use env.smart_components.render instead (2025-10-11)
    * @param {string} component_key
    * @param {Object} scope
    * @param {Object} [opts]
@@ -437,6 +438,7 @@ export class SmartEnv {
 
   /**
    * Retrieves or creates a memoized component renderer function.
+   * @deprecated use env.smart_components instead (2025-10-11)
    * @param {string} component_key
    * @param {Object} scope
    * @returns {Function|undefined}
@@ -447,11 +449,15 @@ export class SmartEnv {
     if (!this._components[_cache_key]) {
       try {
         if (this.opts.components[scope_name]?.[component_key]) {
-          this._components[_cache_key] = this.opts.components[scope_name][component_key].bind(
+          const component_config = this.opts.components[scope_name][component_key];
+          const component = component_config.render || component_config;
+          this._components[_cache_key] = component.bind(
             this.init_module('smart_view')
           );
         } else if (this.opts.components[component_key]) {
-          this._components[_cache_key] = this.opts.components[component_key].bind(
+          const component_config = this.opts.components[component_key];
+          const component = component_config.render || component_config;
+          this._components[_cache_key] = component.bind(
             this.init_module('smart_view')
           );
         } else {
