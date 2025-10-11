@@ -59,7 +59,6 @@ export class SmartComponents extends Collection {
   async render_component(component_key, scope, opts = {}) {
     const components = this.filter((item) => item.component_key === component_key);
     const selected_component = components[0];
-    console.log({components, selected_component});
     return await selected_component.render(scope, opts);
   }
 }
