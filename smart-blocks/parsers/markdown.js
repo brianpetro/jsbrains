@@ -52,6 +52,9 @@ export function parse_markdown_blocks(markdown, opts={}) {
   // Tracks markdown task line numbers.
   const task_lines = [];
 
+  // Tracks incomplete markdown task line numbers.
+  const tasks = {};
+
   // Tracks the currently open top-level list item block if any.
   let current_list_item = null;
 
@@ -97,8 +100,18 @@ export function parse_markdown_blocks(markdown, opts={}) {
       continue;
     }
 
+    // all tasks
     if (!in_code_block && /^[-*+]\s+\[(?: |x|X)\]/.test(trimmed_line)) {
       task_lines.push(line_number);
+      // incomplete tasks
+      if (/^[-*+]\s+\[ \]/.test(trimmed_line)) {
+        if(!tasks.incomplete) tasks.incomplete = {all: [], top: []};
+        tasks.incomplete.all.push(line_number);
+      }
+      // top-level incomplete tasks
+      if (/^[-*+]\s+\[ \]/.test(line)) {
+        tasks.incomplete.top.push(line_number);
+      }
     }
 
     // Check for code block start/end using triple backticks.
@@ -372,7 +385,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
     result[key] = heading_lines[key];
   }
 
-  return {blocks: result, task_lines};
+  return {blocks: result, task_lines, tasks};
 }
 
 export function get_longest_words_in_order(line, n=3) {
