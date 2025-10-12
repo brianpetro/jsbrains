@@ -70,7 +70,7 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
    */
   async get_models() {
     try {
-      this.model_data = this.anthropic_models;
+      // this.model_data = this.anthropic_models; // do not set: prevents importing additional models
       this.model_data = await this.get_enriched_model_data();
       this.model_data_loaded_at = Date.now();
       this.adapter_settings.models = this.model_data;
@@ -79,7 +79,7 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
       }, 100);
       return this.model_data;
     } catch {
-      return this.anthropic_models;
+      return this.anthropic_models; // fallback
     }
   }
 
@@ -89,6 +89,7 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
 
   /**
    * Get hardcoded list of available models
+   * @deprecated use get_enriched_model_data() instead (remove after no-incidents)
    * @returns {Object} Map of model objects with capabilities and limits
    */
   get anthropic_models() {

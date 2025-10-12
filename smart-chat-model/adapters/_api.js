@@ -136,9 +136,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
         };
       }
     }
-
     return this.model_data;
-
   }
 
   valid_model_data(){
@@ -373,6 +371,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       const data = await resp.json();
       MODELS_DEV_CACHE.data = data;
       MODELS_DEV_CACHE.fetched_at = now;
+      console.log({MODELS_DEV_CACHE});
       return data;
     } catch (err) {
       console.warn('models.dev fetch failed; continuing without enrichment', err);
