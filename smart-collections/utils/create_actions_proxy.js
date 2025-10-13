@@ -6,7 +6,7 @@
  * Functions are bound to ctx on first access and cached. Non-functions are passed through.
  * Snapshot semantics: the available keys and their base values are captured at creation.
  *
- * @param {object} ctx receiver used as `this` for action functions
+ * @param {object} ctx collection/item instance used as `this` for action functions
  * @param {Record<string | symbol, any>} actions_source object containing available actions
  * @returns {Record<string | symbol, any>} proxy that lazily binds and preserves reflection
  */
@@ -42,6 +42,14 @@ export function create_actions_proxy(ctx, actions_source) {
   };
 
   const compute_and_cache = (target, prop) => {
+    // scoped
+    const scope_key = ctx.constructor.key;
+    if (scope_key && has_own(source, scope_key) && has_own(source[scope_key], prop)) {
+      const out = bind_or_pass(source[scope_key][prop]);
+      target[prop] = out;
+      return out;
+    }
+    // global
     if (has_own(source, prop)) {
       const out = bind_or_pass(source[prop]);
       target[prop] = out;
