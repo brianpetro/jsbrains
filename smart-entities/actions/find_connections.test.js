@@ -69,6 +69,15 @@ test('create_find_connections_filter_opts expands include_filter into key_includ
   t.deepEqual(result.key_includes_any, ['alpha', 'beta']);
 });
 
+test('create_find_connections_filter_opts trims whitespace around filter fragments', (t) => {
+  const entity = create_entity();
+  const params = { include_filter: '  alpha , beta  ', exclude_filter: '  skip , done  ' };
+  const result = create_find_connections_filter_opts(entity, params);
+
+  t.deepEqual(result.key_includes_any, ['alpha', 'beta']);
+  t.deepEqual(result.exclude_key_includes_any, ['skip', 'done']);
+});
+
 test('create_find_connections_filter_opts appends inlinks and outlinks when excluded', (t) => {
   const entity = create_entity({
     source_key: 'source-prefix',

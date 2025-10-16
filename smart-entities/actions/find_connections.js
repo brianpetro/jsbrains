@@ -4,9 +4,16 @@ import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 const FRONTMATTER_SUFFIX = '---frontmatter---';
 
 const to_array = (value) => {
-  if (Array.isArray(value)) return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => typeof entry === 'string' ? entry.trim() : '')
+      .filter((entry) => entry.length > 0);
+  }
   if (typeof value === 'string') {
-    return value.includes(',') ? value.split(',') : [value];
+    const parts = value.includes(',') ? value.split(',') : [value];
+    return parts
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
   }
   return [];
 };
