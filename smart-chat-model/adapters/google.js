@@ -233,9 +233,11 @@ export class SmartChatModelGeminiRequestAdapter extends SmartChatModelRequestAda
       return content.map(part => {
         if (part.type === 'text') return { text: part.text };
         if (part.type === 'image_url') {
+          let mime_type = part.image_url.url.split(';')[0].split(':')[1];
+          if (mime_type === 'image/jpg') mime_type = 'image/jpeg'; // server rejects jpg mimeType for some reason
           return {
             inline_data: {
-              mime_type: part.image_url.url.split(';')[0].split(':')[1],
+              mime_type: mime_type,
               data: part.image_url.url.split(',')[1]
             }
           };
