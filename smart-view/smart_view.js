@@ -15,6 +15,7 @@ import {
   set_by_path as util_set_by_path,
   delete_by_path as util_delete_by_path
 } from 'smart-utils';
+import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 export class SmartView {
   /**
    * @constructor
@@ -228,6 +229,20 @@ export class SmartView {
     });
   }
   apply_style_sheet(sheet) {
+    // handle both string and CSSStyleSheet
+    if(typeof sheet === 'string') {
+      const css_hash = murmur_hash_32_alphanumeric(sheet);
+      if(document.getElementById(`style-sheet-${css_hash}`)) {
+        // Already applied
+        return;
+      }
+      // Create a new CSSStyleSheet
+      const styleEl = document.createElement('style');
+      styleEl.id = `style-sheet-${css_hash}`;
+      styleEl.textContent = sheet;
+      document.head.appendChild(styleEl);
+      return;
+    }
     if ('adoptedStyleSheets' in Document.prototype) {
       document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     } else {
