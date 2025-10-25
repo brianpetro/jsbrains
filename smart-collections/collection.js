@@ -1,4 +1,5 @@
 import { deep_merge } from 'smart-utils/deep_merge.js';
+import { create_actions_proxy } from './utils/create_actions_proxy.js';
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
@@ -461,13 +462,27 @@ export class Collection {
    * @returns {Object} Bound action functions keyed by name.
    */
   get actions() {
-    if(!this._actions) {
-      this._actions = Object.entries(this.opts.actions || {}).reduce((acc, [k,v]) => {
-        acc[k] = v.bind(this);
-        return acc;
-      }, {});
+    if (!this.constructor.key) this.constructor.key = this.collection_key;
+    if (!this._actions) {
+      // TODO: clarified scope of action modules that should be included
+      const actions_modules = {
+        ...(this.env?.config?.actions || {}),
+        ...(this.env?.config?.collections?.[this.collection_key]?.actions || {}),
+        ...(this.env?.opts?.collections?.[this.collection_key]?.actions || {}),
+        ...(this.opts?.actions || {}),
+      };
+      this._actions = create_actions_proxy(this, actions_modules);
     }
     return this._actions;
+  }
+
+  /**
+   * Clears cached actions proxy and rebuilds on next access.
+   * @returns {Object} Rebuilt proxy with latest source snapshot.
+   */
+  refresh_actions() {
+    this._actions = null;
+    return this.actions;
   }
 
   // BEGIN DEPRECATED

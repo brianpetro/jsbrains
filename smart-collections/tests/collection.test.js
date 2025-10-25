@@ -267,11 +267,29 @@ test('creating a new item with async init should return a promise and initialize
   t.true(item.data.initialized, 'Item should be marked as initialized after async init');
 });
 
-test('actions getter binds provided actions and memoizes result', t => {
-  const action = function() { return this.collection_key; };
-  const { collection } = create_env_and_collection(CollectionItem, { actions: { get_key: action } });
-  t.is(collection.actions.get_key(), collection.collection_key, 'Bound action should use collection context');
-  t.is(collection.actions, collection.actions, 'Actions getter should memoize bound actions');
+test('actions getter lazily binds actions and snapshots source until refreshed', t => {
+  const calls = [];
+  const { collection } = create_env_and_collection(CollectionItem, {
+    actions: {
+      ping() {
+        calls.push(this.collection_key);
+        return `ok:${this.collection_key}`;
+      }
+    }
+  });
+
+  const first = collection.actions.ping;
+  t.is(first(), 'ok:test_items');
+  t.deepEqual(calls, ['test_items']);
+  t.is(first, collection.actions.ping, 'subsequent reads reuse cached bound function');
+
+  collection.opts.actions.ping = function updated() { return `new:${this.collection_key}`; };
+  t.is(collection.actions.ping, first, 'snapshot shields from source mutation without refresh');
+
+  const proxy_after_refresh = collection.refresh_actions();
+  t.truthy(proxy_after_refresh, 'refresh returns rebuilt proxy');
+  t.not(collection.actions.ping, first, 'refresh rebuilds cache');
+  t.is(collection.actions.ping(), 'new:test_items');
 });
 
 test.serial('show_process_notice displays notice after delay', t => {
