@@ -57,7 +57,22 @@ export class SmartComponents extends Collection {
   }
 
   async render_component(component_key, scope, opts = {}) {
-    const components = this.filter((item) => item.component_key === component_key);
+    const components = this
+      .filter((item) => {
+        if( item.key.startsWith(component_key + '#') ) return true;
+        return item.component_key === component_key;
+      })
+      // sort by matching scope key first (best match first)
+      .sort((a, b) => {
+        const a_scope_match = a.scope_key === scope.key ? 1 : 0;
+        const b_scope_match = b.scope_key === scope.key ? 1 : 0;
+        return b_scope_match - a_scope_match;
+      })
+    ;
+    // console.log('matching components for', component_key, 'in scope', scope.key, components);
+    if (components.length === 0) {
+      throw new Error(`SmartComponents: no component found for key ${component_key}`);
+    }
     const selected_component = components[0];
     return await selected_component.render(scope, opts);
   }

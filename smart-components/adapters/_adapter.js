@@ -2,9 +2,8 @@ import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 
 function parse_component_properties(component_properties = []) {
   const parts = component_properties.filter(Boolean).map(part => part.toString());
-  const component_key = parts.join('.');
-  const scope_segments = parts.slice(0, -1);
-  const scope_key = scope_segments.length ? scope_segments.join('.') : 'global';
+  const component_key = parts.pop();
+  const scope_key = parts.length ? parts.join('.') : 'global';
   return { scope_key, component_key };
 }
 

@@ -16,7 +16,10 @@ export class SmartComponent extends CollectionItem {
     const component_key = this.component_key;
     const version = Number.isFinite(this.data?.version) ? this.data.version : 0;
     const hash = this.data?.hash || 'nohash';
-    return `${[scope_key, component_key].join('.')}#${[version, hash].join('#')}`;
+    const key_pcs = [];
+    if (!component_key.includes(scope_key) && scope_key !== 'global') key_pcs.push(scope_key);
+    key_pcs.push(component_key);
+    return `${key_pcs.join('_').replace(/\./g, '_')}#${[version, hash].join('#')}`;
   }
 
   get scope_key() {
