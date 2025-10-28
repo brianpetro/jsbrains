@@ -296,10 +296,12 @@ export class Collection {
 
   /**
    * Retrieves the item type (constructor) from the environment.
+   * @deprecated replace with item_class with strict adherence to conventions (2025-10-28)
    * @returns {Function} Item constructor.
    */
   get item_type() {
-    if(this.opts.item_type) return this.opts.item_type; // somewhat improved handling (future: config.items)
+    if(this.env.config?.items?.[this.item_name]?.class) return this.env.config.items[this.item_name].class;
+    if(this.opts.item_type) return this.opts.item_type; // DEPRECATED: somewhat improved handling (future: config.items)
     return this.env.item_types[this.item_class_name]; // DEPRECATED item_types config
   }
 
