@@ -70,6 +70,9 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
   // Whether we are currently in a fenced code block delimited by triple backticks (```).
   let in_code_block = false;
+  // track codeblock ranges
+  const codeblock_ranges = [];
+  let codeblock_start = null;
 
   // Initialize sub-block counts for the root heading key.
   sub_block_counts[root_heading_key] = 0;
@@ -117,6 +120,13 @@ export function parse_markdown_blocks(markdown, opts={}) {
     // Check for code block start/end using triple backticks.
     if (trimmed_line.startsWith('```')) {
       in_code_block = !in_code_block;
+      // track codeblock ranges
+      if(in_code_block && !codeblock_start) codeblock_start = line_number;
+      else if(!in_code_block && codeblock_start){
+        codeblock_ranges.push([codeblock_start, line_number]);
+        codeblock_start = null;
+      }
+
       // Include the code block line as part of the content for whichever block is open.
       if (!current_content_block) {
         // Start a new content block (or sub-block) if not already within one.
@@ -385,7 +395,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
     result[key] = heading_lines[key];
   }
 
-  return {blocks: result, task_lines, tasks};
+  return {blocks: result, task_lines, tasks, codeblock_ranges};
 }
 
 export function get_longest_words_in_order(line, n=3) {
