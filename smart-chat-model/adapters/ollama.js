@@ -313,8 +313,11 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
     if(chunk.created_at && !this._res.created_at){
       this._res.created_at = chunk.created_at;
     }
+    let raw;
     if(chunk.message?.content){
-      this._res.message.content += chunk.message.content;
+      const content = chunk.message.content;
+      raw = content;
+      this._res.message.content += content;
     }
     if(chunk.message?.role){
       this._res.message.role = chunk.message.role;
@@ -347,6 +350,7 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
         }
       }
     }
+    return raw;
   }
 }
 

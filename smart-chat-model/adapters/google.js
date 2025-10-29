@@ -366,8 +366,11 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
     const data = JSON.parse(chunk_trimmed);
 
     // Merge candidates content parts text
+    let raw;
     if (data.candidates?.[0]?.content?.parts?.[0]?.text?.length) {
-      this._res.candidates[0].content.parts[0].text += data.candidates[0].content.parts[0].text;
+      const content = data.candidates[0].content.parts[0].text;
+      raw = content;
+      this._res.candidates[0].content.parts[0].text += content;
     }
     if(data.candidates?.[0]?.content?.role?.length){
       this._res.candidates[0].content.role = data.candidates[0].content.role;
@@ -409,7 +412,7 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
         });
       }
     }
-    
+    return raw;
   }
 
 }

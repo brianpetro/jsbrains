@@ -539,8 +539,11 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
     if(chunk.message?.role) {
       this._res.role = chunk.message.role;
     }
+    let raw;
     if(chunk.delta?.type === 'text_delta') {
-      this._res.content[0].text += chunk.delta.text;
+      const content = chunk.delta?.text;
+      raw = content;
+      this._res.content[0].text += content;
     }
     if(chunk.delta?.stop_reason) {
       this._res.stop_reason = chunk.delta.stop_reason;
@@ -551,6 +554,6 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
         ...chunk.usage
       };
     }
-  
+    return raw;
   }
 }
