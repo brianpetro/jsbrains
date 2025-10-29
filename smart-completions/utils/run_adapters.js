@@ -18,8 +18,11 @@ export async function run_adapters({ item, adapters, adapter_method }) {
     .filter(({ property }) => property === null || data_keys.includes(property))
     .sort((a, b) => a.order - b.order);
   for (const { AdapterClass } of applicable) {
-    if (!(AdapterClass.prototype instanceof SmartCompletionAdapter)) {
-      console.warn(`Adapter ${AdapterClass.name} does not extend SmartCompletionAdapter`);
+    // if (!(AdapterClass.prototype instanceof SmartCompletionAdapter)) {
+    //   console.warn(`Adapter ${AdapterClass.name} does not extend SmartCompletionAdapter`);
+    // }
+    if (AdapterClass.adapter_type !== 'completion') {
+      console.warn(`Adapter ${AdapterClass.name} is not a completion adapter`);
       // continue;
     }
     const adapter = new AdapterClass(item);

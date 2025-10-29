@@ -8,6 +8,7 @@ import { insert_user_message } from "../utils/insert_user_message.js";
  * to `completion.request.messages`.
  */
 export class SmartCompletionAdapter {
+  static adapter_type = 'completion';
   constructor(item) {
     this.item = item;
   }

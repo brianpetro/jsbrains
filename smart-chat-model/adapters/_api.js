@@ -246,8 +246,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
           }
           
           try {
-            resp_adapter.handle_chunk(e.data);
-            handlers.chunk && await handlers.chunk(resp_adapter.to_openai());
+            const raw = resp_adapter.handle_chunk(e.data);
+            handlers.chunk && await handlers.chunk({...resp_adapter.to_openai(), raw});
           } catch (error) {
             console.error('Error processing stream chunk:', error);
             handlers.error && handlers.error(e.data);
@@ -764,8 +764,11 @@ export class SmartChatModelResponseAdapter {
     if(!this._res.id){
       this._res.id = chunk.id;
     }
+    let raw;
     if(chunk.choices?.[0]?.delta?.content){
-      this._res.choices[0].message.content += chunk.choices[0].delta.content;
+      const content = chunk.choices[0].delta.content;
+      raw = content;
+      this._res.choices[0].message.content += content;
     }
     if(chunk.choices?.[0]?.delta?.tool_calls){
       if(!this._res.choices[0].message.tool_calls){
@@ -788,6 +791,7 @@ export class SmartChatModelResponseAdapter {
         this._res.choices[0].message.tool_calls[0].function.arguments += chunk.choices[0].delta.tool_calls[0].function.arguments;
       }
     }
+    return raw;
   }
 
   /**

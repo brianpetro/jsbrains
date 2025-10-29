@@ -129,14 +129,14 @@ export class SmartCompletion extends CollectionItem {
       return;
     }
     const chat_model = this.get_chat_model(opts);
-    this.data.completion.chat_model = {
-      model_key: chat_model.model_key,
-      platform_key: chat_model.adapter_name,
-    };
     if (!chat_model) {
       console.warn("No chat model available for SmartCompletion. Check environment config.");
       return;
     }
+    this.data.completion.chat_model = {
+      model_key: chat_model.model_key,
+      platform_key: chat_model.adapter_name,
+    };
     try {
       const request_payload = this.data.completion.request;
       const stream = opts.stream;// && request_payload.tool_choice?.type !== 'function';
@@ -144,7 +144,8 @@ export class SmartCompletion extends CollectionItem {
         ? await chat_model.stream(request_payload, this.stream_handlers(opts.stream_handlers)) 
         : await chat_model.complete(request_payload)
       ;
-      if(!stream) this.emit_event('completion:done');
+      // console.log("SmartCompletion.complete(): received result", result);
+      if(!stream) this.emit_event('completion:completed');
       // Store response
       if(!stream){
         this.data.completion.responses.push({
@@ -169,7 +170,9 @@ export class SmartCompletion extends CollectionItem {
           timestamp: Date.now(),
           ...resp
         }
-        this.emit_event('completion:chunk');
+        const raw = resp.raw;
+        // console.log({raw})
+        this.emit_event('completion:completing', {raw});
         await stream_handlers.chunk?.(this);
       },
       done: async (resp) => {
@@ -178,7 +181,7 @@ export class SmartCompletion extends CollectionItem {
           timestamp: Date.now(),
           ...resp
         }
-        this.emit_event('completion:done');
+        this.emit_event('completion:completed');
         await stream_handlers.done?.(this);
       },
       error: async (err) => {
