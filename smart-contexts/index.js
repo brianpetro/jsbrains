@@ -17,3 +17,4 @@ export {
   SmartContext,
   smart_contexts_default_config as smart_contexts
 };
+export default smart_contexts_default_config;

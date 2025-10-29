@@ -29,6 +29,7 @@ export class SmartContexts extends Collection {
     if(Array.isArray(opts.add_items)) item.add_items(opts.add_items);
     this.set(item);
     item.queue_save();
+    this.emit_event('context:created');
     return item;
   }
   /**
