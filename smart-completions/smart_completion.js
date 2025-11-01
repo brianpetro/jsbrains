@@ -124,6 +124,7 @@ export class SmartCompletion extends CollectionItem {
    * @returns {Promise<void>}
    */
   async complete(opts={}) {
+    this.emit_event('completion:completing', {raw: ''});
     if (!this.data.completion || !this.data.completion.request) {
       console.warn("No completion.request found, skipping complete().");
       return;
