@@ -261,4 +261,25 @@ export class SmartView {
   safe_inner_html(elm, html){
     safe_inner_html(elm, html);
   }
+  
+  attach_disposer(el, dispose_fn) {
+    if (!el || !el.ownerDocument || !el.ownerDocument.defaultView?.MutationObserver) return;
+    const doc = el.ownerDocument;
+    const win = doc.defaultView;
+    if (el.__sc_disposerObserver) {
+      try { el.__sc_disposerObserver.disconnect(); } catch { }
+    }
+    const mo = new win.MutationObserver(() => {
+      if (!doc.body.contains(el)) {
+        try { dispose_fn(); } finally {
+          mo.disconnect();
+          if (el.__sc_disposerObserver === mo) {
+            el.__sc_disposerObserver = null;
+          }
+        }
+      }
+    });
+    mo.observe(doc.body, { childList: true, subtree: true });
+    el.__sc_disposerObserver = mo;
+  }
 }
