@@ -283,5 +283,44 @@ export class SmartCompletion extends CollectionItem {
     return this.data.completion.responses.length > 0;
   }
 
+  /**
+   * Toggle or force a Smart Action for this completion.
+   * Ensures only a single forced action is active at a time.
+   * @param {string} action_key
+   * @param {{active?: boolean, force?: boolean}} opts
+   */
+  use_action(action_key, opts = {}) {
+    if (!action_key) return;
+    this.data.smart_actions ??= {};
+    const current_state = this.data.smart_actions[action_key] || {};
+    const next_state = {
+      active: true,
+      force: false,
+      ...current_state,
+      ...opts
+    };
+
+    if (next_state.force) {
+      for (const key of Object.keys(this.data.smart_actions)) {
+        if (key === action_key) continue;
+        if (this.data.smart_actions[key]?.force) {
+          this.data.smart_actions[key].force = false;
+        }
+      }
+    }
+
+    this.data.smart_actions[action_key] = next_state;
+
+    this.emit_event('completion:actions-updated', {
+      item_key: this.key,
+      action_key,
+      active: Boolean(next_state.active),
+      force: Boolean(next_state.force)
+    });
+
+    this.queue_save();
+    this.collection?.process_save_queue?.();
+  }
+
 
 }
