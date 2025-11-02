@@ -154,10 +154,6 @@ export class SmartCompletion extends CollectionItem {
           ...result
         });
       }
-      const typing_indicator = this.container
-        ?.closest('.smart-chat-thread')
-        ?.querySelector('.smart-chat-typing-indicator');
-      if (typing_indicator) typing_indicator.style.display = 'none';
       this.queue_save();
     } catch (err) {
       console.error("Error in SmartCompletion.complete():", err);
