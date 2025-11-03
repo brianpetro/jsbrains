@@ -46,8 +46,8 @@ export class SmartContext extends CollectionItem {
     if(!key) return console.error('SmartContext: add_item called with invalid item', item);
     this.data.context_items[key] = context_item;
     this.queue_save();
+    this.send_updated_event();
   }
-
   /**
    * add_items
    * @param {string[]|object[]} items
@@ -145,6 +145,13 @@ export class SmartContext extends CollectionItem {
   }
   get has_context_items() {
     return Object.keys(this.data.context_items || {}).length > 0;
+  }
+
+  send_updated_event() {
+    if(this._debounce_send_updated_event) clearTimeout(this._debounce_send_updated_event);
+    this._debounce_send_updated_event = setTimeout(() => {
+      this.emit_event('context:updated');
+    }, 100);
   }
 
 }
