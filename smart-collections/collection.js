@@ -300,9 +300,28 @@ export class Collection {
    * @returns {Function} Item constructor.
    */
   get item_type() {
-    if(this.env.config?.items?.[this.item_name]?.class) return this.env.config.items[this.item_name].class;
-    if(this.opts.item_type) return this.opts.item_type; // DEPRECATED: somewhat improved handling (future: config.items)
-    return this.env.item_types[this.item_class_name]; // DEPRECATED item_types config
+    if(!this._item_type) this._item_type = this.resolve_item_type();
+    return this._item_type;
+  }
+  // TEMP resolver (2025-11-03): until better handled on merging configs at obsidian-smart-env startup
+  resolve_item_type() {
+    const available = [
+      this.env.config?.items?.[this.item_name],
+      this.opts.item_type,
+      this.env.item_types?.[this.item_class_name],
+    ].filter(Boolean).sort((a,b) => {
+      // highest version first
+      const a_version = a?.class?.version || a.version || 0;
+      const b_version = b?.class?.version || b.version || 0;
+      return b_version - a_version;
+    });
+    if(available.length === 0) {
+      throw new Error(`No item_type found for collection '${this.collection_key}' with item_name '${this.item_name}' or class_name '${this.item_class_name}'`);
+    }
+    return available[0].class || available[0];
+    // if(this.env.config?.items?.[this.item_name]?.class) return this.env.config.items[this.item_name].class;
+    // if(this.opts.item_type) return this.opts.item_type; // DEPRECATED: somewhat improved handling (future: config.items)
+    // return this.env.item_types[this.item_class_name]; // DEPRECATED item_types config
   }
 
   /**
