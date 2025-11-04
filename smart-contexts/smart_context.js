@@ -16,6 +16,7 @@ import {
 } from './context_item.js';
 import { image_extension_regex } from './utils/image_extension_regex.js';
 import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
+
 export class SmartContext extends CollectionItem {
   static version = 1;
   static get defaults() {
@@ -42,22 +43,34 @@ export class SmartContext extends CollectionItem {
     const context_item = {
       d: 0,
       ...(typeof item === 'object' ? item : {})
-    }
+    };
     if(!key) return console.error('SmartContext: add_item called with invalid item', item);
     this.data.context_items[key] = context_item;
     this.queue_save();
     this.send_updated_event();
   }
+
   /**
    * add_items
    * @param {string[]|object[]} items
    */
   add_items(items) {
-    if(!Array.isArray(items)) {
-      items = [items];
-    }
+    if(!Array.isArray(items)) items = [items];
     items.forEach(item => this.add_item(item));
   }
+
+  /**
+   * remove_item
+   * Removes a path/ref from context and emits context:updated
+   * @param {string} key
+   */
+  remove_item(key) {
+    if(!key || !this.data?.context_items?.[key]) return;
+    delete this.data.context_items[key];
+    this.queue_save();
+    this.send_updated_event();
+  }
+
   /**
    * Return *ContextItem* instances (any depth) for a given key array.
    * @param {string[]} keys
@@ -83,10 +96,7 @@ export class SmartContext extends CollectionItem {
 
   /**
    * get_snapshot
-   * Gathers items at depth=0..link_depth, respects exclusions, and tracks truncated/skipped items.
    * @async
-   * @param {object} opts
-   * @returns {Promise<object>} context_snapshot - an object with .items[0], .items[1], etc.
    */
   async get_snapshot(opts = {}) {
     const merged_opts = merge_context_opts(this, opts);
@@ -95,11 +105,7 @@ export class SmartContext extends CollectionItem {
 
   /**
    * compile
-   * Delegates to a compile adapter from this.collection.compile_adapters.
-   * By default uses the 'default' adapter unless opts.adapter_key is given.
    * @async
-   * @param {object} [opts={}]
-   * @returns {Promise<object|string>} Typically {context, stats} from the template adapter
    */
   async compile(opts = {}) {
     const adapter_key = opts.adapter_key || 'default';
@@ -114,7 +120,6 @@ export class SmartContext extends CollectionItem {
   /**
    * @method get_ref
    * @deprecated moving to using ContextItem instances
-   * Looks up a reference in the environment. Distinguishes block vs source by '#' presence.
    */
   get_ref(key) {
     return this.collection.get_ref(key);
@@ -125,18 +130,15 @@ export class SmartContext extends CollectionItem {
       .filter(k => {
         const item_depth = this.data.context_items[k].d;
         if(item_depth === depth) return true;
-        if(typeof item_depth === 'undefined' && depth === 0) return true; // legacy case, no depth set
+        if(typeof item_depth === 'undefined' && depth === 0) return true;
         return false;
-      })
-    ;
+      });
   }
 
   get context_item_keys() {
     return Object.keys(this.data?.context_items || {});
   }
-  /**
-   * If no user-provided key, fallback to a stable hash of the context_items.
-   */
+
   get key() {
     if (!this.data.key) {
       this.data.key = Date.now().toString();
@@ -153,5 +155,4 @@ export class SmartContext extends CollectionItem {
       this.emit_event('context:updated');
     }, 100);
   }
-
 }
