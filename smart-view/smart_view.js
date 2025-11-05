@@ -262,7 +262,30 @@ export class SmartView {
     safe_inner_html(elm, html);
   }
   
-  attach_disposer(el, dispose_fn) {
+  /**
+   * Attaches a disposer function to an element that will be called when the element is removed from the DOM.
+   * @param {HTMLElement} el - The element to monitor.
+   * @param {Function|Function[]} dispose - The disposer function or array of functions to call on removal.
+   */
+  attach_disposer(el, dispose) {
+    let dispose_fn;
+    if (typeof dispose === 'function') {
+      dispose_fn = dispose;
+    } else if (Array.isArray(dispose)) {
+      dispose_fn = () => {
+        for (const fn of dispose) {
+          try {
+            if (typeof fn === 'function') {
+              fn();
+            }
+          } catch (err) {
+            console.error('[smart-view] disposer error', err);
+          }
+        }
+      };
+    }else{
+      return console.warn('[smart-view] attach_disposer called with invalid disposer');
+    }
     if (!el || !el.ownerDocument || !el.ownerDocument.defaultView?.MutationObserver) return;
     const doc = el.ownerDocument;
     const win = doc.defaultView;
