@@ -17,6 +17,7 @@ import {
 } from 'smart-utils';
 import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 export class SmartView {
+  static version = 0.1;
   /**
    * @constructor
    * @param {object} opts - Additional options or overrides for rendering.
