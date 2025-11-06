@@ -40,7 +40,11 @@ export class DefaultEventsAdapter extends SmartEventsAdapter {
     const call_wildcard = wildcard_list ? [...wildcard_list] : [];
 
     // Specific first, then wildcard. Stable order by registration time.
-    call_specific.forEach(fn => fn(event, event_key));
-    call_wildcard.forEach(fn => fn(event, event_key));
+    for(let i = 0; i < call_specific.length; i++) {
+      call_specific[i](event, event_key);
+    }
+    for(let i = 0; i < call_wildcard.length; i++) {
+      call_wildcard[i](event, event_key);
+    }
   }
 }

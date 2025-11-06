@@ -7,7 +7,8 @@ export const WILDCARD_KEY = '*';
 export class SmartEventsAdapter {
   constructor(instance) {
     this.instance = instance;
-    this.handlers = {};
+    // null-prototype map avoids proto collisions and deopts
+    this.handlers = Object.create(null);
   }
 
   /**
