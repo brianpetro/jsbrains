@@ -1,0 +1,141 @@
+import { Collection } from '../smart-collections/collection.js';
+import { EventLog, next_log_stats } from './event_log.js';
+import { SmartEvents } from './smart_events.js';
+import { WILDCARD_KEY } from './adapters/_adapter.js';
+import { AjsonSingleFileCollectionDataAdapter } from '../smart-collections/adapters/ajson_single_file.js';
+
+const EXCLUDED_EVENT_KEYS = {
+  'collection:save_started': true,
+  'collection:save_completed': true,
+};
+
+/**
+ * @class EventLogs
+ * @extends Collection
+ *
+ * Responsibilities:
+ * - Subscribe to env.events using "*"
+ * - Maintain per-event-key counters and timestamps (epoch ms)
+ * - Queue item saves and debounce collection save
+ */
+export class EventLogs extends Collection {
+  static version = 0.003;
+
+  /**
+   * Factory that attaches the collection to env and registers the wildcard listener.
+   * @param {Object} env
+   * @param {Object} [opts={}]
+   * @returns {EventLogs}
+   */
+  static create(env, opts = {}) {
+    const instance = new this(env, opts);
+    instance.init();
+    return instance;
+  }
+
+  /** Prefer an explicit item class to keep wiring thin. */
+  get item_type() { return EventLog; }
+
+  /**
+   * Instance init
+   * - Ensure env.events exists
+   * - Register wildcard listener
+   * - Idempotent across repeated calls
+   */
+  init() {
+    if (!this.env?.events) SmartEvents.create(this.env);
+
+    if (this._unsub_wildcard) this._unsub_wildcard();
+
+    this._unsub_wildcard = this.env.events.on(WILDCARD_KEY, (event, event_key) => {
+      this.on_any_event(event_key, event);
+    });
+  }
+
+  /**
+   * Handle any emitted event.
+   * Persists counters and timestamps in epoch ms.
+   * @param {string} event_key
+   * @param {Record<string, unknown>} event
+   */
+  on_any_event(event_key, event) {
+    if (EXCLUDED_EVENT_KEYS[event_key]) return;
+    try {
+      if (typeof event_key !== 'string') return;
+
+      const at_ms = Date.now();
+
+      let item = this.get(event_key);
+      if (!item) {
+        item = new EventLog(this.env, { key: event_key });
+        this.set(item);
+      }
+
+      const next = next_log_stats(
+        { ct: item.data.ct, first_at: item.data.first_at, last_at: item.data.last_at },
+        at_ms
+      );
+
+      item.data = { ...item.data, ...next };
+      item.queue_save();
+      this.schedule_save();
+    } catch (err) {
+      // Never throw from a listener; keep bus pure and resilient.
+      console.error('[EventLogs] record failure', event_key, err);
+    }
+  }
+
+  /**
+   * Debounce configuration in ms.
+   * Prefers explicit opts, then settings, then default.
+   */
+  get save_debounce_ms() {
+    return this.opts?.save_debounce_ms
+      ?? this.settings?.save_debounce_ms
+      ?? 750;
+  }
+
+  /**
+   * Schedule a debounced save for the collection queue.
+   * Coalesces bursts of events into a single adapter write.
+   */
+  schedule_save() {
+    if (this._save_timer) clearTimeout(this._save_timer);
+    this._save_timer = setTimeout(() => {
+      this._save_timer = null;
+      this.flush_save().catch((err) => {
+        console.error('[EventLogs] save failed', err);
+      });
+    }, this.save_debounce_ms);
+  }
+
+  /**
+   * Immediately process the save queue for this collection.
+   * Safe to call from outside if needed.
+   */
+  async flush_save() {
+    await this.process_save_queue();
+  }
+
+  /**
+   * Cleanly detach listeners and cancel pending save.
+   */
+  unload() {
+    if (this._save_timer) {
+      clearTimeout(this._save_timer);
+      this._save_timer = null;
+    }
+    if (typeof this._unsub_wildcard === 'function') {
+      this._unsub_wildcard();
+      this._unsub_wildcard = null;
+    }
+    return super.unload();
+  }
+}
+
+export default {
+  class: EventLogs,
+  collection_key: 'event_logs',
+  data_adapter: AjsonSingleFileCollectionDataAdapter,
+  item_type: EventLog,
+};
