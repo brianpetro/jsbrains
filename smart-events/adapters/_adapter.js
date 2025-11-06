@@ -1,6 +1,9 @@
 /**
  * Base adapter outlining the event bus interface.
  */
+
+export const WILDCARD_KEY = '*';
+
 export class SmartEventsAdapter {
   constructor(instance) {
     this.instance = instance;
@@ -9,6 +12,8 @@ export class SmartEventsAdapter {
 
   /**
    * Register an event handler.
+   * When event_key is '*', the handler subscribes to all events.
+   * Handlers receive (event, event_key).
    * @param {string} event_key
    * @param {Function} event_callback
    */
@@ -16,6 +21,8 @@ export class SmartEventsAdapter {
 
   /**
    * Register a one-time handler.
+   * When event_key is '*', the handler fires once on the next emitted event of any key.
+   * Handlers receive (event, event_key).
    * @param {string} event_key
    * @param {Function} event_callback
    */
@@ -23,6 +30,7 @@ export class SmartEventsAdapter {
 
   /**
    * Remove an event handler.
+   * When event_key is '*', removes from the wildcard list only.
    * @param {string} event_key
    * @param {Function} event_callback
    */
@@ -30,6 +38,7 @@ export class SmartEventsAdapter {
 
   /**
    * Emit an event.
+   * event_key must not be '*'.
    * @param {string} event_key
    * @param {Object} event
    */
