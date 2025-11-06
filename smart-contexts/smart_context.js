@@ -155,4 +155,14 @@ export class SmartContext extends CollectionItem {
       this.emit_event('context:updated');
     }, 100);
   }
+
+  get name () {
+    return this.data.name;
+  }
+  set name (name) {
+    if (typeof name !== 'string') throw new TypeError('Name must be a string');
+    this.data.name = name;
+    this.send_updated_event()
+  }
+
 }
