@@ -93,6 +93,12 @@ export class SmartContext extends CollectionItem {
     const src = this.env.smart_sources.get(key) || this.env.smart_blocks.get(key);
     return src ? new SourceContextItem(this, src) : null;
   }
+  // // v2 (TODO:  add COntextItems to obsidian-smart-env)
+  // get_context_item(key) {
+  //   const existing = this.env.context_items.get(key);
+  //   if (existing) return existing;
+  //   return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
+  // }
 
   /**
    * get_snapshot
