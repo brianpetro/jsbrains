@@ -1,87 +1,97 @@
 import { SmartCompletionAdapter } from './_adapter.js';
-import { insert_image } from '../utils/insert_image.js';
-import { insert_pdf } from '../utils/insert_pdf.js';
 
 /**
- * @class SmartCompletionContextAdapter
+ * @class ContextCompletionAdapter
  * @extends SmartCompletionAdapter
- *
- * This adapter checks `item.data.context` as a single SmartContext key,
- * compiles ephemeral context text, and inserts it as a system message.
  */
-export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
+export class ContextCompletionAdapter extends SmartCompletionAdapter {
   static order = 10;
   static get property_name() {
     return 'context_key';
   }
+  static item_constructor(completion){
+    Object.defineProperty(completion, 'context', {
+      get(){
+        const key = completion.data.context_key;
+        if(!key) {
+          const context = completion.env.smart_contexts.new_context();
+          completion.data.context_key = context.key;
+          return context;
+        }
+        return completion.env.smart_contexts.get(key);
+      }
+    });
+  }
 
   async to_request() {
-    const context_key = this.data.context_key;
-    if(!context_key) return;
-    const context_opts = this.data.context_opts;
-
-    // Single context item only:
-    const context_collection = this.item.env.smart_contexts;
-    if(!context_collection) {
-      console.warn("No 'smart_contexts' collection found; skipping context adapter.");
+    const chat_thread = this.completion.chat_thread;
+    const context = this.completion.context;
+    if(!context) {
+      console.warn(`[ContextCompletionAdapter] context not found for completion key '${this.completion.key}'; skipping context adapter.`);
       return;
     }
-    // check if subsequent completion has the same context_key (include context only once in most recent completion)
-    const completions = this.item.thread.completions;
-    const last_context_completion = completions.findLast(comp => comp.data.context_key === context_key);
-    if(last_context_completion && last_context_completion.key !== this.item.key) {
+    if(!context.has_context_items){
+      console.warn(`[ContextCompletionAdapter] Context '${context.key}' has no context items; skipping context adapter.`);
       return;
     }
-    const ctx_item = context_collection.get(context_key);
-    if(!ctx_item) {
-      console.warn(`SmartContext not found for key '${context_key}'`);
-      return;
+    if(chat_thread) {
+      // include context only once in most recent completion
+      if(chat_thread.current_completion.key !== this.completion.key) return; // not the most recent completion
     }
-    if(!ctx_item.has_context_items){
-      console.warn(`SmartContext '${context_key}' has no context items; skipping context adapter.`);
-      return;
-    }
-    await ctx_item.save();
-
     // compile ephemeral context
     let compiled;
     try {
-      compiled = await ctx_item.compile(context_opts);
+      compiled = await context.compile();
     } catch(err) {
       console.warn("Error compiling ephemeral context", err);
       return;
     }
 
     if(compiled.context){
-      this.insert_user_message(compiled.context);
-      // append user message (again, after the context)
-      const last_user_message = this.data.user_message
-        ?? completions.findLast(comp => comp.data.user_message)?.data.user_message
-      ;
-      if(last_user_message) {
-        this.insert_user_message(last_user_message, {position: 'end'});
+      const content = [
+        { type: 'text', text: compiled.context }
+      ];
+      if(this.completion.data.user_message) {
+        content.unshift({ type: 'text', text: this.completion.data.user_message });
       }
-    }
-    if(compiled.images?.length > 0) {
-      await this.insert_images(compiled.images);
-    }
-    if(compiled.pdfs?.length > 0) {
-      await this.insert_pdfs(compiled.pdfs);
-    }
-    this.data.completion.used_context = true;
-  }
-
-  async insert_images(image_paths) {
-    if(!Array.isArray(image_paths) || !image_paths.length) return;
-    for(const img_path of image_paths) {
-      await insert_image(this.request, img_path, this.item.env.fs);
+      if(compiled.images?.length > 0) {
+        content.push(...await this.build_image_content(compiled.images));
+      }
+      // context at beginning of thread
+      this.request.messages.unshift({
+        role: 'user',
+        content: content
+      });
     }
   }
-  async insert_pdfs(pdf_paths) {
-    if(!Array.isArray(pdf_paths) || !pdf_paths.length) return;
+  async build_image_content(image_paths) {
+    const content = [];
+    if(!Array.isArray(image_paths) || !image_paths.length) return content;
+    for(const image_path of image_paths) {
+      const base64_image = await convert_image_to_base64(this.env, image_path);
+      if(!base64_image) continue;
+      content.push({
+        type: 'image_url',
+        image_url: { url: base64_image }
+      });
+    }
+    return content;
+  }
+  async build_pdf_content(pdf_paths) {
+    const content = [];
+    if(!Array.isArray(pdf_paths) || !pdf_paths.length) return content;
     for(const pdf_path of pdf_paths) {
-      await insert_pdf(this.request, pdf_path, this.item.env.fs);
+      const base64_pdf = await convert_pdf_to_base64(this.env, pdf_path);
+      if(!base64_pdf) continue;
+      content.push({
+        type: 'file',
+        file: {
+          filename: pdf_path.split(/[\\/]/).pop(),
+          file_data: `data:application/pdf;base64,${base64_pdf}` // <-- Prefix added
+        }
+      });
     }
+    return content;
   }
 
   /**
@@ -89,4 +99,33 @@ export class SmartCompletionContextAdapter extends SmartCompletionAdapter {
    */
   async from_response() { /* no-op */ }
 
+}
+
+async function convert_image_to_base64(env, image_path) {
+  if (!image_path) return;
+  const fs = env.fs;
+  const image_exts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico'];
+  const ext = image_path.split('.').pop().toLowerCase();
+  if (!image_exts.includes(ext)) return;
+  try {
+    // read file as base64 from smart_sources fs
+    const base64_data = await fs.read(image_path, 'base64');
+    const base64_url = `data:image/${ext};base64,${base64_data}`;
+    return base64_url;
+  } catch (err) {
+    console.warn(`Failed to convert image ${image_path} to base64`, err);
+  }
+}
+async function convert_pdf_to_base64(env, pdf_path) {
+  const fs = env.fs;
+  if (!pdf_path) return;
+  const ext = pdf_path.split('.').pop().toLowerCase();
+  if (ext !== 'pdf') return;
+  try {
+    // read file as base64 from smart_sources fs
+    const base64_data = await fs.read(pdf_path, 'base64');
+    return base64_data;
+  } catch (err) {
+    console.warn(`Failed to convert PDF ${pdf_path} to base64`, err);
+  }
 }

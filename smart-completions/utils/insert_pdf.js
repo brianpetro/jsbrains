@@ -1,3 +1,6 @@
+/**
+ * @deprecated see ContextCompletionAdapter
+ */
 export async function insert_pdf(request, pdf_path, fs) {
   const base64_pdf = await convert_pdf_to_base64(fs, pdf_path);
   if(!base64_pdf) return;

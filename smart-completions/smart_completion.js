@@ -312,7 +312,6 @@ export class SmartCompletion extends CollectionItem {
     this.data.smart_actions[action_key] = next_state;
 
     this.emit_event('completion:actions-updated', {
-      item_key: this.key,
       action_key,
       active: Boolean(next_state.active),
       force: Boolean(next_state.force)
@@ -322,5 +321,10 @@ export class SmartCompletion extends CollectionItem {
     this.collection?.process_save_queue?.();
   }
 
-
+  /**
+   * Proxy getter to the smart_actions state (namespace-safe from 'actions').
+   */
+  get smart_actions() {
+    return this.data.smart_actions || {};
+  }
 }

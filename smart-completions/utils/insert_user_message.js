@@ -4,6 +4,7 @@
  * @param {string} user_message - The user message to insert
  * @param {Object} opts - Options for insertion
  * @param {string} opts.position - Position to insert the message ('start' or 'end', default: 'end')
+ * @deprecated This is a confusing abstraction
  * @returns {void}
  */
 

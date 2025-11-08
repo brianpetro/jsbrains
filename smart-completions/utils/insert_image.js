@@ -1,3 +1,6 @@
+/**
+ * @deprecated see ContextCompletionAdapter
+ */
 export async function insert_image(request, image_path, fs) {
   const base64_image = await convert_image_to_base64(fs, image_path);
   if(!base64_image) return;
