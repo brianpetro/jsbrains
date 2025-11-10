@@ -164,3 +164,81 @@ test("handles when value is action object", (t) => {
   t.deepEqual(calls, ["t"]);
   t.is(out, "ok:t");
 });
+
+test("preserves metadata on bound function exports", (t) => {
+  const meta = { type: "object" };
+  const actions = {
+    describe: Object.assign(function describe() {
+      return this.item_type_key;
+    }, { input_schema: meta })
+  };
+  const host = new ItemHost(make_env(actions), "t");
+
+  const fn = host.actions.describe;
+
+  t.is(fn(), "t");
+  t.deepEqual(fn.input_schema, meta);
+});
+
+test("preserves metadata on action object exports", (t) => {
+  const actions = {
+    annotate: {
+      action: function () { return `annotated:${this.item_type_key}`; },
+      output_schema: { type: "string" }
+    }
+  };
+  const host = new ItemHost(make_env(actions), "t");
+
+  const fn = host.actions.annotate;
+
+  t.is(fn(), "annotated:t");
+  t.deepEqual(fn.output_schema, { type: "string" });
+});
+
+test("instantiates class exports and binds primary method", (t) => {
+  class DemoAction {
+    constructor(scope) {
+      this.scope = scope;
+      this.call_count = 0;
+    }
+
+    action() {
+      this.call_count += 1;
+      return `demo:${this.scope.item_type_key}`;
+    }
+  }
+
+  DemoAction.output_schema = { type: "string" };
+
+  const actions = { demo: DemoAction };
+  const host = new ItemHost(make_env(actions), "t");
+
+  const fn = host.actions.demo;
+
+  t.is(fn(), "demo:t");
+  t.is(fn(), "demo:t");
+  t.truthy(fn.instance);
+  t.is(fn.instance.call_count, 2);
+  t.deepEqual(fn.output_schema, { type: "string" });
+});
+
+test("scope-specific actions reflect through proxy traps", (t) => {
+  const actions = {
+    scoped_collection: {
+      scoped: function () { return `scoped:${this.item_type_key}`; }
+    },
+    shared: function () { return `shared:${this.item_type_key}`; }
+  };
+  const host = new ItemHost(make_env(actions), "t");
+  host.constructor.key = "scoped_collection";
+
+  t.is(host.actions.scoped(), "scoped:t");
+  t.true("scoped" in host.actions);
+  t.true(Object.keys(host.actions).includes("scoped"));
+  t.false(Object.keys(host.actions).includes("scoped_collection"));
+
+  const desc = Object.getOwnPropertyDescriptor(host.actions, "scoped");
+  t.truthy(desc);
+  t.is(typeof desc.value, "function");
+  t.is(desc.enumerable, true);
+});
