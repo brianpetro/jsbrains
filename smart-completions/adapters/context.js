@@ -57,6 +57,9 @@ export class ContextCompletionAdapter extends SmartCompletionAdapter {
       if(compiled.images?.length > 0) {
         content.push(...await this.build_image_content(compiled.images));
       }
+      if(compiled.pdfs?.length > 0) {
+        content.push(...await this.build_pdf_content(compiled.pdfs));
+      }
       // context at beginning of thread
       this.request.messages.unshift({
         role: 'user',

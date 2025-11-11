@@ -103,6 +103,7 @@ export class SmartContext extends CollectionItem {
   /**
    * get_snapshot
    * @async
+   * @deprecated in favor of get_text and get_object (2025-11-11)
    */
   async get_snapshot(opts = {}) {
     const merged_opts = merge_context_opts(this, opts);
@@ -112,6 +113,7 @@ export class SmartContext extends CollectionItem {
   /**
    * compile
    * @async
+   * @deprecated in favor of get_text and get_object (2025-11-11)
    */
   async compile(opts = {}) {
     const adapter_key = opts.adapter_key || 'default';
