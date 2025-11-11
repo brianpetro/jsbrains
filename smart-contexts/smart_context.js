@@ -8,13 +8,6 @@
 import { CollectionItem } from 'smart-collections';
 import { get_snapshot } from './utils/get_snapshot.js';
 import { merge_context_opts } from './utils/merge_context_opts.js';
-import {
-  BaseContextItem,
-  SourceContextItem,
-  ImageContextItem,
-  PdfContextItem,
-} from './context_item.js';
-import { image_extension_regex } from './utils/image_extension_regex.js';
 import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
 
 export class SmartContext extends CollectionItem {
@@ -82,23 +75,12 @@ export class SmartContext extends CollectionItem {
     );
   }
 
-  /** Map any key to ContextItem subclass */
+  // /** Map any key to ContextItem  */
   get_context_item(key) {
-    const ctx_item = this.data?.context_items?.[key];
-    if (ctx_item && typeof ctx_item === 'object' && 'content' in ctx_item) {
-      return new BaseContextItem(this, key);
-    }
-    if (image_extension_regex.test(key)) return new ImageContextItem(this, key);
-    if (key.endsWith(".pdf")) return new PdfContextItem(this, key);
-    const src = this.env.smart_sources.get(key) || this.env.smart_blocks.get(key);
-    return src ? new SourceContextItem(this, src) : null;
+    const existing = this.env.context_items.get(key);
+    if (existing) return existing;
+    return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
   }
-  // // v2 (TODO:  add COntextItems to obsidian-smart-env)
-  // get_context_item(key) {
-  //   const existing = this.env.context_items.get(key);
-  //   if (existing) return existing;
-  //   return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
-  // }
 
   /**
    * get_snapshot
@@ -171,6 +153,14 @@ export class SmartContext extends CollectionItem {
     if (typeof name !== 'string') throw new TypeError('Name must be a string');
     this.data.name = name;
     this.send_updated_event()
+  }
+  get size () {
+    let size = 0;
+    const context_items = this.get_context_items();
+    context_items.forEach(item => {
+      if (item.size) size += item.size;
+    });
+    return size;
   }
 
 }
