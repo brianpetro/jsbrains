@@ -340,14 +340,6 @@ export class CollectionItem {
 
 
   /**
-   * A simple reference object for this item.
-   * @returns {{collection_key: string, key: string}}
-   */
-  get ref() {
-    return { collection_key: this.collection_key, key: this.key };
-  }
-
-  /**
    * Emits an event with item metadata.
    *
    * @param {string} event_key
@@ -390,6 +382,15 @@ export class CollectionItem {
   set settings(settings) {
     this.env.settings[this.collection_key] = settings;
     this.env.smart_settings.save();
+  }
+
+  /**
+   * A simple reference object for this item.
+   * @deprecated 2025-11-11 lacks adoption
+   * @returns {{collection_key: string, key: string}}
+   */
+  get ref() {
+    return { collection_key: this.collection_key, key: this.key };
   }
 
   /**
