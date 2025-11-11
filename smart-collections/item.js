@@ -357,6 +357,12 @@ export class CollectionItem {
   emit_event(event_key, payload = {}) {
     this.env.events?.emit(event_key, { collection_key: this.collection_key, item_key: this.key, ...payload });
   }
+  on_event(event_key, callback) {
+    return this.env.events?.on(event_key, (payload) => {
+      if (payload?.item_key && payload.item_key !== this.key) return;
+      callback(payload);
+    });
+  }
 
   /**
    * @returns {Object} The data adapter for this item's collection.
