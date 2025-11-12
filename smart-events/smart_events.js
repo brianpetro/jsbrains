@@ -54,7 +54,7 @@ export class SmartEvents {
   emit(event_key, event = {}) {
     const payload = { ...event };
     if (payload.at === undefined) {
-      payload.at = new Date().toISOString();
+      payload.at = Date.now(); // epoch ms
     }
     Object.freeze(payload);
     return this.adapter.emit(event_key, payload);

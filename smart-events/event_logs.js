@@ -20,6 +20,10 @@ const EXCLUDED_EVENT_KEYS = {
  */
 export class EventLogs extends Collection {
   static version = 0.003;
+  constructor(env, opts = {}) {
+    super(env, opts);
+    this.session_events = [];
+  }
 
   /**
    * Factory that attaches the collection to env and registers the wildcard listener.
@@ -60,6 +64,7 @@ export class EventLogs extends Collection {
    */
   on_any_event(event_key, event) {
     if (EXCLUDED_EVENT_KEYS[event_key]) return;
+    this.session_events.push({ event_key, event });
     try {
       if (typeof event_key !== 'string') return;
 
