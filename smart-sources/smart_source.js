@@ -490,6 +490,9 @@ export class SmartSource extends SmartEntity {
       .filter(link_path => link_path);
   }
 
+  /**
+   * @deprecated path should be derived from key (stable key principle)
+   */
   get path() { return this.data.path || this.data.key; }
   get source_adapters() { return this.collection.source_adapters; }
   get source_adapter() {

@@ -284,6 +284,7 @@ export class SmartBlock extends SmartEntity {
   /**
    * Retrieves the link associated with the block, handling page numbers if present.
    * @readonly
+   * @deprecated was specific to PDFs and removed this sort of PDF handling
    * @returns {string} The block link.
    */
   get link() {
