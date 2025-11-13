@@ -1,11 +1,104 @@
 /**
+ * @typedef {Record<string, unknown>} NormalizedErrorDetails
+ */
+
+/**
+ * Check if a value is JSON compatible.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function is_json_compatible(value) {
+  if (value === null) {
+    return true;
+  }
+
+  const type = typeof value;
+
+  if (type === 'string' || type === 'number' || type === 'boolean') {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(is_json_compatible);
+  }
+
+  if (type === 'object') {
+    const obj = /** @type {Record<string, unknown>} */ (value);
+    return Object.values(obj).every(is_json_compatible);
+  }
+
+  return false;
+}
+
+/**
+ * Extract JSON compatible properties into a details object, excluding specific keys.
+ * @param {Record<string, unknown>} source
+ * @param {string[]} exclude_keys
+ * @returns {NormalizedErrorDetails}
+ */
+function extract_json_details(source, exclude_keys) {
+  /** @type {NormalizedErrorDetails} */
+  const details = {};
+
+  for (const [key, value] of Object.entries(source)) {
+    if (exclude_keys.includes(key)) {
+      continue;
+    }
+    if (!is_json_compatible(value)) {
+      continue;
+    }
+    details[key] = value;
+  }
+
+  return details;
+}
+
+/**
+ * @param {Record<string, unknown>} obj
+ * @returns {boolean}
+ */
+function is_empty_object(obj) {
+  return Object.keys(obj).length === 0;
+}
+
+/**
+ * @param {Record<string, unknown>} first
+ * @param {Record<string, unknown>} second
+ * @returns {NormalizedErrorDetails}
+ */
+function merge_details(first, second) {
+  if (is_empty_object(first)) {
+    return second;
+  }
+  if (is_empty_object(second)) {
+    return first;
+  }
+  return { ...first, ...second };
+}
+
+/**
+ * Get a trimmed message string from an object if present.
+ * @param {Record<string, unknown>} value
+ * @returns {string | null}
+ */
+function get_message_from_object(value) {
+  const raw = value.message;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+/**
  * Normalize completion errors from chat model adapters.
  * NOTE: may move to adapters in future
  * @param {unknown} error
- * @returns {{ message: string, details: string | null }}
+ * @returns {{ message: string, details: NormalizedErrorDetails | null }}
  */
 export function normalize_error(error) {
-  console.log('Normalizing error:', error);
   if (error == null) {
     return { message: 'Unknown error', details: null };
   }
@@ -15,54 +108,54 @@ export function normalize_error(error) {
   }
 
   if (error instanceof Error) {
-    return { message: error.message || 'Unknown error', details: null };
+    const message = (error.message || '').trim() || 'Unknown error';
+    const extra_details = extract_json_details(
+      /** @type {Record<string, unknown>} */ (error),
+      ['message']
+    );
+    return {
+      message,
+      details: is_empty_object(extra_details) ? null : extra_details
+    };
   }
 
   if (typeof error === 'object') {
-    const nested_error = error.error;
-    if (nested_error != null) {
-      // Delegate to the nested error if present
+    const obj = /** @type {Record<string, unknown>} */ (error);
+
+    if ('error' in obj && obj.error != null) {
+      const nested_error = obj.error;
+
+      if (typeof nested_error === 'object') {
+        const nested_obj = /** @type {Record<string, unknown>} */ (nested_error);
+
+        const nested_message = get_message_from_object(nested_obj);
+        const nested_details = extract_json_details(nested_obj, ['message']);
+
+        const outer_details = extract_json_details(obj, ['message', 'error']);
+
+        const combined_details = merge_details(outer_details, nested_details);
+        const message =
+          nested_message ||
+          get_message_from_object(obj) ||
+          'Unknown error';
+
+        return {
+          message,
+          details: is_empty_object(combined_details) ? null : combined_details
+        };
+      }
+
       return normalize_error(nested_error);
     }
 
-    // collect JSON-compatible properties (excluding 'message' and 'error') into details
-    const excludeKeys = new Set(['message', 'error']);
-    const isPlainObject = (v) => v != null && typeof v === 'object' && !Array.isArray(v) && Object.getPrototypeOf(v) === Object.prototype;
-    const toJsonish = (v) => {
-      if (v == null) return null;
-      const t = typeof v;
-      if (t === 'string' || t === 'number' || t === 'boolean') return v;
-      if (Array.isArray(v)) {
-        const arr = [];
-        for (const item of v) {
-          const mapped = toJsonish(item);
-          if (mapped !== undefined) arr.push(mapped);
-        }
-        return arr;
-      }
-      if (isPlainObject(v)) {
-        const out = {};
-        for (const k of Object.keys(v)) {
-          if (excludeKeys.has(k)) continue;
-          const mapped = toJsonish(v[k]);
-          if (mapped !== undefined) out[k] = mapped;
-        }
-        return out;
-      }
-      // non-JSON types (functions, symbols, bigint, Dates without toJSON handling, etc.) are skipped
-      return undefined;
-    };
-
-    const rawDetails = toJsonish(error);
-    const details = rawDetails && typeof rawDetails === 'object' && Object.keys(rawDetails).length > 0
-      ? rawDetails
-      : null;
-
-    const message = ('message' in error && typeof error.message === 'string' && error.message.trim().length > 0)
-      ? error.message
-      : 'Unknown error';
-
-    return { message, details };
+    const object_message = get_message_from_object(obj);
+    if (object_message) {
+      const details = extract_json_details(obj, ['message']);
+      return {
+        message: object_message,
+        details: is_empty_object(details) ? null : details
+      };
+    }
   }
 
   return { message: 'Unknown error', details: null };
