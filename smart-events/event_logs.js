@@ -22,7 +22,8 @@ export class EventLogs extends Collection {
   static version = 0.003;
   constructor(env, opts = {}) {
     super(env, opts);
-    this.session_events = [];
+    this.session_events = []; // per session event log
+    this.notification_status = null; // 'error' | 'warning' | 'info' | null
   }
 
   /**
@@ -65,24 +66,32 @@ export class EventLogs extends Collection {
   on_any_event(event_key, event) {
     if (EXCLUDED_EVENT_KEYS[event_key]) return;
     this.session_events.push({ event_key, event });
+    if(event_key === 'notification:error') this.notification_status = 'error';
     try {
       if (typeof event_key !== 'string') return;
 
       const at_ms = Date.now();
 
-      let item = this.get(event_key);
-      if (!item) {
-        item = new EventLog(this.env, { key: event_key });
-        this.set(item);
+      let event_log = this.get(event_key);
+      if (!event_log) {
+        event_log = new EventLog(this.env, { key: event_key });
+        this.set(event_log);
       }
 
       const next = next_log_stats(
-        { ct: item.data.ct, first_at: item.data.first_at, last_at: item.data.last_at },
+        { ct: event_log.data.ct, first_at: event_log.data.first_at, last_at: event_log.data.last_at },
         at_ms
       );
 
-      item.data = { ...item.data, ...next };
-      item.queue_save();
+      event_log.data = { ...event_log.data, ...next };
+      if(event.event_source){
+        if(!event_log.data.event_sources) event_log.data.event_sources = {};
+        if(!event_log.data.event_sources[event.event_source]){
+          event_log.data.event_sources[event.event_source] = 0;
+        }
+        event_log.data.event_sources[event.event_source]++;
+      }
+      event_log.queue_save();
       this.schedule_save();
     } catch (err) {
       // Never throw from a listener; keep bus pure and resilient.
