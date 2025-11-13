@@ -50,7 +50,8 @@ export class SmartCompletion extends CollectionItem {
         completion: {
           request: {},
           responses: [],
-          chat_model: null
+          chat_model: null,
+          error: null
         }
       }
     };
@@ -142,13 +143,11 @@ export class SmartCompletion extends CollectionItem {
       const request_payload = this.data.completion.request;
       const stream = opts.stream;// && request_payload.tool_choice?.type !== 'function';
       const result = stream
-        ? await chat_model.stream(request_payload, this.stream_handlers(opts.stream_handlers)) 
+        ? await chat_model.stream(request_payload, this.stream_handlers(opts.stream_handlers))
         : await chat_model.complete(request_payload)
       ;
-      // console.log("SmartCompletion.complete(): received result", result);
-      if(!stream) this.emit_event('completion:completed');
-      // Store response
       if(!stream){
+        this.emit_event('completion:completed');
         this.data.completion.responses.push({
           timestamp: Date.now(),
           ...result
@@ -157,6 +156,7 @@ export class SmartCompletion extends CollectionItem {
       this.queue_save();
     } catch (err) {
       console.error("Error in SmartCompletion.complete():", err);
+      this.handle_error(err);
     }
   }
   stream_handlers(stream_handlers={}){
@@ -183,10 +183,25 @@ export class SmartCompletion extends CollectionItem {
       },
       error: async (err) => {
         console.error('error', err);
-        this.emit_event('completion:error', { error: err.message });
+        this.handle_error(err);
         await stream_handlers.error?.(err);
       }
     }
+  }
+
+  /**
+   * @method handle_error
+   * @param {Object} normalized_err - Normalized error object (normalized in SmartChatModel utility)
+   */
+  handle_error(normalized_err){
+    console.log('handling completion error', normalized_err);
+    this.data.completion.error = normalized_err;
+    if(this.data.completion.responses.length > 0){
+      this.data.completion.error.responses = [...this.data.completion.responses];
+      this.data.completion.responses = [];
+    }
+    this.emit_event('completion:error', normalized_err);
+    this.queue_save();
   }
 
   /**

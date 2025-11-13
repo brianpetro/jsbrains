@@ -1,4 +1,5 @@
 import { SmartModel } from "smart-model";
+import { normalize_error } from './utils/normalize_error.js';
 
 /**
  * SmartChatModel - A versatile class for handling chat operations using various platform adapters.
@@ -54,8 +55,12 @@ export class SmartChatModel extends SmartModel {
    * @param {Object} req - Request parameters
    * @returns {Promise<Object>} Completion result
    */
-  async complete(req) {
-    return await this.invoke_adapter_method('complete', req);
+  async complete(req, ) {
+    const resp = await this.invoke_adapter_method('complete', req);
+    if (resp.error) {
+      throw normalize_error(resp.error);
+    }
+    return resp;
   }
 
   /**

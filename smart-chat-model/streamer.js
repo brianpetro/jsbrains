@@ -113,7 +113,16 @@ export class SmartStreamer {
   }
   #onStreamFailure(e) {
     const event = new CustomEvent('error');
-    event.data = e.currentTarget.response;
+    try{
+      const parsed = JSON.parse(e.currentTarget.response);
+      if (typeof parsed === 'object') {
+        event.data = parsed;
+      }else{
+        event.data = e.currentTarget.response;
+      }
+    }catch{
+      event.data = e.currentTarget.response;
+    }
     this.dispatchEvent(event);
     this.end();
   }

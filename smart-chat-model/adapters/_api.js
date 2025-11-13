@@ -2,6 +2,7 @@ import { SmartHttpRequest } from "smart-http-request";
 import { SmartStreamer } from '../streamer.js'; // move to smart-http-request???
 import { SmartChatModelAdapter } from './_adapter.js';
 import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
+import { normalize_error } from '../utils/normalize_error.js';
 
 const MODEL_ADAPTER_CACHE = {}; // this is gross but makes it easy
 const MODELS_DEV_CACHE = { data: null, fetched_at: 0 };
@@ -249,26 +250,29 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
             const raw = resp_adapter.handle_chunk(e.data);
             handlers.chunk && await handlers.chunk({...resp_adapter.to_openai(), raw});
           } catch (error) {
-            console.error('Error processing stream chunk:', error);
-            handlers.error && handlers.error(e.data);
+            const normalized_error = normalize_error({...e.data, ...error});
+            console.error('Error processing stream chunk:', {e, error, normalized_error});
+            handlers.error && handlers.error(normalized_error);
             this.stop_stream();
-            reject(error);
+            reject(normalized_error);
           }
         });
         
         this.active_stream.addEventListener("error", (e) => {
           console.error('Stream error:', e);
-          handlers.error && handlers.error("*API Error. See console logs for details.*");
+          const normalized_error = normalize_error(e?.data || e);
+          handlers.error && handlers.error(normalized_error);
           this.stop_stream();
-          reject(e);
+          reject(normalized_error);
         });
         
         this.active_stream.stream();
       } catch (err) {
         console.error('Failed to start stream:', err);
-        handlers.error && handlers.error("*API Error. See console logs for details.*");
+        const normalized_error = normalize_error(err?.data || err);
+        handlers.error && handlers.error(normalized_error);
         this.stop_stream();
-        reject(err);
+        reject(normalized_error);
       }
     });
   }
