@@ -274,4 +274,85 @@ export class SmartFsObsidianAdapter {
     return this.get_base_path() + sep + rel_path;
   }
 
+  /**
+   * Registers Obsidian vault/workspace listeners that emit Smart Environment events for Smart Sources.
+   * @param {import('smart-sources').SmartSources} sources_collection
+   * @returns {boolean}
+   */
+  register_source_watchers(sources_collection) {
+    if (this._source_watchers_registered) return this._source_watchers_registered;
+    const plugin = this.smart_fs.env?.main;
+    if (!plugin?.registerEvent) {
+      console.warn('SmartFsObsidianAdapter: Unable to register source watchers without plugin context');
+      return false;
+    }
+    const { app } = plugin;
+    const emit_event = (event_key, payload) => {
+      if (!payload?.path && !payload?.item_key) return;
+      this.smart_fs.env.events?.emit(event_key, {
+        collection_key: sources_collection.collection_key,
+        item_key: payload.item_key || payload.path,
+        ...payload,
+      });
+    };
+    const should_track_file = (file) => {
+      if (!(file instanceof this.obsidian.TFile)) return false;
+      const extension = file.extension?.toLowerCase();
+      if (!extension) return false;
+      return Boolean(sources_collection.source_adapters?.[extension]);
+    };
+    plugin.registerEvent(
+      app.vault.on('create', (file) => {
+        if (!should_track_file(file)) return;
+        emit_event('sources:created', {
+          path: file.path,
+          event_source: 'obsidian:vault.create',
+        });
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on('modify', (file) => {
+        if (!should_track_file(file)) return;
+        emit_event('sources:modified', {
+          path: file.path,
+          event_source: 'obsidian:vault.modify',
+        });
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on('rename', (file, old_path) => {
+        const track_new = should_track_file(file);
+        const old_extension = old_path?.split('.').pop()?.toLowerCase();
+        const track_old = old_extension ? Boolean(sources_collection.source_adapters?.[old_extension]) : false;
+        if (!track_new && !track_old) return;
+        emit_event('sources:renamed', {
+          path: file.path,
+          old_path,
+          event_source: 'obsidian:vault.rename',
+        });
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on('delete', (file) => {
+        if (!should_track_file(file)) return;
+        emit_event('sources:deleted', {
+          path: file.path,
+          event_source: 'obsidian:vault.delete',
+        });
+      })
+    );
+    plugin.registerEvent(
+      app.workspace.on('editor-change', (_editor, info) => {
+        const file = info?.file;
+        if (!should_track_file(file)) return;
+        emit_event('sources:modified', {
+          path: file.path,
+          event_source: 'obsidian:workspace.editor-change',
+        });
+      })
+    );
+    this._source_watchers_registered = true;
+    return true;
+  }
+
 }

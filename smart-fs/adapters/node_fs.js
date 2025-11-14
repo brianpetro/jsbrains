@@ -321,4 +321,63 @@ export class NodeFsSmartFsAdapter {
   get_full_path(rel_path='') {
     return path.resolve(this.get_base_path(), rel_path);
   }
+
+  /**
+   * Registers filesystem watchers that emit Smart Environment events for Smart Sources.
+   * @param {import('smart-sources').SmartSources} sources_collection
+   * @returns {boolean}
+   */
+  register_source_watchers(sources_collection) {
+    if (this._source_watchers_registered) return this._source_watchers_registered;
+    if (typeof fs.watch !== 'function') return false;
+    const root_path = this.smart_fs.fs_path || process.cwd();
+    const emit_event = (event_key, payload) => {
+      if (!payload?.path) return;
+      this.smart_fs.env.events?.emit(event_key, {
+        collection_key: sources_collection.collection_key,
+        item_key: payload.path,
+        ...payload,
+      });
+    };
+    const should_track_extension = (rel_path) => {
+      const extension = rel_path.split('.').pop()?.toLowerCase();
+      if (!extension) return false;
+      return Boolean(sources_collection.source_adapters?.[extension]);
+    };
+    try {
+      this._source_watcher = fs.watch(root_path, { recursive: true }, async (event_type, file_name) => {
+        if (!file_name) return;
+        const rel_path = file_name.replace(/\\/g, '/');
+        if (!should_track_extension(rel_path)) return;
+        if (event_type === 'change') {
+          emit_event('sources:modified', {
+            path: rel_path,
+            event_source: 'node_fs:change',
+          });
+          return;
+        }
+        if (event_type === 'rename') {
+          try {
+            await fs_promises.stat(path.join(root_path, rel_path));
+            emit_event('sources:created', {
+              path: rel_path,
+              event_source: 'node_fs:rename:create',
+            });
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              emit_event('sources:deleted', {
+                path: rel_path,
+                event_source: 'node_fs:rename:delete',
+              });
+            }
+          }
+        }
+      });
+      this._source_watchers_registered = true;
+      return true;
+    } catch (error) {
+      console.warn('NodeFsSmartFsAdapter: Failed to register source watcher', error);
+      return false;
+    }
+  }
 }

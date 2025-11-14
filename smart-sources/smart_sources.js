@@ -18,6 +18,14 @@ export class SmartSources extends SmartEntities {
     this.search_results_ct = 0;
     /** @type {Array<string>|null} Cached excluded headings */
     this._excluded_headings = null;
+    /** @type {Array<Function>} */
+    this.env_event_unsubscribers = [];
+    /** @type {Record<string, import('./smart_source.js').SmartSource>} */
+    this.sources_re_import_queue = {};
+    /** @type {ReturnType<typeof setTimeout>|null} */
+    this.sources_re_import_timeout = null;
+    /** @type {boolean} */
+    this.sources_re_import_halted = false;
   }
 
   /**
@@ -28,6 +36,229 @@ export class SmartSources extends SmartEntities {
   async init() {
     await super.init();
     await this.init_items();
+    this.register_env_event_listeners();
+    this.register_source_watchers();
+  }
+
+  /**
+   * Registers env.events listeners for source lifecycle events emitted by filesystem adapters.
+   * @returns {void}
+   */
+  register_env_event_listeners() {
+    this.unregister_env_event_listeners();
+    if (!this.env?.events) return;
+    const listeners = [
+      ['sources:created', (event) => this.handle_source_created(event)],
+      ['sources:modified', (event) => this.handle_source_modified(event)],
+      ['sources:renamed', (event) => this.handle_source_renamed(event)],
+      ['sources:deleted', (event) => this.handle_source_deleted(event)],
+    ];
+    this.env_event_unsubscribers = listeners
+      .map(([event_key, handler]) => this.env.events.on(event_key, handler))
+      .filter(Boolean);
+  }
+
+  /**
+   * Unregisters env.events listeners that were previously attached by this collection.
+   * @returns {void}
+   */
+  unregister_env_event_listeners() {
+    if (!Array.isArray(this.env_event_unsubscribers)) return;
+    while (this.env_event_unsubscribers.length) {
+      const unsub = this.env_event_unsubscribers.pop();
+      try {
+        unsub?.();
+      } catch (error) {
+        console.warn('SmartSources: Failed to unregister env event listener', error);
+      }
+    }
+  }
+
+  /**
+   * Determines whether the incoming event should be handled by this collection instance.
+   * @param {Object} event
+   * @returns {boolean}
+   */
+  should_handle_event(event = {}) {
+    const { collection_key } = event;
+    if (collection_key && collection_key !== this.collection_key) return false;
+    return true;
+  }
+
+  /**
+   * Normalizes event payload keys into a canonical source path.
+   * @param {Object} event
+   * @returns {string|undefined}
+   */
+  get_event_path(event = {}) {
+    return event.item_key || event.path || event.new_path;
+  }
+
+  /**
+   * Handles create events emitted by filesystem adapters.
+   * @param {Object} event
+   * @returns {void}
+   */
+  handle_source_created(event = {}) {
+    console.log("handle_source_created", event);
+    if (!this.should_handle_event(event)) return;
+    const key = this.get_event_path(event);
+    if (!key) return;
+    const source = this.init_file_path(key) || this.get(key);
+    if (!source) {
+      console.warn('SmartSources: Unable to initialize source on create event', event);
+      return;
+    }
+    this.queue_source_re_import(source, { event_source: event.event_source });
+  }
+
+  /**
+   * Handles modify events emitted by filesystem adapters.
+   * @param {Object} event
+   * @returns {void}
+   */
+  handle_source_modified(event = {}) {
+    console.log("handle_source_modified", event);
+    if (!this.should_handle_event(event)) return;
+    const key = this.get_event_path(event);
+    if (!key) return;
+    let source = this.get(key);
+    if (!source) source = this.init_file_path(key);
+    if (!source) {
+      console.warn('SmartSources: Unable to resolve source on modify event', event);
+      return;
+    }
+    this.queue_source_re_import(source, { event_source: event.event_source });
+  }
+
+  /**
+   * Handles rename events emitted by filesystem adapters.
+   * @param {Object} event
+   * @returns {void}
+   */
+  handle_source_renamed(event = {}) {
+    console.log("handle_source_renamed", event);
+    if (!this.should_handle_event(event)) return;
+    const new_key = this.get_event_path(event);
+    const old_key = event.old_path || event.from;
+    if (!new_key && !old_key) return;
+    if (old_key && this.items[old_key]) {
+      const old_source = this.items[old_key];
+      old_source?.delete?.();
+      delete this.items[old_key];
+      if (this.rename_debounce_timeout) clearTimeout(this.rename_debounce_timeout);
+      this.rename_debounce_timeout = setTimeout(() => {
+        this.process_save_queue();
+        this.rename_debounce_timeout = null;
+      }, 1000);
+    }
+    if (!new_key) return;
+    let source = this.get(new_key);
+    if (!source) source = this.init_file_path(new_key);
+    if (!source) {
+      console.warn('SmartSources: Unable to initialize source on rename event', event);
+      return;
+    }
+    this.queue_source_re_import(source, { event_source: event.event_source });
+  }
+
+  /**
+   * Handles delete events emitted by filesystem adapters.
+   * @param {Object} event
+   * @returns {void}
+   */
+  handle_source_deleted(event = {}) {
+    console.log("handle_source_deleted", event);
+    if (!this.should_handle_event(event)) return;
+    const key = this.get_event_path(event);
+    if (!key) return;
+    delete this.items[key];
+    if (this.sources_re_import_queue[key]) {
+      delete this.sources_re_import_queue[key];
+    }
+  }
+
+  /**
+   * Requests filesystem adapters to register source watchers for this collection.
+   * @returns {void}
+   */
+  register_source_watchers() {
+    const adapter = this.fs?.adapter;
+    if (!adapter || typeof adapter.register_source_watchers !== 'function') return;
+    if (this._source_watchers_registered) return;
+    this._source_watchers_registered = adapter.register_source_watchers(this);
+  }
+
+  /**
+   * Queues a SmartSource for re-import and schedules processing.
+   * @param {import('./smart_source.js').SmartSource} source
+   * @param {Object} [event_meta]
+   * @returns {void}
+   */
+  queue_source_re_import(source, event_meta = {}) {
+    if (!source?.key) return;
+    if (this.sources_re_import_queue[source.key]) return;
+    source.data.last_import = { at: 0, hash: null, mtime: 0, size: 0 };
+    this.sources_re_import_queue[source.key] = { source, event_meta };
+    this.debounce_re_import_queue();
+  }
+
+  /**
+   * Debounces re-import processing to respect the configured wait time.
+   * @returns {void}
+   */
+  debounce_re_import_queue() {
+    this.sources_re_import_halted = true;
+    if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
+    const queue_keys = Object.keys(this.sources_re_import_queue || {});
+    if (!queue_keys.length) {
+      this.sources_re_import_timeout = null;
+      return;
+    }
+    const wait_seconds = typeof this.env?.settings?.re_import_wait_time === 'number'
+      ? this.env.settings.re_import_wait_time
+      : 13;
+    this.sources_re_import_timeout = setTimeout(
+      () => this.run_re_import(),
+      wait_seconds * 1000
+    );
+  }
+
+  /**
+   * Processes the queued re-import tasks.
+   * @returns {Promise<void>}
+   */
+  async run_re_import() {
+    this.sources_re_import_halted = false;
+    const queue_entries = Object.entries(this.sources_re_import_queue || {});
+    if (!queue_entries.length) {
+      if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
+      this.sources_re_import_timeout = null;
+      return;
+    }
+    for (const [key, { source }] of queue_entries) {
+      await source.import();
+      if (!this._embed_queue) this._embed_queue = [];
+      if (source.should_embed) this._embed_queue.push(source);
+      if (this.block_collection?.settings?.embed_blocks) {
+        for (const block of source.blocks || []) {
+          if (block._queue_embed || (block.should_embed && block.is_unembedded)) {
+            this._embed_queue.push(block);
+            block._queue_embed = true;
+          }
+        }
+      }
+      delete this.sources_re_import_queue[key];
+      if (this.sources_re_import_halted) {
+        this.debounce_re_import_queue();
+        break;
+      }
+    }
+    if (this._embed_queue?.length) {
+      await this.process_embed_queue();
+    }
+    if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
+    this.sources_re_import_timeout = null;
   }
 
   /**
@@ -552,6 +783,18 @@ export class SmartSources extends SmartEntities {
     return this.fs.file_paths
       .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
       .length;
+  }
+
+  /**
+   * Unloads the collection and clears registered listeners and timers.
+   * @returns {void}
+   */
+  unload() {
+    this.unregister_env_event_listeners();
+    if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
+    this.sources_re_import_timeout = null;
+    this.sources_re_import_queue = {};
+    super.unload();
   }
 
   get data_dir() { return 'multi'; }
