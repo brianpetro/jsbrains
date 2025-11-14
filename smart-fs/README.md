@@ -44,22 +44,6 @@ const files = await smart_fs.list('.');
 console.log('Files in current directory:', files);
 ```
 
-### Using with Different Adapters
-
-SmartFs supports different adapters for various environments. Here's an example using the Obsidian adapter:
-
-```js
-import { SmartFs } from 'smart-file-system';
-import { SmartFsObsidianAdapter } from 'smart-file-system/adapters/obsidian.js';
-
-const env = { main: { app: obsidianApp } }; // Obsidian app instance
-const smart_fs = new SmartFs(env, { adapter: SmartFsObsidianAdapter });
-
-// Use SmartFs methods as usual
-const files = await smart_fs.list_files('/');
-console.log('Files in vault:', files);
-```
-
 ### Advanced Features
 
 #### Fuzzy Search
