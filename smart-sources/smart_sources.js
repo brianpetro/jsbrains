@@ -100,7 +100,6 @@ export class SmartSources extends SmartEntities {
    * @returns {void}
    */
   handle_source_created(event = {}) {
-    console.log("handle_source_created", event);
     if (!this.should_handle_event(event)) return;
     const key = this.get_event_path(event);
     if (!key) return;
@@ -118,7 +117,6 @@ export class SmartSources extends SmartEntities {
    * @returns {void}
    */
   handle_source_modified(event = {}) {
-    console.log("handle_source_modified", event);
     if (!this.should_handle_event(event)) return;
     const key = this.get_event_path(event);
     if (!key) return;
@@ -137,7 +135,6 @@ export class SmartSources extends SmartEntities {
    * @returns {void}
    */
   handle_source_renamed(event = {}) {
-    console.log("handle_source_renamed", event);
     if (!this.should_handle_event(event)) return;
     const new_key = this.get_event_path(event);
     const old_key = event.old_path || event.from;
@@ -168,7 +165,6 @@ export class SmartSources extends SmartEntities {
    * @returns {void}
    */
   handle_source_deleted(event = {}) {
-    console.log("handle_source_deleted", event);
     if (!this.should_handle_event(event)) return;
     const key = this.get_event_path(event);
     if (!key) return;
