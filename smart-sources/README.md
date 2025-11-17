@@ -2,34 +2,19 @@
 
 Smart Sources is a system for managing and parsing external content, typically stored in files or other data sources. Each content source is represented by a `SmartSource` entity, and these are collectively managed by a `SmartSources` collection. Internally, Smart Sources delegates reading, parsing, and writing to specialized adapters. You can define your own adapters for new file types or even external APIs.
 
-Below is an outline of core classes, primary methods, and how to configure and use them.
+Below is an outline of the architecture, configuration surface, and validation pathways that keep Smart Sources predictable across plugins.
 
-## Overview
+## Quick reference
 
-- **SmartSource**  
-	Represents an individual piece of external content. Handles:
-	- Reading, parsing, and importing the content (via `import()`)
-	- Parsing blocks and links (via `parse_content(content)`)
-	- Performing CRUD-like operations (read, update, remove, merge, move, etc.)
-	- Integrating with a 'block collection' to extract meaningful subsections (blocks)
-
-- **SmartSources**  
-	The collection class managing multiple `SmartSource` items. Main tasks:
-	- Initializing items with `init_items()` (often scanning the file system by default)
-	- Building a link map across sources
-	- Loading and saving source data (via the configured data adapter)
-	- Enabling search, pruning of outdated items, re-importing, etc.
-
-- **SourceContentAdapter**  
-	Base class for reading/writing source data. Extend it for file-based or API-based adapters.  
-	Example built-ins:
-	- `FileSourceContentAdapter` (parent for Markdown, Text, etc.)
-	- `MarkdownSourceContentAdapter`
-	- `ObsidianMarkdownSourceContentAdapter`
+- **SmartSource**: represents an individual piece of external content. Handles import/read/write, block + link parsing, CRUD helpers (`read`, `update`, `append`, `remove`, `move_to`, `merge`, etc.), and integrates with block collections for sub-selection.
+- **SmartSources**: collection coordinating all `SmartSource` items. Responsible for initialization, watching the file system, queueing imports, handling env events, building link maps, lookup/search APIs, and exposing settings surfaces.
+- **SourceContentAdapter**: base class for reading/writing source data. Extend it for file-based or API-based adapters. Bundled adapters include:
+	- `FileSourceContentAdapter` (parent for Markdown/Text, handles file I/O + hashing)
+	- `MarkdownSourceContentAdapter` / `ObsidianMarkdownSourceContentAdapter`
 	- `TextSourceContentAdapter`
-	- `AjsonMultiFileSourceDataAdapter` (for storing item data in `.ajson` files)
+	- `AjsonMultiFileSourceDataAdapter` (persists `.ajson` data alongside sources)
 
-## Usage at a Glance
+## Usage at a glance
 
 1. **Environment and Collection Setup**  
 	 Configure `env.opts.collections.smart_sources` with the required adapters:
@@ -136,56 +121,136 @@ Below is an outline of core classes, primary methods, and how to configure and u
 	 await newSource.update('# Title\nUpdated content!');
 	 ```
 
-## parse_content Flow
+## Data structures
 
-`SmartSource.parse_content(content)`:
-- Optionally calls any block-level parse methods (ex: `block_collection.import_source(this, content)`)
-- Checks or creates `source.data.blocks`
-- Runs each function in `env.opts.collections.smart_sources.content_parsers`
-- Stores results in `source.data`, for example `source.data.templates`, `source.data.metadata`, etc.
+`SmartSource.data` captures both on-disk metadata and Smart Env bookkeeping:
 
-You can customize `parse_content` or the block parser to:
-- Identify frontmatter
-- Extract special tags or references
-- Build domain-specific structures like 'templates' or 'mermaid diagrams'
-- Post-process content with LLM-based analysis
+- `data.last_read { hash, mtime }` and `data.last_import { hash, mtime, size, at }` keep the adapter from re-importing unchanged sources.
+- `data.blocks` mirrors Smart Blocks references. Missing blocks trigger `queue_import()` on init.
+- `data.embeddings` is keyed by `embed_model_key` and only stores the active model vector.
+- `data.metadata` is populated by adapters (e.g., Markdown frontmatter + tag set) so downstream consumers can query sources without reparsing.
+- `data.outlinks` records outgoing links per source for later link map construction.
 
-## Notes on init_items
+`SmartSources` tracks:
 
-- `init_items()` in `SmartSources` sets up the environment and typically calls `fs.init()` to load a file listing.
-- It finds matching adapters by file extension (or uses the `'default'` adapter) to create `SmartSource` instances.
-- Subclassing or overriding can let you dynamically fetch remote sources or handle custom naming (like `repo_issue_213.github`).
+- `items { [path]: SmartSource }`
+- `_fs.files` (registered paths) + `excluded_patterns` derived from `file_exclusions`, `folder_exclusions`, and `env_data_dir`.
+- `sources_re_import_queue` to debounce repeated FS events.
+- `_embed_queue` (mirrors `SmartEntities` queue) so blocks + sources embed asynchronously.
+
+## Configuration
+
+`env.opts.collections.smart_sources` controls adapters and hooks:
+
+- `source_adapters`: map of adapter constructors. Each adapter can declare `static extensions = ['md', 'note.md']` so `SmartSources.get_extension_for_path()` can match the most specific multi-part extension (see `smart_sources.contract.test.js`).
+- `content_parsers`: array of `(source, content) => Promise<void>` functions executed after the adapter’s `parse_content` method.
+- `data_adapter`: persistence layer (AJSON multi-file by default) so collection data stays in sync with file system changes.
+- `settings_config`: adapter-specific settings are merged into the collection’s settings UI by iterating all adapters and reading their `settings_config` definitions.
+
+Environment modules must expose a Smart FS implementation (`env.opts.modules.smart_fs`). Smart Sources uses it to enumerate files, honor exclusion patterns, and emit `sources:*` events.
+
+## Lifecycle & flow
+
+```mermaid
+flowchart LR
+	subgraph FS Watchers
+		W1[sources:created]
+		W2[sources:modified]
+		W3[sources:renamed]
+		W4[sources:deleted]
+	end
+	W1 & W2 --> Q(queue_source_re_import)
+	W3 -->|rename| Q
+	Q -->|debounce| I(process_source_import_queue)
+	I -->|calls| A[source_adapter.import]
+	A -->|updates| D[data.last_import, blocks, metadata]
+	I -->|maybe| E(process_embed_queue)
+```
+
+- `init_items()` iterates every registered adapter and lets it enqueue file paths or remote sources.
+- `init_file_path(path)` checks `fs.is_excluded(path)`, ensures the file is tracked, instantiates a `SmartSource`, and queues import/load. The new contract tests assert this behavior.
+- `register_env_event_listeners()` listens for `sources:*` events emitted by file system adapters and funnels them into `queue_source_re_import()`.
+- `process_source_import_queue()` batches imports, calls each adapter’s `import()` implementation, schedules embeddings, and raises notices for UX feedback.
+
+## Core methods & actions
+
+- `SmartSource.import()` delegates to `source_adapter.import()` and gracefully handles missing files (deleting stale items) or transient errors (re-queueing import).
+- `SmartSource.parse_content()` is intentionally lightweight; custom logic should live in adapter `parse_content` or `content_parsers`.
+- `SmartSource.get_embed_input()` trims excluded lines, prepends breadcrumbs (`folder > file`), and enforces token/char limits from the embed model.
+- `SmartSource.get_block_by_line(line)` resolves a block by line range when block vectors exist.
+- `SmartSources.create(key, content)` writes content via Smart FS, refreshes the FS cache, creates the entity, and immediately imports it.
+- `SmartSources.search()` iterates items in batches (10 at a time) and composes lexical matches before sorting by frequency.
+- `SmartSources.lookup(params)` merges source + block lookup results and respects `filter.limit` or `env.settings.lookup_k`.
+
+## Adapters
+
+| Adapter | Purpose | Notes |
+| --- | --- | --- |
+| `FileSourceContentAdapter` | Base class for any file-based adapter. | Handles load/save plumbing and exposes `can_import`, `outdated`, etc.
+| `MarkdownSourceContentAdapter` | Imports `.md`/`.txt`, parses links, metadata, queues embeddings. | Calls `get_markdown_links`, `parse_frontmatter`, `get_markdown_tags`.
+| `ObsidianMarkdownSourceContentAdapter` | Markdown adapter that reads from Obsidian’s metadata cache. | Keeps file parsing consistent with the app.
+| `TextSourceContentAdapter` | Lightweight text import when markdown semantics aren’t required. | Still benefits from content parsers.
+| `AjsonMultiFileSourcesDataAdapter` | Writes collection data to `.ajson` sidecar files. | Powers import/save queues and enables deterministic tests.
+
+## Blocks, content parsers, and metadata
+
+`SmartSource.parse_content(content)` executes after adapter parsing:
+
+- optional block parsing (if `block_collection.import_source` is available)
+- ensures `source.data.blocks` exists
+- runs every function in `env.opts.collections.smart_sources.content_parsers`
+- stores parser results on `source.data` (e.g., `templates`, `metadata`, `outlinks`)
+
+You can customize this flow to:
+
+- Identify frontmatter and tags (see `MarkdownSourceContentAdapter.get_metadata`)
+- Extract domain-specific structures (templates, canvases, etc.)
+- Build LLM-friendly summaries before embedding
+
+## Initialization helpers
+
+- `init_items()` orchestrates the first scan, raises notices (`initial_scan`), and delegates discovery to each adapter’s static `init_items(collection)` method.
+- `get_extension_for_path(path)` splits the filename, tries multi-part extensions (e.g., `note.md` before `md`), and returns the first adapter-supported extension. Multi-part support is covered by `test/smart_sources.contract.test.js`.
+- `register_source_watchers()` asks the Smart FS adapter to watch for future changes so `sources:*` events stay in sync with the OS.
 
 Example override:
 ```
 class CustomRemoteSources extends SmartSources {
 	async init_items() {
-		await someApiFetch();
-		// create items in memory only
-		this.items['remote_source_1'] = new this.item_type(this.env, { path: 'remote_source_1' });
-		// ...
+		const remoteRecords = await someApiFetch();
+		remoteRecords.forEach(record => {
+			const key = `remote/${record.id}.json`;
+			if (!this.items[key]) {
+				const item = new this.item_type(this.env, { path: key, remote_id: record.id });
+				this.items[key] = item;
+			}
+		});
 	}
 }
 ```
 
-## Additional References
+## Additional references
 
-- **`smart_source.js`**  
-	Core methods such as `import()`, `parse_content()`, `read()`, `update()`, `merge(content, {mode})`, `remove()`, `move_to()`, etc.
-- **`smart_sources.js`**  
-	Contains `init_items()`, `prune()`, `search()`, `lookup()`, `build_links_map()`, and general collection logic.
-- **Adapters**  
-	- `AjsonMultiFileSourcesDataAdapter`: Writes each source's data and blocks to `.ajson` files.
-	- `MarkdownSourceContentAdapter`: Specialized for `.md` file reading/writing, handles frontmatter detection, calls `parse_content`.
-	- `ObsidianMarkdownSourceContentAdapter`: Extends the markdown adapter to work with Obsidian's metadata cache.
-	- `DataContentAdapter`: Minimal in-memory approach for `item.data.content`.
+- **`smart_source.js`** — core entity methods (`import`, `read`, `update`, `append`, `remove`, `move_to`, `merge`, `get_embed_input`, `find_connections`).
+- **`smart_sources.js`** — collection lifecycle (`init_items`, `register_env_event_listeners`, `queue_source_re_import`, `process_source_import_queue`, `build_links_map`, `lookup`, `search`, `settings_config`).
+- **Adapters** — `adapters/markdown_source.js`, `adapters/text.js`, `adapters/data/ajson_multi_file.js`, etc. Extend these for new file types or API-backed sources.
 
-These adapters show how you can customize read/write logic or handle specialized formats. By combining them with your own `env.opts.collections.smart_sources.content_parsers`, you can parse nearly any text-based content into structured data or blocks.
+These adapters show how you can customize read/write logic or handle specialized formats. By combining them with `env.opts.collections.smart_sources.content_parsers`, you can parse nearly any text-based content into structured data or blocks.
+
+## Testing
+
+- Run `npm test` inside `packages/jsbrains/smart-sources` to execute the full AVA suite. Some legacy suites depend on optional packages; review console output for missing peer dependencies.
+- `test/smart_sources.contract.test.js` adds focused unit tests that assert multi-part extension detection and `init_file_path` queueing.
+- Integration suites (`test/markdown_source.test.js`, `test/ajson_multi_file.test.js`, `test/sqlite.test.js`) validate adapters against generated fixture content.
+
 ## Architecture
+
 ```mermaid
 flowchart TD
-	FS[Smart FS] --> S[Smart Sources]
+	FS[Smart FS] -->|init + watchers| S[Smart Sources]
 	S --> B[Smart Blocks]
 	S --> E[Smart Entities]
+	S -->|content_parsers| C[Custom Collections]
 ```
-Smart Sources layer file system access and feed blocks and entities downstream.
+
+Smart Sources layer file system access and feed blocks, embeddings, and downstream collections.
