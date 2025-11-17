@@ -274,8 +274,10 @@ export class CollectionItem {
     return this.score(params);
   }
   score(params={}) {
+    const score_action = this.actions[params.score_algo_key];
+    if(typeof score_action !== 'function') throw new Error(`Missing score action: ${params.score_algo_key}`);
     return {
-      ...(this.actions[params.score_algo_key]?.(params) || {}),
+      ...(score_action(params) || {}),
       item: this,
     };
   }
