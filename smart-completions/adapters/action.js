@@ -3,6 +3,7 @@ import { SmartCompletionAdapter } from './_adapter.js';
 /**
  * @class ActionCompletionAdapter
  * @extends SmartCompletionAdapter
+ * @deprecated Use SmartActionToolCompletionAdapter instead.
  *
  * This adapter checks `item.data.action` as a single SmartAction key,
  * compiles ephemeral action text, and inserts it as a system message.

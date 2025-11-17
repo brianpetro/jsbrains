@@ -6,6 +6,11 @@ import { insert_user_message } from "../utils/insert_user_message.js";
  */
 export class SmartCompletionAdapter {
   static adapter_type = 'completion';
+  static use_adapter (completion) {
+    if (this.adapter_type !== 'completion') return false;
+    if (this.property_name && !(this.property_name in completion.data)) return false;
+    return true;
+  }
   constructor(completion) {
     this.completion = completion;
   }

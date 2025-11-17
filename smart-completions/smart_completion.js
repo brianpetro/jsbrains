@@ -1,31 +1,12 @@
-/**
- * @file smart_completion.js
- * @description
- * Represents a single completion request/response in the SmartCompletions collection.
- * Enhanced to run a set of "request adapters" that can transform the final request
- * (e.g., building ephemeral context or adding function calls).
- */
-
 import { CollectionItem } from "smart-collections";
 import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 import { parse_xml_fragments } from "smart-utils/parse_xml_fragments.js";
-import { run_adapters } from "./utils/run_adapters.js";
 
 /**
  * @class SmartCompletion
  * @extends CollectionItem
  * @description
  * Represents a single completion request/response in the SmartCompletions collection.
- *
- * Data shape (typical):
- * {
- *   completion: {
- *     request: {},
- *     responses: [],
- *     chat_model: null
- *   },
- *   // other item-level properties...
- * }
  */
 export class SmartCompletion extends CollectionItem {
   constructor(env, data = null) {
@@ -69,7 +50,7 @@ export class SmartCompletion extends CollectionItem {
   }
 
   /**
-   * Called automatically in many cases (via create_or_update).
+   * Called automatically via create_or_update
    * You can also call it manually if needed.
    */
   async init(completion_opts={}) {
@@ -87,6 +68,9 @@ export class SmartCompletion extends CollectionItem {
     this.collection.process_save_queue();
   }
 
+  get active_adapters(){
+    return this.completion_adapters.filter(AdapterClass => AdapterClass.use_adapter(this));
+  }
   /**
    * Collects or transforms data into a final `completion.request` structure
    * by running any applicable completion adapters.
@@ -94,7 +78,10 @@ export class SmartCompletion extends CollectionItem {
    */
   async build_request() {
     this.data.completion.request = {};
-    await run_adapters({ item: this, adapters: this.completion_adapters, adapter_method: "to_request" });
+    for(const AdapterClass of this.active_adapters){
+      const adapter = new AdapterClass(this);
+      await adapter.to_request();
+    }
     // clean-up and merge messages
     if(Object.keys(this.data.completion.request).length > 0) {
       this.data.completion.request.messages = this.data.completion.request.messages
@@ -116,7 +103,10 @@ export class SmartCompletion extends CollectionItem {
     return this.data.completion.request;
   }
   async parse_response(){
-    await run_adapters({ item: this, adapters: this.completion_adapters, adapter_method: "from_response" });
+    for(const AdapterClass of this.active_adapters){
+      const adapter = new AdapterClass(this);
+      await adapter.from_response();
+    }
     return this.data.completion.responses;
   }
 
@@ -250,6 +240,9 @@ export class SmartCompletion extends CollectionItem {
     if (resp.text) return resp.text;
     return '';
   }
+  /**
+   * @deprecated 2025-11-17 probably best handled in adapters
+   */
   get response_structured_output(){
     if (!this.response) return null;
     // if tool call, return structured output

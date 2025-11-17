@@ -27,6 +27,9 @@ function strip_instruction_attrs(xml) {
   return xml.replace(/\s+instructions="[^"]*"/g, '');
 }
 
+/**
+ * @deprecated Use SmartActionXmlCompletionAdapter instead.
+ */
 export class ActionXmlCompletionAdapter extends ActionCompletionAdapter {
   static get property_name() {
     return 'action_xml_key';
