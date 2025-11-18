@@ -13,12 +13,13 @@ export class ContextCompletionAdapter extends SmartCompletionAdapter {
     Object.defineProperty(completion, 'context', {
       get(){
         const key = completion.data.context_key;
-        if(!key) {
-          const context = completion.env.smart_contexts.new_context();
+        const smart_contexts = completion.env.smart_contexts;
+        let context = smart_contexts.get(key);
+        if (!key || !context) {
+          context = smart_contexts.new_context();
           completion.data.context_key = context.key;
-          return context;
         }
-        return completion.env.smart_contexts.get(key);
+        return context;
       }
     });
   }

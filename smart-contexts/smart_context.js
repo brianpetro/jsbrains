@@ -115,6 +115,9 @@ export class SmartContext extends CollectionItem {
     return this.collection.get_ref(key);
   }
 
+  /**
+   * @deprecated
+   */
   get_item_keys_by_depth(depth) {
     return Object.keys(this.data.context_items)
       .filter(k => {
