@@ -49,7 +49,7 @@ export class ContextItem extends CollectionItem {
     return this.context_type_adapter.ref || null;
   }
   get size () {
-    return this.context_type_adapter.size || 0;
+    return this.data.size || this.context_type_adapter.size || 0;
   }
   // DEPRECATED METHODS
   /**

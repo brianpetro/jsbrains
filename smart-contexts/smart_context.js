@@ -173,5 +173,47 @@ export class SmartContext extends CollectionItem {
     });
     return size;
   }
+  // v3
+  async get_text() {
+    const segments = [];
+    segments.push(await this.merge_template(this.settings.template_before || ''));
+    const context_items = await this.get_context_items_sorted();
+    console.log("get_text context_items", context_items);
+    for (const item of context_items) {
+      if (item.is_media) continue; 
+      const item_text = await item.get_text();
+      segments.push(item_text);
+    }
+    segments.push(await this.merge_template(this.settings.template_after || ''));
+    return segments.join('\n');
+  }
+  async merge_template(template) {
+    const merge_vars = await this.get_merge_vars();
+    return template;
+  }
+  async get_context_items_sorted(params = {}) {
+    const context_items = await this.get_context_items();
+    if(params.link_depth) {
+      context_items.push(...(await this.get_linked_context_items(params.link_depth)));
+    }
+    return context_items;
+  }
+  async get_merge_vars() {
+    return {};
+  }
+  async get_linked_context_items(depth = 1) {
+    // TODO
+    return [];
+  }
+  async get_media() {
+    const context_items = await this.get_context_items_sorted();
+    const out = [];
+    for (const item of context_items) {
+      if (!item.is_media) continue;
+      const item_base64 = await item.get_base64();
+      out.push(item_base64);
+    }
+    return out;
+  }
 
 }

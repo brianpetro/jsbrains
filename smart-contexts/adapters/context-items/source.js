@@ -14,6 +14,9 @@ export class SourceContextItemAdapter extends ContextItemAdapter {
   get size () {
     return this.ref?.size || 0;
   }
+  async read() {
+    return await this.ref.read();
+  }
 
   // DEPRECATED METHODS
   /**
