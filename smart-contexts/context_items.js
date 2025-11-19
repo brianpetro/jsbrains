@@ -39,6 +39,10 @@ export class ContextItems extends Collection {
       },
     };
   }
+
+  get_adapter_class(key, item_data) {
+    return this.context_item_adapters.find(adapter_class => adapter_class.detect(key, item_data));
+  }
 }
 
 export default {

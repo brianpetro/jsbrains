@@ -64,7 +64,7 @@ export class SmartContext extends CollectionItem {
     if(!key || !this.data?.context_items?.[key]) return;
     delete this.data.context_items[key];
     this.queue_save();
-    this.send_updated_event();
+    this.send_updated_event({removed_key: key});
   }
 
   /**
@@ -132,7 +132,10 @@ export class SmartContext extends CollectionItem {
   }
 
   get context_item_keys() {
-    return Object.keys(this.data?.context_items || {});
+    return Object.entries(this.data?.context_items || {})
+      .filter(([key, item_data]) => !item_data.exclude)
+      .map(([key, item_data]) => key)
+    ;
   }
 
   get key() {
@@ -145,10 +148,12 @@ export class SmartContext extends CollectionItem {
     return Object.keys(this.data.context_items || {}).length > 0;
   }
 
-  send_updated_event() {
-    if(this._debounce_send_updated_event) clearTimeout(this._debounce_send_updated_event);
-    this._debounce_send_updated_event = setTimeout(() => {
-      this.emit_event('context:updated');
+  send_updated_event(payload = {}) {
+    // clarified: is the debouncer necessary here? Should it be handled in listeners?
+    if(!this._debounce_send_updated_event) this._debounce_send_updated_event = {};
+    if(this._debounce_send_updated_event[JSON.stringify(payload)]) clearTimeout(this._debounce_send_updated_event[JSON.stringify(payload)]);
+    this._debounce_send_updated_event[JSON.stringify(payload)] = setTimeout(() => {
+      this.emit_event('context:updated', payload);
     }, 100);
   }
 
