@@ -33,8 +33,11 @@ export class SmartContext extends CollectionItem {
     }else{
       key = item;
     }
+    const existing = this.data.context_items[key];
     const context_item = {
       d: 0,
+      at: Date.now(),
+      ...(existing || {}),
       ...(typeof item === 'object' ? item : {})
     };
     if(!key) return console.error('SmartContext: add_item called with invalid item', item);
