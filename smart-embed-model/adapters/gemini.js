@@ -4,7 +4,9 @@ import {
   SmartEmbedModelResponseAdapter,
 } from "./_api.js";
 import { Tiktoken } from "js-tiktoken/lite";
-import cl100k_base from "../cl100k_base.json" with { type: "json" };
+import { fetch_json_cached } from '../utils/fetch_cache.js';
+
+const CL100K_URL = 'https://raw.githubusercontent.com/brianpetro/jsbrains/refs/heads/main/smart-embed-model/cl100k_base.json';
 
 /**
  * Adapter for Google Gemini's embedding API
@@ -34,6 +36,7 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<void>}
    */
   async load() {
+    const cl100k_base = await fetch_json_cached(CL100K_URL, 'cl100k_base.json');
     this.enc = new Tiktoken(cl100k_base);
   }
 
