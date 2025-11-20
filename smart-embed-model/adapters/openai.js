@@ -20,27 +20,6 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
     default_model: 'text-embedding-3-small',
     endpoint: 'https://api.openai.com/v1/embeddings',
   };
-  /**
-   * Create OpenAI adapter instance
-   * @param {SmartEmbedModel} smart_embed - Parent model instance
-   */
-  constructor(smart_embed) {
-    super(smart_embed);
-    /** @type {Tiktoken|null} */
-    this.enc = null;
-  }
-
-  /**
-   * Initialize tokenizer
-   * @returns {Promise<void>}
-   */
-  async load() {
-    // console.log("Loading OpenAI tokenizer...");
-    // console.time("load_openai_tokenizer");
-    const cl100k_base = await fetch_json_cached(CL100K_URL, 'cl100k_base.json');
-    // console.timeEnd("load_openai_tokenizer");
-    this.enc = new Tiktoken(cl100k_base);
-  }
 
   /**
    * Count tokens in input text using OpenAI's tokenizer
@@ -48,8 +27,8 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<Object>} Token count result
    */
   async count_tokens(input) {
-    if (!this.enc) await this.load();
-    return { tokens: this.enc.encode(input).length };
+    if (!this.tiktoken) await this.load_tiktoken();
+    return { tokens: this.tiktoken.encode(input).length };
   }
 
   /**

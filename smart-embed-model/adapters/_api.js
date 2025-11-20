@@ -1,6 +1,10 @@
 import { SmartEmbedAdapter } from "./_adapter.js";
 import { SmartHttpRequest } from "smart-http-request";
 import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
+import { Tiktoken } from "js-tiktoken/lite";
+import { fetch_json_cached } from '../utils/fetch_cache.js';
+
+const CL100K_URL = 'https://raw.githubusercontent.com/brianpetro/jsbrains/refs/heads/main/smart-embed-model/cl100k_base.json';
 
 /**
  * Base adapter class for API-based embedding models (e.g., OpenAI)
@@ -217,6 +221,11 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     const prepared = await this.prepare_embed_input(trimmed_input);
     if (prepared === null) return null;
     return prepared;
+  }
+
+  async load_tiktoken () {
+    const cl100k_base = await fetch_json_cached(CL100K_URL, 'cl100k_base.json');
+    this.tiktoken = new Tiktoken(cl100k_base);
   }
 }
 
