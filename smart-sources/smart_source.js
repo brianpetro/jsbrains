@@ -380,6 +380,7 @@ export class SmartSource extends SmartEntity {
 
   /**
    * Retrieves the file object associated with the SmartSource.
+   * @deprecated should be replaced with adapter methods
    * @readonly
    * @returns {Object} The file object.
    */
@@ -413,6 +414,7 @@ export class SmartSource extends SmartEntity {
 
   /**
    * Retrieves the modification time of the SmartSource.
+   * @deprecated should be replaced with adapter methods (see get size)
    * @readonly
    * @returns {number} The modification time.
    */
