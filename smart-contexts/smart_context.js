@@ -176,7 +176,10 @@ export class SmartContext extends CollectionItem {
   // v3
   async get_text(params = {}) {
     const segments = [];
-    const context_items = this.context_items.filter(params.filter);
+    const context_items = this.context_items
+      .filter(params.filter)
+      .sort((a, b) => a.data.d - b.data.d) // sort by depth ascending
+    ;
     console.log("get_text context_items", context_items);
     for (const item of context_items) {
       if (item.is_media) continue; 
