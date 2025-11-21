@@ -67,6 +67,8 @@ export class EventLogs extends Collection {
     if (EXCLUDED_EVENT_KEYS[event_key]) return;
     this.session_events.push({ event_key, event });
     if(event_key === 'notification:error') this.notification_status = 'error';
+    else if(event_key === 'notification:warning' && this.notification_status !== 'error') this.notification_status = 'warning';
+    else if(event_key === 'notification:attention' && !this.notification_status) this.notification_status = 'attention';
     try {
       if (typeof event_key !== 'string') return;
 
