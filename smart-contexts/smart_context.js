@@ -174,46 +174,55 @@ export class SmartContext extends CollectionItem {
     return size;
   }
   // v3
-  async get_text() {
+  async get_text(params = {}) {
     const segments = [];
-    segments.push(await this.merge_template(this.settings.template_before || ''));
-    const context_items = await this.get_context_items_sorted();
+    const context_items = this.context_items.filter(params.filter);
     console.log("get_text context_items", context_items);
     for (const item of context_items) {
       if (item.is_media) continue; 
       const item_text = await item.get_text();
-      segments.push(item_text);
+      if(typeof item_text === 'string') segments.push(item_text);
+      else this.emit_get_text_error(item, item_text);
     }
-    segments.push(await this.merge_template(this.settings.template_after || ''));
-    return segments.join('\n');
-  }
-  async merge_template(template) {
-    const merge_vars = await this.get_merge_vars();
-    return template;
-  }
-  async get_context_items_sorted(params = {}) {
-    const context_items = await this.get_context_items();
-    if(params.link_depth) {
-      context_items.push(...(await this.get_linked_context_items(params.link_depth)));
+    const context_items_text = segments.join('\n');
+    if (typeof this.actions.context_merge_template === 'function') {
+      return await this.actions.context_merge_template(context_items_text, context_items);
     }
-    return context_items;
+    return context_items_text;
   }
-  async get_merge_vars() {
-    return {};
-  }
-  async get_linked_context_items(depth = 1) {
-    // TODO
-    return [];
-  }
-  async get_media() {
-    const context_items = await this.get_context_items_sorted();
+
+  async get_media(params = {}) {
+    const context_items = this.context_items.filter(params.filter);
     const out = [];
     for (const item of context_items) {
       if (!item.is_media) continue;
       const item_base64 = await item.get_base64();
-      out.push(item_base64);
+      if(item_base64.error) this.emit_get_media_error(item, item_base64);
+      else out.push(item_base64);
     }
     return out;
   }
 
+  get context_items () {
+    if(!this._context_items) {
+      const config = this.env.config.collections.context_items;
+      const Class = config.class;
+      this._context_items = new Class(this.env, {...config, class: null});
+      this._context_items.load_from_data(this.data.context_items || {});
+    }
+    return this._context_items;
+  }
+
+  emit_get_text_error(item, item_text) {
+    this.emit_event('notification:error', {
+      message: `Context item did not return text: ${item.key}`,
+      ...(item_text && typeof item_text === 'object' ? item_text : {})
+    });
+  }
+  emit_get_media_error(item, item_base64) {
+    this.emit_event('notification:error', {
+      message: `Context item did not return media: ${item.key}`,
+      ...(item_base64 && typeof item_base64 === 'object' ? item_base64 : {})
+    });
+  }
 }

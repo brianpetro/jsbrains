@@ -8,6 +8,11 @@ import { PdfContextItemAdapter } from './adapters/context-items/pdf.js';
 
 
 export class ContextItems extends Collection {
+  async load() {
+    console.log('ContextItems: load called');
+    // TODO DECIDED: add default settings from context_item_merge_template action if not already present????
+    // ALT: handle in action itself? (easy access to the default settings there)
+  }
   static version = 1;
   get context_item_adapters() {
     if(!this._context_item_adapters) {
@@ -27,21 +32,30 @@ export class ContextItems extends Collection {
   process_load_queue() { /* skip */ }
   get settings_config() {
     return {
-      template_before: {
-        type: 'textarea',
-        name: 'Template Before',
-        description: 'Template to wrap before the context item content.',
-      },
-      template_after: {
-        type: 'textarea',
-        name: 'Template After',
-        description: 'Template to wrap after the context item content.',
-      },
+      ...(this.env.config.actions.context_item_merge_template?.settings_config || {}),
     };
   }
 
   get_adapter_class(key, item_data) {
     return this.context_item_adapters.find(adapter_class => adapter_class.detect(key, item_data));
+  }
+  static get default_settings() {
+    return {
+      template_before: '<item loc="{{KEY}}" at="{{TIME_AGO}}">',
+      template_after: '</item>',
+    }
+  }
+  load_from_data(context_items_data) {
+    delete this.items; // clear existing items
+    this.items = {};
+    const entries = Object.entries(context_items_data || {});
+    for(let i = 0; i < entries.length; i++) {
+      const [key, item_data] = entries[i];
+      this.new_item({
+        key,
+        ...item_data
+      });
+    }
   }
 }
 

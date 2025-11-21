@@ -14,7 +14,10 @@ export class SourceContextItemAdapter extends ContextItemAdapter {
   get size () {
     return this.ref?.size || 0;
   }
-  async read() {
+  get mtime() {
+    return this.ref?.mtime || null;
+  }
+  async get_text() {
     return await this.ref.read();
   }
 

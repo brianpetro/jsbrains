@@ -2,8 +2,8 @@ import { CollectionItem } from 'smart-collections';
 
 export class ContextItem extends CollectionItem {
   // special handling because current name_to_collection_key removes "Items" suffix
-  get collection () {
-    return this.env.context_items;
+  get collection_key () {
+    return 'context_items';
   }
   get context_type_adapter() {
     if (!this._context_type_adapter) {
@@ -20,27 +20,18 @@ export class ContextItem extends CollectionItem {
 
   // v3
   async get_text() {
-    const segments = [];
-    segments.push(await this.merge_template(this.settings.template_before || ''));
-    const item_text = await this.context_type_adapter.read();
-    segments.push(item_text);
-    segments.push(await this.merge_template(this.settings.template_after || ''));
-    return segments.join('\n');
-  }
-  async merge_template(template) {
-    const merge_vars = await this.get_merge_vars();
-    return template;
-  }
-  async get_merge_vars() {
-    return this.context_type_adapter.get_merge_vars
-      ? await this.context_type_adapter.get_merge_vars()
-      : {}
-    ;
+    const item_text = await this.context_type_adapter.get_text();
+    if (typeof item_text !== 'string') return item_text;
+    if (typeof this.actions.context_item_merge_template === 'function') {
+      return await this.actions.context_item_merge_template(item_text);
+    }
+    return item_text;
   }
   async get_base64() {
     if (this.is_media) {
       return await this.context_type_adapter.get_base64();
     }
+    return {error: `Context item is not media type: ${this.key}`};
   }
   get is_media() {
     return this.context_type_adapter.is_media || false;
@@ -50,6 +41,9 @@ export class ContextItem extends CollectionItem {
   }
   get size () {
     return this.data.size || this.context_type_adapter.size || 0;
+  }
+  get mtime() {
+    return this.data.mtime || this.context_type_adapter.mtime || null;
   }
   // DEPRECATED METHODS
   /**
