@@ -12,6 +12,9 @@ export class ContextItemAdapter {
    */
   get size () { return 0; }
 
+  async get_text() {}
+
+  async open () {}
 
 
   /**

@@ -20,6 +20,9 @@ export class SourceContextItemAdapter extends ContextItemAdapter {
   async get_text() {
     return await this.ref.read();
   }
+  async open(event = null) {
+    this.ref.actions.source_open(event);
+  }
 
   // DEPRECATED METHODS
   /**

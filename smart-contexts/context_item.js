@@ -33,6 +33,10 @@ export class ContextItem extends CollectionItem {
     }
     return {error: `Context item is not media type: ${this.key}`};
   }
+  async open (event = null) {
+    return await this.context_type_adapter.open(event);
+  }
+
   get is_media() {
     return this.context_type_adapter.is_media || false;
   }

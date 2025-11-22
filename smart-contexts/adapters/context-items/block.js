@@ -23,6 +23,9 @@ export class BlockContextItemAdapter extends ContextItemAdapter {
     if(!block) return { error: 'Block not found' };
     return await block.read();
   }
+  async open(event = null) {
+    this.ref.actions.source_open(event);
+  }
 
   // DEPRECATED METHODS
   /**

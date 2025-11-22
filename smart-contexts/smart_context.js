@@ -67,6 +67,12 @@ export class SmartContext extends CollectionItem {
     this.send_updated_event({removed_key: key});
   }
 
+  clear_all () {
+    this.data.context_items = {};
+    this.queue_save();
+    this.send_updated_event();
+  }
+
 
   get context_item_keys() {
     return Object.entries(this.data?.context_items || {})
