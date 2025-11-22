@@ -67,69 +67,6 @@ export class SmartContext extends CollectionItem {
     this.send_updated_event({removed_key: key});
   }
 
-  /**
-   * Return *ContextItem* instances (any depth) for a given key array.
-   * @param {string[]} keys
-   */
-  get_context_items(keys = this.context_item_keys) {
-    return filter_redundant_context_items(keys
-      .map(k => this.get_context_item(k))
-      .filter(Boolean)
-    );
-  }
-
-  // /** Map any key to ContextItem  */
-  get_context_item(key) {
-    const existing = this.env.context_items.get(key);
-    if (existing) return existing;
-    return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
-  }
-
-  /**
-   * get_snapshot
-   * @async
-   * @deprecated in favor of get_text and get_object (2025-11-11)
-   */
-  async get_snapshot(opts = {}) {
-    const merged_opts = merge_context_opts(this, opts);
-    return await get_snapshot(this, merged_opts);
-  }
-
-  /**
-   * compile
-   * @async
-   * @deprecated in favor of get_text and get_object (2025-11-11)
-   */
-  async compile(opts = {}) {
-    const adapter_key = opts.adapter_key || 'default';
-    const adapter_class = this.collection.compile_adapters[adapter_key];
-    if (!adapter_class) {
-      throw new Error(`SmartContext: Compile adapter not found: ${adapter_key}`);
-    }
-    const adapter = new adapter_class(this);
-    return adapter.compile(opts);
-  }
-
-  /**
-   * @method get_ref
-   * @deprecated moving to using ContextItem instances
-   */
-  get_ref(key) {
-    return this.collection.get_ref(key);
-  }
-
-  /**
-   * @deprecated
-   */
-  get_item_keys_by_depth(depth) {
-    return Object.keys(this.data.context_items)
-      .filter(k => {
-        const item_depth = this.data.context_items[k].d;
-        if(item_depth === depth) return true;
-        if(typeof item_depth === 'undefined' && depth === 0) return true;
-        return false;
-      });
-  }
 
   get context_item_keys() {
     return Object.entries(this.data?.context_items || {})
@@ -212,6 +149,9 @@ export class SmartContext extends CollectionItem {
       const Class = config.class;
       this._context_items = new Class(this.env, {...config, class: null});
       this._context_items.load_from_data(this.data.context_items || {});
+      this.on_event('context:updated', () => {
+        this._context_items = null; // reset cache
+      });
     }
     return this._context_items;
   }
@@ -227,5 +167,76 @@ export class SmartContext extends CollectionItem {
       message: `Context item did not return media: ${item.key}`,
       ...(item_base64 && typeof item_base64 === 'object' ? item_base64 : {})
     });
+  }
+
+
+  /**
+   * DEPRECATED
+   */
+  /**
+   * Return *ContextItem* instances (any depth) for a given key array.
+   * @deprecated use context_items property instead
+   * @param {string[]} keys
+   */
+  get_context_items(keys = this.context_item_keys) {
+    return filter_redundant_context_items(keys
+      .map(k => this.get_context_item(k))
+      .filter(Boolean)
+    );
+  }
+
+  /**
+   * @deprecated use context_items property instead
+   */
+  get_context_item(key) {
+    const existing = this.env.context_items.get(key);
+    if (existing) return existing;
+    return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
+  }
+
+  /**
+   * get_snapshot
+   * @async
+   * @deprecated in favor of get_text and get_object (2025-11-11)
+   */
+  async get_snapshot(opts = {}) {
+    const merged_opts = merge_context_opts(this, opts);
+    return await get_snapshot(this, merged_opts);
+  }
+
+  /**
+   * compile
+   * @async
+   * @deprecated in favor of get_text and get_object (2025-11-11)
+   */
+  async compile(opts = {}) {
+    const adapter_key = opts.adapter_key || 'default';
+    const adapter_class = this.collection.compile_adapters[adapter_key];
+    if (!adapter_class) {
+      throw new Error(`SmartContext: Compile adapter not found: ${adapter_key}`);
+    }
+    const adapter = new adapter_class(this);
+    return adapter.compile(opts);
+  }
+
+  /**
+   * @method get_ref
+   * @deprecated moving to using ContextItem instances
+   */
+  get_ref(key) {
+    return this.collection.get_ref(key);
+  }
+
+  /**
+   * @deprecated
+   */
+  get_item_keys_by_depth(depth) {
+    return Object.keys(this.data.context_items)
+      .filter(k => {
+        const item_depth = this.data.context_items[k].d;
+        if(item_depth === depth) return true;
+        if(typeof item_depth === 'undefined' && depth === 0) return true;
+        return false;
+      });
   }
 }

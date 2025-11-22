@@ -51,6 +51,7 @@ export class ContextItems extends Collection {
     const entries = Object.entries(context_items_data || {});
     for(let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
+      if(item_data.exclude) continue; // skip excluded items
       this.new_item({
         key,
         ...item_data
