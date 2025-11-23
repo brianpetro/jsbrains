@@ -506,6 +506,14 @@ export class Collection {
     return this.actions;
   }
 
+  // debounce running process save queue
+  queue_save() {
+    if(this._debounce_queue_save) clearTimeout(this._debounce_queue_save);
+    this._debounce_queue_save = setTimeout(() => {
+      this.process_save_queue();
+    }, 750);
+  }
+
   // BEGIN DEPRECATED
   /**
    * @deprecated use env.smart_components~~env.smart_view~~ instead
