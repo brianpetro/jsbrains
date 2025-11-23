@@ -94,43 +94,11 @@ export class EventLogs extends Collection {
         event_log.data.event_sources[event.event_source]++;
       }
       event_log.queue_save();
-      this.schedule_save();
+      this.queue_save();
     } catch (err) {
       // Never throw from a listener; keep bus pure and resilient.
       console.error('[EventLogs] record failure', event_key, err);
     }
-  }
-
-  /**
-   * Debounce configuration in ms.
-   * Prefers explicit opts, then settings, then default.
-   */
-  get save_debounce_ms() {
-    return this.opts?.save_debounce_ms
-      ?? this.settings?.save_debounce_ms
-      ?? 750;
-  }
-
-  /**
-   * Schedule a debounced save for the collection queue.
-   * Coalesces bursts of events into a single adapter write.
-   */
-  schedule_save() {
-    if (this._save_timer) clearTimeout(this._save_timer);
-    this._save_timer = setTimeout(() => {
-      this._save_timer = null;
-      this.flush_save().catch((err) => {
-        console.error('[EventLogs] save failed', err);
-      });
-    }, this.save_debounce_ms);
-  }
-
-  /**
-   * Immediately process the save queue for this collection.
-   * Safe to call from outside if needed.
-   */
-  async flush_save() {
-    await this.process_save_queue();
   }
 
   /**

@@ -21,6 +21,12 @@ export class SmartContext extends CollectionItem {
       }
     };
   }
+  
+  // queue_save to debounce process save queue
+  queue_save() {
+    super.queue_save();
+    this.collection.queue_save();
+  }
 
   /**
    * add_item
@@ -105,8 +111,11 @@ export class SmartContext extends CollectionItem {
   }
   set name (name) {
     if (typeof name !== 'string') throw new TypeError('Name must be a string');
+    const was_nameless = !this.data.name || String(this.data.name).trim().length === 0;
     this.data.name = name;
-    this.send_updated_event()
+    if(was_nameless) this.emit_event('context:created'); // treat unnamed context as created
+    else this.emit_event('context:renamed', { name });
+    this.queue_save();
   }
   get size () {
     let size = 0;
@@ -115,6 +124,12 @@ export class SmartContext extends CollectionItem {
       if (item.size) size += item.size;
     });
     return size;
+  }
+  get item_count () {
+    return Object.entries(this.data?.context_items || {})
+      .filter(([key, item_data]) => !item_data.exclude)
+      .length
+    ;
   }
   // v3
   async get_text(params = {}) {
