@@ -32,7 +32,10 @@ export class SmartContext extends CollectionItem {
    * add_item
    * @param {string|object} item
    */
-  add_item(item) {
+  add_item(item, params={}) {
+    const {
+      emit_updated = true
+    } = params;
     let key;
     if(typeof item === 'object') {
       key = item.key || item.path;
@@ -49,7 +52,7 @@ export class SmartContext extends CollectionItem {
     if(!key) return console.error('SmartContext: add_item called with invalid item', item);
     this.data.context_items[key] = context_item;
     this.queue_save();
-    this.send_updated_event();
+    if(emit_updated) this.emit_event('context:updated', {add_item: key});
   }
 
   /**
@@ -58,7 +61,8 @@ export class SmartContext extends CollectionItem {
    */
   add_items(items) {
     if(!Array.isArray(items)) items = [items];
-    items.forEach(item => this.add_item(item));
+    items.forEach(item => this.add_item(item, { emit_updated: false }));
+    this.emit_event('context:updated', { added_items: items.map(item => typeof item === 'object' ? item.key || item.path : item) });
   }
 
   /**
@@ -68,15 +72,21 @@ export class SmartContext extends CollectionItem {
    */
   remove_item(key) {
     if(!key || !this.data?.context_items?.[key]) return;
-    delete this.data.context_items[key];
+    if (this.data.context_items[key].folder) {
+      // folder property indicates this item was added via folder inclusion
+      // so mark as excluded to prevent unintended re-inclusion
+      this.data.context_items[key].exclude = true; // depended on by smart-context codeblock
+    } else {
+      delete this.data.context_items[key];
+    }
     this.queue_save();
-    this.send_updated_event({removed_key: key});
+    this.emit_event('context:updated', {removed_key: key});
   }
 
   clear_all () {
     this.data.context_items = {};
     this.queue_save();
-    this.send_updated_event();
+    this.emit_event('context:updated', { cleared: true });
   }
 
 
@@ -95,15 +105,6 @@ export class SmartContext extends CollectionItem {
   }
   get has_context_items() {
     return Object.keys(this.data.context_items || {}).length > 0;
-  }
-
-  send_updated_event(payload = {}) {
-    // clarified: is the debouncer necessary here? Should it be handled in listeners?
-    if(!this._debounce_send_updated_event) this._debounce_send_updated_event = {};
-    if(this._debounce_send_updated_event[JSON.stringify(payload)]) clearTimeout(this._debounce_send_updated_event[JSON.stringify(payload)]);
-    this._debounce_send_updated_event[JSON.stringify(payload)] = setTimeout(() => {
-      this.emit_event('context:updated', payload);
-    }, 100);
   }
 
   get name () {
