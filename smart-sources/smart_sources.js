@@ -797,24 +797,24 @@ export class SmartSources extends SmartEntities {
 }
 
 export const settings_config = {
-  file_exclusions: {
-    name: 'File Exclusions',
-    description: 'Comma-separated list of files to exclude.',
-    type: 'text',
-    default: '',
-    callback: 'update_exclusions',
-  },
-  folder_exclusions: {
-    name: 'Folder Exclusions',
-    description: 'Comma-separated list of folders to exclude.',
-    type: 'text',
-    default: '',
-    callback: 'update_exclusions',
-  },
-  excluded_headings: {
-    name: 'Excluded Headings',
-    description: 'Comma-separated list of headings to exclude.',
-    type: 'text',
-    default: '',
-  },
+  // file_exclusions: {
+  //   name: 'File Exclusions',
+  //   description: 'Comma-separated list of files to exclude.',
+  //   type: 'text',
+  //   default: '',
+  //   callback: 'update_exclusions',
+  // },
+  // folder_exclusions: {
+  //   name: 'Folder Exclusions',
+  //   description: 'Comma-separated list of folders to exclude.',
+  //   type: 'text',
+  //   default: '',
+  //   callback: 'update_exclusions',
+  // },
+  // excluded_headings: {
+  //   name: 'Excluded Headings',
+  //   description: 'Comma-separated list of headings to exclude.',
+  //   type: 'text',
+  //   default: '',
+  // },
 };
