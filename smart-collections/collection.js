@@ -375,6 +375,7 @@ export class Collection {
 
   /**
    * Processes given settings config, adding prefixes and handling conditionals.
+   * @deprecated removing settings_config from collections (2025-11-24)
    *
    * @private
    * @param {Object} _settings_config
