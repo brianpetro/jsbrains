@@ -28,7 +28,6 @@ export class Collection {
    * @param {Object} [opts={}] - Optional configuration.
    * @param {string} [opts.collection_key] - Custom key to override default collection name.
    * @param {string} [opts.data_dir] - Custom data directory path.
-   * @param {boolean} [opts.prevent_load_on_init] - Whether to prevent loading items on initialization.
    */
   constructor(env, opts = {}) {
     // this.env = env;
