@@ -9,6 +9,11 @@
   "scripts": {
     "test": "npx ava"
   },
+  "dependencies": {
+    "smart-chat-model": "*",
+    "smart-collections": "*",
+    "smart-embed-model": "*"
+  },
   "repository": {
     "type": "git",
     "url": "brianpetro/jsbrains"
