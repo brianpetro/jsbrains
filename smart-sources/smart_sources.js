@@ -473,6 +473,7 @@ export class SmartSources extends SmartEntities {
       await this.process_source_import_queue(this.opts); // this.opts passes process_embed_queue if present
     }
     this.build_links_map();
+    this.block_collection.cleanup_blocks(); // ensure expired blocks are removed after load
   }
 
   /**

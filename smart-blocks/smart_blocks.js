@@ -129,4 +129,21 @@ export class SmartBlocks extends SmartEntities {
    * @returns {Promise<void>}
    */
   async run_force_refresh() { throw "Not implemented: run_force_refresh"; }
+
+  // clear expired blocks
+  // TODO/future: replaced by storing block data within source data
+  async cleanup_blocks() {
+    const expired_blocks = Object.values(this.items)
+      .filter(i => !i.source.data.blocks['#'+i.key.split('#')[1]])
+    ;
+    console.log(`Removing ${expired_blocks.length} expired blocks`);
+    expired_blocks
+      .forEach(i => i.delete())
+    ;
+    await this.process_save_queue();
+    expired_blocks.forEach(i => {
+      delete this.items[i.key]; // remove from items
+    });
+    this.emit_event('blocks:cleaned', {expired_blocks_ct: expired_blocks.length});
+  }
 }
