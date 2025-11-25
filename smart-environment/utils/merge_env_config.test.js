@@ -58,7 +58,6 @@ test('should overwrite with null value', t => {
   t.deepEqual(result, expected);
 });
 
-
 test('should handle empty incoming object', t => {
   const target = { a: 1 };
   const incoming = {};
@@ -73,55 +72,173 @@ test('should handle empty target object', t => {
   const incoming = { a: 1, b: [2], c: { d: 3 } };
   merge_env_config(target, incoming); // Modifies target in place
   const expected_after_merge = { a: 1, b: [2], c: {} }; // c initialized
-  deep_merge_no_overwrite(expected_after_merge.c, {d: 3}) // deep merge applied
+  deep_merge_no_overwrite(expected_after_merge.c, { d: 3 }); // deep merge applied
 
   t.deepEqual(target, expected_after_merge);
 });
 
 test('should not merge if incoming value is same object reference as target', t => {
-    const shared_object = { x: 1 };
-    const target = { a: shared_object };
-    const incoming = { a: shared_object };
-    const expected = { a: { x: 1 } }; // Should remain unchanged
+  const shared_object = { x: 1 };
+  const target = { a: shared_object };
+  const incoming = { a: shared_object };
+  const expected = { a: { x: 1 } }; // Should remain unchanged
 
-    const result = merge_env_config(target, incoming);
-    t.deepEqual(result, expected);
-    t.is(result.a, shared_object); // Ensure reference wasn't broken unnecessarily
+  const result = merge_env_config(target, incoming);
+  t.deepEqual(result, expected);
+  t.is(result.a, shared_object); // Ensure reference wasn't broken unnecessarily
 });
 
-
-class ColV1 {}  ColV1.version = 1;
-class ColV2 {}  ColV2.version = 2;
+class ColV1 {}
+ColV1.version = 1;
+class ColV2 {}
+ColV2.version = 2;
 
 test('newer collection version replaces older one', t => {
-  const target   = { collections: { foo: { class: ColV1, flag: true } } };
+  const target = { collections: { foo: { class: ColV1, flag: true } } };
   const incoming = { collections: { foo: { class: ColV2 } } };
 
   merge_env_config(target, incoming);
 
-  t.is(target.collections.foo.class, ColV2,
-       'incoming class replaces the older version');
-  t.true(target.collections.foo.flag,
-       'non-conflicting props are preserved');
+  t.is(
+    target.collections.foo.class,
+    ColV2,
+    'incoming class replaces the older version'
+  );
+  t.true(
+    target.collections.foo.flag,
+    'non-conflicting props are preserved'
+  );
 });
 
-function a_parser() {}
-test('same collection version doesn\'t duplicate existing same function in array', t => {
-  const target   = { collections: { foo: { class: ColV1, parsers: [a_parser] } } };
-  const incoming = { collections: { foo: { class: ColV1, parsers: [a_parser] } } };
+/* ------------------------------------------------------------------
+ * semver-specific tests
+ * -----------------------------------------------------------------*/
+
+class ColSem10 {}
+ColSem10.version = '1.0.0';
+class ColSem11 {}
+ColSem11.version = '1.1.0';
+
+test('collection semver strings are compared correctly', t => {
+  const target = {
+    collections: { foo: { class: ColSem10, from: 'old', keep: true } }
+  };
+  const incoming = {
+    collections: { foo: { class: ColSem11, from: 'new' } }
+  };
 
   merge_env_config(target, incoming);
 
-  t.is(target.collections.foo.parsers.length, 1,
-       'parsers array should not duplicate existing function');
+  t.is(target.collections.foo.class, ColSem11, 'newer semver wins');
+  t.is(target.collections.foo.from, 'new', 'incoming props override');
+  t.true(
+    target.collections.foo.keep,
+    'older props are preserved when not redefined'
+  );
+});
+
+test('collection missing version is treated as 0 against semver', t => {
+  class ColNoVersion {}
+  class ColSem001 {}
+  ColSem001.version = '0.0.1';
+
+  const target = { collections: { foo: { class: ColNoVersion } } };
+  const incoming = { collections: { foo: { class: ColSem001 } } };
+
+  merge_env_config(target, incoming);
+
+  t.is(
+    target.collections.foo.class,
+    ColSem001,
+    'semver 0.0.1 should beat missing version (0)'
+  );
+});
+
+test('semver string wins tie with numeric version', t => {
+  function ComponentV1Num () {}
+  ComponentV1Num.version = 1;
+  function ComponentV1Str () {}
+  ComponentV1Str.version = '1';
+
+  const target = { components: { thing: ComponentV1Num } };
+  const incoming = { components: { thing: ComponentV1Str } };
+
+  merge_env_config(target, incoming);
+
+  t.is(
+    target.components.thing,
+    ComponentV1Str,
+    'string semver "1" should win over numeric 1 when numerically equal'
+  );
+});
+
+test('component semver string compares against numeric version', t => {
+  function CompV1 () {}
+  CompV1.version = 1;
+  function CompV101 () {}
+  CompV101.version = '1.0.1';
+
+  const target = { components: { c: CompV1 } };
+  const incoming = { components: { c: CompV101 } };
+
+  merge_env_config(target, incoming);
+
+  t.is(
+    target.components.c,
+    CompV101,
+    '1.0.1 should be considered newer than numeric 1'
+  );
+});
+
+test('item_types semver strings are respected', t => {
+  function ItemTypeV1 () {}
+  ItemTypeV1.version = '1.0.0';
+  function ItemTypeV2 () {}
+  ItemTypeV2.version = '2.0.0';
+
+  const target = { item_types: { Foo: ItemTypeV1 } };
+  const incoming = { item_types: { Foo: ItemTypeV2 } };
+
+  merge_env_config(target, incoming);
+
+  t.is(
+    target.item_types.Foo,
+    ItemTypeV2,
+    'item_types should use semver to pick newer constructor'
+  );
+});
+
+function a_parser () {}
+test("same collection version doesn't duplicate existing same function in array", t => {
+  const target = {
+    collections: { foo: { class: ColV1, parsers: [a_parser] } }
+  };
+  const incoming = {
+    collections: { foo: { class: ColV1, parsers: [a_parser] } }
+  };
+
+  merge_env_config(target, incoming);
+
+  t.is(
+    target.collections.foo.parsers.length,
+    1,
+    'parsers array should not duplicate existing function'
+  );
 
   // Add another function to incoming, ensure both are present, no duplicates
-  function b_parser() {}
-  const target2   = { collections: { foo: { class: ColV1, parsers: [a_parser] } } };
-  const incoming2 = { collections: { foo: { class: ColV1, parsers: [a_parser, b_parser] } } };
+  function b_parser () {}
+  const target2 = {
+    collections: { foo: { class: ColV1, parsers: [a_parser] } }
+  };
+  const incoming2 = {
+    collections: { foo: { class: ColV1, parsers: [a_parser, b_parser] } }
+  };
   merge_env_config(target2, incoming2);
-  t.deepEqual(target2.collections.foo.parsers, [a_parser, b_parser],
-       'should merge arrays without duplicates and include new items');
+  t.deepEqual(
+    target2.collections.foo.parsers,
+    [a_parser, b_parser],
+    'should merge arrays without duplicates and include new items'
+  );
 });
 
 // Test merging arrays of strings prevents duplicates
@@ -130,32 +247,45 @@ test('should merge arrays of strings without duplicates', t => {
   const incoming = { tags: ['b', 'c', 'd'] };
   const expected = { tags: ['a', 'b', 'c', 'd'] };
   const result = merge_env_config(target, incoming);
-  t.deepEqual(result, expected, 'strings in arrays should not be duplicated');
+  t.deepEqual(
+    result,
+    expected,
+    'strings in arrays should not be duplicated'
+  );
 });
 
 test('older or same version does NOT replace BUT includes extra props', t => {
-  const target   = { collections: { foo: { class: ColV2 } } };
+  const target = { collections: { foo: { class: ColV2 } } };
   const incoming = { collections: { foo: { class: ColV1, extra: 123 } } };
 
   merge_env_config(target, incoming);
 
-  t.is(target.collections.foo.class, ColV2,
-       'existing newer class kept');
-  t.is(target.collections.foo.extra, 123,
-       'older definition merged with no overwrite');
+  t.is(
+    target.collections.foo.class,
+    ColV2,
+    'existing newer class kept'
+  );
+  t.is(
+    target.collections.foo.extra,
+    123,
+    'older definition merged with no overwrite'
+  );
 });
 
 test('newer component version replaces older one', t => {
-  const old_component = function() {};
-  const new_component = function() {};
+  const old_component = function () {};
+  const new_component = function () {};
   new_component.version = 2;
   const target = { components: { test_component: old_component } };
   const incoming = { components: { test_component: new_component } };
 
   merge_env_config(target, incoming);
 
-  t.is(target.components.test_component, new_component,
-       'newer component replaces older one');
+  t.is(
+    target.components.test_component,
+    new_component,
+    'newer component replaces older one'
+  );
 });
 
 test('merges item actions without overwriting', t => {
