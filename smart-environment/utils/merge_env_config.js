@@ -161,24 +161,24 @@ export function merge_env_config (target, incoming) {
       continue; // done with this top-level key
     }
 
-    /* ───────────────────────────── Components ───────────────────────────── */
-    if (key === 'components' && value && typeof value === 'object') {
-      if (!target.components) target.components = {};
+    // THIS LOGIC IS LIKELY CANONICAL
+    if (['actions', 'components'].includes(key) && value && typeof value === 'object') {
+      if (!target[key]) target[key] = {};
 
       for (const [comp_key, comp_def] of Object.entries(value)) {
-        if (!target.components[comp_key]) {
-          target.components[comp_key] = comp_def;
+        if (!target[key][comp_key]) {
+          target[key][comp_key] = comp_def;
           continue;
         }
 
-        const existing_comp = target.components[comp_key];
+        const existing_comp = target[key][comp_key];
         const new_version_raw = comp_def && comp_def.version;
         const cur_version_raw = existing_comp && existing_comp.version;
         const cmp = compare_versions(new_version_raw, cur_version_raw);
 
         if (cmp > 0) {
           // Newer component definition replaces older one outright
-          target.components[comp_key] = comp_def;
+          target[key][comp_key] = comp_def;
         } else {
           // Same or older version – augment without overwriting
           deep_merge_no_overwrite(existing_comp, comp_def);

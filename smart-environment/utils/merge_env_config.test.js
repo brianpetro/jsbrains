@@ -110,6 +110,20 @@ test('newer collection version replaces older one', t => {
   );
 });
 
+test('should replace action with incoming if version is newer', t => {
+  const old_action = { version: 1, action: () => { return 'old' } };
+  const new_action = { version: 2, action: () => { return 'new' } };
+  const target = { actions: { test: old_action } };
+  const incoming = { actions: { test: new_action } };
+  merge_env_config(target, incoming);
+
+  t.is(
+    target.actions.test,
+    new_action,
+    'incoming action replaces the older version'
+  );
+});
+
 /* ------------------------------------------------------------------
  * semver-specific tests
  * -----------------------------------------------------------------*/
