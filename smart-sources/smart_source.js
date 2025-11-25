@@ -54,6 +54,7 @@ export class SmartSource extends SmartEntity {
     try{
       // await this.data_adapter.load_item_if_updated(this);
       await this.source_adapter?.import();
+      this.emit_event('sources:imported');
     }catch(err){
       if(err.code === "ENOENT"){
         console.log(`Smart Connections: Deleting ${this.path} data because it no longer exists on disk`);

@@ -357,6 +357,12 @@ export class CollectionItem {
       callback(payload);
     });
   }
+  once_event(event_key, callback) {
+    return this.env.events?.once(event_key, (payload) => {
+      if (payload?.item_key && payload.item_key !== this.key) return;
+      callback(payload);
+    });
+  }
 
   /**
    * @returns {Object} The data adapter for this item's collection.
