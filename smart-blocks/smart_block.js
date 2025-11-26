@@ -361,14 +361,14 @@ export class SmartBlock extends SmartEntity {
   /**
    * Retrieves the SmartSource associated with the block.
    * @readonly
-   * @returns {SmartSource} The associated SmartSource instance.
+   * @returns {import("smart-sources").SmartSource} The associated SmartSource instance.
    */
   get source() { return this.source_collection.get(this.source_key); }
 
   /**
    * Retrieves the SmartSources collection instance.
    * @readonly
-   * @returns {SmartSources} The SmartSources collection.
+   * @returns {import("smart-sources").SmartSources} The SmartSources collection.
    */
   get source_collection() { return this.env.smart_sources; }
   get source_key() { return this.key.split("#")[0]; }
