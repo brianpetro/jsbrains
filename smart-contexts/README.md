@@ -45,11 +45,10 @@ const ctx = myContexts.add_item({
 	},
 });
 
-// The compile() method merges settings, processes items, follows links (if any), and respects exclusions
+// The get_text() method merges settings, processes items, follows links (if any), and respects exclusions
 (async () => {
-	const result = await ctx.compile();
-	console.log('Final context output:\n', result.context);
-	console.log('Stats:', result.stats);
+	const result = await ctx.get_text();
+	console.log('Final context output:\n', result);
 })();
 ```
 
