@@ -49,20 +49,4 @@ export class ContextItem extends CollectionItem {
   get mtime() {
     return this.data.mtime || this.context_type_adapter.mtime || null;
   }
-  // DEPRECATED METHODS
-  /**
-   * @deprecated in favor of get_text and get_media 
-   */
-  async add_to_snapshot(snapshot, opts = {}) {
-    return this.context_type_adapter.add_to_snapshot(snapshot, opts);
-  }
-  /**
-   * @deprecated in favor of context-suggest scoped actions (getter architecture)
-   */
-  async find_connections(opts = {}) {
-    if (this.context_type_adapter.find_connections) {
-      return this.context_type_adapter.find_connections(opts);
-    }
-    return [];
-  }
 }

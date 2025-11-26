@@ -16,13 +16,4 @@ export class ContextItemAdapter {
 
   async open () {}
 
-
-  /**
-   * @deprecated in favor of get_text and get_media
-   */
-  async add_to_snapshot(snapshot, opts = {}) {}
-  /**
-   * @deprecated probably unused since newer action getter implementation for context-suggest 
-   */
-  async find_connections(opts = {}) { return []; }
 }

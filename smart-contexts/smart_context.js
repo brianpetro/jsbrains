@@ -6,8 +6,6 @@
  */
 
 import { CollectionItem } from 'smart-collections';
-import { get_snapshot } from './utils/get_snapshot.js';
-import { merge_context_opts } from './utils/merge_context_opts.js';
 import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
 
 export class SmartContext extends CollectionItem {

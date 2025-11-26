@@ -30,9 +30,4 @@ export class ImageContextItemAdapter extends ContextItemAdapter {
     }
   }
 
-  // DEPRECATED
-  async add_to_snapshot(snapshot) {
-    if (!snapshot.images) snapshot.images = [];
-    snapshot.images.push(this.item.key);
-  }
 }
