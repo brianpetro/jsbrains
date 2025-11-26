@@ -180,7 +180,11 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     }
   }
 
-  /** @returns {Object} Settings configuration for transformers adapter */
+  /**
+   * @deprecated 2025-11-26 use env_config instead
+   * @returns {Object} Settings configuration for transformers adapter
+   *
+   */
   get settings_config() {
     return transformers_settings_config;
   }
@@ -342,4 +346,25 @@ export const transformers_settings_config = {
     callback: 'embed_model_changed',
     default: true,
   },
+};
+
+// 2025-11-26
+export const settings_config = {
+  // "gpu_batch_size": {
+  //   name: 'GPU batch size',
+  //   type: "number",
+  //   description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
+  //   placeholder: "Enter number ex. 10",
+  // },
+  "legacy_transformers": {
+    name: 'Legacy transformers (no GPU)',
+    type: "toggle",
+    description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
+    // callback: 'embed_model_changed',
+    default: false,
+  },
+}
+export default {
+  class: SmartEmbedTransformersAdapter,
+  settings_config,
 };

@@ -50,7 +50,8 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
    * @throws {Error} If not implemented by subclass
    */
   async embed(input) {
-    throw new Error('embed method not implemented');
+    if(typeof input === 'string') input = {embed_input: input};
+    return (await this.embed_batch([input]))[0];
   }
 
   /**

@@ -1,6 +1,11 @@
 import { SmartEmbedIframeAdapter } from "./iframe.js";
 import { transformers_connector } from "../connectors/transformers_iframe.js";
-import { transformers_defaults, transformers_settings_config, transformers_models } from "./transformers.js";
+import {
+  transformers_defaults,
+  transformers_settings_config, // DEPRECATED
+  transformers_models,
+  settings_config
+} from "./transformers.js";
 /**
  * Adapter for running transformer models in an iframe
  * Combines transformer model capabilities with iframe isolation
@@ -52,4 +57,9 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
   get models() {
     return transformers_models;
   }
+}
+export { settings_config };
+export default {
+  class: SmartEmbedTransformersIframeAdapter,
+  settings_config,
 }
