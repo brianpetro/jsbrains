@@ -1,10 +1,3 @@
-/**
- * @file smart_contexts.js
- *
- * Manages a collection of SmartContext items. Also provides a compile_adapters map
- * so each SmartContext can choose which adapter to use when building a final output.
- */
-
 import { Collection } from 'smart-collections';
 import { AjsonSingleFileCollectionDataAdapter } from "smart-collections/adapters/ajson_single_file.js";
 import { SmartContext } from './smart_context.js';
@@ -49,19 +42,6 @@ export class SmartContexts extends Collection {
       template_before: '<context>\n{{FILE_TREE}}',
       template_after: '</context>',
     };
-  }
-
-  /**
-   * @deprecated in favor of get_text and get_media
-   */
-  get compile_adapters() {
-    if (!this._compile_adapters) {
-      this._compile_adapters = {};
-      Object.values(this.opts.compile_adapters || {}).forEach((cls) => {
-        this._compile_adapters[cls.adapter_key] = cls;
-      });
-    }
-    return this._compile_adapters;
   }
 
   get settings_config() {

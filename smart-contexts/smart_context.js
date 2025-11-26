@@ -216,30 +216,6 @@ export class SmartContext extends CollectionItem {
     return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
   }
 
-  /**
-   * get_snapshot
-   * @async
-   * @deprecated in favor of get_text and get_object (2025-11-11)
-   */
-  async get_snapshot(opts = {}) {
-    const merged_opts = merge_context_opts(this, opts);
-    return await get_snapshot(this, merged_opts);
-  }
-
-  /**
-   * compile
-   * @async
-   * @deprecated in favor of get_text and get_object (2025-11-11)
-   */
-  async compile(opts = {}) {
-    const adapter_key = opts.adapter_key || 'default';
-    const adapter_class = this.collection.compile_adapters[adapter_key];
-    if (!adapter_class) {
-      throw new Error(`SmartContext: Compile adapter not found: ${adapter_key}`);
-    }
-    const adapter = new adapter_class(this);
-    return adapter.compile(opts);
-  }
 
   /**
    * @method get_ref
