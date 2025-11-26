@@ -60,17 +60,32 @@ export class Model extends CollectionItem {
     return this.get_model_instance();
   }
 
-  get settings_config() {
-    const instance = this.model_type_adapter.get_model_instance({
-      re_render_settings: () => this.collection?.reload_item_settings?.(this),
-      reload_model: () => this.collection?.reload_model_instance?.(this),
-    });
-    return instance.settings_config;
-  }
+  // get settings_config() {
+  //   const settings_config = env.config.smart_embed_model.settings_config;
+  //   const instance = this.model_type_adapter.get_model_instance({
+  //     re_render_settings: () => this.collection?.reload_item_settings?.(this),
+  //     reload_model: () => this.collection?.reload_model_instance?.(this),
+  //   });
+  //   return instance.settings_config;
+  // }
 
   get settings() {
-    return this.data;
+    return {
+      ...(this.model_type_adapter.ModelClass.defaults || {}),
+      ...this.data,
+    };
   }
+  async get_model_key_options() {
+    return this.model_type_adapter.get_model_key_options();
+  }
+
+  /**
+   * BEGIN backward compatibility to access config
+   */
+  get opts() { return this.settings; }
+  get model_config() { return this.settings; }
+  get adapter_settings() { return this.settings; }
+
 }
 
 export default Model;
