@@ -1,5 +1,4 @@
 import { SmartEmbedModel } from 'smart-embed-model';
-import * as embed_adapters from 'smart-embed-model/adapters.js';
 import { ModelTypeAdapter } from './_adapter.js';
 
 export class EmbeddingModelTypeAdapter extends ModelTypeAdapter {
@@ -9,7 +8,7 @@ export class EmbeddingModelTypeAdapter extends ModelTypeAdapter {
 
     const base_opts = {
       adapter: adapter_key,
-      adapters: embed_adapters,
+      adapters: this.model.env.config.modules.smart_embed_model.adapters,
       model_config: {
         adapter: adapter_key,
         ...(model_data.adapter_config || {}),

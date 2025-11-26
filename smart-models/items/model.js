@@ -16,8 +16,7 @@ export class Model extends CollectionItem {
 
   get_key() {
     if (this.data?.key) return this.data.key;
-    const prefix = this.model_type === 'embedding' ? 'Embed' : 'Chat';
-    this.data.key = `${prefix}#${Date.now()}`;
+    this.data.key = `${this.model_type}#${Date.now()}`;
     return this.data.key;
   }
 
@@ -57,6 +56,9 @@ export class Model extends CollectionItem {
   get_model_instance(extra_opts = {}) {
     return this.model_type_adapter.get_model_instance(extra_opts);
   }
+  get model_instance() {
+    return this.get_model_instance();
+  }
 
   get settings_config() {
     const instance = this.model_type_adapter.get_model_instance({
@@ -64,6 +66,10 @@ export class Model extends CollectionItem {
       reload_model: () => this.collection?.reload_model_instance?.(this),
     });
     return instance.settings_config;
+  }
+
+  get settings() {
+    return this.data;
   }
 }
 

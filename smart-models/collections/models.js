@@ -8,6 +8,21 @@ export class Models extends Collection {
   get model_type_adapters() {
     return this.opts.model_type_adapters || models_collection.model_type_adapters;
   }
+  new_model(data = {}) {
+    if(!data.platform_key) throw new Error('platform_key is required to create a new model');
+    if(!data.model_type) throw new Error('model_type is required to create a new model');
+    const platform = this.env.platforms.get(data.platform_key);
+    if(!platform) {
+      this.env.platforms.new_platform({ key: data.platform_key });
+    }
+    const item = new this.item_type(this.env, {
+      ...data,
+    });
+    this.set(item);
+    item.queue_save();
+    item.emit_event('model:created');
+    return item;
+  }
 }
 
 export const models_collection = {
