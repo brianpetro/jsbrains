@@ -134,7 +134,7 @@ export class SmartBlocks extends SmartEntities {
   // TODO/future: replaced by storing block data within source data
   async cleanup_blocks() {
     const expired_blocks = Object.values(this.items)
-      .filter(i => !i.source.data.blocks['#'+i.key.split('#')[1]])
+      .filter(i => i.is_gone)
     ;
     console.log(`Removing ${expired_blocks.length} expired blocks`);
     expired_blocks
