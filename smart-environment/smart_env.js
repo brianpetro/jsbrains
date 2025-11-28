@@ -330,7 +330,15 @@ export class SmartEnv {
    * @param {Object} [collections=this.collections] - Key-value map of collection instances.
    */
   async load_collections(collections = this.collections) {
-    for (const key of Object.keys(collections || {})) {
+    const collection_keys = Object.keys(collections || {})
+      // sort by this.config.collections[key].load_order || 0 (ascending)
+      .sort((a, b) => {
+        const order_a = this.config.collections?.[a]?.load_order || 0;
+        const order_b = this.config.collections?.[b]?.load_order || 0;
+        return order_a - order_b;
+      })
+    ;
+    for (const key of collection_keys) {
       const time_start = Date.now();
       if (typeof this[key]?.process_load_queue === 'function') {
         await this[key].process_load_queue();
