@@ -132,7 +132,7 @@ var SmartModel = class {
           this.reload_model_timeout = null;
           await this.load();
           this.set_state("loaded");
-          this.env?.events?.emit('model:loaded', { model_key: this.model_key });
+          this.env?.events?.emit("model:loaded", { model_key: this.model_key });
           this.notices?.show("Loaded model: " + this.model_key);
         }, 6e4);
       }
@@ -617,7 +617,8 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
    * @throws {Error} If not implemented by subclass
    */
   async embed(input) {
-    throw new Error("embed method not implemented");
+    if (typeof input === "string") input = { embed_input: input };
+    return (await this.embed_batch([input]))[0];
   }
   /**
    * Generate embeddings for multiple inputs
@@ -722,7 +723,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true
@@ -820,7 +821,11 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       }));
     }
   }
-  /** @returns {Object} Settings configuration for transformers adapter */
+  /**
+   * @deprecated 2025-11-26 use env_config instead
+   * @returns {Object} Settings configuration for transformers adapter
+   *
+   */
   get settings_config() {
     return transformers_settings_config;
   }
