@@ -304,11 +304,11 @@ export const connections_filter_config = {
     "type": "toggle",
     "description": "Turning on will include the folder path in the connections results.",
   },
-  "smart_view_filter.render_markdown": {
-    "name": "Render markdown",
-    "type": "toggle",
-    "description": "Turn off to prevent rendering markdown and display connection results as plain text.",
-  },
+  // "smart_view_filter.render_markdown": {
+  //   "name": "Render markdown",
+  //   "type": "toggle",
+  //   "description": "Turn off to prevent rendering markdown and display connection results as plain text.",
+  // },
   "smart_view_filter.results_limit": {
     "name": "Results limit",
     "type": "number",
@@ -341,10 +341,10 @@ export const connections_filter_config = {
     "type": "toggle",
     "description": "Show only sources in the connections results (no blocks).",
   },
-  // hide frontmatter blocks from connections results
-  "smart_view_filter.exclude_frontmatter_blocks": {
-    "name": "Hide frontmatter blocks in results",
-    "type": "toggle",
-    "description": "Show only sources in the connections results (no frontmatter blocks).",
-  },
+  // // hide frontmatter blocks from connections results
+  // "smart_view_filter.exclude_frontmatter_blocks": {
+  //   "name": "Hide frontmatter blocks in results",
+  //   "type": "toggle",
+  //   "description": "Show only sources in the connections results (no frontmatter blocks).",
+  // },
 };

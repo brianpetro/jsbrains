@@ -85,6 +85,7 @@ export class SmartSource extends SmartEntity {
   /**
    * Finds connections relevant to this SmartSource based on provided parameters.
    * @async
+   * @deprecated use ConnectionsLists
    * @param {Object} [params={}] - Parameters for finding connections.
    * @param {boolean} [params.exclude_blocks_from_source_connections=false] - Whether to exclude block connections from source connections.
    * @param {Object} [params.exclude_frontmatter_blocks=true] - Whether to exclude frontmatter blocks from source connections.

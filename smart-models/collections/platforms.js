@@ -23,4 +23,5 @@ export const platforms_collection = {
   model_platform_adapters: {}
 };
 
+
 export default platforms_collection;
