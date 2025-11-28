@@ -1,5 +1,4 @@
 import { SmartEntity } from "smart-entities";
-import { render as render_source_component } from "./components/source.js";
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 import { find_connections } from "./actions/find_connections.js";
 
@@ -516,17 +515,6 @@ export class SmartSource extends SmartEntity {
 
 
   // COMPONENTS
-
-  /**
-   * Retrieves the component responsible for rendering the SmartSource.
-   * @deprecated
-   * @readonly
-   * @returns {Function} The render function for the source component.
-   */
-  get component() { return render_source_component; }
-
-  // Currently unused, but useful for later
-
   /**
    * Calculates the mean vector of all blocks within the SmartSource.
    * @readonly
