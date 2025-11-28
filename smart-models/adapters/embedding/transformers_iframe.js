@@ -14,6 +14,28 @@ export class TransformersIframeEmbeddingModelAdapter extends SmartEmbedTransform
     if(this.model.settings.legacy_transformers === true) return false;
     return true;
   }
+  get models () {
+    return {
+      "TaylorAI/bge-micro-v2": {
+        "id": "TaylorAI/bge-micro-v2",
+        "batch_size": 1,
+        "dims": 384,
+        "max_tokens": 512,
+        "name": "BGE-micro-v2",
+        "description": "Local, 512 tokens, 384 dim (recommended)",
+        "adapter": "transformers"
+      },
+      "Snowflake/snowflake-arctic-embed-xs": {
+        "id": "Snowflake/snowflake-arctic-embed-xs",
+        "batch_size": 1,
+        "dims": 384,
+        "max_tokens": 512,
+        "name": "Snowflake Arctic Embed XS",
+        "description": "Local, 512 tokens, 384 dim",
+        "adapter": "transformers"
+      },
+    };
+  }
 }
 export default {
   class: TransformersIframeEmbeddingModelAdapter,
