@@ -1,35 +1,28 @@
-import { SmartEmbedModel } from 'smart-embed-model';
 import { ModelTypeAdapter } from './_adapter.js';
 
 export class EmbeddingModelTypeAdapter extends ModelTypeAdapter {
-  // build_model_opts(extra_opts = {}) {
-  //   const adapter_key = this.adapter_key;
-  //   const model_data = this.model?.data?.model || {};
-
-  //   // build defaults from model_env_config.settings_config{[prop]: {default}}
-  //   const defaults = {};
-  //   const settings_config = this.model_env_config?.settings_config || {};
-  //   for (const [prop, config] of Object.entries(settings_config)) {
-  //     if (config?.hasOwnProperty('default')) {
-  //       defaults[prop] = config.default;
-  //     }
-  //   }
-  //   const base_opts = {
-  //     adapter: adapter_key,
-  //     adapters: this.model.env.config.modules.smart_embed_model.adapters,
-  //     model_config: {
-  //       adapter: adapter_key,
-  //       ...(model_data.adapter_config || {}),
-  //     },
-  //     model_key: model_data.model_key,
-  //     settings: this.merge_settings(adapter_key),
-  //     re_render_settings: extra_opts.re_render_settings,
-  //     reload_model: extra_opts.reload_model,
-  //     env: this.model.env,
-  //   };
-
-  //   return this.merge_opts(base_opts, extra_opts);
-  // }
+  static init(models_collection) {
+    console.log('Initializing EmbeddingModelTypeAdapter...');
+    // add embedding#default item
+    const existing = models_collection.get('embedding#default');
+    if (!existing) {
+      const env = models_collection.env;
+      const platforms_collection = env.platforms;
+      let platform = platforms_collection.get('transformers#default');
+      if (!platform) {
+        platform = platforms_collection.new_platform({
+          key: 'transformers#default',
+          platform_type: 'transformers',
+          adapter_key: 'transformers',
+        });
+      }
+      platform.new_model({
+        key: 'embedding#default',
+        model_type: 'embedding',
+        model_key: 'TaylorAI/bge-micro-v2',
+      });
+    }
+  }
 
   get model_env_config() {
     return this.model.env.config.embedding_models[this.adapter_key];
@@ -44,6 +37,7 @@ export class EmbeddingModelTypeAdapter extends ModelTypeAdapter {
     if (!this._model_instance) {
       // const opts = this.build_model_opts();
       this._model_instance = new this.ModelClass(this.model);
+      this._model_instance.load();
     }
     return this._model_instance;
   }

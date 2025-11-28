@@ -8,6 +8,14 @@ export class Models extends Collection {
   get model_type_adapters() {
     return this.opts.model_type_adapters || models_collection.model_type_adapters;
   }
+  async process_load_queue () {
+    await super.process_load_queue();
+    // for each adapter
+    for(const [key, AdapterClass] of Object.entries(this.model_type_adapters)) {
+      // run static init (adds default items, etc)
+      AdapterClass.init(this);
+    }
+  }
   new_model(data = {}) {
     if(!data.platform_key) throw new Error('platform_key is required to create a new model');
     if(!data.model_type) throw new Error('model_type is required to create a new model');

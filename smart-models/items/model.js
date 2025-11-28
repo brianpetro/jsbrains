@@ -85,6 +85,7 @@ export class Model extends CollectionItem {
   get opts() { return this.settings; }
   get model_config() { return this.settings; }
   get adapter_settings() { return this.settings; }
+  get model_key() { return this.settings.model_key; }
 
 }
 

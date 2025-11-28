@@ -35,39 +35,6 @@ export class SmartEntities extends Collection {
   }
 
   /**
-   * Initializes the SmartEntities instance by loading embeddings.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async init() {
-    await super.init();
-    await this.load_smart_embed();
-    if (!this.embed_model) {
-      console.log(`SmartEmbed not loaded for **${this.collection_key}**. Continuing without embedding capabilities.`);
-    }
-  }
-
-  /**
-   * Loads the smart embedding model.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async load_smart_embed() {
-    if (this.embed_model_key === 'None') return;
-    if (!this.embed_model) return;
-    if (this.embed_model.is_loading) return console.log(`SmartEmbedModel already loading for ${this.embed_model_key}`);
-    if (this.embed_model.is_loaded) return console.log(`SmartEmbedModel already loaded for ${this.embed_model_key}`);
-    try {
-      console.log(`Loading SmartEmbedModel in ${this.collection_key}, current state: ${this.embed_model.state}`);
-      await this.embed_model.load();
-    } catch (e) {
-      // catch error to ensure collection settings still load
-      console.error(`Error loading SmartEmbedModel for ${this.embed_model.model_key}`);
-      console.error(e);
-    }
-  }
-
-  /**
    * Unloads the smart embedding model.
    * @async
    * @returns {Promise<void>}
@@ -118,12 +85,20 @@ export class SmartEntities extends Collection {
    * @returns {Object|null} The embedding model instance or null if none.
    */
   get embed_model() {
-    if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class) this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
-      settings: this.settings.embed_model,
-      adapters: this.env.opts.modules.smart_embed_model?.adapters,
-      re_render_settings: () => this.env.render_component('collection_settings', this, {settings_container: this.settings_container}),
-      reload_model: this.reload_embed_model.bind(this),
-    });
+    if (this.env.models.items['embedding#default']) {
+      return this.env.models.items['embedding#default'].get_model_instance();
+    }
+    console.warn('SmartEntities.embed_model is deprecated. Use env.models.get(model_key) instead.');
+    // DEPRECATED handling below
+    if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class){
+      this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
+        settings: this.settings.embed_model,
+        adapters: this.env.opts.modules.smart_embed_model?.adapters,
+        re_render_settings: () => this.env.render_component('collection_settings', this, {settings_container: this.settings_container}),
+        reload_model: this.reload_embed_model.bind(this),
+      });
+      this.env._embed_model.load();
+    }
     return this.env._embed_model;
   }
   set embed_model(embed_model) { this.env._embed_model = embed_model; }
@@ -301,6 +276,9 @@ export class SmartEntities extends Collection {
     await this.process_load_queue();
   }
 
+  /**
+   * @deprecated since v4 2025-11-28
+   */
   get connections_filter_config() { return connections_filter_config; }
 
 }

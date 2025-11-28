@@ -8,6 +8,10 @@
  * - merging base_opts + extra_opts for SmartModel constructors
  */
 export class ModelTypeAdapter {
+  static init(models_collection) {
+    // no-op base init
+    // subclasses can override to add default model items, etc
+  }
   /**
    * @param {import('../../items/model.js').Model} model
    */

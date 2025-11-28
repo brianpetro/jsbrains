@@ -8,26 +8,6 @@ import { SmartFs } from '../../smart-fs/smart_fs.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
-// stub SmartEntities.load_smart_embed_model
-SmartEntities.prototype.load_smart_embed = async function() {
-  this.smart_embed = {
-    embed: () => {
-      return {
-        vec: [0.1, 0.2, 0.3],
-        tokens: 100
-      }
-    },
-    embed_batch: (items) => {
-      return items.map(item => ({
-        ...item,
-        vec: [0.1, 0.2, 0.3],
-        tokens: 100
-      }));
-    }
-  };
-  return Promise.resolve();
-};
-
 class TestMain {
   load_settings() { return {}; }
   save_settings() {}
