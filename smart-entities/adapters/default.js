@@ -98,6 +98,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       entity.vec = emb.vec;
       entity.data.last_embed = entity.data.last_read;
       if (emb.tokens !== undefined) entity.tokens = emb.tokens;
+      entity.emit_event('item:embedded');
     });
   }
 
@@ -125,6 +126,9 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     }
 
     try {
+      const datetime_start = Date.now();
+      console.log(`Getting embed queue for ${this.collection.collection_key}...`);
+      await new Promise(resolve => setTimeout(resolve, 1)); // allow event loop to breathe
       const embed_queue = this.collection.embed_queue;
       // Reset stats as in SmartEntities
       this._reset_embed_queue_stats();
@@ -139,13 +143,12 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         return;
       }
 
-      const datetime_start = new Date();
       if (!embed_queue.length) {
         console.log(`Smart Connections: No items in ${this.collection.collection_key} embed queue`);
         return;
       }
 
-      console.log(`Time spent getting embed queue: ${(new Date()).getTime() - datetime_start.getTime()}ms`);
+      console.log(`Time spent getting embed queue: ${Date.now() - datetime_start}ms`);
       console.log(`Processing ${this.collection.collection_key} embed queue: ${embed_queue.length} items`);
 
       // Process in batches according to embed_model.batch_size

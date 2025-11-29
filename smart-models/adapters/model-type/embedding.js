@@ -34,7 +34,6 @@ export class EmbeddingModelTypeAdapter extends ModelTypeAdapter {
 
   get_model_instance(extra_opts = {}) {
     if (!this._model_instance) {
-      // const opts = this.build_model_opts();
       this._model_instance = new this.ModelClass(this.model);
       this._model_instance.load();
     }

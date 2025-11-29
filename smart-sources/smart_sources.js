@@ -251,7 +251,9 @@ export class SmartSources extends SmartEntities {
       }
     }
     if (this._embed_queue?.length) {
+      const embed_start_at = Date.now();
       await this.process_embed_queue();
+      console.log(`Processed embed queue in ${Date.now() - embed_start_at}ms`);
     }
     if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
     this.sources_re_import_timeout = null;
