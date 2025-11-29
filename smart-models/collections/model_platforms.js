@@ -1,8 +1,8 @@
 import { Collection } from 'smart-collections/collection.js';
 import ajson_single_file_data_adapter from 'smart-collections/adapters/ajson_single_file.js';
-import { Platform } from '../items/platform.js';
+import { ModelPlatform } from '../items/model_platform.js';
 
-export class Platforms extends Collection {
+export class ModelPlatforms extends Collection {
   new_platform(data = {}) {
     if(!data.adapter_key) throw new Error('adapter_key is required to create a new platform');
     const item = new this.item_type(this.env, {
@@ -15,13 +15,12 @@ export class Platforms extends Collection {
   }
 }
 
-export const platforms_collection = {
-  class: Platforms,
-  data_dir: 'platforms',
+export const model_platforms_collection = {
+  class: ModelPlatforms,
+  data_dir: 'model_platforms',
   data_adapter: ajson_single_file_data_adapter,
-  item_type: Platform,
+  item_type: ModelPlatform,
   model_platform_adapters: {}
 };
 
-
-export default platforms_collection;
+export default model_platforms_collection;

@@ -7,12 +7,11 @@ export class EmbeddingModelTypeAdapter extends ModelTypeAdapter {
     const existing = models_collection.get('embedding#default');
     if (!existing) {
       const env = models_collection.env;
-      const platforms_collection = env.platforms;
+      const platforms_collection = env.model_platforms;
       let platform = platforms_collection.get('transformers#default');
       if (!platform) {
         platform = platforms_collection.new_platform({
           key: 'transformers#default',
-          platform_type: 'transformers',
           adapter_key: 'transformers',
         });
       }

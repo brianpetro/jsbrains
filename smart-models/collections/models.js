@@ -17,11 +17,11 @@ export class Models extends Collection {
     }
   }
   new_model(data = {}) {
-    if(!data.platform_key) throw new Error('platform_key is required to create a new model');
+    if(!data.model_platform_key) throw new Error('model_platform_key is required to create a new model');
     if(!data.model_type) throw new Error('model_type is required to create a new model');
-    const platform = this.env.platforms.get(data.platform_key);
+    const platform = this.env.model_platforms.get(data.model_platform_key);
     if(!platform) {
-      this.env.platforms.new_platform({ key: data.platform_key });
+      this.env.model_platforms.new_platform({ key: data.model_platform_key });
     }
     const item = new this.item_type(this.env, {
       ...data,

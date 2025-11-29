@@ -1,6 +1,6 @@
 import { CollectionItem } from 'smart-collections/item.js';
 
-export class Platform extends CollectionItem {
+export class ModelPlatform extends CollectionItem {
   static get defaults() {
     return {
       ...super.defaults,
@@ -14,7 +14,7 @@ export class Platform extends CollectionItem {
   new_model(data = {}) {
     if (!data.model_type) throw new Error('model_type is required to create a new model');
     const model = this.env.models.new_model({
-      platform_key: this.key,
+      model_platform_key: this.key,
       ...data,
     });
     return model;
@@ -35,4 +35,4 @@ export class Platform extends CollectionItem {
   }
 }
 
-export default Platform;
+export default ModelPlatform;
