@@ -1,8 +1,8 @@
 import {
-  LmStudioEmbedModelAdapter,
-} from "smart-embed-model/adapters/lm_studio.js";
+  SmartChatModelGroqAdapter,
+} from "smart-chat-model/adapters/groq.js";
 
-export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
+export class GroqChatCompletionModelAdapter extends SmartChatModelGroqAdapter {
   constructor(model_item) {
     super(model_item);
   }
@@ -22,5 +22,5 @@ export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
 }
 
 export default {
-  class: LmStudioEmbeddingModelAdapter,
+  class: GroqChatCompletionModelAdapter,
 };

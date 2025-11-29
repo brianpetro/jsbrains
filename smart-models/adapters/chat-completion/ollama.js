@@ -1,8 +1,8 @@
 import {
-  LmStudioEmbedModelAdapter,
-} from "smart-embed-model/adapters/lm_studio.js";
+  SmartChatModelOllamaAdapter,
+} from "smart-chat-model/adapters/ollama.js";
 
-export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
+export class OllamaChatCompletionModelAdapter extends SmartChatModelOllamaAdapter {
   constructor(model_item) {
     super(model_item);
   }
@@ -22,5 +22,5 @@ export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
 }
 
 export default {
-  class: LmStudioEmbeddingModelAdapter,
+  class: OllamaChatCompletionModelAdapter,
 };
