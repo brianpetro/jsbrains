@@ -32,11 +32,6 @@ class TestMain {
       item_types: {
         SmartEntity,
       },
-      smart_env_settings: {
-        smart_entities: {
-          embed_model: 'model1',
-        },
-      },
     };
   }
 }

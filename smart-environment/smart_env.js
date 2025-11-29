@@ -587,7 +587,7 @@ export class SmartEnv {
   }
 
   /**
-   * Loads settings from the file system, merging with any `default_settings` or `smart_env_settings`.
+   * Loads settings from the file system, merging with any `default_settings`
    * @returns {Promise<Object>} the loaded settings
    */
   async load_settings() {
@@ -595,7 +595,6 @@ export class SmartEnv {
     // must deep copy default_settings to avoid mutating the original object (prevents unexpected behavior)
     let settings = JSON.parse(JSON.stringify(this.config.default_settings || {})); // set defaults if provided
     deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
-    deep_merge(settings, this.opts?.smart_env_settings || {}); // overrides saved settings (DEPRECATED????)
     this._saved = true;
     if(this.fs.auto_excluded_files) {
       const existing_file_exclusions = settings.smart_sources.file_exclusions.split(',').map(s => s.trim()).filter(Boolean);
