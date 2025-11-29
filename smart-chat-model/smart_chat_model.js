@@ -5,6 +5,7 @@ import { normalize_error } from './utils/normalize_error.js';
  * SmartChatModel - A versatile class for handling chat operations using various platform adapters.
  * @extends SmartModel
  * 
+ * @deprecated Use SmartModels collection instead.
  * @example
  * ```javascript
  * const chatModel = new SmartChatModel({

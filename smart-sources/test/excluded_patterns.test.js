@@ -1,5 +1,5 @@
 import test from 'ava';
-import { SmartSources } from './smart_sources.js';
+import { SmartSources } from '../smart_sources.js';
 
 /**
  * Creates a SmartSources instance with provided settings.

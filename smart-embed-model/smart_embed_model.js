@@ -24,6 +24,8 @@ import { SmartModel } from "smart-model";
  * SmartEmbedModel - A versatile class for handling text embeddings using various model backends
  * @extends SmartModel
  * 
+ * @deprecated Use SmartModels collection instead.
+ * 
  * @example
  * ```javascript
  * const model = new SmartEmbedModel({

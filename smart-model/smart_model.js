@@ -24,6 +24,7 @@
  * Handles state transitions, adapter loading/unloading, and settings management.
  * 
  * @class SmartModel
+ * @deprecated Use SmartModels collection instead.
  */
 export class SmartModel {
   scope_name = 'smart_model';
