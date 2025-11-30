@@ -120,10 +120,11 @@ export class SmartSources extends SmartEntities {
     if (!this.should_handle_event(event)) return;
     const key = this.get_event_path(event);
     if (!key) return;
+    if(this.fs.is_excluded(key)) return;
     let source = this.get(key);
     if (!source) source = this.init_file_path(key);
     if (!source) {
-      console.warn('SmartSources: Unable to resolve source on modify event', event);
+      console.warn('SmartSources: Unable to resolve source on modify event', {key, event});
       return;
     }
     this.queue_source_re_import(source, { event_source: event.event_source });
