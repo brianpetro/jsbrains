@@ -54,10 +54,11 @@ export class Model extends CollectionItem {
     return this.model_type_adapter.get_model_key_options();
   }
   get settings() {
-    return {
+    this.data = {
+      ...(this.data || {}),
       ...(this.model_type_adapter.ModelClass.defaults || {}),
-      ...this.data,
-    };
+    }
+    return this.data;
   }
 
   /**

@@ -21,6 +21,20 @@ export class OllamaChatCompletionModelAdapter extends SmartChatModelOllamaAdapte
   }
 }
 
+const settings_config = {
+  // "api_key": {
+  //   name: 'API Key',
+  //   type: "password",
+  //   description: "Enter your Ollama API key.",
+  // },
+  "host": {
+    name: 'Ollama host',
+    type: 'text',
+    description: 'Enter the host for your Ollama instance',
+  }
+};
+
 export default {
   class: OllamaChatCompletionModelAdapter,
+  settings_config,
 };

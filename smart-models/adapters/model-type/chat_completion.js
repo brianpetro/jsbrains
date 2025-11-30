@@ -7,18 +7,17 @@ export class ChatCompletionModelTypeAdapter extends ModelTypeAdapter {
     const existing = models_collection.get('chat_completion#default');
     if (!existing) {
       const env = models_collection.env;
-      const platforms_collection = env.model_platforms;
-      let platform = platforms_collection.get('openai#default');
+      let platform = env.model_platforms.get('open_router#default');
       if (!platform) {
-        platform = platforms_collection.new_platform({
-          key: 'openai#default',
-          adapter_key: 'openai',
+        platform = env.model_platforms.new_platform({
+          key: 'open_router#default',
+          adapter_key: 'open_router',
         });
       }
       platform.new_model({
         key: 'chat_completion#default',
         model_type: 'chat_completion',
-        model_key: 'gpt-5-nano',
+        model_key: '',
       });
     }
   }
@@ -32,18 +31,17 @@ export class ChatCompletionModelTypeAdapter extends ModelTypeAdapter {
     return ModelClass;
   }
 
-  get_model_instance(extra_opts = {}) {
-    const has_extra_opts = this.has_extra_opts(extra_opts);
-    if (!this._model_instance || has_extra_opts) {
-      const opts = this.build_model_opts(extra_opts);
-      if (has_extra_opts) return new this.ModelClass(opts);
-      this._model_instance = new this.ModelClass(opts);
+  get_model_instance() {
+    if (!this._model_instance) {
+      this._model_instance = new this.ModelClass(this.model);
+      this._model_instance.load();
     }
     return this._model_instance;
   }
   async get_model_key_options() {
     const model_instance = this.get_model_instance();
-    const models = await model_instance.get_models();
+    const models = await model_instance.get_models(true);
+    console.log('ChatCompletionModelTypeAdapter model options:', models);
     return Object.values(models).map(model => ({
       label: model.name || model.key,
       value: model.key,

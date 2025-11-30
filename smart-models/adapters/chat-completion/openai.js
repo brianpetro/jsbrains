@@ -19,8 +19,21 @@ export class OpenAIChatCompletionModelAdapter extends SmartChatModelOpenaiAdapte
     }
     return this._http_adapter;
   }
+
+  get api_key() {
+    return this.model.model_platform.data.api_key;
+  }
+
 }
+const settings_config = {
+  "api_key": {
+    name: 'API Key',
+    type: "password",
+    description: "Enter your OpenAI API key.",
+  },
+};
 
 export default {
   class: OpenAIChatCompletionModelAdapter,
+  settings_config,
 };

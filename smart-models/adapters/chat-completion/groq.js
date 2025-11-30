@@ -21,6 +21,15 @@ export class GroqChatCompletionModelAdapter extends SmartChatModelGroqAdapter {
   }
 }
 
+const settings_config = {
+  api_key: {
+    name: 'API Key',
+    type: "password",
+    description: "Enter your Groq API key.",
+  },
+};
+
 export default {
   class: GroqChatCompletionModelAdapter,
+  settings_config,
 };

@@ -21,6 +21,15 @@ export class LmStudioChatCompletionModelAdapter extends SmartChatModelLmStudioAd
   }
 }
 
+const settings_config = {
+  // api_key: {
+  //   name: 'API Key',
+  //   type: "password",
+  //   description: "Enter your LM Studio API key.",
+  // },
+};
+
 export default {
   class: LmStudioChatCompletionModelAdapter,
+  settings_config,
 };

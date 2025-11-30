@@ -21,6 +21,14 @@ export class CohereChatCompletionModelAdapter extends SmartChatModelCohereAdapte
   }
 }
 
+const settings_config = {
+  api_key: {
+    name: 'API Key',
+    type: "password",
+    description: "Enter your Cohere API key.",
+  },
+};
 export default {
   class: CohereChatCompletionModelAdapter,
+  settings_config,
 };

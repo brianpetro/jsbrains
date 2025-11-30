@@ -21,6 +21,15 @@ export class XaiChatCompletionModelAdapter extends SmartChatModelXaiAdapter {
   }
 }
 
+const settings_config = {
+  "api_key": {
+    name: 'API Key',
+    type: "password",
+    description: "Enter your xAI API key.",
+  },
+};
+
 export default {
   class: XaiChatCompletionModelAdapter,
+  settings_config,
 };

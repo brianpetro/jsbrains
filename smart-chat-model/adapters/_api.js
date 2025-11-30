@@ -50,6 +50,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
 
   /**
    * Get the settings configuration for the API adapter.
+   * @deprecated migrating to module export
    * @returns {Object} Settings configuration object with API key and other settings
    */
   get settings_config() {
@@ -106,7 +107,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   async get_enriched_model_data() {
-    const provider_key = this.constructor.key;
+    const provider_key = this.constructor.models_dev_key || this.constructor.key;
     await this.get_models_dev_index();
     const provider_data = MODELS_DEV_CACHE.data[provider_key] || {};
     const get_limit_i = (model) => model.limit?.context || 10000;
@@ -168,7 +169,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     this.model_data = await this.get_enriched_model_data();
     this.model_data_loaded_at = Date.now();
     this.adapter_settings.models = this.model_data;
-    if(this.valid_model_data()) setTimeout(() => {
+    if(this.valid_model_data() && typeof this.model.re_render_settings === 'function') setTimeout(() => {
       this.model.re_render_settings();
     }, 100);
     else console.warn('Invalid model data, not re-rendering settings');

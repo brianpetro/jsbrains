@@ -9,6 +9,7 @@ import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelR
  */
 export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
   static key = "open_router";
+  static models_dev_key = "openrouter";
   static defaults = {
     description: "Open Router",
     type: "API",
