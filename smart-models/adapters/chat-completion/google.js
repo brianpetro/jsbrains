@@ -1,14 +1,11 @@
 import {
   SmartChatModelGoogleAdapter,
 } from "smart-chat-model/adapters/google.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class GoogleChatCompletionModelAdapter extends SmartChatModelGoogleAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -28,6 +25,7 @@ const settings_config = {
     description: "Enter your Google Gemini API key.",
   },
 };
+add_backward_compatibility(GoogleChatCompletionModelAdapter);
 
 export default {
   class: GoogleChatCompletionModelAdapter,

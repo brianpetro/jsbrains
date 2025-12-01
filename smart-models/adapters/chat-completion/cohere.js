@@ -1,14 +1,11 @@
 import {
   SmartChatModelCohereAdapter,
 } from "smart-chat-model/adapters/cohere.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class CohereChatCompletionModelAdapter extends SmartChatModelCohereAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -28,6 +25,7 @@ const settings_config = {
     description: "Enter your Cohere API key.",
   },
 };
+add_backward_compatibility(CohereChatCompletionModelAdapter);
 export default {
   class: CohereChatCompletionModelAdapter,
   settings_config,

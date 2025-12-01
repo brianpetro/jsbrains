@@ -1,17 +1,12 @@
 import {
   SmartChatModelOpenRouterAdapter,
 } from "smart-chat-model/adapters/open_router.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRouterAdapter {
   constructor(model_item) {
     super(model_item);
   }
-
-  // Backward compatibility
-  // get adapter_config() { return this.model.settings; }
-  // get adapter_settings() { return this.model.settings; }
-  // get model_config () { return this.model.settings; }
-  // get opts () { return this.model.settings; }
   get http_adapter() {
     if (!this._http_adapter) {
       const HttpClass = this.model.env.config.modules.http_adapter.class;
@@ -20,21 +15,6 @@ export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRout
     }
     return this._http_adapter;
   }
-}
-function add_backward_compatibility(_class) {
-  // getters for backward compatibility
-  Object.defineProperty(_class.prototype, 'adapter_config', {
-    get: function() { return this.model.settings; }
-  });
-  Object.defineProperty(_class.prototype, 'adapter_settings', {
-    get: function() { return this.model.settings; }
-  });
-  Object.defineProperty(_class.prototype, 'model_config', {
-    get: function() { return this.model.settings; }
-  });
-  Object.defineProperty(_class.prototype, 'opts', {
-    get: function() { return this.model.settings; }
-  });
 }
 add_backward_compatibility(OpenRouterChatCompletionModelAdapter);
 

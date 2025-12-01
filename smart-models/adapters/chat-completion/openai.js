@@ -1,14 +1,11 @@
 import {
   SmartChatModelOpenaiAdapter,
 } from "smart-chat-model/adapters/openai.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OpenAIChatCompletionModelAdapter extends SmartChatModelOpenaiAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -20,10 +17,6 @@ export class OpenAIChatCompletionModelAdapter extends SmartChatModelOpenaiAdapte
     return this._http_adapter;
   }
 
-  get api_key() {
-    return this.model.provider.data.api_key;
-  }
-
 }
 const settings_config = {
   "api_key": {
@@ -33,6 +26,7 @@ const settings_config = {
   },
 };
 
+add_backward_compatibility(OpenAIChatCompletionModelAdapter);
 export default {
   class: OpenAIChatCompletionModelAdapter,
   settings_config,

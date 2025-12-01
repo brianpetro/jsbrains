@@ -1,14 +1,11 @@
 import {
   SmartChatModelXaiAdapter,
 } from "smart-chat-model/adapters/xai.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class XaiChatCompletionModelAdapter extends SmartChatModelXaiAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -29,6 +26,7 @@ const settings_config = {
   },
 };
 
+add_backward_compatibility(XaiChatCompletionModelAdapter);
 export default {
   class: XaiChatCompletionModelAdapter,
   settings_config,
