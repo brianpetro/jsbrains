@@ -85,10 +85,10 @@ export class SmartEntities extends Collection {
    * @returns {Object|null} The embedding model instance or null if none.
    */
   get embed_model() {
-    if (this.env.models.items['embedding#default']) {
-      return this.env.models.items['embedding#default'].get_model_instance();
+    if (this.env.embedding_models.default) {
+      return this.env.embedding_models.default.instance;
     }
-    console.warn('SmartEntities.embed_model is deprecated. Use env.models.get(model_key) instead.');
+    console.warn('SmartEmbedModel is deprecated.');
     // DEPRECATED handling below
     if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class){
       this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({

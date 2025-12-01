@@ -1,29 +1,41 @@
 import { CollectionItem } from 'smart-collections/item.js';
 
 export class Model extends CollectionItem {
-  get_key() {
-    if (!this.data.key) {
-      this.data.key = Date.now();
-    }
-    return this.data.key;
+  /**
+   * Default properties for an instance of CollectionItem.
+   * @returns {Object}
+   */
+  static get defaults() {
+    return {
+      data: {
+        api_key: '',
+        provider_key: '',
+        model_key: '',
+      }
+    };
   }
 
-  get model_type() {
-    return this.data.model_type;
+  get_key() {
+    if (!this.data.key) {
+      this.data.key = `${this.data.provider_key}#${Date.now()}`;
+    }
+    return this.data.key;
   }
   get provider_key() {
     return this.data.provider_key;
   }
-  get provider() {
-    const provider = this.env?.providers?.get?.(this.provider_key);
-    if (!provider) {
-      throw new Error(`Platform not found for key: ${this.provider_key}`);
-    }
-    return provider;
+  get env_config () {
+    return this.env.config.collections[this.collection_key];
+  }
+  get provider_config () {
+    return this.env_config.providers?.[this.provider_key] || {};
+  }
+  get ProviderAdapterClass() {
+    return this.provider_config.class;
   }
   get instance () {
     if(!this._instance) {
-      const Class = this.provider.AdapterClass;
+      const Class = this.ProviderAdapterClass;
       this._instance = new Class(this);
       this._instance.load();
     }
@@ -31,12 +43,11 @@ export class Model extends CollectionItem {
   }
   async get_model_key_options() {
     const models = await this.instance.get_models();
-    return Object.values(models).map(model => ({
+    return Object.entries(models).map(([key, model]) => ({
       label: model.name || model.key,
-      value: model.key,
+      value: model.key || key,
     }));
   }
-
   
   async count_tokens(text) {
     return this.instance.count_tokens(text);

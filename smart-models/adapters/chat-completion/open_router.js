@@ -7,10 +7,9 @@ export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRout
     super(model_item);
   }
 
-  get adapter_settings() {
-    return this.model.settings;
-  }
-
+  // Backward compatibility
+  get adapter_config() { return this.model.settings; }
+  get adapter_settings() { return this.model.settings; }
   get http_adapter() {
     if (!this._http_adapter) {
       const HttpClass = this.model.env.config.modules.http_adapter.class;
@@ -19,6 +18,7 @@ export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRout
     }
     return this._http_adapter;
   }
+  get model_config() { return this.model.settings; }
 }
 
 const settings_config = {
