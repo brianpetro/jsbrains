@@ -1,20 +1,11 @@
 import { CollectionItem } from 'smart-collections/item.js';
 
-export class ModelPlatform extends CollectionItem {
-  static get defaults() {
-    return {
-      ...super.defaults,
-      data: {
-        adapter_settings: {},
-        meta: {},
-      },
-    };
-  }
+export class Provider extends CollectionItem {
 
   new_model(data = {}) {
     if (!data.model_type) throw new Error('model_type is required to create a new model');
     const model = this.env.models.new_model({
-      model_platform_key: this.key,
+      provider_key: this.key,
       ...data,
     });
     return model;
@@ -33,6 +24,14 @@ export class ModelPlatform extends CollectionItem {
   get adapter_settings() {
     return this.data.adapter_settings || {};
   }
+  get settings() {
+    this.data = {
+      ...(this.data || {}),
+      ...(this.model_type_adapter.ModelClass.defaults || {}),
+    }
+    return this.data;
+  }
+
 }
 
-export default ModelPlatform;
+export default Provider;

@@ -21,7 +21,7 @@ export class OpenAIChatCompletionModelAdapter extends SmartChatModelOpenaiAdapte
   }
 
   get api_key() {
-    return this.model.model_platform.data.api_key;
+    return this.model.provider.data.api_key;
   }
 
 }
