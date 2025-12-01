@@ -37,21 +37,17 @@ export class Model extends CollectionItem {
     }));
   }
 
-  get settings() {
-    this.data = {
-      ...(this.data || {}),
-      ...(this.model_type_adapter.ModelClass.defaults || {}),
-    }
-    return this.data;
-  }
-
+  
   async count_tokens(text) {
     return this.instance.count_tokens(text);
   }
-
+  
   /**
    * BEGIN backward compatibility to access config
    */
+  get settings() {
+    return this.data;
+  }
   get opts() { return this.settings; }
   get model_config() { return this.settings; }
   get adapter_settings() { return this.settings; }

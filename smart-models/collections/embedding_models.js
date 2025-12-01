@@ -5,7 +5,10 @@ import { EmbeddingModel } from '../items/embedding_model.js';
 export class EmbeddingModels extends Models {
 
   get default() {
-    // return item
+    const key = Object.keys(this.items)
+      .sort((a, b) => b - a)[0] // sort desc
+    ;
+    return this.get(key);
   }
 }
 
@@ -14,4 +17,7 @@ export const embedding_models_collection = {
   data_dir: 'embedding_models',
   data_adapter: ajson_single_file_data_adapter,
   item_type: EmbeddingModel,
+  provider_adapters: {
+    transformers
+  }
 };

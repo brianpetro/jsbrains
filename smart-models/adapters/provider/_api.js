@@ -1,7 +1,5 @@
-import { SmartHttpRequest } from "smart-http-request";
-import { SmartStreamer } from '../streamer.js'; // move to smart-http-request???
-import { SmartChatModelAdapter } from './_adapter.js';
-import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
+import { SmartStreamer } from 'smart-chat-model/streamer.js'; // move to smart-http-request???
+import { ProviderAdapter } from './_adapter.js';
 import { normalize_error } from '../utils/normalize_error.js';
 
 const MODEL_ADAPTER_CACHE = {}; // this is gross but makes it easy
@@ -11,39 +9,31 @@ const MODELS_DEV_CACHE = { data: null, fetched_at: 0 };
  * Base API adapter class for SmartChatModel.
  * Handles HTTP requests and response processing for remote chat services.
  * @abstract
- * @class SmartChatModelApiAdapter
- * @extends SmartChatModelAdapter
+ * @class ApiProviderAdapter
+ * @extends ProviderAdapter
  * 
  * @property {SmartHttpRequest} _http_adapter - The HTTP adapter instance
  * @property {SmartChatModelRequestAdapter} req_adapter - The request adapter class
  * @property {SmartChatModelResponseAdapter} res_adapter - The response adapter class
  */
-export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
-  constructor(model){
-    super(model);
-    this.model_data_loaded_at = 0;
-  }
-  
+export class ApiProviderAdapter extends ProviderAdapter {
   /**
    * Get the request adapter class.
-   * @returns {SmartChatModelRequestAdapter} The request adapter class
+   * @returns {ApiProviderRequestAdapter} The request adapter class
    */
-  get req_adapter() { return SmartChatModelRequestAdapter; }
+  get req_adapter() { return ApiProviderRequestAdapter; }
 
   /**
    * Get the response adapter class.
-   * @returns {SmartChatModelResponseAdapter} The response adapter class
+   * @returns {ApiProviderResponseAdapter} The response adapter class
    */
-  get res_adapter() { return SmartChatModelResponseAdapter; }
+  get res_adapter() { return ApiProviderResponseAdapter; }
 
-  /**
-   * Get or initialize the HTTP adapter.
-   * @returns {SmartHttpRequest} The HTTP adapter instance
-   */
   get http_adapter() {
     if (!this._http_adapter) {
-      if (this.model.opts.http_adapter) this._http_adapter = this.model.opts.http_adapter;
-      else this._http_adapter = new SmartHttpRequest({ adapter: SmartHttpRequestFetchAdapter });
+      const HttpClass = this.model.env.config.modules.http_adapter.class;
+      const http_params = {...this.model.env.config.modules.http_adapter, class: undefined};
+      this._http_adapter = new HttpClass(http_params);
     }
     return this._http_adapter;
   }
@@ -93,7 +83,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {true|Array<Object>} True if valid, array of error objects if invalid
    */
   validate_get_models_params() {
-    if(!this.adapter_config.models_endpoint){
+    if(!this.model.models_endpoint){
       const err_msg = `${this.model.adapter_name} models endpoint required to retrieve models`;
       console.warn(err_msg);
       return [{value: '', name: err_msg}];
@@ -168,7 +158,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     }
     this.model_data = await this.get_enriched_model_data();
     this.model_data_loaded_at = Date.now();
-    this.adapter_settings.models = this.model_data;
+    this.model.data.models = this.model_data;
     if(this.valid_model_data() && typeof this.model.re_render_settings === 'function') setTimeout(() => {
       this.model.re_render_settings();
     }, 100);
@@ -302,7 +292,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {Object} { valid: boolean, message: string }
    */
   validate_config() {
-    if(!this.adapter_config.model_key || this.adapter_config.model_key === 'undefined') return { valid: false, message: "No model selected." };
+    if(!this.model.model_key || this.model.model_key === 'undefined') return { valid: false, message: "No model selected." };
     if (!this.api_key) {
       return { valid: false, message: "API key is missing." };
     }
@@ -319,9 +309,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {string} The API key.
    */
   get api_key() {
-    return this.main.opts.api_key // opts added at init take precedence
-      || this.adapter_config?.api_key // then adapter settings
-    ;
+    return this.model.api_key;
   }
 
   /**
@@ -329,37 +317,37 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the number of choices.
    * @returns {number} The number of choices.
    */
-  get choices() { return this.adapter_config.choices; }
+  get choices() { return this.model.choices; }
 
 
 
-  get models_endpoint() { return this.adapter_config.models_endpoint; }
+  get models_endpoint() { return this.model.models_endpoint; }
   get models_endpoint_method() { return 'POST'; }
 
   /**
    * Get the endpoint URL.
    * @returns {string} The endpoint URL.
    */
-  get endpoint() { return this.adapter_config.endpoint; }
+  get endpoint() { return this.model.endpoint; }
 
   /**
    * Get the streaming endpoint URL.
    * @returns {string} The streaming endpoint URL.
    */
-  get endpoint_streaming() { return this.adapter_config.endpoint_streaming || this.endpoint; }
+  get endpoint_streaming() { return this.model.endpoint_streaming || this.endpoint; }
 
   /**
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.adapter_config.max_output_tokens || 3000; }
+  get max_output_tokens() { return this.model.max_output_tokens || 3000; }
 
 
   /**
    * Get the temperature.
    * @returns {number} The temperature.
    */
-  get temperature() { return this.adapter_config.temperature; }
+  get temperature() { return this.model.temperature; }
 
   async get_models_dev_index(ttl_ms = 60 * 60 * 1000) {
     const now = Date.now();
@@ -406,15 +394,15 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
 
 /**
  * Base class for request adapters to handle various input schemas and convert them to OpenAI schema.
- * @class SmartChatModelRequestAdapter
+ * @class ApiProviderRequestAdapter
  * 
- * @property {SmartChatModelAdapter} adapter - The parent adapter instance
+ * @property {ApiProviderAdapter} adapter - The parent adapter instance
  * @property {Object} _req - The original request object
  */
-export class SmartChatModelRequestAdapter {
+export class ApiProviderRequestAdapter {
   /**
    * @constructor
-   * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance
+   * @param {ApiProviderAdapter} adapter - The ApiProviderAdapter instance
    * @param {Object} req - The incoming request object
    */
   constructor(adapter, req = {}) {
@@ -435,7 +423,7 @@ export class SmartChatModelRequestAdapter {
    * @returns {string} Model ID
    */
   get model() {
-    return this._req.model || this.adapter.model_config.id;
+    return this._req.model || this.adapter.model.id;
   }
 
   /**
@@ -451,7 +439,7 @@ export class SmartChatModelRequestAdapter {
    * @returns {number} Max tokens value
    */
   get max_tokens() {
-    return this._req.max_tokens || this.adapter.model_config.max_output_tokens;
+    return this._req.max_tokens || this.adapter.model.max_output_tokens;
   }
 
   /**
@@ -497,12 +485,12 @@ export class SmartChatModelRequestAdapter {
   get_headers() {
     const headers = {
       "Content-Type": "application/json",
-      ...(this.adapter.adapter_config.headers || {}),
+      ...(this.adapter.model.headers || {}),
     };
 
-    if(this.adapter.adapter_config.api_key_header !== 'none') {
-      if (this.adapter.adapter_config.api_key_header){
-        headers[this.adapter.adapter_config.api_key_header] = this.adapter.api_key;
+    if(this.adapter.model.api_key_header !== 'none') {
+      if (this.adapter.model.api_key_header){
+        headers[this.adapter.model.api_key_header] = this.adapter.api_key;
       }else if(this.adapter.api_key) {
         headers['Authorization'] = `Bearer ${this.adapter.api_key}`;
       }
@@ -638,12 +626,12 @@ export class SmartChatModelRequestAdapter {
 
 /**
  * Base class for response adapters to handle various output schemas and convert them to OpenAI schema.
- * @class SmartChatModelResponseAdapter
+ * @class ApiProviderResponseAdapter
  * 
- * @property {SmartChatModelAdapter} adapter - The parent adapter instance
+ * @property {ApiProviderAdapter} adapter - The parent adapter instance
  * @property {Object} _res - The original response object
  */
-export class SmartChatModelResponseAdapter {
+export class ApiProviderResponseAdapter {
   // must be getter to prevent erroneous assignment
   static get platform_res() {
     return {

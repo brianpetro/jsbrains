@@ -1,9 +1,8 @@
 import { CollectionItem } from 'smart-collections/item.js';
 
 export class Provider extends CollectionItem {
-
   new_model(data = {}) {
-    if (!data.model_type) throw new Error('model_type is required to create a new model');
+    if (!data.provider_key) throw new Error('provider_key is required to create a new model');
     const model = this.env.models.new_model({
       provider_key: this.key,
       ...data,
@@ -17,18 +16,7 @@ export class Provider extends CollectionItem {
     return this.data.key;
   }
 
-  get adapter_key() {
-    return this.data.adapter_key;
-  }
-
-  get adapter_settings() {
-    return this.data.adapter_settings || {};
-  }
   get settings() {
-    this.data = {
-      ...(this.data || {}),
-      ...(this.model_type_adapter.ModelClass.defaults || {}),
-    }
     return this.data;
   }
 

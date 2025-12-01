@@ -3,10 +3,6 @@ import {
   SmartEmbedModelRequestAdapter,
   SmartEmbedModelResponseAdapter,
 } from "./_api.js";
-import { Tiktoken } from "js-tiktoken/lite";
-import { fetch_json_cached } from '../utils/fetch_cache.js';
-
-const CL100K_URL = 'https://raw.githubusercontent.com/brianpetro/jsbrains/refs/heads/main/smart-embed-model/cl100k_base.json';
 
 /**
  * Adapter for OpenAI's embedding API

@@ -207,7 +207,6 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
   }
   /**
    * Trim input text to satisfy `max_tokens`.
-   * @private
    * @param {string} embed_input - Input text
    * @param {number} tokens_ct - Existing token count
    * @returns {Promise<string|null>} Trimmed text
