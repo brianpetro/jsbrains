@@ -38,15 +38,28 @@ export class Model extends CollectionItem {
       const Class = this.ProviderAdapterClass;
       this._instance = new Class(this);
       this._instance.load();
+      this.once_event('model:changed', () => {
+        this._instance.unload?.();
+        this._instance = null;
+      });
     }
     return this._instance;
   }
   async get_model_key_options() {
     const models = await this.instance.get_models();
     return Object.entries(models).map(([key, model]) => ({
-      label: model.name || model.key,
+      label: model.name || key,
       value: model.key || key,
-    }));
+    })).sort((a, b) => {
+      // sort by if contains "free" first, then alphabetically
+      if (a.label.toLowerCase().includes('free') && !b.label.toLowerCase().includes('free')) {
+        return -1;
+      }
+      if (!a.label.toLowerCase().includes('free') && b.label.toLowerCase().includes('free')) {
+        return 1;
+      }
+      return a.label.localeCompare(b.label);
+    });
   }
   
   async count_tokens(text) {
@@ -57,11 +70,16 @@ export class Model extends CollectionItem {
    * BEGIN backward compatibility to access config
    */
   get settings() {
+    this.data = {
+      ...this.data,
+      ...this.ProviderAdapterClass.defaults,
+      ...(this.data.provider_models?.[this.model_key] || {}),
+    }
     return this.data;
   }
   get opts() { return this.settings; }
   get model_config() { return this.settings; }
   get adapter_settings() { return this.settings; }
-  get model_key() { return this.settings.model_key; }
+  get model_key() { return this.data.model_key; }
 
 }

@@ -78,7 +78,9 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
         model_name: model.id,
         id: model.id,
         max_input_tokens: model.context_length,
+        name: model.name,
         description: model.name,
+        long_desc: model.description,
         can_use_tools: model.description.includes('tool use') || model.description.includes('function call'),
         multimodal: model.architecture.modality === 'multimodal',
         raw: model
@@ -87,6 +89,59 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
     }, {});
   }
 }
+
+// {
+//     "id": "deepseek/deepseek-v3.2-speciale",
+//     "canonical_slug": "deepseek/deepseek-v3.2-speciale-20251201",
+//     "hugging_face_id": "deepseek-ai/DeepSeek-V3.2-Speciale",
+//     "name": "DeepSeek: DeepSeek V3.2 Speciale",
+//     "created": 1764594837,
+//     "description": "DeepSeek-V3.2-Speciale is a high-compute variant of DeepSeek-V3.2 optimized for maximum reasoning and agentic performance. It builds on DeepSeek Sparse Attention (DSA) for efficient long-context processing, then scales post-training reinforcement learning to push capability beyond the base model. Reported evaluations place Speciale ahead of GPT-5 on difficult reasoning workloads, with proficiency comparable to Gemini-3.0-Pro, while retaining strong coding and tool-use reliability. Like V3.2, it benefits from a large-scale agentic task synthesis pipeline that improves compliance and generalization in interactive environments.",
+//     "context_length": 131072,
+//     "architecture": {
+//         "modality": "text->text",
+//         "input_modalities": [
+//             "text"
+//         ],
+//         "output_modalities": [
+//             "text"
+//         ],
+//         "tokenizer": "DeepSeek",
+//         "instruct_type": null
+//     },
+//     "pricing": {
+//         "prompt": "0.00000028",
+//         "completion": "0.00000042",
+//         "request": "0",
+//         "image": "0",
+//         "web_search": "0",
+//         "internal_reasoning": "0",
+//         "input_cache_read": "0.000000028"
+//     },
+//     "top_provider": {
+//         "context_length": 131072,
+//         "max_completion_tokens": 64000,
+//         "is_moderated": false
+//     },
+//     "per_request_limits": null,
+//     "supported_parameters": [
+//         "frequency_penalty",
+//         "include_reasoning",
+//         "logprobs",
+//         "max_tokens",
+//         "presence_penalty",
+//         "reasoning",
+//         "stop",
+//         "temperature",
+//         "top_logprobs",
+//         "top_p"
+//     ],
+//     "default_parameters": {
+//         "temperature": 1,
+//         "top_p": 0.95,
+//         "frequency_penalty": null
+//     }
+// }
 
 /**
  * Request adapter for OpenRouter API

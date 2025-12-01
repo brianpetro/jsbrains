@@ -173,7 +173,7 @@ export class SmartCompletion extends CollectionItem {
       },
       error: async (err) => {
         console.error('error', err);
-        this.handle_error(err);
+        // this.handle_error(err); // redundant with try/catch in complete()
         await stream_handlers.error?.(err);
       }
     }

@@ -42,7 +42,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    */
   get http_adapter() {
     if (!this._http_adapter) {
-      if (this.model.opts.http_adapter) this._http_adapter = this.model.opts.http_adapter;
+      if (this.model.http_adapter) this._http_adapter = this.model.http_adapter;
+      else if (this.model.opts.http_adapter) this._http_adapter = this.model.opts.http_adapter;
       else this._http_adapter = new SmartHttpRequest({ adapter: SmartHttpRequestFetchAdapter });
     }
     return this._http_adapter;
@@ -168,7 +169,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     }
     this.model_data = await this.get_enriched_model_data();
     this.model_data_loaded_at = Date.now();
-    this.adapter_settings.models = this.model_data;
+    if(this.model.data) {
+      this.model.data.provider_models = this.model_data;
+    }
     if(this.valid_model_data() && typeof this.model.re_render_settings === 'function') setTimeout(() => {
       this.model.re_render_settings();
     }, 100);
@@ -319,8 +322,9 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {string} The API key.
    */
   get api_key() {
-    return this.main.opts.api_key // opts added at init take precedence
-      || this.adapter_config?.api_key // then adapter settings
+    return this.model.api_key
+      || this.main.opts.api_key // DEPRECATED opts added at init take precedence
+      || this.adapter_config?.api_key // DEPRECATED then adapter settings
     ;
   }
 
@@ -435,7 +439,10 @@ export class SmartChatModelRequestAdapter {
    * @returns {string} Model ID
    */
   get model() {
-    return this._req.model || this.adapter.model_config.id;
+    return this._req.model
+      || this.adapter.model.model_key
+      || this.adapter.model_config.id // DEPRECATED
+    ;
   }
 
   /**
