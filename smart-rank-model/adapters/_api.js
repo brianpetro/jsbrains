@@ -15,7 +15,7 @@ export class SmartRankModelApiAdapter extends SmartRankAdapter {
    * @returns {string} Endpoint URL
    */
   get endpoint() {
-    return this.model.data.endpoint;
+    return this.model.data.endpoint || this.constructor.defaults.endpoint;
   }
 
   /**
@@ -23,7 +23,7 @@ export class SmartRankModelApiAdapter extends SmartRankAdapter {
    * @returns {string} API key
    */
   get api_key() {
-    return this.model.api_key;
+    return this.model.data.api_key;
   }
 
   /**
@@ -57,10 +57,10 @@ export class SmartRankModelApiAdapter extends SmartRankAdapter {
   async request(req, retries = 0) {
     try {
       req.throw = false;
-      const resp = await this.http_adapter.request({
-        url: this.endpoint,
-        ...req,
-      });
+      req.url = this.endpoint;
+      console.log('API Request:', req);
+      const resp = await this.http_adapter.request(req);
+      console.log('API Response:', resp);
       const resp_json = await this.get_resp_json(resp);
       return resp_json;
     } catch (error) {
