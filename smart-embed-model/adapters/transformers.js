@@ -333,12 +333,6 @@ export const transformers_models = {
  * @type {Object}
  */
 export const transformers_settings_config = {
-  "[ADAPTER].gpu_batch_size": {
-    name: 'GPU batch size',
-    type: "number",
-    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter number ex. 10",
-  },
   "[ADAPTER].legacy_transformers": {
     name: 'Legacy transformers (no GPU)',
     type: "toggle",
@@ -350,12 +344,6 @@ export const transformers_settings_config = {
 
 // 2025-11-26
 export const settings_config = {
-  // "gpu_batch_size": {
-  //   name: 'GPU batch size',
-  //   type: "number",
-  //   description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-  //   placeholder: "Enter number ex. 10",
-  // },
   "legacy_transformers": {
     name: 'Legacy transformers (no GPU)',
     type: "toggle",

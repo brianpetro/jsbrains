@@ -64,17 +64,9 @@ test.beforeEach((t) => {
     settings: {
       model_key: 'mock_model',
     },
-    model_config: {
-      adapter: 'mock',
-    },
   };
 });
 
-test('Initialization fails when model_config.adapter is missing', (t) => {
-  const opts = { ...t.context.defaultOpts, model_config: {} };
-  const error = t.throws(() => new TestSmartModel(opts), { instanceOf: Error });
-  t.is(error.message, 'model_config.adapter is required');
-});
 
 test('Model is in unloaded state upon instantiation', (t) => {
   const model = new TestSmartModel(t.context.defaultOpts);
@@ -195,9 +187,6 @@ test('Processing settings_config with conditional settings excludes irrelevant s
     settings: {
       model_key: 'conditional_model',
     },
-    model_config: {
-      adapter: 'mock',
-    },
   };
 
   const model = new ConditionalSmartModel(opts);
@@ -241,9 +230,6 @@ test('Processing settings_config with conditional settings includes relevant set
     },
     settings: {
       model_key: 'conditional_model',
-    },
-    model_config: {
-      adapter: 'mock',
     },
   };
 

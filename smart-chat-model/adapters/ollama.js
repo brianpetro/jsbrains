@@ -24,14 +24,17 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
   req_adapter = SmartChatModelOllamaRequestAdapter;
   res_adapter = SmartChatModelOllamaResponseAdapter;
 
+  get host() {
+    return this.model.data.host || this.constructor.defaults.host;
+  }
   get endpoint() {
-    return `${this.model_config.host}${this.constructor.defaults.endpoint}`;
+    return `${this.host}${this.constructor.defaults.endpoint}`;
   }
   get models_endpoint() {
-    return `${this.model_config.host}${this.constructor.defaults.models_endpoint}`;
+    return `${this.host}${this.constructor.defaults.models_endpoint}`;
   }
   get model_show_endpoint() {
-    return `${this.model_config.host}/api/show`;
+    return `${this.host}/api/show`;
   }
   get models_endpoint_method () { return 'GET'; }
 
@@ -63,7 +66,7 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       }
       this.model_data = this.parse_model_data(models_raw_data);
       await this.get_enriched_model_data();
-      this.adapter_settings.models = this.model_data; // set to adapter_settings to persist
+      this.model.data.provider_models = this.model_data;
       this.model.re_render_settings(); // re-render settings to update models dropdown
       this.model_data_loaded_at = Date.now();
       return this.model_data;

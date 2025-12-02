@@ -45,35 +45,6 @@ export class SmartModelAdapter {
   get model_key() { return this.model.model_key; }
 
   /**
-   * Get the current model configuration.
-   * @deprecated use model.data/model.settings
-   * @returns {Object} Model configuration
-   */
-  get model_config() { return this.model.model_config; }
-
-  /**
-   * Get model-specific settings.
-   * @deprecated use model.data/model.settings
-   * @returns {Object} Settings for current model
-   */
-  get model_settings() { return this.model.model_settings; }
-
-  /**
-   * Get adapter-specific configuration.
-   * @deprecated use model.data/model.settings
-   * @returns {Object} Adapter configuration
-   */
-  get adapter_config() { return this.model.adapter_config; }
-
-  /**
-   * Get adapter-specific settings.
-   * @returns {Object} Adapter settings
-   * @deprecated use model.data/model.settings
-   */
-  get adapter_settings() { return this.model.adapter_settings; }
-
-
-  /**
    * Get the models.
    * @returns {Object} Map of model objects
    */

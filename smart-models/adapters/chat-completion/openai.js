@@ -24,6 +24,11 @@ const settings_config = {
     type: "password",
     description: "Enter your OpenAI API key.",
   },
+  "openai_note": {
+    name: 'Note about using OpenAI',
+    type: "html",
+    value: "<b>OpenAI models:</b> Some models require extra verification steps in your OpenAI account for them to appear in the model list.",
+  }
 };
 
 add_backward_compatibility(OpenAIChatCompletionModelAdapter);

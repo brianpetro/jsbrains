@@ -15,7 +15,7 @@ export class SmartRankModelApiAdapter extends SmartRankAdapter {
    * @returns {string} Endpoint URL
    */
   get endpoint() {
-    return this.model_config.endpoint;
+    return this.model.data.endpoint;
   }
 
   /**
@@ -23,7 +23,7 @@ export class SmartRankModelApiAdapter extends SmartRankAdapter {
    * @returns {string} API key
    */
   get api_key() {
-    return this.adapter_settings.api_key || this.settings.api_key || this.model_config.api_key;
+    return this.model.api_key;
   }
 
   /**

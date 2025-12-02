@@ -95,15 +95,18 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     model_key: 'nomic-embed-text',
   };
 
+  get host() {
+    return this.model.data.host || this.constructor.defaults.host;
+  }
   get endpoint() {
-    return `${this.model_config.host}${this.constructor.defaults.endpoint}`;
+    return `${this.host}${this.constructor.defaults.endpoint}`;
   }
 
   get models_endpoint() {
-    return `${this.model_config.host}${this.constructor.defaults.models_endpoint}`;
+    return `${this.host}${this.constructor.defaults.models_endpoint}`;
   }
   get model_show_endpoint() {
-    return `${this.model_config.host}/api/show`;
+    return `${this.host}/api/show`;
   }
 
   async load() {
@@ -156,7 +159,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
 
   /** @returns {number} Maximum tokens for an input */
   get max_tokens() {
-    return this.model_config.max_tokens || this.constructor.defaults.max_tokens;
+    return this.model.data.max_tokens || this.constructor.defaults.max_tokens;
   }
 
   /**
@@ -300,7 +303,7 @@ class SmartEmbedModelOllamaRequestAdapter extends SmartEmbedModelRequestAdapter 
    */
   to_platform() {
     const ollama_body = {
-      model: this.adapter.model_config.model_key,
+      model: this.model_id,
       input: this.embed_inputs,
     };
 

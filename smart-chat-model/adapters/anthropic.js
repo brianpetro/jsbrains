@@ -64,7 +64,7 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
       // this.model_data = this.anthropic_models; // do not set: prevents importing additional models
       this.model_data = await this.get_enriched_model_data();
       this.model_data_loaded_at = Date.now();
-      this.adapter_settings.models = this.model_data;
+      this.model.data.provider_models = this.model_data;
       setTimeout(() => {
         this.model.re_render_settings();
       }, 100);

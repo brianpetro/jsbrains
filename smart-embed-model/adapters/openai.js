@@ -94,7 +94,7 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
 
   /** @returns {number} Maximum tokens per input */
   get max_tokens() {
-    return this.model_config.max_tokens || 8191;
+    return this.model.data.max_tokens || 8191;
   }
 
   /** @returns {Object} Settings configuration for OpenAI adapter */
@@ -138,26 +138,26 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
         "endpoint": "https://api.openai.com/v1/embeddings",
         "adapter": "openai"
       },
-      "text-embedding-3-small-512": {
-        "id": "text-embedding-3-small",
-        "batch_size": 50,
-        "dims": 512,
-        "max_tokens": 8191,
-        "name": "OpenAI Text-3 Small - 512",
-        "description": "API, 8,191 tokens, 512 dim",
-        "endpoint": "https://api.openai.com/v1/embeddings",
-        "adapter": "openai"
-      },
-      "text-embedding-3-large-256": {
-        "id": "text-embedding-3-large",
-        "batch_size": 50,
-        "dims": 256,
-        "max_tokens": 8191,
-        "name": "OpenAI Text-3 Large - 256",
-        "description": "API, 8,191 tokens, 256 dim",
-        "endpoint": "https://api.openai.com/v1/embeddings",
-        "adapter": "openai"
-      },
+      // "text-embedding-3-small-512": {
+      //   "id": "text-embedding-3-small",
+      //   "batch_size": 50,
+      //   "dims": 512,
+      //   "max_tokens": 8191,
+      //   "name": "OpenAI Text-3 Small - 512",
+      //   "description": "API, 8,191 tokens, 512 dim",
+      //   "endpoint": "https://api.openai.com/v1/embeddings",
+      //   "adapter": "openai"
+      // },
+      // "text-embedding-3-large-256": {
+      //   "id": "text-embedding-3-large",
+      //   "batch_size": 50,
+      //   "dims": 256,
+      //   "max_tokens": 8191,
+      //   "name": "OpenAI Text-3 Large - 256",
+      //   "description": "API, 8,191 tokens, 256 dim",
+      //   "endpoint": "https://api.openai.com/v1/embeddings",
+      //   "adapter": "openai"
+      // },
       "text-embedding-ada-002": {
         "id": "text-embedding-ada-002",
         "batch_size": 50,
@@ -184,11 +184,11 @@ class SmartEmbedOpenAIRequestAdapter extends SmartEmbedModelRequestAdapter {
    */
   prepare_request_body() {
     const body = {
-      model: this.adapter.model_config.id,
+      model: this.model_id,
       input: this.embed_inputs,
     };
-    if (this.adapter.model_key.startsWith("text-embedding-3")) {
-      body.dimensions = this.adapter.model_config.dims;
+    if (this.model_id.startsWith("text-embedding-3")) {
+      body.dimensions = this.model_dims;
     }
     return body;
   }

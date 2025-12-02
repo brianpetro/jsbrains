@@ -70,6 +70,9 @@ export class Model extends CollectionItem {
     return this.instance.count_tokens(text);
   }
   
+  get api_key() {
+    return this.data.api_key;
+  }
   /**
    * BEGIN backward compatibility to access config
    */
@@ -88,8 +91,6 @@ export class Model extends CollectionItem {
     return this.data;
   }
   get opts() { return this.settings; }
-  get model_config() { return this.settings; }
-  get adapter_settings() { return this.settings; }
   get model_key() { return this.data.model_key; }
 
 }

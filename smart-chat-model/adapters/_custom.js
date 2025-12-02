@@ -180,11 +180,4 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
  * @extends SmartChatModelRequestAdapter
  */
 export class SmartChatModelCustomRequestAdapter extends SmartChatModelRequestAdapter {
-  /**
-   * If the custom config has a 'model_name', we use that
-   * else fall back to parent logic
-   */
-  get model_id() {
-    return this.adapter.model_config.model_name || super.model_id;
-  }
 }

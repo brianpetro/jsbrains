@@ -56,10 +56,13 @@ export class SmartCompletion extends CollectionItem {
   async init(completion_opts={}) {
     // instance in data causes validation error
     // pass chat model instance directly to completion
-    if(this.data.chat_model_config){
-      this.chat_model = this.env.init_module('smart_chat_model', {
-        settings: this.data.chat_model_config,
-      });
+    if(!this.chat_model){
+      if(this.data.chat_completion_model_key && this.env.chat_completion_models.get(this.data.chat_completion_model_key)){
+        const model = this.env.chat_completion_models.get(this.data.chat_completion_model_key);
+        this.chat_model = model.instance;
+      }else{
+        this.chat_model = this.collection?.chat_model || null;
+      }
     }
     await this.build_request();
     await this.complete(completion_opts);

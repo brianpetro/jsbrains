@@ -99,14 +99,14 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Fetch available models from OpenRouter and filter to embedding models.
-   * Results are cached in adapter_settings.models and used by the settings UI.
+   * Results are cached in model.data.provider_models and used by the settings UI.
    *
    * @param {boolean} [refresh=false] - Force refresh of model list
    * @returns {Promise<Object>} Map of model objects keyed by model id
    */
   async get_models(refresh = false) {
-    if (!refresh && this.adapter_settings.models) {
-      return this.adapter_settings.models;
+    if (!refresh && this.model.data.provider_models) {
+      return this.model.data.provider_models;
     }
 
     if (!this.api_key) {
@@ -124,7 +124,7 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
           adapter: this.constructor.key,
         },
       };
-      this.adapter_settings.models = fallback_models;
+      this.model.data.provider_models = fallback_models;
       return fallback_models;
     }
 
@@ -138,13 +138,13 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
       });
       const raw = await resp.json();
       const parsed = this.parse_model_data(raw);
-      this.adapter_settings.models = parsed;
+      this.model.data.provider_models = parsed;
       this.model.re_render_settings();
       return parsed;
     } catch (error) {
       console.error("[SmartEmbedOpenRouterAdapter] Failed to fetch models:", error);
       // Keep any previously loaded models or a minimal fallback
-      if (this.adapter_settings.models) return this.adapter_settings.models;
+      if (this.model.data.provider_models) return this.model.data.provider_models;
 
       const fallback_id = this.constructor.defaults.default_model;
       const fallback_models = {
@@ -156,7 +156,7 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
           adapter: this.constructor.key,
         },
       };
-      this.adapter_settings.models = fallback_models;
+      this.model.data.provider_models = fallback_models;
       return fallback_models;
     }
   }
@@ -220,7 +220,7 @@ class SmartEmbedOpenRouterRequestAdapter extends SmartEmbedModelRequestAdapter {
    */
   prepare_request_body() {
     return {
-      model: this.adapter.model_config.id,
+      model: this.model_id,
       input: this.embed_inputs,
     };
   }

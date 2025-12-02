@@ -1,14 +1,5 @@
 export function add_backward_compatibility(_class) {
   // getters for backward compatibility
-  Object.defineProperty(_class.prototype, 'adapter_config', {
-    get: function () { return this.model.settings; }
-  });
-  Object.defineProperty(_class.prototype, 'adapter_settings', {
-    get: function () { return this.model.settings; }
-  });
-  Object.defineProperty(_class.prototype, 'model_config', {
-    get: function () { return this.model.settings; }
-  });
   Object.defineProperty(_class.prototype, 'opts', {
     get: function () { return this.model.settings; }
   });

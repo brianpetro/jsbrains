@@ -34,17 +34,6 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
   get res_adapter() { return SmartChatModelOpenRouterResponseAdapter; }
 
   /**
-   * Get API key from various sources
-   * @returns {string|undefined} API key if available
-   */
-  get api_key(){
-    return this.main.opts.api_key // opts added at init take precedence
-      || this.adapter_settings?.api_key // then adapter settings
-      || process.env.DEFAULT_OPEN_ROUTER_API_KEY
-    ;
-  }
-
-  /**
    * Count tokens in input text (rough estimate)
    * @param {string|Object} input - Text to count tokens for
    * @returns {Promise<number>} Estimated token count

@@ -9,8 +9,6 @@ var SmartModel = class {
    * @param {Object} opts - Configuration options
    * @param {Object} opts.adapters - Map of adapter names to adapter classes
    * @param {Object} opts.settings - Model settings configuration
-   * @param {Object} opts.model_config - Model-specific configuration
-   * @param {string} opts.model_config.adapter - Name of the adapter to use
    * @param {string} [opts.model_key] - Optional model identifier to override settings
    * @throws {Error} If required options are missing
    */
@@ -53,28 +51,12 @@ var SmartModel = class {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    let adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
+    let adapter_key = this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
     if (!adapter_key || !this.adapters[adapter_key]) {
       console.warn(`Platform "${adapter_key}" not supported`);
       adapter_key = Object.keys(this.adapters)[0];
     }
     return adapter_key;
-  }
-  /**
-   * Get adapter-specific settings.
-   * @returns {Object} Settings for current adapter
-   */
-  get adapter_settings() {
-    if (!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
-    return this.settings[this.adapter_name];
-  }
-  get adapter_config() {
-    const base_config = this.adapters[this.adapter_name]?.defaults || {};
-    return {
-      ...base_config,
-      ...this.adapter_settings,
-      ...this.opts.adapter_config
-    };
   }
   /**
    * Get available models.
@@ -95,24 +77,7 @@ var SmartModel = class {
    * @returns {string} Current model key
    */
   get model_key() {
-    return this.opts.model_key || this.adapter_config.model_key || this.settings.model_key || this.default_model_key;
-  }
-  /**
-   * Get the current model configuration
-   * @returns {Object} Combined base and custom model configuration
-   */
-  get model_config() {
-    const model_key = this.model_key;
-    const base_model_config = this.models[model_key] || {};
-    return {
-      ...this.adapter_config,
-      ...base_model_config,
-      ...this.opts.model_config
-    };
-  }
-  get model_settings() {
-    if (!this.settings[this.model_key]) this.settings[this.model_key] = {};
-    return this.settings[this.model_key];
+    return this.opts.model_key || this.settings.model_key || this.default_model_key;
   }
   /**
    * Load the current adapter and transition to loaded state.
@@ -121,8 +86,22 @@ var SmartModel = class {
    */
   async load() {
     this.set_state("loading");
-    if (!this.adapter?.is_loaded) {
-      await this.invoke_adapter_method("load");
+    try {
+      if (!this.adapter?.is_loaded) {
+        await this.invoke_adapter_method("load");
+      }
+    } catch (err) {
+      this.set_state("unloaded");
+      if (!this.reload_model_timeout) {
+        this.reload_model_timeout = setTimeout(async () => {
+          this.reload_model_timeout = null;
+          await this.load();
+          this.set_state("loaded");
+          this.env?.events?.emit("model:loaded", { model_key: this.model_key });
+          this.notices?.show("Loaded model: " + this.model_key);
+        }, 6e4);
+      }
+      throw new Error(`Failed to load model: ${err.message}`);
     }
     this.set_state("loaded");
   }
@@ -440,39 +419,12 @@ var SmartModelAdapter = class {
     return this.model.model_key;
   }
   /**
-   * Get the current model configuration.
-   * @returns {Object} Model configuration
-   */
-  get model_config() {
-    return this.model.model_config;
-  }
-  /**
-   * Get model-specific settings.
-   * @returns {Object} Settings for current model
-   */
-  get model_settings() {
-    return this.model.model_settings;
-  }
-  /**
-   * Get adapter-specific configuration.
-   * @returns {Object} Adapter configuration
-   */
-  get adapter_config() {
-    return this.model.adapter_config;
-  }
-  /**
-   * Get adapter-specific settings.
-   * @returns {Object} Adapter settings
-   */
-  get adapter_settings() {
-    return this.model.adapter_settings;
-  }
-  /**
    * Get the models.
    * @returns {Object} Map of model objects
    */
   get models() {
-    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0) return this.adapter_config.models;
+    const models = this.model.data.provider_models;
+    if (typeof models === "object" && Object.keys(models || {}).length > 0) return models;
     else {
       return {};
     }
@@ -496,10 +448,11 @@ var SmartModelAdapter = class {
       this.get_models(true);
       return [{ value: "", name: "No models currently available" }];
     }
-    return Object.values(models).map((model2) => ({ value: model2.id, name: model2.name || model2.id })).sort((a, b) => a.name.localeCompare(b.name));
+    return Object.entries(models).map(([id, model2]) => ({ value: id, name: model2.name || id })).sort((a, b) => a.name.localeCompare(b.name));
   }
   /**
    * Set the adapter's state.
+   * @deprecated should be handled in SmartModel (only handle once)
    * @param {('unloaded'|'loading'|'loaded'|'unloading')} new_state - The new state
    * @throws {Error} If the state is invalid
    */
@@ -526,6 +479,15 @@ var SmartModelAdapter = class {
 };
 
 // adapters/_adapter.js
+var settings_config = {
+  "[ADAPTER].model_key": {
+    name: "Ranking Model",
+    type: "dropdown",
+    description: "Select a ranking model to use.",
+    options_callback: "adapter.get_models_as_options",
+    callback: "reload_model"
+  }
+};
 var SmartRankAdapter = class extends SmartModelAdapter {
   /**
    * Create a SmartRankAdapter instance.
@@ -547,16 +509,7 @@ var SmartRankAdapter = class extends SmartModelAdapter {
     throw new Error("rank method not implemented");
   }
   get settings_config() {
-    return {
-      "[ADAPTER].model_key": {
-        name: "Ranking Model",
-        type: "dropdown",
-        description: "Select a ranking model to use.",
-        options_callback: "adapter.get_models_as_options",
-        callback: "reload_model",
-        default: this.constructor.defaults.default_model
-      }
-    };
+    return settings_config;
   }
 };
 
@@ -615,7 +568,7 @@ var SmartRankTransformersAdapter = class extends SmartRankAdapter {
   async load() {
     console.log("TransformersAdapter initializing");
     console.log(this.model.model_key);
-    const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
+    const { AutoTokenizer, AutoModelForSequenceClassification, env } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0");
     env.allowLocalModels = false;
     const pipeline_opts = {
       quantized: true

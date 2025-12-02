@@ -309,7 +309,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.model_config.max_output_tokens || 3000; }
+  get max_output_tokens() { return this.model.data.max_output_tokens || 3000; }
 
   async get_models_dev_index(ttl_ms = 60 * 60 * 1000) {
     const now = Date.now();
@@ -387,7 +387,7 @@ export class SmartChatModelRequestAdapter {
   get model_id() {
     return this._req.model
       || this.adapter.model.model_key
-      || this.adapter.model_config.id // DEPRECATED
+      || this.adapter.model.data.id // DEPRECATED
     ;
   }
 

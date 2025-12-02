@@ -152,21 +152,21 @@ class SmartEmbedGeminiRequestAdapter extends SmartEmbedModelRequestAdapter {
       const doc_content = content.join("\n").trim() || "";
       if (doc_content.length) {
         return {
-          model: this.adapter.model_config.id,
+          model: this.model_id,
           content: {
             parts: [{text: doc_content}]
           },
-          outputDimensionality: this.adapter.model_config.dims,
+          outputDimensionality: this.model_dims,
           taskType: "RETRIEVAL_DOCUMENT",
           title: title,
         }
       }else{
         return {
-          model: this.adapter.model_config.id,
+          model: this.model_id,
           content: {
             parts: [{text: title}]
           },
-          outputDimensionality: this.adapter.model_config.dims,
+          outputDimensionality: this.model_dims,
           taskType: "RETRIEVAL_DOCUMENT",
         }
       }

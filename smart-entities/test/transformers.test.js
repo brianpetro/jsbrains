@@ -81,7 +81,6 @@ test.before(async (t) => {
             transformers: {
               model_key: 'TaylorAI/bge-micro-v2',  // or any local/huggingface model 
               legacy_transformers: false,
-              gpu_batch_size: 2
             },
           },
           // For demonstration, embed anything with >=10 chars

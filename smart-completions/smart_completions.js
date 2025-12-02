@@ -13,14 +13,9 @@ export class SmartCompletions extends Collection {
    */
   get chat_model() {
     if (!this._chat_model) {
-      this._chat_model = this.env.init_module('smart_chat_model', {
-        model_config: {},
-        settings: this.settings.chat_model
-          ?? this.env.smart_chat_threads?.settings?.chat_model // temporary fallback until completions default settings are implemented in Smart Env settings
-          ?? {},
-        reload_model: this.reload_chat_model.bind(this),
-        re_render_settings: this.re_render_settings?.bind(this) ?? (() => { console.log('no re_render_settings') }),
-      });
+      if(this.env.chat_completion_models?.default?.instance){
+        return this.env.chat_completion_models.default.instance;
+      }
     }
     return this._chat_model;
   }

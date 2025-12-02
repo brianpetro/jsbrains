@@ -55,12 +55,16 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     return LmStudioEmbedModelResponseAdapter;
   }
 
+  get host() {
+    return this.model.data.host || this.constructor.defaults.host;
+  }
+
   get endpoint() {
-    return `${this.model_config.host}${this.constructor.defaults.endpoint}`;
+    return `${this.host}${this.constructor.defaults.endpoint}`;
   }
 
   get models_endpoint() {
-    return `${this.model_config.host}${this.constructor.defaults.models_endpoint}`;
+    return `${this.host}${this.constructor.defaults.models_endpoint}`;
   }
 
   get settings_config() {
@@ -97,7 +101,7 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
   }
 
   async get_models(refresh = false) {
-    if (!refresh && this.adapter_settings.models) return this.adapter_settings.models;
+    if (!refresh && this.model.data.provider_models) return this.model.data.provider_models;
 
     const resp = await this.http_adapter.request({
       url: this.models_endpoint,
@@ -105,7 +109,7 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     });
     const raw = await resp.json();
     const parsed = this.parse_model_data(raw);
-    this.adapter_settings.models = parsed;
+    this.model.data.provider_models = parsed;
     this.model.re_render_settings();
     return parsed;
   }
@@ -161,7 +165,7 @@ class LmStudioEmbedModelRequestAdapter extends SmartEmbedModelRequestAdapter {
    */
   prepare_request_body() {
     const body = {
-      model: this.adapter.model_config.id,
+      model: this.model_id,
       input: this.embed_inputs,
     };
     return body;

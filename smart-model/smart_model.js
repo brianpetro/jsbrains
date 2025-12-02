@@ -36,8 +36,6 @@ export class SmartModel {
    * @param {Object} opts - Configuration options
    * @param {Object} opts.adapters - Map of adapter names to adapter classes
    * @param {Object} opts.settings - Model settings configuration
-   * @param {Object} opts.model_config - Model-specific configuration
-   * @param {string} opts.model_config.adapter - Name of the adapter to use
    * @param {string} [opts.model_key] - Optional model identifier to override settings
    * @throws {Error} If required options are missing
    */
@@ -83,8 +81,7 @@ export class SmartModel {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    let adapter_key = this.opts.model_config?.adapter
-      || this.opts.adapter
+    let adapter_key = this.opts.adapter
       || this.settings.adapter
       || Object.keys(this.adapters)[0]
     ;
@@ -95,23 +92,6 @@ export class SmartModel {
     return adapter_key;
   }
 
-  /**
-   * Get adapter-specific settings.
-   * @returns {Object} Settings for current adapter
-   */
-  get adapter_settings() {
-    if(!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
-    return this.settings[this.adapter_name];
-  }
-
-  get adapter_config() {
-    const base_config = this.adapters[this.adapter_name]?.defaults || {};
-    return {
-      ...base_config,
-      ...this.adapter_settings,
-      ...this.opts.adapter_config
-    };
-  }
   /**
    * Get available models.
    * @returns {Object} Map of model objects
@@ -132,29 +112,9 @@ export class SmartModel {
    */
   get model_key() {
     return this.opts.model_key // directly passed opts take precedence
-      || this.adapter_config.model_key // then adapter config
       || this.settings.model_key // then settings
       || this.default_model_key // then default
     ;
-  }
-
-  /**
-   * Get the current model configuration
-   * @returns {Object} Combined base and custom model configuration
-   */
-  get model_config() {
-    const model_key = this.model_key;
-    const base_model_config = this.models[model_key] || {};
-    return {
-      ...this.adapter_config,
-      ...base_model_config,
-      ...this.opts.model_config
-    };
-  }
-
-  get model_settings() {
-    if(!this.settings[this.model_key]) this.settings[this.model_key] = {};
-    return this.settings[this.model_key];
   }
 
   /**

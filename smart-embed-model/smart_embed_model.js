@@ -23,19 +23,7 @@ import { SmartModel } from "smart-model";
 /**
  * SmartEmbedModel - A versatile class for handling text embeddings using various model backends
  * @extends SmartModel
- * 
- * @deprecated Use SmartModels collection instead.
- * 
- * @example
- * ```javascript
- * const model = new SmartEmbedModel({
- *   model_key: 'TaylorAI/bge-micro-v2',
- *   use_gpu: true
- * });
- * 
- * const embeddings = await model.embed("Your text here");
- * console.log(embeddings.vec);
- * ```
+ * @deprecated Use EmbeddingModels (SmartModels) collection instead
  */
 export class SmartEmbedModel extends SmartModel {
   scope_name = 'smart_embed_model';
@@ -47,12 +35,7 @@ export class SmartEmbedModel extends SmartModel {
    * @param {Object} opts - Configuration options
    * @param {Object} [opts.adapters] - Map of available adapter implementations
    * @param {boolean} [opts.use_gpu] - Whether to enable GPU acceleration
-   * @param {number} [opts.gpu_batch_size] - Batch size when using GPU
    * @param {number} [opts.batch_size] - Default batch size for processing
-   * @param {Object} [opts.model_config] - Model-specific configuration
-   * @param {string} [opts.model_config.adapter] - Override adapter type
-   * @param {number} [opts.model_config.dims] - Embedding dimensions
-   * @param {number} [opts.model_config.max_tokens] - Maximum tokens to process
    * @param {Object} [opts.settings] - User settings
    * @param {string} [opts.settings.api_key] - API key for remote models
    * @param {number} [opts.settings.min_chars] - Minimum text length to embed

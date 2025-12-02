@@ -27,10 +27,6 @@ test('CohereAdapter rank function returns expected results', async t => {
     }
   }, {
     adapter: 'cohere',
-    model_config: {
-      api_key,
-      endpoint: "https://api.cohere.ai/v1/rerank"
-    }
   });
 
   const response = await model.rank(query, documents);

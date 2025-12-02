@@ -90,10 +90,6 @@ const smart_chat_model_schema = {
           "description": "Returns the current platform key",
           "type": "function"
         },
-        "adapter_settings": {
-          "description": "Returns the settings for the current platform",
-          "type": "function"
-        },
         "settings": {
           "description": "Returns the overall settings for the chat model",
           "type": "function"

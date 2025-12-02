@@ -30,7 +30,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
 
   /** @returns {string} API endpoint URL */
   get endpoint() {
-    return this.model_config.endpoint;
+    return this.model.data.endpoint;
   }
 
   /**
@@ -54,7 +54,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
    * @returns {string} API key
    */
   get api_key() {
-    return this.adapter_settings.api_key || this.settings.api_key || this.model_config.api_key;
+    return this.model.data.api_key;
   }
 
   /**
@@ -241,6 +241,13 @@ export class SmartEmbedModelRequestAdapter {
   constructor(adapter, embed_inputs) {
     this.adapter = adapter;
     this.embed_inputs = embed_inputs;
+  }
+
+  get model_id() {
+    return this.adapter.model.data.model_key;
+  }
+  get model_dims() {
+    return this.adapter.model.data.dims;
   }
 
   /**

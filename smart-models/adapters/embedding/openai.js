@@ -1,14 +1,11 @@
 import {
   SmartEmbedOpenAIAdapter,
 } from "smart-embed-model/adapters/openai.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OpenAIEmbeddingModelAdapter extends SmartEmbedOpenAIAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -59,6 +56,7 @@ export class OpenAIEmbeddingModelAdapter extends SmartEmbedOpenAIAdapter {
     };
   }
 }
+add_backward_compatibility(OpenAIEmbeddingModelAdapter);
 
 export const settings_config = {
   "api_key": {

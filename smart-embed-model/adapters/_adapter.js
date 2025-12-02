@@ -80,20 +80,18 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
     };
   }
 
-  get dims() { return this.model_config.dims; }
-  get max_tokens() { return this.model_config.max_tokens; }
-  // get batch_size() { return this.model_config.batch_size; }
+  get dims() { return this.model.data.dims; }
+  get max_tokens() { return this.model.data.max_tokens; }
 
   get use_gpu() {
     if(typeof this._use_gpu === 'undefined'){
-      if(typeof this.model.opts.use_gpu !== 'undefined') this._use_gpu = this.model.opts.use_gpu;
-      else this._use_gpu = typeof navigator !== 'undefined' && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
+      if(typeof this.model.data.use_gpu !== 'undefined') this._use_gpu = this.model.data.use_gpu;
+      else this._use_gpu = typeof navigator !== 'undefined' && !!navigator?.gpu;
     }
     return this._use_gpu;
   }
   set use_gpu(value) { this._use_gpu = value; }
   get batch_size() {
-    if(this.use_gpu && this.model_config?.gpu_batch_size) return this.model_config.gpu_batch_size;
-    return this.model.opts.batch_size || this.model_config.batch_size || 1;
+    return this.model.data.batch_size || 1;
   }
 }

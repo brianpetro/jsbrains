@@ -9,8 +9,6 @@ var SmartModel = class {
    * @param {Object} opts - Configuration options
    * @param {Object} opts.adapters - Map of adapter names to adapter classes
    * @param {Object} opts.settings - Model settings configuration
-   * @param {Object} opts.model_config - Model-specific configuration
-   * @param {string} opts.model_config.adapter - Name of the adapter to use
    * @param {string} [opts.model_key] - Optional model identifier to override settings
    * @throws {Error} If required options are missing
    */
@@ -53,28 +51,12 @@ var SmartModel = class {
    * @returns {string} Current adapter name
    */
   get adapter_name() {
-    let adapter_key = this.opts.model_config?.adapter || this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
+    let adapter_key = this.opts.adapter || this.settings.adapter || Object.keys(this.adapters)[0];
     if (!adapter_key || !this.adapters[adapter_key]) {
       console.warn(`Platform "${adapter_key}" not supported`);
       adapter_key = Object.keys(this.adapters)[0];
     }
     return adapter_key;
-  }
-  /**
-   * Get adapter-specific settings.
-   * @returns {Object} Settings for current adapter
-   */
-  get adapter_settings() {
-    if (!this.settings[this.adapter_name]) this.settings[this.adapter_name] = {};
-    return this.settings[this.adapter_name];
-  }
-  get adapter_config() {
-    const base_config = this.adapters[this.adapter_name]?.defaults || {};
-    return {
-      ...base_config,
-      ...this.adapter_settings,
-      ...this.opts.adapter_config
-    };
   }
   /**
    * Get available models.
@@ -95,24 +77,7 @@ var SmartModel = class {
    * @returns {string} Current model key
    */
   get model_key() {
-    return this.opts.model_key || this.adapter_config.model_key || this.settings.model_key || this.default_model_key;
-  }
-  /**
-   * Get the current model configuration
-   * @returns {Object} Combined base and custom model configuration
-   */
-  get model_config() {
-    const model_key = this.model_key;
-    const base_model_config = this.models[model_key] || {};
-    return {
-      ...this.adapter_config,
-      ...base_model_config,
-      ...this.opts.model_config
-    };
-  }
-  get model_settings() {
-    if (!this.settings[this.model_key]) this.settings[this.model_key] = {};
-    return this.settings[this.model_key];
+    return this.opts.model_key || this.settings.model_key || this.default_model_key;
   }
   /**
    * Load the current adapter and transition to loaded state.
@@ -338,12 +303,7 @@ var SmartEmbedModel = class extends SmartModel {
    * @param {Object} opts - Configuration options
    * @param {Object} [opts.adapters] - Map of available adapter implementations
    * @param {boolean} [opts.use_gpu] - Whether to enable GPU acceleration
-   * @param {number} [opts.gpu_batch_size] - Batch size when using GPU
    * @param {number} [opts.batch_size] - Default batch size for processing
-   * @param {Object} [opts.model_config] - Model-specific configuration
-   * @param {string} [opts.model_config.adapter] - Override adapter type
-   * @param {number} [opts.model_config.dims] - Embedding dimensions
-   * @param {number} [opts.model_config.max_tokens] - Maximum tokens to process
    * @param {Object} [opts.settings] - User settings
    * @param {string} [opts.settings.api_key] - API key for remote models
    * @param {number} [opts.settings.min_chars] - Minimum text length to embed
@@ -491,39 +451,12 @@ var SmartModelAdapter = class {
     return this.model.model_key;
   }
   /**
-   * Get the current model configuration.
-   * @returns {Object} Model configuration
-   */
-  get model_config() {
-    return this.model.model_config;
-  }
-  /**
-   * Get model-specific settings.
-   * @returns {Object} Settings for current model
-   */
-  get model_settings() {
-    return this.model.model_settings;
-  }
-  /**
-   * Get adapter-specific configuration.
-   * @returns {Object} Adapter configuration
-   */
-  get adapter_config() {
-    return this.model.adapter_config;
-  }
-  /**
-   * Get adapter-specific settings.
-   * @returns {Object} Adapter settings
-   */
-  get adapter_settings() {
-    return this.model.adapter_settings;
-  }
-  /**
    * Get the models.
    * @returns {Object} Map of model objects
    */
   get models() {
-    if (typeof this.adapter_config.models === "object" && Object.keys(this.adapter_config.models || {}).length > 0) return this.adapter_config.models;
+    const models = this.model.data.provider_models;
+    if (typeof models === "object" && Object.keys(models || {}).length > 0) return models;
     else {
       return {};
     }
@@ -636,16 +569,15 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
     };
   }
   get dims() {
-    return this.model_config.dims;
+    return this.model.data.dims;
   }
   get max_tokens() {
-    return this.model_config.max_tokens;
+    return this.model.data.max_tokens;
   }
-  // get batch_size() { return this.model_config.batch_size; }
   get use_gpu() {
     if (typeof this._use_gpu === "undefined") {
-      if (typeof this.model.opts.use_gpu !== "undefined") this._use_gpu = this.model.opts.use_gpu;
-      else this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu && this.model_settings.gpu_batch_size !== 0;
+      if (typeof this.model.data.use_gpu !== "undefined") this._use_gpu = this.model.data.use_gpu;
+      else this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu;
     }
     return this._use_gpu;
   }
@@ -653,8 +585,7 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
     this._use_gpu = value;
   }
   get batch_size() {
-    if (this.use_gpu && this.model_config?.gpu_batch_size) return this.model_config.gpu_batch_size;
-    return this.model.opts.batch_size || this.model_config.batch_size || 1;
+    return this.model.data.batch_size || 1;
   }
 };
 /**
@@ -962,12 +893,6 @@ var transformers_models = {
   }
 };
 var transformers_settings_config = {
-  "[ADAPTER].gpu_batch_size": {
-    name: "GPU batch size",
-    type: "number",
-    description: "Number of embeddings to process per batch on GPU. Use 0 to disable GPU.",
-    placeholder: "Enter number ex. 10"
-  },
   "[ADAPTER].legacy_transformers": {
     name: "Legacy transformers (no GPU)",
     type: "toggle",
