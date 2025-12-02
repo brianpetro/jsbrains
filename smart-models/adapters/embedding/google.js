@@ -2,13 +2,10 @@ import {
   GeminiEmbedModelAdapter,
 } from "smart-embed-model/adapters/gemini.js";
 
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 export class GoogleGeminiEmbeddingModelAdapter extends GeminiEmbedModelAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -20,6 +17,7 @@ export class GoogleGeminiEmbeddingModelAdapter extends GeminiEmbedModelAdapter {
     return this._http_adapter;
   }
 }
+add_backward_compatibility(GoogleGeminiEmbeddingModelAdapter);
 
 export default {
   class: GoogleGeminiEmbeddingModelAdapter,

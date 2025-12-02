@@ -1,16 +1,12 @@
 import {
   LmStudioEmbedModelAdapter,
 } from "smart-embed-model/adapters/lm_studio.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
   constructor(model_item) {
     super(model_item);
   }
-
-  get adapter_settings() {
-    return this.model.settings;
-  }
-
   get http_adapter() {
     if (!this._http_adapter) {
       const HttpClass = this.model.env.config.modules.http_adapter.class;
@@ -20,7 +16,7 @@ export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
     return this._http_adapter;
   }
 }
-
+add_backward_compatibility(LmStudioEmbeddingModelAdapter);
 export default {
   class: LmStudioEmbeddingModelAdapter,
 };

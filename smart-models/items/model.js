@@ -37,6 +37,10 @@ export class Model extends CollectionItem {
     if(!this._instance) {
       const Class = this.ProviderAdapterClass;
       this._instance = new Class(this);
+      // // backward compatibility: load provider_models into data (for settings.id matching model_key)
+      // if (!this.data.provider_models || Object.keys(this.data.provider_models).length === 0) {
+      //   this.data.provider_models = this._instance.models;
+      // }
       this._instance.load();
       this.once_event('model:changed', () => {
         this._instance.unload?.();
@@ -70,10 +74,16 @@ export class Model extends CollectionItem {
    * BEGIN backward compatibility to access config
    */
   get settings() {
-    this.data = {
-      ...this.data,
-      ...this.ProviderAdapterClass.defaults,
-      ...(this.data.provider_models?.[this.model_key] || {}),
+    // backward compatibility (should be removed in future 2025-12-02)
+    if(this.model_key !== this.data.id) {
+      const model_defaults = this.data.provider_models?.[this.model_key]
+        || {}
+      ;
+      this.data = {
+        ...this.data,
+        ...this.ProviderAdapterClass.defaults,
+        ...(model_defaults),
+      }
     }
     return this.data;
   }

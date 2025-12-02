@@ -18,7 +18,7 @@ export class Models extends Collection {
   }
 
   get default_model_key() {
-    if(!this.settings.default_model_key) {
+    if(!this.settings.default_model_key || !this.get(this.settings.default_model_key)) {
       const new_default = this.new_model({ provider_key: this.default_provider_key }); // default provider
       new_default.queue_save();
       this.process_save_queue();

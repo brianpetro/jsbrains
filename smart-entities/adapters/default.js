@@ -322,7 +322,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   }
   
   get notices() {
-    return this.collection.notices;
+    return this.collection.env.notices;
   }
 }
 

@@ -1,14 +1,11 @@
 import {
   SmartEmbedOpenRouterAdapter,
 } from "smart-embed-model/adapters/open_router.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OpenRouterEmbeddingModelAdapter extends SmartEmbedOpenRouterAdapter {
   constructor(model_item) {
     super(model_item);
-  }
-
-  get adapter_settings() {
-    return this.model.settings;
   }
 
   get http_adapter() {
@@ -20,7 +17,7 @@ export class OpenRouterEmbeddingModelAdapter extends SmartEmbedOpenRouterAdapter
     return this._http_adapter;
   }
 }
-
+add_backward_compatibility(OpenRouterEmbeddingModelAdapter);  
 export default {
   class: OpenRouterEmbeddingModelAdapter,
 };

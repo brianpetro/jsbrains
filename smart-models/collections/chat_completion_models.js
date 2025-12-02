@@ -12,6 +12,7 @@ export class ChatCompletionModels extends Models {
 export const chat_completion_models_collection = {
   class: ChatCompletionModels,
   data_dir: 'chat_completion_models',
+  collection_key: 'chat_completion_models',
   data_adapter: ajson_single_file_data_adapter,
   item_type: ChatCompletionModel,
   providers: {

@@ -1,13 +1,11 @@
 import {
   SmartEmbedOllamaAdapter,
 } from "smart-embed-model/adapters/ollama.js";
+import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 export class OllamaEmbeddingModelAdapter extends SmartEmbedOllamaAdapter {
   constructor(model_item) {
     super(model_item);
     // this.opts = model_item; // backward compatibility
-  }
-  get adapter_settings() {
-    return this.model.settings;
   }
   /**
    * Get HTTP request adapter instance
@@ -22,6 +20,7 @@ export class OllamaEmbeddingModelAdapter extends SmartEmbedOllamaAdapter {
     return this._http_adapter;
   }
 }
+add_backward_compatibility(OllamaEmbeddingModelAdapter);
 export const settings_config = {
   host: {
     name: 'Ollama host',

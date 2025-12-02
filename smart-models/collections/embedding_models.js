@@ -11,6 +11,7 @@ export class EmbeddingModels extends Models {
 export const embedding_models_collection = {
   class: EmbeddingModels,
   data_dir: 'embedding_models',
+  collection_key: 'embedding_models',
   data_adapter: ajson_single_file_data_adapter,
   item_type: EmbeddingModel,
   providers: {
