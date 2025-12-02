@@ -25,10 +25,10 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
   res_adapter = SmartChatModelOllamaResponseAdapter;
 
   get endpoint() {
-    return `${this.model_config.host}${this.model_config.endpoint}`;
+    return `${this.model_config.host}${this.constructor.defaults.endpoint}`;
   }
   get models_endpoint() {
-    return `${this.model_config.host}${this.model_config.models_endpoint}`;
+    return `${this.model_config.host}${this.constructor.defaults.models_endpoint}`;
   }
   get model_show_endpoint() {
     return `${this.model_config.host}/api/show`;

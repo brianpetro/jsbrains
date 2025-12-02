@@ -291,42 +291,26 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     ;
   }
 
-  /**
-
-   * Get the number of choices.
-   * @returns {number} The number of choices.
-   */
-  get choices() { return this.adapter_config.choices; }
-
-
-
-  get models_endpoint() { return this.adapter_config.models_endpoint; }
+  get models_endpoint() { return this.constructor.defaults.models_endpoint; }
   get models_endpoint_method() { return 'POST'; }
 
   /**
    * Get the endpoint URL.
    * @returns {string} The endpoint URL.
    */
-  get endpoint() { return this.adapter_config.endpoint; }
+  get endpoint() { return this.constructor.defaults.endpoint; }
 
   /**
    * Get the streaming endpoint URL.
    * @returns {string} The streaming endpoint URL.
    */
-  get endpoint_streaming() { return this.adapter_config.endpoint_streaming || this.endpoint; }
+  get endpoint_streaming() { return this.constructor.defaults.endpoint_streaming || this.endpoint; }
 
   /**
    * Get the maximum output tokens.
    * @returns {number} The maximum output tokens.
    */
-  get max_output_tokens() { return this.adapter_config.max_output_tokens || 3000; }
-
-
-  /**
-   * Get the temperature.
-   * @returns {number} The temperature.
-   */
-  get temperature() { return this.adapter_config.temperature; }
+  get max_output_tokens() { return this.model_config.max_output_tokens || 3000; }
 
   async get_models_dev_index(ttl_ms = 60 * 60 * 1000) {
     const now = Date.now();
@@ -421,7 +405,7 @@ export class SmartChatModelRequestAdapter {
    * @returns {number} Max tokens value
    */
   get max_tokens() {
-    return this._req.max_tokens || this.adapter.model_config.max_output_tokens;
+    return this._req.max_tokens || this.adapter.max_output_tokens;
   }
 
   /**
@@ -470,9 +454,10 @@ export class SmartChatModelRequestAdapter {
       ...(this.adapter.adapter_config.headers || {}),
     };
 
-    if(this.adapter.adapter_config.api_key_header !== 'none') {
-      if (this.adapter.adapter_config.api_key_header){
-        headers[this.adapter.adapter_config.api_key_header] = this.adapter.api_key;
+    const api_key_header = this.adapter.constructor.defaults.api_key_header;
+    if(api_key_header !== 'none') {
+      if (api_key_header){
+        headers[api_key_header] = this.adapter.api_key;
       }else if(this.adapter.api_key) {
         headers['Authorization'] = `Bearer ${this.adapter.api_key}`;
       }

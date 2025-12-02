@@ -94,7 +94,7 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
    * @returns {string} Models endpoint URL
    */
   get models_endpoint() {
-    return this.model_config.models_endpoint || this.constructor.defaults.models_endpoint;
+    return this.constructor.defaults.models_endpoint;
   }
 
   /**
