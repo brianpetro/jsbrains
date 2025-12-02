@@ -418,6 +418,7 @@ export class SmartSources extends SmartEntities {
   /**
    * Looks up entities based on the provided parameters.
    * @async
+   * @deprecated uses this.actions 2025-12-02
    * @param {Object} [params={}] - Parameters for the lookup.
    * @param {Object} [params.filter] - Filter options.
    * @param {number} [params.k] - Deprecated. Use `params.filter.limit` instead.
