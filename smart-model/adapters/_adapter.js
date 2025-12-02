@@ -78,10 +78,11 @@ export class SmartModelAdapter {
    * @returns {Object} Map of model objects
    */
   get models() {
+    const models = this.model.data.provider_models;
     if(
-      typeof this.adapter_config.models === 'object'
-      && Object.keys(this.adapter_config.models || {}).length > 0
-    ) return this.adapter_config.models;
+      typeof models === 'object'
+      && Object.keys(models || {}).length > 0
+    ) return models;
     else {
       return {};
     }

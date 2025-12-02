@@ -68,8 +68,6 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
 
   /**
    * Provide dynamic request/response classes
-   * based on current adapter_config.api_adapter setting
-   * ----------------------------------------------------
    */
 
   /**
@@ -77,7 +75,7 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
    * @returns {typeof SmartChatModelRequestAdapter}
    */
   get req_adapter() {
-    const adapter_name = this.adapter_config.api_adapter || 'openai';
+    const adapter_name = this.model.data.api_adapter || 'openai';
     const map_entry = adapters_map[adapter_name];
     return (map_entry && map_entry.req) ? map_entry.req : SmartChatModelRequestAdapter;
   }
@@ -87,7 +85,7 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
    * @returns {typeof SmartChatModelResponseAdapter}
    */
   get res_adapter() {
-    const adapter_name = this.adapter_config.api_adapter || 'openai';
+    const adapter_name = this.model.data.api_adapter || 'openai';
     const map_entry = adapters_map[adapter_name];
     return (map_entry && map_entry.res) ? map_entry.res : SmartChatModelResponseAdapter;
   }
@@ -98,10 +96,10 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
    * @returns {string}
    */
   get endpoint() {
-    const protocol = this.adapter_config.protocol || 'http';
-    const hostname = this.adapter_config.hostname || 'localhost';
-    const port = this.adapter_config.port ? `:${this.adapter_config.port}` : '';
-    let path = this.adapter_config.path || '';
+    const protocol = this.model.data.protocol || 'http';
+    const hostname = this.model.data.hostname || 'localhost';
+    const port = this.model.data.port ? `:${this.model.data.port}` : '';
+    let path = this.model.data.path || '';
     if (path && !path.startsWith('/')) path = `/${path}`;
     return `${protocol}://${hostname}${port}${path}`;
   }

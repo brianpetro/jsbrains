@@ -62,7 +62,7 @@ export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
    *  https://<RESOURCE>.openai.azure.com/openai/deployments/<DEPLOYMENT>/chat/completions?api-version=2023-05-15
    */
   get endpoint() {
-    const { azure_resource_name, azure_deployment_name, azure_api_version } = this.adapter_config;
+    const { azure_resource_name, azure_deployment_name, azure_api_version } = this.model.data;
     return `https://${azure_resource_name}.openai.azure.com/openai/deployments/${azure_deployment_name}/chat/completions?api-version=${azure_api_version}`;
   }
 
@@ -80,7 +80,7 @@ export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
    *   https://<RESOURCE>.openai.azure.com/openai/deployments?api-version=2023-05-15
    */
   get models_endpoint() {
-    const { azure_resource_name, azure_api_version } = this.adapter_config;
+    const { azure_resource_name, azure_api_version } = this.model.data;
     return `https://${azure_resource_name}.openai.azure.com/openai/deployments?api-version=${azure_api_version}`;
   }
 

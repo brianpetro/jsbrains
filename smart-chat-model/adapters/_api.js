@@ -287,7 +287,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   get api_key() {
     return this.model.api_key
       || this.main.opts.api_key // DEPRECATED opts added at init take precedence
-      || this.adapter_config?.api_key // DEPRECATED then adapter settings
     ;
   }
 
@@ -451,7 +450,7 @@ export class SmartChatModelRequestAdapter {
   get_headers() {
     const headers = {
       "Content-Type": "application/json",
-      ...(this.adapter.adapter_config.headers || {}),
+      ...(this.adapter.constructor.defaults.headers || {}),
     };
 
     const api_key_header = this.adapter.constructor.defaults.api_key_header;
