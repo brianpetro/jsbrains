@@ -102,7 +102,7 @@ export class SmartChatModelCohereRequestAdapter extends SmartChatModelRequestAda
    */
   to_cohere() {
     const cohere_body = {
-      model: this.model,
+      model: this.model_id,
       message: this._get_latest_user_message(),
       chat_history: this._transform_messages_to_cohere_chat_history(),
       max_tokens: this.max_tokens,

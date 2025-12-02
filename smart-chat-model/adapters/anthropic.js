@@ -41,7 +41,6 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
     models_endpoint: false,
     default_model: 'claude-opus-4-1-20250805',
     signup_url: 'https://console.anthropic.com/login?returnTo=%2Fsettings%2Fkeys',
-    can_use_tools: true
   };
 
   /**
@@ -55,14 +54,6 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
    * @returns {typeof SmartChatModelAnthropicResponseAdapter} Response adapter class
    */
   res_adapter = SmartChatModelAnthropicResponseAdapter;
-
-  /**
-   * Validate parameters for getting models
-   * @returns {boolean} Always true since models are hardcoded
-   */
-  validate_get_models_params() {
-    return true;
-  }
 
   /**
    * Get available models (hardcoded list) and enrich via models.dev
@@ -251,7 +242,7 @@ export class SmartChatModelAnthropicRequestAdapter extends SmartChatModelRequest
    */
   to_anthropic(streaming = false) {
     this.anthropic_body = {
-      model: this.model,
+      model: this.model_id,
       max_tokens: this.max_tokens,
       temperature: this.temperature,
       stream: streaming,

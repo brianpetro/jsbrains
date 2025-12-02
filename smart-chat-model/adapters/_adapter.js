@@ -108,16 +108,5 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
     };
   }
 
-  /**
-   * Validate the adapter configuration.
-   * @abstract
-   * @returns {Object} { valid: boolean, message: string }
-   */
-  validate_config() {
-    throw new Error("validate_config not implemented");
-  }
 
-  get can_use_tools() {
-    return this.model_config?.can_use_tools || false;
-  }
 }

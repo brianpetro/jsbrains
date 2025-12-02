@@ -135,45 +135,6 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
   }
 
   /**
-   * TRANSFERRED FROM markdown.js (2024-12-13)
-   * TODO NEEDS REVIEW/REFACTOR
-   */
-  async move_to_v1(entity_ref) {
-    const new_path = typeof entity_ref === "string" ? entity_ref : entity_ref.key;
-    if (!new_path) {
-      throw new Error("Invalid entity reference for move_to operation");
-    }
-
-    const current_content = await this.read();
-    const [target_source_key, ...headings] = new_path.split("#");
-    const target_source = this.item.collection.get(target_source_key);
-
-    if (headings.length > 0) {
-      const new_headings_content = this.construct_headings(headings);
-      const new_content = `${new_headings_content}\n${current_content}`;
-      await this._update(new_content);
-    }
-
-    if (target_source) {
-      await this.merge(current_content, { mode: 'append_blocks' });
-    } else {
-      await this.rename_and_import(target_source_key, current_content);
-    }
-
-    if (this.item.key !== target_source_key) await this.remove();
-  }
-
-  construct_headings(headings) {
-    return headings.map((heading, i) => `${"#".repeat(i + 1)} ${heading}`).join("\n");
-  }
-
-  async rename_and_import(target_source_key, content) {
-    await this.fs.rename(this.file_path, target_source_key);
-    const new_source = await this.item.collection.create_or_update({ path: target_source_key, content });
-    await new_source.import();
-  }
-
-  /**
    * Merge content into the source
    * @param {string} content - The content to merge into the source
    * @param {Object} opts - Options for the merge operation

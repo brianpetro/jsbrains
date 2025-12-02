@@ -538,20 +538,11 @@ var SmartModelAdapter = class {
     throw new Error("get_models not implemented");
   }
   /**
-   * Validate the parameters for get_models.
-   * @returns {boolean|Array<Object>} True if parameters are valid, otherwise an array of error objects
-   */
-  validate_get_models_params() {
-    return true;
-  }
-  /**
    * Get available models as dropdown options synchronously.
    * @returns {Array<Object>} Array of model options.
    */
   get_models_as_options() {
     const models = this.models;
-    const params_valid = this.validate_get_models_params();
-    if (params_valid !== true) return params_valid;
     if (!Object.keys(models || {}).length) {
       this.get_models(true);
       return [{ value: "", name: "No models currently available" }];

@@ -35,7 +35,6 @@ const EXCLUDED_PREFIXES = [
  * @property {string} defaults.models_endpoint - Endpoint for retrieving models
  * @property {string} defaults.default_model - Default model to use
  * @property {string} defaults.signup_url - URL for API key signup
- * @property {boolean} defaults.can_use_tools - Whether tools can be used
  */
 export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   static key = "openai";
@@ -47,7 +46,6 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
     models_endpoint: "https://api.openai.com/v1/models",
     default_model: "gpt-5-nano",
     signup_url: "https://platform.openai.com/api-keys",
-    can_use_tools: true,
   };
 
   res_adapter = SmartChatModelOpenaiResponseAdapter;
@@ -66,7 +64,6 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
           model_name: model.id,
           id: model.id,
           multimodal: true,
-          can_use_tools: true,
           max_input_tokens: get_max_input_tokens(model.id),
         };
         // const m = Object.entries(model_context).find(m => m[0] === model.id || model.id.startsWith(m[0] + '-'));

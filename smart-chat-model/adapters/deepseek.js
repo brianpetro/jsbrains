@@ -18,7 +18,6 @@ export class SmartChatModelDeepseekAdapter extends SmartChatModelApiAdapter {
     models_endpoint: 'https://api.deepseek.com/models',
     default_model: 'deepseek-base',
     signup_url: 'https://deepseek.com/signup',
-    can_use_tools: true
   };
 
   /**
@@ -83,19 +82,6 @@ export class SmartChatModelDeepseekAdapter extends SmartChatModelApiAdapter {
     return event.data.includes('"done":true') || event.data.includes('[DONE]');
   }
 
-  /**
-   * Validate DeepSeek adapter configuration
-   * @returns {Object} { valid: boolean, message: string }
-   */
-  validate_config() {
-    if(!this.api_key) {
-      return { valid: false, message: 'DeepSeek API key is missing.' };
-    }
-    if(!this.adapter_config.model_key) {
-      return { valid: false, message: 'No model selected for DeepSeek.' };
-    }
-    return { valid: true, message: 'Configuration is valid.' };
-  }
 }
 
 /**

@@ -19,7 +19,6 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
     models_endpoint: "https://openrouter.ai/api/v1/models",
     default_model: "mistralai/mistral-7b-instruct:free",
     signup_url: "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys",
-    can_use_tools: true,
   };
 
   /**
@@ -81,7 +80,6 @@ export class SmartChatModelOpenRouterAdapter extends SmartChatModelApiAdapter {
         name: model.name,
         description: model.name,
         long_desc: model.description,
-        can_use_tools: model.description.includes('tool use') || model.description.includes('function call'),
         multimodal: model.architecture.modality === 'multimodal',
         raw: model
       };

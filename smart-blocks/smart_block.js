@@ -62,30 +62,6 @@ export class SmartBlock extends SmartEntity {
   }
 
   /**
-   * Updates the block's data, clearing embeddings if necessary and preparing embed input.
-   * @param {Object} data - The new data to merge into the block.
-   * @returns {boolean} `true` if data was updated successfully.
-   */
-  update_data(data) {
-    if (this.should_clear_embeddings(data)){
-      this.data.embeddings = {};
-    }
-    super.update_data(data);
-    return true;
-  }
-
-  /**
-   * Determines whether to clear embeddings based on the new data.
-   * @param {Object} data - The new data to evaluate.
-   * @returns {boolean} `true` if embeddings should be cleared, `false` otherwise.
-   */
-  should_clear_embeddings(data) {
-    if(this.is_new) return true;
-    if(this.embed_model && this.vec?.length !== this.embed_model.model_config.dims) return true;
-    return false;
-  }
-
-  /**
    * Prepares the embed input for the SmartBlock by reading content and generating a hash.
    * @async
    * @returns {Promise<string|false>} The embed input string or `false` if already embedded.

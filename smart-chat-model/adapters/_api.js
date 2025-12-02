@@ -89,24 +89,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     };
   }
 
-  /**
-   * Validate parameters required for getting models.
-   * @returns {true|Array<Object>} True if valid, array of error objects if invalid
-   */
-  validate_get_models_params() {
-    if(!this.adapter_config.models_endpoint){
-      const err_msg = `${this.model.adapter_name} models endpoint required to retrieve models`;
-      console.warn(err_msg);
-      return [{value: '', name: err_msg}];
-    }
-    if(!this.api_key) {
-      const err_msg = `${this.model.adapter_name} API key required to retrieve models`;
-      console.warn(err_msg);
-      return [{value: '', name: err_msg}];
-    }
-    return true;
-  }
-
   async get_enriched_model_data() {
     const provider_key = this.constructor.models_dev_key || this.constructor.key;
     await this.get_models_dev_index();
@@ -123,7 +105,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
         this.model_data[key].max_input_tokens = get_limit_i(enriched);
         this.model_data[key].max_output_tokens = get_limit_o(enriched);
         this.model_data[key].multimodal = get_multimodal(enriched);
-        this.model_data[key].can_use_tools = enriched.tool_call;
         this.model_data[key].cost = enriched.cost;
       }
     }else{
@@ -135,7 +116,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
           max_input_tokens: get_limit_i(model),
           max_output_tokens: get_limit_o(model),
           multimodal: get_multimodal(model),
-          can_use_tools: model.tool_call,
         };
       }
     }
@@ -301,23 +281,6 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   }
 
   /**
-   * Validate Anthropic adapter configuration.
-   * @returns {Object} { valid: boolean, message: string }
-   */
-  validate_config() {
-    if(!this.adapter_config.model_key || this.adapter_config.model_key === 'undefined') return { valid: false, message: "No model selected." };
-    if (!this.api_key) {
-      return { valid: false, message: "API key is missing." };
-    }
-    // check if model supports tool calls
-    if(!this.can_use_tools) {
-      return { valid: false, message: "Selected model does not support tools." };
-    }
-    // Add more adapter-specific validations here
-    return { valid: true, message: "Configuration is valid." };
-  }
-
-  /**
    * Get the API key.
    * @returns {string} The API key.
    */
@@ -438,7 +401,7 @@ export class SmartChatModelRequestAdapter {
    * Get the model identifier
    * @returns {string} Model ID
    */
-  get model() {
+  get model_id() {
     return this._req.model
       || this.adapter.model.model_key
       || this.adapter.model_config.id // DEPRECATED
@@ -531,7 +494,7 @@ export class SmartChatModelRequestAdapter {
   to_openai(streaming = false) {
     const body = {
       messages: this._transform_messages_to_openai(),
-      model: this.model,
+      model: this.model_id,
       // TODO max_completion_tokens
       temperature: this.temperature,
       stream: streaming,
@@ -542,7 +505,7 @@ export class SmartChatModelRequestAdapter {
       body.tool_choice = this.tool_choice;
     }
     // special handling for o1 models
-    if(this.model?.startsWith('o1-')){
+    if(this.model_id?.startsWith('o1-')){
       body.messages = body.messages.filter(m => m.role !== 'system'); // remove system messages (not supported by o1 models)
       delete body.temperature; // not supported by o1 models
     }

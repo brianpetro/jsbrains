@@ -46,18 +46,21 @@ export class SmartModelAdapter {
 
   /**
    * Get the current model configuration.
+   * @deprecated use model.data/model.settings
    * @returns {Object} Model configuration
    */
   get model_config() { return this.model.model_config; }
 
   /**
    * Get model-specific settings.
+   * @deprecated use model.data/model.settings
    * @returns {Object} Settings for current model
    */
   get model_settings() { return this.model.model_settings; }
 
   /**
    * Get adapter-specific configuration.
+   * @deprecated use model.data/model.settings
    * @returns {Object} Adapter configuration
    */
   get adapter_config() { return this.model.adapter_config; }
@@ -65,6 +68,7 @@ export class SmartModelAdapter {
   /**
    * Get adapter-specific settings.
    * @returns {Object} Adapter settings
+   * @deprecated use model.data/model.settings
    */
   get adapter_settings() { return this.model.adapter_settings; }
 
@@ -93,20 +97,11 @@ export class SmartModelAdapter {
     throw new Error("get_models not implemented");
   }
   /**
-   * Validate the parameters for get_models.
-   * @returns {boolean|Array<Object>} True if parameters are valid, otherwise an array of error objects
-   */
-  validate_get_models_params(){
-    return true;
-  }
-  /**
    * Get available models as dropdown options synchronously.
    * @returns {Array<Object>} Array of model options.
    */
   get_models_as_options() {
     const models = this.models;
-    const params_valid = this.validate_get_models_params();
-    if(params_valid !== true) return params_valid;
     if(!Object.keys(models || {}).length){
       this.get_models(true); // refresh models
       return [{value: '', name: 'No models currently available'}];

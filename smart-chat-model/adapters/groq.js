@@ -16,7 +16,6 @@ export class SmartChatModelGroqAdapter extends SmartChatModelApiAdapter {
     models_endpoint: "https://api.groq.com/openai/v1/models",
     default_model: "llama3-8b-8192",
     signup_url: "https://groq.com",
-    can_use_tools: true,
   };
 
   /**
@@ -70,17 +69,6 @@ export class SmartChatModelGroqAdapter extends SmartChatModelApiAdapter {
     return parsed;
   }
 
-  /**
-   * Validate configuration for Groq
-   * @returns {Object} { valid: boolean, message: string }
-   */
-  validate_config() {
-    if(!this.adapter_config.model_key) return { valid: false, message: "No model selected." };
-    if (!this.api_key) {
-      return { valid: false, message: "API key is missing." };
-    }
-    return { valid: true, message: "Configuration is valid." };
-  }
 }
 
 /**

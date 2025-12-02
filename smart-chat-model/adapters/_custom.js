@@ -173,25 +173,6 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
     };
   }
 
-  /**
-   * Return 'true' for get_models params since user might
-   * not rely on auto-populating. 
-   * @override
-   * @returns {true}
-   */
-  validate_get_models_params() {
-    return true;
-  }
-  /**
-   * Unlike most API-based adapters, we do NOT force the user to have model_key set.
-   * So we override validate_config() to skip the "No model selected" error.
-   * Since this is a custom adapter, the onus is on the user to configure it correctly.
-   * @override
-   * @returns {Object} { valid: boolean, message: string }
-   */
-  validate_config() {
-    return { valid: true, message: "Configuration is valid." };
-  }
 }
 
 /**
@@ -205,7 +186,7 @@ export class SmartChatModelCustomRequestAdapter extends SmartChatModelRequestAda
    * If the custom config has a 'model_name', we use that
    * else fall back to parent logic
    */
-  get model() {
-    return this.adapter.model_config.model_name || super.model;
+  get model_id() {
+    return this.adapter.model_config.model_name || super.model_id;
   }
 }

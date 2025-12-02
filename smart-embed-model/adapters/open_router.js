@@ -98,20 +98,6 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
   }
 
   /**
-   * Validate adapter configuration.
-   * @returns {{valid:boolean, message:string}}
-   */
-  validate_config() {
-    if (!this.adapter_config.model_key) {
-      return { valid: false, message: "No model selected." };
-    }
-    if (!this.api_key) {
-      return { valid: false, message: "OpenRouter API key is missing." };
-    }
-    return { valid: true, message: "Configuration is valid." };
-  }
-
-  /**
    * Fetch available models from OpenRouter and filter to embedding models.
    * Results are cached in adapter_settings.models and used by the settings UI.
    *

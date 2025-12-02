@@ -26,7 +26,6 @@ export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
     default_model: "gpt-35-turbo",
     signup_url: "https://learn.microsoft.com/azure/cognitive-services/openai/quickstart?tabs=command-line",
     models_endpoint: "https://{azure_resource_name}.openai.azure.com/openai/deployments?api-version={azure_api_version}",
-    can_use_tools: true,
   };
 
   /**
@@ -120,25 +119,5 @@ export class SmartChatModelAzureAdapter extends SmartChatModelOpenaiAdapter {
       };
     }
     return parsed;
-  }
-
-  /**
-   * Validate the Azure configuration fields.
-   */
-  validate_config() {
-    const { azure_resource_name, azure_deployment_name, azure_api_version } = this.adapter_config;
-    if (!azure_resource_name) {
-      return { valid: false, message: "Azure resource name is missing." };
-    }
-    if (!azure_deployment_name) {
-      return { valid: false, message: "Azure deployment name is missing." };
-    }
-    if (!azure_api_version) {
-      return { valid: false, message: "Azure API version is missing." };
-    }
-    if (!this.api_key) {
-      return { valid: false, message: "Azure OpenAI API key is missing." };
-    }
-    return { valid: true, message: "Configuration is valid." };
   }
 }

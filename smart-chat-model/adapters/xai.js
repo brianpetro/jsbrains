@@ -32,7 +32,6 @@ export class SmartChatModelXaiAdapter extends SmartChatModelApiAdapter {
     models_endpoint: 'https://api.x.ai/v1/models',
     default_model: 'grok-3-mini-beta',
     signup_url: 'https://ide.x.ai',
-    can_use_tools: true
   };
 
   /** Grok is OpenAI-compatible → reuse the stock adapters */
@@ -75,17 +74,4 @@ export class SmartChatModelXaiAdapter extends SmartChatModelApiAdapter {
     }, {});
   }
 
-  /* ------------------------------------------------------------------ *
-   *  Validation helpers
-   * ------------------------------------------------------------------ */
-
-  validate_config () {
-    if (!this.adapter_config.model_key) {
-      return { valid: false, message: 'No model selected.' };
-    }
-    if (!this.api_key) {
-      return { valid: false, message: 'API key is missing.' };
-    }
-    return { valid: true, message: 'Configuration is valid.' };
-  }
 }

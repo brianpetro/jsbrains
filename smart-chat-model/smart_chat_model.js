@@ -47,9 +47,6 @@ export class SmartChatModel extends SmartModel {
   get models() { return this.adapter.models; }
   
   get can_stream() { return this.adapter.constructor.defaults.streaming; }
-  get can_use_tools() {
-    return this.adapter.constructor.defaults.can_use_tools;
-  }
 
   /**
    * Complete a chat request.
@@ -150,11 +147,4 @@ export class SmartChatModel extends SmartModel {
     return key.replace(/\[CHAT_ADAPTER\]/g, this.adapter_name);
   }
 
-  /**
-   * Validate the adapter configuration.
-   * @returns {Object} Validation result with 'valid' and 'message'.
-   */
-  validate_config() {
-    return this.adapter.validate_config();
-  }
 }

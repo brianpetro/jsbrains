@@ -19,7 +19,6 @@ export class SmartChatModelGoogleAdapter extends SmartChatModelApiAdapter {
     models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
     default_model: "gemini-1.5-pro",
     signup_url: "https://ai.google.dev/",
-    can_use_tools: true,
   };
 
   streaming_chunk_splitting_regex = /(\r\n|\n|\r){2}/g; // handle Google's BS (split on double newlines only)
@@ -435,6 +434,5 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelGoogleAdapter {
     models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
     default_model: "gemini-1.5-pro",
     signup_url: "https://ai.google.dev/",
-    can_use_tools: true,
   };
 }

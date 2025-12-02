@@ -117,13 +117,6 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
   async count_tokens(input) {             // just a wrapper
     return { tokens: this.estimate_tokens(input) };
   }
-
-  validate_config() {
-    if (!this.adapter_config.model_key) {
-      return { valid: false, message: "No model selected." };
-    }
-    return { valid: true, message: "Configuration is valid." };
-  }
   /**
    * Prepare input text and ensure it fits within `max_tokens`.
    * @param {string} embed_input - Raw input text

@@ -19,7 +19,6 @@ export class SmartChatModelLmStudioAdapter extends SmartChatModelApiAdapter {
     models_endpoint: 'http://localhost:1234/v1/models',
     default_model: '',
     signup_url: 'https://lmstudio.ai/docs/api/openai-api',
-    can_use_tools: true,
     api_key: 'no api key required',
   };
 
@@ -104,16 +103,6 @@ export class SmartChatModelLmStudioAdapter extends SmartChatModelApiAdapter {
     return "no api key required";
   }
 
-
-  /**
-   * Validate configuration
-   */
-  validate_config() {
-    if (!this.adapter_config.model_key) {
-      return { valid: false, message: 'No model selected.' };
-    }
-    return { valid: true, message: 'Configuration is valid.' };
-  }
 }
 
 /**

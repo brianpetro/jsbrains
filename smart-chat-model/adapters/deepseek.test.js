@@ -40,42 +40,6 @@ test('SmartChatModelDeepseekAdapter parse_model_data', t => {
   t.is(parsed['deepseek-pro'].max_input_tokens, 16384);
 });
 
-test('SmartChatModelDeepseekAdapter validate_config with missing API key', t => {
-  const bad_model = new SmartChatModel({
-    settings: {
-      adapter: 'deepseek',
-      deepseek: {
-        // no api_key
-        model_key: 'deepseek-base'
-      }
-    },
-    adapters: {
-      deepseek: SmartChatModelDeepseekAdapter
-    }
-  });
-  const { valid, message } = bad_model.validate_config();
-  t.false(valid);
-  t.regex(message, /API key is missing/i);
-});
-
-test('SmartChatModelDeepseekAdapter validate_config with missing model_key', t => {
-  const bad_model = new SmartChatModel({
-    settings: {
-      adapter: 'deepseek',
-      deepseek: {
-        api_key: 'test_api_key'
-        // no model_key
-      }
-    },
-    adapters: {
-      deepseek: SmartChatModelDeepseekAdapter
-    }
-  });
-  const { valid, message } = bad_model.validate_config();
-  t.false(valid);
-  t.regex(message, /No model selected/i);
-});
-
 test('SmartChatModelDeepseekAdapter count_tokens rough estimate', async t => {
   const text = 'Hello DeepSeek!';
   const n = await test_model.count_tokens(text);
