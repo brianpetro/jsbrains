@@ -78,6 +78,7 @@ export class SmartEmbedMessageAdapter extends SmartEmbedAdapter {
             console.log('model loaded');
             this.state = 'loaded';
             this.model.model_loaded = true; // DEPRECATED
+            this.model.load_result = result;
         }
         
         if (this.message_queue[id]) {

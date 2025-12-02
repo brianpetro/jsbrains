@@ -13,15 +13,18 @@ async function process_message(data) {
         console.log('init');
         break;
       case 'load':
-        console.log('load', params);
-        model = new SmartEmbedModel({
-          ...params,
-          adapters: { transformers: SmartEmbedTransformersAdapter },
-          adapter: 'transformers',
-          settings: {}
-        });
+        const model_params = {data: params, ...params};
+        console.log('load', {model_params});
+        // model = new SmartEmbedModel({
+        //   ...params,
+        //   adapters: { transformers: SmartEmbedTransformersAdapter },
+        //   adapter: 'transformers',
+        //   settings: {}
+        // });
+        // await model.load();
+        model = new SmartEmbedTransformersAdapter(model_params);
         await model.load();
-        result = { model_loaded: true };
+        result = { model_loaded: true, model_config_key: model.active_config_key };
         break;
       case 'embed_batch':
         if (!model) throw new Error('Model not loaded');

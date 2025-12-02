@@ -11,6 +11,76 @@ export const transformers_defaults = {
   models: transformers_models,
 };
 
+export const DEVICE_CONFIGS = {
+  // // WebGPU: high quality first
+  webgpu_fp16: {
+    device: 'webgpu',
+    dtype: 'fp16',
+    quantized: false,
+  },
+  webgpu_fp32: {
+    device: 'webgpu',
+    dtype: 'fp32',
+    quantized: false,
+  },
+
+  // WebGPU: quantized tiers
+  webgpu_q8: {
+    device: 'webgpu',
+    dtype: 'q8',
+    quantized: true,
+  },
+  webgpu_q4: {
+    device: 'webgpu',
+    dtype: 'q4',
+    quantized: true,
+  },
+  // Optional, if you use it
+  webgpu_q4f16: {
+    device: 'webgpu',
+    dtype: 'q4f16',
+    quantized: true,
+  },
+  webgpu_bnb4: {
+    device: 'webgpu',
+    dtype: 'bnb4',
+    quantized: true,
+  },
+
+  // WASM: quantized CPU
+  wasm_q8: {
+    dtype: 'q8',
+    quantized: true,
+  },
+  wasm_q4: {
+    dtype: 'q4',
+    quantized: true,
+  },
+
+  // Final universal fallback: WASM CPU, dtype = auto
+  wasm_auto: {
+    // NOTE: leaving out device to avoid Linux issues with 'wasm'
+    // transformers.js will pick CPU/WASM backend itself
+    quantized: false,
+  },
+};
+
+
+const is_webgpu_available = async () => {
+  // API exposed?
+  if (!('gpu' in navigator)) return false;
+
+  // Try requesting an adapter
+  const adapter = await navigator.gpu.requestAdapter();
+  if (!adapter) return false;
+
+  // Optionally check required features
+  // return adapter.features.has('shader-f16');
+  
+  return true;
+};
+
+
 /**
  * Transformers v2 embedding adapter.
  *
@@ -29,8 +99,10 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     this.pipeline = null;
     /** @type {any|null} */
     this.tokenizer = null;
-    /** @type {'webgpu'|'wasm'|null} */
-    this._device_kind = null;
+    /** @type {'webgpu'|'wasm'|String|null} */
+    this.active_config_key = null;
+    /** @type {boolean} */
+    this.has_gpu = false;
   }
 
   /**
@@ -38,24 +110,31 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load() {
-    if(this.loading) {
-      console.warn('[Transformers v2] load already in progress, waiting...');
-      while(this.loading) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+    this.has_gpu = await is_webgpu_available();
+    try{
+      if(this.loading) {
+        console.warn('[Transformers v2] load already in progress, waiting...');
+        while(this.loading) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+  
+      }else{
+        this.loading = true;
+        if (this.pipeline) {
+          this.loaded = true;
+          this.loading = false;
+          return;
+        }
+        await this.load_transformers_with_fallback();
+        this.loading = false;
+        this.loaded = true;
+        console.log(`[Transformers v2] model loaded using ${this.active_config_key}`, this);
       }
-
-    }else{
-      this.loading = true;
-      if (this.pipeline) {
-        this.set_state('loaded');
-        return;
-      }
-      this.set_state('loading');
-      await this.load_transformers_with_fallback();
+    }catch(e){
       this.loading = false;
-      this.loaded = true;
-      this.set_state('loaded');
-      console.log(`[Transformers v2] model loaded on ${this.device_kind}`, this);
+      this.loaded = false;
+      console.error('[Transformers v2] load failed', e);
+      throw e;
     }
   }
 
@@ -77,9 +156,8 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     }
     this.pipeline = null;
     this.tokenizer = null;
-    this._device_kind = null;
+    this.active_config_key = null;
     this.loaded = false;
-    this.set_state('unloaded');
   }
 
   /**
@@ -106,26 +184,16 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   get batch_size() {
     const configured = this.model.data.batch_size;
     if (configured && configured > 0) return configured;
-    return this.device_kind === 'webgpu' ? 16 : 8;
+    return this.gpu_enabled ? 16 : 8;
   }
-
-  /**
-   * Selected device kind: 'webgpu' or 'wasm'.
-   * @returns {'webgpu'|'wasm'}
-   */
-  get device_kind() {
-    if (this._device_kind) return this._device_kind;
-    const has_gpu = typeof navigator !== 'undefined' && !!navigator?.gpu;
-    const explicit = typeof this.model.data.use_gpu === 'boolean' ? this.model.data.use_gpu : null;
-
-    if (explicit === false) {
-      this._device_kind = 'wasm';
-    } else if (has_gpu && explicit !== false) {
-      this._device_kind = 'webgpu';
-    } else {
-      this._device_kind = 'wasm';
+  get gpu_enabled() {
+    if (this.has_gpu) {
+      const explicit = typeof this.model.data.use_gpu === 'boolean' ? this.model.data.use_gpu : null;
+      if (explicit === false) return false;
+      return true;
+    }else{
+      return false;
     }
-    return this._device_kind;
   }
 
   /**
@@ -140,65 +208,40 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     if (typeof env.useBrowserCache !== 'undefined') {
       env.useBrowserCache = true;
     }
-
+    
     let last_error = null;
-
-    const try_create = async (device_kind) => {
-      const opts = this.build_pipeline_opts(device_kind);
-      if (device_kind === 'wasm' && env.backends?.onnx?.wasm) {
-        // Deterministic baseline for CPU inference.
-        env.backends.onnx.wasm.numThreads = 4;
-      }
-      return await pipeline('feature-extraction', this.model_key, opts);
+    
+    const CONFIG_LIST_ORDER = Object.keys(DEVICE_CONFIGS);
+    const try_create = async (config_key) => {
+      const pipe = await pipeline('feature-extraction', this.model_key, DEVICE_CONFIGS[config_key]);
+      return pipe;
     };
 
-    const prefer_gpu = this.device_kind === 'webgpu';
-
-    if (prefer_gpu) {
+    for (const config of CONFIG_LIST_ORDER) {
+      if (this.pipeline) break;
+      if (config.includes("gpu") && !this.gpu_enabled) {
+        console.warn(`[Transformers v2: ${config}] skipping ${config} as GPU is disabled`);
+        continue;
+      }
       try {
-        this.pipeline = await try_create('webgpu');
-        this._device_kind = 'webgpu';
+        console.log(`[Transformers v2] trying to load pipeline on ${config}`);
+        this.pipeline = await try_create(config);
+        this.active_config_key = config;
+        break;
       } catch (err) {
-        console.warn('[Transformers v2] WebGPU init failed; falling back to CPU/WASM', err);
+        console.warn(`[Transformers v2: ${config}] failed to load pipeline on ${config}`, err);
         last_error = err;
       }
     }
-
-    if (!this.pipeline) {
-      try {
-        this.pipeline = await try_create('wasm');
-        this._device_kind = 'wasm';
-      } catch (err) {
-        last_error = err;
-      }
-    }
-
-    if (!this.pipeline) {
+    if (this.pipeline) {
+      console.log(`[Transformers v2: ${this.active_config_key}] pipeline initialized using ${this.active_config_key}`);
+    }else{
       throw last_error || new Error('Failed to initialize transformers pipeline');
     }
-
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
+    
   }
 
-  /**
-   * Build pipeline options for a given device kind.
-   * @private
-   * @param {'webgpu'|'wasm'} device_kind
-   * @returns {Object}
-   */
-  build_pipeline_opts(device_kind) {
-    /** @type {any} */
-    const opts = {
-      quantized: true,
-    };
-    if (device_kind === 'webgpu') {
-      opts.device = 'webgpu';
-      opts.dtype = 'fp32';
-    } else {
-      opts.device = 'wasm';
-    }
-    return opts;
-  }
 
   /**
    * Count tokens in input text.
@@ -338,11 +381,6 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
       console.warn('[Transformers v2] error while resetting pipeline', err);
     }
     this.pipeline = null;
-
-    if (this._device_kind === 'webgpu') {
-      // After a failure on GPU, prefer CPU to avoid repeated issues.
-      this._device_kind = 'wasm';
-    }
 
     await this.load_transformers_with_fallback();
   }
