@@ -64,7 +64,7 @@ export class SmartRankIframeAdapter extends SmartRankMessageAdapter {
 
     const load_opts = {
       model_key: this.model.model_key,
-      use_gpu: this.model.opts.use_gpu || false,
+      use_gpu: this.model.data.use_gpu || false,
       adapters: null,
       settings: null,
     };

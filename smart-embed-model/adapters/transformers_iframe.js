@@ -19,14 +19,7 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
   constructor(model) {
     super(model);
     /** @type {string} Connector script content */
-    this.connector = transformers_connector;
-    if(this.model.data.legacy_transformers || !this.use_gpu){
-      this.connector = this.connector
-        .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2')
-      ;
-      this.use_gpu = false;
-    }
-    else this.connector = this.connector
+    this.connector = transformers_connector
       .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0')
     ;
     console.log('transformers iframe connector', this.model);

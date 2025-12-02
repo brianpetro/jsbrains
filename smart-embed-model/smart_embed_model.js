@@ -34,7 +34,6 @@ export class SmartEmbedModel extends SmartModel {
    * Create a SmartEmbedModel instance
    * @param {Object} opts - Configuration options
    * @param {Object} [opts.adapters] - Map of available adapter implementations
-   * @param {boolean} [opts.use_gpu] - Whether to enable GPU acceleration
    * @param {number} [opts.batch_size] - Default batch size for processing
    * @param {Object} [opts.settings] - User settings
    * @param {string} [opts.settings.api_key] - API key for remote models

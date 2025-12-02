@@ -104,7 +104,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    * @returns {number}
    */
   get batch_size() {
-    const configured = this.model.opts.batch_size || this.model.data.batch_size;
+    const configured = this.model.data.batch_size;
     if (configured && configured > 0) return configured;
     return this.device_kind === 'webgpu' ? 16 : 8;
   }
@@ -116,7 +116,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   get device_kind() {
     if (this._device_kind) return this._device_kind;
     const has_gpu = typeof navigator !== 'undefined' && !!navigator?.gpu;
-    const explicit = typeof this.model.opts.use_gpu === 'boolean' ? this.model.opts.use_gpu : null;
+    const explicit = typeof this.model.data.use_gpu === 'boolean' ? this.model.data.use_gpu : null;
 
     if (explicit === false) {
       this._device_kind = 'wasm';
@@ -492,24 +492,24 @@ export const transformers_models = {
  * @type {Object}
  */
 export const transformers_settings_config = {
-  "[ADAPTER].legacy_transformers": {
-    name: 'Legacy transformers (no GPU)',
-    type: "toggle",
-    description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
-    callback: 'embed_model_changed',
-    default: true,
-  },
+  // "[ADAPTER].legacy_transformers": {
+  //   name: 'Legacy transformers (no GPU)',
+  //   type: "toggle",
+  //   description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
+  //   callback: 'embed_model_changed',
+  //   default: true,
+  // },
 };
 
 // 2025-11-26
 export const settings_config = {
-  "legacy_transformers": {
-    name: 'Legacy transformers (no GPU)',
-    type: "toggle",
-    description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
-    // callback: 'embed_model_changed',
-    default: false,
-  },
+  // "legacy_transformers": {
+  //   name: 'Legacy transformers (no GPU)',
+  //   type: "toggle",
+  //   description: "Use legacy transformers (v2) instead of v3. This may resolve issues if the local embedding isn't working.",
+  //   // callback: 'embed_model_changed',
+  //   // default: false,
+  // },
 }
 export default {
   class: SmartEmbedTransformersAdapter,

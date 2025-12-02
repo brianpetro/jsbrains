@@ -303,7 +303,6 @@ var SmartEmbedModel = class extends SmartModel {
    * Create a SmartEmbedModel instance
    * @param {Object} opts - Configuration options
    * @param {Object} [opts.adapters] - Map of available adapter implementations
-   * @param {boolean} [opts.use_gpu] - Whether to enable GPU acceleration
    * @param {number} [opts.batch_size] - Default batch size for processing
    * @param {Object} [opts.settings] - User settings
    * @param {string} [opts.settings.api_key] - API key for remote models
@@ -567,16 +566,6 @@ var SmartEmbedAdapter = class extends SmartModelAdapter {
   get max_tokens() {
     return this.model.data.max_tokens;
   }
-  get use_gpu() {
-    if (typeof this._use_gpu === "undefined") {
-      if (typeof this.model.data.use_gpu !== "undefined") this._use_gpu = this.model.data.use_gpu;
-      else this._use_gpu = typeof navigator !== "undefined" && !!navigator?.gpu;
-    }
-    return this._use_gpu;
-  }
-  set use_gpu(value) {
-    this._use_gpu = value;
-  }
   get batch_size() {
     return this.model.data.batch_size || 1;
   }
@@ -675,7 +664,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {number}
    */
   get batch_size() {
-    const configured = this.model.opts.batch_size || this.model.data.batch_size;
+    const configured = this.model.data.batch_size;
     if (configured && configured > 0) return configured;
     return this.device_kind === "webgpu" ? 16 : 8;
   }
@@ -686,7 +675,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
   get device_kind() {
     if (this._device_kind) return this._device_kind;
     const has_gpu = typeof navigator !== "undefined" && !!navigator?.gpu;
-    const explicit = typeof this.model.opts.use_gpu === "boolean" ? this.model.opts.use_gpu : null;
+    const explicit = typeof this.model.data.use_gpu === "boolean" ? this.model.data.use_gpu : null;
     if (explicit === false) {
       this._device_kind = "wasm";
     } else if (has_gpu && explicit !== false) {
