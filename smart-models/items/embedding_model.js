@@ -20,7 +20,7 @@ export class EmbeddingModel extends Model {
     if (typeof input === 'string') {
       input = [{embed_input: input}];
     }
-    return this.embed_batch(input);
+    return (await this.embed_batch(input))[0];
   }
 
   async embed_batch(inputs) {

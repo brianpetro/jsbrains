@@ -1,204 +1,361 @@
 import { SmartEmbedAdapter } from "./_adapter.js";
+
 /**
- * Default configurations for transformers adapter
- * @property {string} adapter - Adapter identifier
- * @property {string} description - Human-readable description
- * @property {string} default_model - Default model to use
+ * Default configuration for Transformers v2 adapter.
+ * Exposes only model_key; device, quantization and threading are auto-managed.
  */
 export const transformers_defaults = {
   adapter: 'transformers',
   description: 'Transformers (Local, built-in)',
   default_model: 'TaylorAI/bge-micro-v2',
+  models: transformers_models,
 };
+
 /**
- * Adapter for local transformer-based embedding models
- * Uses @xenova/transformers for model loading and inference
- * @extends SmartEmbedAdapter
+ * Transformers v2 embedding adapter.
+ *
+ * - Tries WebGPU first, then falls back to CPU/WASM with 4 threads.
+ * - Automatically truncates long inputs to model max_tokens.
+ * - Batch embedding retries items individually on failure.
  */
 export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   static defaults = transformers_defaults;
   /**
-   * Create transformers adapter instance
+   * @param {import("../smart_embed_model.js").SmartEmbedModel} model
    */
   constructor(model) {
     super(model);
-    /** @type {Pipeline|null} Transformers pipeline instance */
+    /** @type {any|null} */
     this.pipeline = null;
-    /** @type {AutoTokenizer|null} Tokenizer instance */
+    /** @type {any|null} */
     this.tokenizer = null;
+    /** @type {'webgpu'|'wasm'|null} */
+    this._device_kind = null;
   }
 
   /**
-   * Load model and tokenizer
+   * Load the underlying transformers pipeline with WebGPU → WASM fallback.
    * @returns {Promise<void>}
    */
   async load() {
     if(this.loading) {
-      console.warn('model is already loading');
+      console.warn('[Transformers v2] load already in progress, waiting...');
       while(this.loading) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+
     }else{
       this.loading = true;
-      await this.load_transformers();
+      if (this.pipeline) {
+        this.set_state('loaded');
+        return;
+      }
+      this.set_state('loading');
+      await this.load_transformers_with_fallback();
       this.loading = false;
       this.loaded = true;
       this.set_state('loaded');
+      console.log(`[Transformers v2] model loaded on ${this.device_kind}`, this);
     }
   }
 
   /**
-   * Unload model and free resources
+   * Unload the pipeline and free resources.
    * @returns {Promise<void>}
    */
   async unload() {
-    if (this.pipeline) {
-      if (this.pipeline.destroy) this.pipeline.destroy();
-      this.pipeline = null;
+    try {
+      if (this.pipeline) {
+        if (typeof this.pipeline.destroy === 'function') {
+          this.pipeline.destroy();
+        } else if (typeof this.pipeline.dispose === 'function') {
+          this.pipeline.dispose();
+        }
+      }
+    } catch (err) {
+      console.warn('[Transformers v2] error while disposing pipeline', err);
     }
-    if (this.tokenizer) {
-      this.tokenizer = null;
-    }
+    this.pipeline = null;
+    this.tokenizer = null;
+    this._device_kind = null;
     this.loaded = false;
     this.set_state('unloaded');
   }
 
   /**
-   * Initialize transformers pipeline and tokenizer
-   * @private
-   * @returns {Promise<void>}
+   * Available models – reuses the v1 transformers model catalog.
+   * @returns {Object}
    */
-  async load_transformers() {
-    console.log("[Transformers] Loading model:", this);
-    const { pipeline, env, AutoTokenizer } = await import('@huggingface/transformers');
-
-    env.allowLocalModels = false;
-    const pipeline_opts = {
-      quantized: true,
-    };
-
-    if (this.use_gpu) {
-      console.log("[Transformers] Using GPU");
-      pipeline_opts.device = 'webgpu';
-      pipeline_opts.dtype = 'fp32';
-    } else {
-      console.log("[Transformers] Using CPU");
-      env.backends.onnx.wasm.numThreads = 8;
-    }
-    console.log("[Transformers] Pipeline options:", {pipeline_opts, model_key: this.model_key});
-
-    this.pipeline = await pipeline('feature-extraction', this.model_key, pipeline_opts);
-    this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
-    console.log("[Transformers] Model and tokenizer loaded", {pipeline: this.pipeline, tokenizer: this.tokenizer});
+  get models() {
+    return transformers_models;
   }
 
   /**
-   * Count tokens in input text
-   * @param {string} input - Text to tokenize
-   * @returns {Promise<Object>} Token count result
+   * Maximum tokens per input.
+   * @returns {number}
+   */
+  get max_tokens() {
+    return this.model.data.max_tokens || 512;
+  }
+
+  /**
+   * Effective batch size.
+   * Prefers small deterministic batches when not explicitly configured.
+   * @returns {number}
+   */
+  get batch_size() {
+    const configured = this.model.opts.batch_size || this.model.data.batch_size;
+    if (configured && configured > 0) return configured;
+    return this.device_kind === 'webgpu' ? 16 : 8;
+  }
+
+  /**
+   * Selected device kind: 'webgpu' or 'wasm'.
+   * @returns {'webgpu'|'wasm'}
+   */
+  get device_kind() {
+    if (this._device_kind) return this._device_kind;
+    const has_gpu = typeof navigator !== 'undefined' && !!navigator?.gpu;
+    const explicit = typeof this.model.opts.use_gpu === 'boolean' ? this.model.opts.use_gpu : null;
+
+    if (explicit === false) {
+      this._device_kind = 'wasm';
+    } else if (has_gpu && explicit !== false) {
+      this._device_kind = 'webgpu';
+    } else {
+      this._device_kind = 'wasm';
+    }
+    return this._device_kind;
+  }
+
+  /**
+   * Initialize transformers pipeline with WebGPU → WASM fallback.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async load_transformers_with_fallback() {
+    const { pipeline, env, AutoTokenizer } = await import('@huggingface/transformers');
+
+    env.allowLocalModels = false;
+    if (typeof env.useBrowserCache !== 'undefined') {
+      env.useBrowserCache = true;
+    }
+
+    let last_error = null;
+
+    const try_create = async (device_kind) => {
+      const opts = this.build_pipeline_opts(device_kind);
+      if (device_kind === 'wasm' && env.backends?.onnx?.wasm) {
+        // Deterministic baseline for CPU inference.
+        env.backends.onnx.wasm.numThreads = 4;
+      }
+      return await pipeline('feature-extraction', this.model_key, opts);
+    };
+
+    const prefer_gpu = this.device_kind === 'webgpu';
+
+    if (prefer_gpu) {
+      try {
+        this.pipeline = await try_create('webgpu');
+        this._device_kind = 'webgpu';
+      } catch (err) {
+        console.warn('[Transformers v2] WebGPU init failed; falling back to CPU/WASM', err);
+        last_error = err;
+      }
+    }
+
+    if (!this.pipeline) {
+      try {
+        this.pipeline = await try_create('wasm');
+        this._device_kind = 'wasm';
+      } catch (err) {
+        last_error = err;
+      }
+    }
+
+    if (!this.pipeline) {
+      throw last_error || new Error('Failed to initialize transformers pipeline');
+    }
+
+    this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
+  }
+
+  /**
+   * Build pipeline options for a given device kind.
+   * @private
+   * @param {'webgpu'|'wasm'} device_kind
+   * @returns {Object}
+   */
+  build_pipeline_opts(device_kind) {
+    /** @type {any} */
+    const opts = {
+      quantized: true,
+    };
+    if (device_kind === 'webgpu') {
+      opts.device = 'webgpu';
+      opts.dtype = 'fp32';
+    } else {
+      opts.device = 'wasm';
+    }
+    return opts;
+  }
+
+  /**
+   * Count tokens in input text.
+   * @param {string} input
+   * @returns {Promise<{tokens:number}>}
    */
   async count_tokens(input) {
-    if (!this.tokenizer) await this.load();
+    if (!this.tokenizer) {
+      await this.load();
+    }
     const { input_ids } = await this.tokenizer(input);
     return { tokens: input_ids.data.length };
   }
 
   /**
-   * Generate embeddings for multiple inputs
-   * @param {Array<Object>} inputs - Array of input objects
-   * @returns {Promise<Array<Object>>} Processed inputs with embeddings
+   * Generate embeddings for multiple inputs.
+   * @param {Array<Object>} inputs
+   * @returns {Promise<Array<Object>>}
    */
   async embed_batch(inputs) {
-    // if (!this.pipeline) await this.load();
-    if (!this.loaded) await this.load();
-    const filtered_inputs = inputs.filter(item => item.embed_input?.length > 0);
+    if (!this.pipeline) {
+      await this.load();
+    }
+    const filtered_inputs = inputs.filter((item) => item.embed_input && item.embed_input.length > 0);
     if (!filtered_inputs.length) return [];
 
-    if (filtered_inputs.length > this.batch_size) {
-      console.log(`Processing ${filtered_inputs.length} inputs in batches of ${this.batch_size}`);
-      const results = [];
-      for (let i = 0; i < filtered_inputs.length; i += this.batch_size) {
-        const batch = filtered_inputs.slice(i, i + this.batch_size);
-        const batch_results = await this._process_batch(batch);
-        results.push(...batch_results);
-      }
-      return results;
+    const results = [];
+    for (let i = 0; i < filtered_inputs.length; i += this.batch_size) {
+      const batch = filtered_inputs.slice(i, i + this.batch_size);
+      const batch_results = await this._process_batch(batch);
+      results.push(...batch_results);
     }
-
-    return await this._process_batch(filtered_inputs);
+    return results;
   }
 
   /**
-   * Process a single batch of inputs
+   * Process a single batch – with per-item retry on failure.
    * @private
-   * @param {Array<Object>} batch_inputs - Batch of inputs to process
-   * @returns {Promise<Array<Object>>} Processed batch results
+   * @param {Array<Object>} batch_inputs
+   * @returns {Promise<Array<Object>>}
    */
   async _process_batch(batch_inputs) {
-    const tokens = await Promise.all(batch_inputs.map(item => this.count_tokens(item.embed_input)));
-    const embed_inputs = await Promise.all(batch_inputs.map(async (item, i) => {
-      if (tokens[i].tokens < this.max_tokens) return item.embed_input;
-      let token_ct = tokens[i].tokens;
-      let truncated_input = item.embed_input;
-      while (token_ct > this.max_tokens) {
-        const pct = this.max_tokens / token_ct;
-        const max_chars = Math.floor(truncated_input.length * pct * 0.90);
-        truncated_input = truncated_input.substring(0, max_chars) + "...";
-        token_ct = (await this.count_tokens(truncated_input)).tokens;
-      }
-      tokens[i].tokens = token_ct;
-      return truncated_input;
-    }));
+    const prepared = await Promise.all(
+      batch_inputs.map((item) => this._prepare_input(item.embed_input))
+    );
+    const embed_inputs = prepared.map((p) => p.text);
+    const tokens = prepared.map((p) => p.tokens);
 
     try {
       const resp = await this.pipeline(embed_inputs, { pooling: 'mean', normalize: true });
-
       return batch_inputs.map((item, i) => {
-        item.vec = Array.from(resp[i].data).map(val => Math.round(val * 1e8) / 1e8);
-        item.tokens = tokens[i].tokens;
+        const vec = Array.from(resp[i].data).map((val) => Math.round(val * 1e8) / 1e8);
+        item.vec = vec;
+        item.tokens = tokens[i];
         return item;
       });
     } catch (err) {
-      console.error("error_processing_batch", err);
-      this.pipeline?.dispose();
-      this.pipeline = null;
-      await this.load();
-      return Promise.all(batch_inputs.map(async (item) => {
-        try {
-          const result = await this.pipeline(item.embed_input, { pooling: 'mean', normalize: true });
-          item.vec = Array.from(result[0].data).map(val => Math.round(val * 1e8) / 1e8);
-          item.tokens = (await this.count_tokens(item.embed_input)).tokens;
-          return item;
-        } catch (single_err) {
-          console.error("error_processing_single_item", single_err);
-          return {
-            ...item,
-            vec: [],
-            tokens: 0,
-            error: single_err.message
-          };
-        }
-      }));
+      console.error('[Transformers v2] batch embed failed – retrying items individually', err);
+      return await this._retry_items_individually(batch_inputs);
     }
   }
 
   /**
-   * @deprecated 2025-11-26 use env_config instead
-   * @returns {Object} Settings configuration for transformers adapter
-   *
+   * Prepare a single input by truncating to max_tokens if necessary.
+   * @private
+   * @param {string} embed_input
+   * @returns {Promise<{text:string,tokens:number}>}
+   */
+  async _prepare_input(embed_input) {
+    let { tokens } = await this.count_tokens(embed_input);
+    if (tokens <= this.max_tokens) {
+      return { text: embed_input, tokens };
+    }
+
+    let truncated = embed_input;
+    while (tokens > this.max_tokens && truncated.length > 0) {
+      const pct = this.max_tokens / tokens;
+      const max_chars = Math.floor(truncated.length * pct * 0.9);
+      truncated = truncated.slice(0, max_chars);
+      const last_space = truncated.lastIndexOf(' ');
+      if (last_space > 0) {
+        truncated = truncated.slice(0, last_space);
+      }
+      tokens = (await this.count_tokens(truncated)).tokens;
+    }
+    return { text: truncated, tokens };
+  }
+
+  /**
+   * Retry each item individually after a batch failure.
+   * @private
+   * @param {Array<Object>} batch_inputs
+   * @returns {Promise<Array<Object>>}
+   */
+  async _retry_items_individually(batch_inputs) {
+    await this._reset_pipeline_after_error();
+
+    const results = [];
+    for (const item of batch_inputs) {
+      try {
+        const prepared = await this._prepare_input(item.embed_input);
+        const resp = await this.pipeline(prepared.text, { pooling: 'mean', normalize: true });
+        const vec = Array.from(resp[0].data).map((val) => Math.round(val * 1e8) / 1e8);
+        results.push({
+          ...item,
+          vec,
+          tokens: prepared.tokens,
+        });
+      } catch (single_err) {
+        console.error('[Transformers v2] single item embed failed – skipping', single_err);
+        results.push({
+          ...item,
+          vec: [],
+          tokens: 0,
+          error: single_err.message,
+        });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Reset pipeline after a failure – falling back to WASM if needed.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async _reset_pipeline_after_error() {
+    try {
+      if (this.pipeline) {
+        if (typeof this.pipeline.destroy === 'function') {
+          this.pipeline.destroy();
+        } else if (typeof this.pipeline.dispose === 'function') {
+          this.pipeline.dispose();
+        }
+      }
+    } catch (err) {
+      console.warn('[Transformers v2] error while resetting pipeline', err);
+    }
+    this.pipeline = null;
+
+    if (this._device_kind === 'webgpu') {
+      // After a failure on GPU, prefer CPU to avoid repeated issues.
+      this._device_kind = 'wasm';
+    }
+
+    await this.load_transformers_with_fallback();
+  }
+
+  /**
+   * V2 intentionally exposes only model selection in the settings UI.
+   * @returns {Object}
    */
   get settings_config() {
-    return transformers_settings_config;
-  }
-  /**
-   * Get available models (hardcoded list)
-   * @returns {Promise<Object>} Map of model objects
-   */
-  get_models() { return Promise.resolve(this.models); }
-  get models() {
-    return transformers_models;
+    return super.settings_config;
   }
 }
+
 
 export const transformers_models = {
   "TaylorAI/bge-micro-v2": {
