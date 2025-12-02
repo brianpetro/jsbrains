@@ -183,13 +183,6 @@ export class SmartEntity extends CollectionItem {
   get embed_model_key() { return this.collection.embed_model_key; }
 
   /**
-   * @deprecated Use embed_model instead.
-   * @readonly
-   * @returns {Object} The smart embedding model.
-   */
-  get smart_embed() { return this.embed_model; }
-
-  /**
    * Gets the embedding model instance from the collection.
    * @readonly
    * @returns {Object} The embedding model instance.

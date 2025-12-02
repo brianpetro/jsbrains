@@ -57,29 +57,6 @@ export class SmartEntities extends Collection {
   }
 
   /**
-   * Gets or creates the container for smart embeddings in the DOM.
-   * @readonly
-   * @returns {HTMLElement|undefined} The container element or undefined if not available.
-   */
-  get smart_embed_container() {
-    if (!this.model_instance_id) return console.log('model_key not set');
-    const id = this.model_instance_id.replace(/[^a-zA-Z0-9]/g, '_');
-    if (!window.document) return console.log('window.document not available');
-    if (window.document.querySelector(`#${id}`)) return window.document.querySelector(`#${id}`);
-    const container = window.document.createElement('div');
-    container.id = id;
-    window.document.body.appendChild(container);
-    return container;
-  }
-
-  /**
-   * @deprecated Use embed_model instead.
-   * @readonly
-   * @returns {Object} The smart embedding model.
-   */
-  get smart_embed() { return this.embed_model; }
-
-  /**
    * Gets the embedding model instance.
    * @readonly
    * @returns {Object|null} The embedding model instance or null if none.
@@ -88,18 +65,7 @@ export class SmartEntities extends Collection {
     if (this.env.embedding_models.default) {
       return this.env.embedding_models.default.instance;
     }
-    console.warn('SmartEmbedModel is deprecated.');
-    // DEPRECATED handling below
-    if (!this.env._embed_model && this.env.opts.modules.smart_embed_model?.class){
-      this.env._embed_model = new this.env.opts.modules.smart_embed_model.class({
-        settings: this.settings.embed_model,
-        adapters: this.env.opts.modules.smart_embed_model?.adapters,
-        re_render_settings: () => this.env.render_component('collection_settings', this, {settings_container: this.settings_container}),
-        reload_model: this.reload_embed_model.bind(this),
-      });
-      this.env._embed_model.load();
-    }
-    return this.env._embed_model;
+    throw new Error("DEPRECATED SMART ENVIRONMENT LOADED: UPDATE SMART PLUGINS.");
   }
   set embed_model(embed_model) { this.env._embed_model = embed_model; }
   reload_embed_model() {

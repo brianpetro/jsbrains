@@ -5,7 +5,7 @@ import {
 } from "./_api.js";
 
 /**
- * Normalize LM Studio model data into SmartEmbedModel format.
+ * Normalize LM Studio model
  * Pure and reusable.
  * @param {Object} list - Response from LM Studio `/v1/models` endpoint
  * @param {string} [adapter_key='lm_studio'] - Adapter identifier

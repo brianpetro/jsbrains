@@ -144,9 +144,6 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     if (this.api_key) {
       headers["Authorization"] = `Bearer ${this.api_key}`;
     }
-    if (this.smart_embed.opts.headers) {
-      headers = { ...headers, ...this.smart_embed.opts.headers };
-    }
     return headers;
   }
 

@@ -29,7 +29,6 @@ export class SmartDirectory extends SmartGroup {
   get fs() { return this.env.smart_sources.fs; }
 
   get file_type() { return 'directory'; }
-  get smart_embed() { return false; }
 
   async read() {
     const contents = await this.fs.list(this.data.path);

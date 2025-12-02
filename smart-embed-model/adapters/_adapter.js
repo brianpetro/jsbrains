@@ -16,19 +16,6 @@ export class SmartEmbedAdapter extends SmartModelAdapter {
    */
   static defaults = {};
   /**
-   * Create adapter instance
-   * @param {SmartEmbedModel} model - Parent model instance
-   */
-  constructor(model) {
-    super(model);
-    /**
-     * @deprecated use this.model instead
-     */
-    this.smart_embed = model;
-
-  }
-
-  /**
    * Count tokens in input text
    * @abstract
    * @param {string} input - Text to tokenize

@@ -10,22 +10,11 @@ import {
  * Adapter for running transformer models in an iframe
  * Combines transformer model capabilities with iframe isolation
  * @extends SmartEmbedIframeAdapter
- * 
- * @example
- * ```javascript
- * const model = new SmartEmbedModel({
- *   model_key: 'TaylorAI/bge-micro-v2',
- *   adapters: {
- *     transformers_iframe: SmartEmbedTransformersIframeAdapter
- *   }
- * });
- * ```
  */
 export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter {
   static defaults = transformers_defaults;
   /**
    * Create transformers iframe adapter instance
-   * @param {SmartEmbedModel} model - Parent model instance
    */
   constructor(model) {
     super(model);
@@ -40,6 +29,7 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
     else this.connector = this.connector
       .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0')
     ;
+    console.log('transformers iframe connector', this.model);
   }
 
   /** @returns {Object} Settings configuration for transformers adapter */

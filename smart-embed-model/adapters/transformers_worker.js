@@ -6,22 +6,11 @@ import path from "path";
  * Adapter for running transformer models in a Web Worker
  * Combines transformer model capabilities with worker thread isolation
  * @extends SmartEmbedWorkerAdapter
- * 
- * @example
- * ```javascript
- * const model = new SmartEmbedModel({
- *   model_key: 'TaylorAI/bge-micro-v2',
- *   adapters: {
- *     transformers_worker: SmartEmbedTransformersWorkerAdapter
- *   }
- * });
- * ```
  */
 export class SmartEmbedTransformersWorkerAdapter extends SmartEmbedWorkerAdapter {
   static defaults = transformers_defaults;
   /**
    * Create transformers worker adapter instance
-   * @param {SmartEmbedModel} model - Parent model instance
    */
   constructor(model) {
     super(model);

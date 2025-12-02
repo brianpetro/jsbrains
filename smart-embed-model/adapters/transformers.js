@@ -14,22 +14,11 @@ export const transformers_defaults = {
  * Adapter for local transformer-based embedding models
  * Uses @xenova/transformers for model loading and inference
  * @extends SmartEmbedAdapter
- * 
- * @example
- * ```javascript
- * const model = new SmartEmbedModel({
- *   model_key: 'TaylorAI/bge-micro-v2',
- *   adapters: {
- *     transformers: SmartEmbedTransformersAdapter
- *   }
- * });
- * ```
  */
 export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
   static defaults = transformers_defaults;
   /**
    * Create transformers adapter instance
-   * @param {SmartEmbedModel} model - Parent model instance
    */
   constructor(model) {
     super(model);
@@ -44,9 +33,18 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load() {
-    await this.load_transformers();
-    this.loaded = true;
-    this.set_state('loaded');
+    if(this.loading) {
+      console.warn('model is already loading');
+      while(this.loading) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }else{
+      this.loading = true;
+      await this.load_transformers();
+      this.loading = false;
+      this.loaded = true;
+      this.set_state('loaded');
+    }
   }
 
   /**
@@ -71,6 +69,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers() {
+    console.log("[Transformers] Loading model:", this);
     const { pipeline, env, AutoTokenizer } = await import('@huggingface/transformers');
 
     env.allowLocalModels = false;
@@ -86,9 +85,11 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
       console.log("[Transformers] Using CPU");
       env.backends.onnx.wasm.numThreads = 8;
     }
+    console.log("[Transformers] Pipeline options:", {pipeline_opts, model_key: this.model_key});
 
     this.pipeline = await pipeline('feature-extraction', this.model_key, pipeline_opts);
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
+    console.log("[Transformers] Model and tokenizer loaded", {pipeline: this.pipeline, tokenizer: this.tokenizer});
   }
 
   /**
@@ -108,7 +109,8 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
    * @returns {Promise<Array<Object>>} Processed inputs with embeddings
    */
   async embed_batch(inputs) {
-    if (!this.pipeline) await this.load();
+    // if (!this.pipeline) await this.load();
+    if (!this.loaded) await this.load();
     const filtered_inputs = inputs.filter(item => item.embed_input?.length > 0);
     if (!filtered_inputs.length) return [];
 

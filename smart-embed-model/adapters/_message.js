@@ -17,7 +17,6 @@ import { SmartEmbedAdapter } from "./_adapter.js";
 export class SmartEmbedMessageAdapter extends SmartEmbedAdapter {
     /**
      * Create message adapter instance
-     * @param {SmartEmbedModel} model - Parent model instance
      */
     constructor(model) {
         super(model);

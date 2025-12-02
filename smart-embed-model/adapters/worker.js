@@ -4,18 +4,10 @@ import { SmartEmbedMessageAdapter } from "./_message.js";
  * Adapter for running embedding models in a Web Worker
  * Provides parallel processing in a separate thread
  * @extends SmartEmbedMessageAdapter
- * 
- * @example
- * ```javascript
- * const model = new SmartEmbedModel({
- *   adapters: { worker: SmartEmbedWorkerAdapter }
- * });
- * ```
  */
 export class SmartEmbedWorkerAdapter extends SmartEmbedMessageAdapter {
     /**
      * Create worker adapter instance
-     * @param {SmartEmbedModel} model - Parent model instance
      */
     constructor(model) {
         super(model);

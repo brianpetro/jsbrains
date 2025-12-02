@@ -162,7 +162,7 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
   }
 
   /**
-   * Parse OpenRouter /v1/models response into SmartEmbedModel format,
+   * Parse OpenRouter /v1/models response into standard format,
    * but only keep models that look like embeddings.
    *
    * @param {Object|Array} model_data - Raw models payload from OpenRouter

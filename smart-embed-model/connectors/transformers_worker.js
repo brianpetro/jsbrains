@@ -18,6 +18,7 @@ var SmartModel = class {
     this.validate_opts(opts);
     this.state = "unloaded";
     this._adapter = null;
+    this.data = opts;
   }
   /**
    * Initialize the model by loading the configured adapter.
@@ -513,14 +514,6 @@ var SmartModelAdapter = class {
 // adapters/_adapter.js
 var SmartEmbedAdapter = class extends SmartModelAdapter {
   /**
-   * Create adapter instance
-   * @param {SmartEmbedModel} model - Parent model instance
-   */
-  constructor(model2) {
-    super(model2);
-    this.smart_embed = model2;
-  }
-  /**
    * Count tokens in input text
    * @abstract
    * @param {string} input - Text to tokenize
@@ -608,7 +601,6 @@ var transformers_defaults = {
 var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
   /**
    * Create transformers adapter instance
-   * @param {SmartEmbedModel} model - Parent model instance
    */
   constructor(model2) {
     super(model2);
@@ -620,9 +612,18 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load() {
-    await this.load_transformers();
-    this.loaded = true;
-    this.set_state("loaded");
+    if (this.loading) {
+      console.warn("model is already loading");
+      while (this.loading) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } else {
+      this.loading = true;
+      await this.load_transformers();
+      this.loading = false;
+      this.loaded = true;
+      this.set_state("loaded");
+    }
   }
   /**
    * Unload model and free resources
@@ -645,6 +646,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers() {
+    console.log("[Transformers] Loading model:", this);
     const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0");
     env.allowLocalModels = false;
     const pipeline_opts = {
@@ -658,8 +660,10 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
       console.log("[Transformers] Using CPU");
       env.backends.onnx.wasm.numThreads = 8;
     }
+    console.log("[Transformers] Pipeline options:", { pipeline_opts, model_key: this.model_key });
     this.pipeline = await pipeline("feature-extraction", this.model_key, pipeline_opts);
     this.tokenizer = await AutoTokenizer.from_pretrained(this.model_key);
+    console.log("[Transformers] Model and tokenizer loaded", { pipeline: this.pipeline, tokenizer: this.tokenizer });
   }
   /**
    * Count tokens in input text
@@ -677,7 +681,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<Array<Object>>} Processed inputs with embeddings
    */
   async embed_batch(inputs) {
-    if (!this.pipeline) await this.load();
+    if (!this.loaded) await this.load();
     const filtered_inputs = inputs.filter((item) => item.embed_input?.length > 0);
     if (!filtered_inputs.length) return [];
     if (filtered_inputs.length > this.batch_size) {

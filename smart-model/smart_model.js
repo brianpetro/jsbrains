@@ -44,6 +44,8 @@ export class SmartModel {
     this.validate_opts(opts);
     this.state = 'unloaded';
     this._adapter = null;
+    // connector backwards compatibility
+    this.data = opts;
   }
   
   /**

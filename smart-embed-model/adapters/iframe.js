@@ -4,18 +4,10 @@ import { SmartEmbedMessageAdapter } from "./_message.js";
  * Adapter for running embedding models in an iframe
  * Provides isolation and separate context for model execution
  * @extends SmartEmbedMessageAdapter
- * 
- * @example
- * ```javascript
- * const model = new SmartEmbedModel({
- *   adapters: { iframe: SmartEmbedIframeAdapter }
- * });
- * ```
  */
 export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
     /**
      * Create iframe adapter instance
-     * @param {SmartEmbedModel} model - Parent model instance
      */
     constructor(model) {
         super(model);

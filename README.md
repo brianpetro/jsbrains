@@ -289,22 +289,6 @@ By isolating provider quirks behind adapters, JS Brains stays extensible and dev
 
 Collections expose a unified CRUD interface backed by data adapters. Items derive from `CollectionItem`, gaining lifecycle hooks and validation. Higher-level modules like SmartEntities, SmartSources, and SmartBlocks build on this foundation, layering domain-specific behavior without changing persistence logic.
 
-## High-Level Flow
-
-```mermaid
-graph TD
-	Env[SmartEnv] --> Collections[SmartCollections]
-	Collections --> Entities[SmartEntities]
-	Entities --> Sources[SmartSources]
-	Sources --> Blocks[SmartBlocks]
-	Env --> Models[SmartModel]
-	Models --> Chat[SmartChatModel]
-	Models --> Embed[SmartEmbedModel]
-	Models --> Rank[SmartRankModel]
-```
-
----
-
 ## Use Cases: Smart Connections
 
 A prime example of JS Brains in action is the **Smart Connections** plugin for Obsidian, showcasing how various modules work together to create an AI-driven knowledge management environment:
