@@ -373,6 +373,7 @@ export class SmartSources extends SmartEntities {
   /**
    * Performs a lexical search for matching SmartSource content.
    * @async
+   * @deprecated uses this.actions 2025-12-02
    * @param {Object} search_filter - The filter criteria for the search.
    * @param {string[]} search_filter.keywords - An array of keywords to search for.
    * @param {number} [search_filter.limit] - The maximum number of results to return.
