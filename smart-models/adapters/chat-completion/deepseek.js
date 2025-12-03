@@ -1,7 +1,6 @@
 import {
   SmartChatModelDeepseekAdapter,
 } from "smart-chat-model/adapters/deepseek.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class DeepseekChatCompletionModelAdapter extends SmartChatModelDeepseekAdapter {
   constructor(model_item) {
@@ -26,7 +25,6 @@ const settings_config = {
   },
 };
 
-add_backward_compatibility(DeepseekChatCompletionModelAdapter);
 export default {
   class: DeepseekChatCompletionModelAdapter,
   settings_config,

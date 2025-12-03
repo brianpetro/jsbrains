@@ -1,7 +1,6 @@
 import {
   SmartChatModelLmStudioAdapter,
 } from "smart-chat-model/adapters/lm_studio.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class LmStudioChatCompletionModelAdapter extends SmartChatModelLmStudioAdapter {
   constructor(model_item) {
@@ -25,7 +24,6 @@ const settings_config = {
   //   description: "Enter your LM Studio API key.",
   // },
 };
-add_backward_compatibility(LmStudioChatCompletionModelAdapter);
 export default {
   class: LmStudioChatCompletionModelAdapter,
   settings_config,

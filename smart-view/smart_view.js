@@ -183,9 +183,13 @@ export class SmartView {
    * @async
    * @param {Object} settings_config
    * @param {Object} opts
+   * @param {Object} [opts.scope={}] - The scope to use when rendering settings (should have settings property).
    * @returns {Promise<DocumentFragment>}
    */
   async render_settings(settings_config, opts = {}) {
+    if (typeof settings_config === 'function') {
+      settings_config = await settings_config(opts.scope);
+    }
     const html = Object.entries(settings_config)
       .map(([setting_key, setting_config]) => {
         if (!setting_config.setting) {

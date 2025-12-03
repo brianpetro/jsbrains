@@ -1,7 +1,6 @@
 import {
   LmStudioEmbedModelAdapter,
 } from "smart-embed-model/adapters/lm_studio.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
   constructor(model_item) {
@@ -16,7 +15,6 @@ export class LmStudioEmbeddingModelAdapter extends LmStudioEmbedModelAdapter {
     return this._http_adapter;
   }
 }
-add_backward_compatibility(LmStudioEmbeddingModelAdapter);
 export default {
   class: LmStudioEmbeddingModelAdapter,
 };

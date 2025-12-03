@@ -1,7 +1,6 @@
 import {
   SmartChatModelOllamaAdapter,
 } from "smart-chat-model/adapters/ollama.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OllamaChatCompletionModelAdapter extends SmartChatModelOllamaAdapter {
   constructor(model_item) {
@@ -30,7 +29,6 @@ const settings_config = {
     description: 'Enter the host for your Ollama instance',
   }
 };
-add_backward_compatibility(OllamaChatCompletionModelAdapter); 
 export default {
   class: OllamaChatCompletionModelAdapter,
   settings_config,

@@ -17,7 +17,8 @@ export class Model extends CollectionItem {
 
   get_key() {
     if (!this.data.key) {
-      this.data.key = `${this.data.provider_key}#${Date.now()}`;
+      this.data.created_at = Date.now();
+      this.data.key = `${this.data.provider_key}#${this.data.created_at}`;
     }
     return this.data.key;
   }
@@ -27,7 +28,7 @@ export class Model extends CollectionItem {
   }
 
   get env_config() {
-    return this.env.config.collections[this.collection_key];
+    return this.collection.env_config;
   }
 
   get provider_config() {
@@ -55,22 +56,6 @@ export class Model extends CollectionItem {
     return this._instance;
   }
 
-  async get_model_key_options() {
-    const models = await this.instance.get_models();
-    return Object.entries(models).map(([key, model]) => ({
-      label: model.name || key,
-      value: model.key || key,
-    })).sort((a, b) => {
-      // sort by if contains "free" first, then alphabetically
-      if (a.label.toLowerCase().includes('free') && !b.label.toLowerCase().includes('free')) {
-        return -1;
-      }
-      if (!a.label.toLowerCase().includes('free') && b.label.toLowerCase().includes('free')) {
-        return 1;
-      }
-      return a.label.localeCompare(b.label);
-    });
-  }
 
   async count_tokens(text) {
     return this.instance.count_tokens(text);
@@ -113,8 +98,7 @@ export class Model extends CollectionItem {
         const previous = target_obj[prop];
         const result = Reflect.set(target_obj, prop, value, receiver);
         if (previous !== value) {
-          self.queue_save();
-          self.collection.process_save_queue();
+          self.debounce_save();
         }
         return result;
       },
@@ -122,8 +106,7 @@ export class Model extends CollectionItem {
         const had = Object.prototype.hasOwnProperty.call(target_obj, prop);
         const result = Reflect.deleteProperty(target_obj, prop);
         if (had) {
-          self.queue_save();
-          self.collection.process_save_queue();
+          self.debounce_save();
         }
         return result;
       }
@@ -132,6 +115,86 @@ export class Model extends CollectionItem {
     const proxy = new Proxy(target, handler);
     this._settings_proxy_map.set(target, proxy);
     return proxy;
+  }
+
+  debounce_save(ms = 500) {
+    if (this._debounce_save_timeout) {
+      clearTimeout(this._debounce_save_timeout);
+    }
+    this._debounce_save_timeout = setTimeout(() => {
+      this.queue_save();
+      this.collection.process_save_queue();
+      this._debounce_save_timeout = null;
+    }, ms);
+  }
+
+  async get_model_key_options() {
+    const model_configs = await this.instance.get_models();
+    return Object.entries(model_configs).map(([key, model_config]) => ({
+      label: model_config.name || key,
+      value: model_config.key || key,
+    })).sort((a, b) => {
+      // sort by if contains "free" first, then alphabetically
+      if (a.label.toLowerCase().includes('free') && !b.label.toLowerCase().includes('free')) {
+        return -1;
+      }
+      if (!a.label.toLowerCase().includes('free') && b.label.toLowerCase().includes('free')) {
+        return 1;
+      }
+      return a.label.localeCompare(b.label);
+    });
+  }
+  model_changed(key, value, elm) {
+    if (key === 'model_key') {
+      this.data.model_key = value;
+      const model_defaults = this.data.provider_models?.[this.data.model_key] || {};
+      const adapter_defaults = this.ProviderAdapterClass.defaults || {};
+      delete this.data.test_passed;
+      this.data = {
+        ...this.data,
+        ...adapter_defaults,
+        ...model_defaults,
+      };
+    }
+    // emit model:changed for settings that change output behavior
+    if (!['api_key', 'meta.name'].includes(key)) {
+      this.emit_event('model:changed');
+    }
+  }
+  /**
+   * @abstract should be implemented by subclasses
+   */
+  async test_model() {}
+  get display_name() {
+    return this.data.meta?.name || `${this.data.provider_key} - ${this.data.model_key}`;
+  }
+  get settings_config () {
+    return {
+      provider_key: {
+        type: 'html',
+        value: `<p><strong>Provider:</strong> ${this.data.provider_key}</p>`,
+      },
+      'meta.name': {
+        type: 'text',
+        name: 'Name',
+        description: 'A friendly name for this model configuration.',
+      },
+      model_key: {
+        type: 'dropdown',
+        name: 'Model',
+        description: 'The model to use from the selected provider.',
+        options_callback: 'get_model_key_options',
+        callback: 'model_changed',
+      },
+      // add model_changed callback to each provider setting that doesn't already have callback defined 
+      ...Object.fromEntries(
+        Object.entries(this.provider_config.settings_config || {}).map(
+          ([setting_key, setting_config]) => (
+            [ setting_key, { ...setting_config, callback: setting_config.callback || 'model_changed' }]
+          )
+        )
+      )
+    };
   }
 
   /**

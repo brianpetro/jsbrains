@@ -1,7 +1,6 @@
 import {
   SmartChatModelOpenaiAdapter,
 } from "smart-chat-model/adapters/openai.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OpenAIChatCompletionModelAdapter extends SmartChatModelOpenaiAdapter {
   constructor(model_item) {
@@ -31,7 +30,6 @@ const settings_config = {
   }
 };
 
-add_backward_compatibility(OpenAIChatCompletionModelAdapter);
 export default {
   class: OpenAIChatCompletionModelAdapter,
   settings_config,

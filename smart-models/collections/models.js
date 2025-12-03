@@ -3,14 +3,24 @@ import ajson_single_file_data_adapter from 'smart-collections/adapters/ajson_sin
 import { Model } from '../items/model.js';
 
 export class Models extends Collection {
+  model_type = 'Model type'; // replace in subclass
   new_model(data = {}) {
     if(!data.provider_key) throw new Error('provider_key is required to create a new model');
+    // bring along api_key (and potentially future properties) from existing model from same provider, if any
+    const existing_from_provider = this.filter(m => m.provider_key === data.provider_key)
+      // sort by created_at to get the most recently created
+      .sort((a, b) => b.data.created_at - a.data.created_at)[0]
+    ;
+    if(existing_from_provider) {
+      if(!data.api_key && existing_from_provider.data.api_key) {
+        data.api_key = existing_from_provider.data.api_key;
+      }
+    }
     const item = new this.item_type(this.env, {
       ...data,
     });
     this.set(item);
     item.queue_save();
-    item.emit_event('model:created');
     return item;
   }
   get default_provider_key() {
@@ -30,6 +40,29 @@ export class Models extends Collection {
   get default() {
     return this.get(this.default_model_key)
   }
+  get env_config() {
+    return this.env.config.collections[this.collection_key];
+  }
+
+  get_model_key_options() {
+    return this.filter().map(model => ({
+      label: model.data.meta?.name || `${model.provider_key} - ${model.data.model_key}`,
+      value: model.key,
+    }));
+  }
+
+}
+
+export function settings_config(scope) {
+  return {
+    default_model_key: {
+      type: 'dropdown',
+      name: `${scope.model_type} model`,
+      description: `Used as the default ${scope.model_type.toLowerCase()} model when no other is specified.`,
+      options_callback: 'get_model_key_options',
+      btn: 'New',
+    },
+  };
 }
 
 export const models_collection = {
@@ -37,7 +70,8 @@ export const models_collection = {
   data_dir: 'models',
   data_adapter: ajson_single_file_data_adapter,
   item_type: Model,
-  providers: {}
+  providers: {},
+  settings_config
 };
 
 export default models_collection;

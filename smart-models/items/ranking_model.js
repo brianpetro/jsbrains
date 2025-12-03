@@ -25,4 +25,17 @@ export class RankingModel extends Model {
   async rank(query, documents, options = {}) {
     return this.instance.rank(query, documents, options);
   }
+
+  async test_model() {
+    try {
+      const resp = await this.rank("alphabetical order", ["z", "y", "x", "a", "b", "c"]);
+      const success = !resp.error;
+      this.data.test_passed = success;
+      this.debounce_save();
+      return {success, response: resp};
+    } catch (e) {
+      this.data.test_passed = false;
+      return {error: e.message || String(e)};
+    }
+  }
 }

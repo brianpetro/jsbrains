@@ -1,7 +1,6 @@
 import {
   SmartChatModelOpenRouterAdapter,
 } from "smart-chat-model/adapters/open_router.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRouterAdapter {
   constructor(model_item) {
@@ -16,15 +15,12 @@ export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRout
     return this._http_adapter;
   }
 }
-add_backward_compatibility(OpenRouterChatCompletionModelAdapter);
 
 const settings_config = {
   "api_key": {
     name: 'API Key',
     type: "password",
     description: "Enter your API key for the chat model provider.",
-    callback: 'test_api_key',
-    is_scope: true, // trigger re-render of settings when changed (reload models dropdown)
   },
 };
 

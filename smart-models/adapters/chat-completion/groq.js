@@ -1,7 +1,6 @@
 import {
   SmartChatModelGroqAdapter,
 } from "smart-chat-model/adapters/groq.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 export class GroqChatCompletionModelAdapter extends SmartChatModelGroqAdapter {
   constructor(model_item) {
@@ -25,7 +24,6 @@ const settings_config = {
     description: "Enter your Groq API key.",
   },
 };
-add_backward_compatibility(GroqChatCompletionModelAdapter);
 export default {
   class: GroqChatCompletionModelAdapter,
   settings_config,

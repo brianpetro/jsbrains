@@ -27,5 +27,18 @@ export class EmbeddingModel extends Model {
     return this.instance.embed_batch(inputs);
   }
 
-}
+  async test_model() {
+    try {
+      const resp = await this.embed("test input");
+      const success = !resp.error;
+      this.data.test_passed = success;
+      this.debounce_save();
+      return {success, response: resp};
+    } catch (e) {
+      this.data.test_passed = false;
+      return {error: e.message || String(e)};
+    }
+  }
 
+
+}

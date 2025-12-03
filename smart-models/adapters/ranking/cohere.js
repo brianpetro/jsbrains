@@ -1,7 +1,6 @@
 import {
   SmartRankCohereAdapter,
 } from "smart-rank-model/adapters/cohere.js";
-import { add_backward_compatibility } from "../../utils/add_backward_compatibility.js";
 
 /**
  * Wrapper adapter that integrates Cohere ranking into smart-models
@@ -33,7 +32,6 @@ export const settings_config = {
     placeholder: "Enter Cohere API Key",
   },
 };
-add_backward_compatibility(CohereRankingModelAdapter);
 
 
 export default {

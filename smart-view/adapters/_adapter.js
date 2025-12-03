@@ -152,28 +152,56 @@ export class SmartViewAdapter {
   render_dropdown_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     let options;
-    if (elm.dataset.optionsCallback) {
-      console.log(`getting options callback: ${elm.dataset.optionsCallback}`);
-      const opts_callback = this.main.get_by_path(scope, elm.dataset.optionsCallback);
-      if(typeof opts_callback === "function") options = opts_callback();
-      else console.warn(`optionsCallback is not a function: ${elm.dataset.optionsCallback}`, scope);
-    }
+    // if (elm.dataset.optionsCallback) {
+    //   console.log(`getting options callback: ${elm.dataset.optionsCallback}`);
+    //   const opts_callback = this.main.get_by_path(scope, elm.dataset.optionsCallback);
+    //   if(typeof opts_callback === "function") options = opts_callback();
+    //   else console.warn(`optionsCallback is not a function: ${elm.dataset.optionsCallback}`, scope);
+    // }
   
-    if (!options || !options.length) {
-      options = this.get_dropdown_options(elm);
-    }
-  
+    // if (!options || !options.length) {
+    //   options = this.get_dropdown_options(elm);
+    // }
+    // smart_setting.addDropdown(dropdown => {
+    //   if (elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
+    //   options.forEach(option => {
+    //     const opt = dropdown.addOption(option.value, option.name ?? option.value);
+    //     opt.selected = (option.value === value);
+    //   });
+    //   dropdown.onChange((value) => {
+    //     this.handle_on_change(path, value, elm, scope, settings_scope);
+    //   });
+    //   dropdown.setValue(value);
+    // });
+    
+    // UPDATED to handle both async and sync options callbacks
     smart_setting.addDropdown(dropdown => {
       if (elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
-      options.forEach(option => {
-        const opt = dropdown.addOption(option.value, option.name ?? option.value);
-        opt.selected = (option.value === value);
-      });
+      const opts_callback = elm.dataset.optionsCallback ? this.main.get_by_path(scope, elm.dataset.optionsCallback) : null;
+      if (typeof opts_callback === "function") {
+        console.log(`getting options callback: ${elm.dataset.optionsCallback}`);
+        Promise.resolve(opts_callback()).then(opts => {
+          opts.forEach(option => {
+            const opt = dropdown.addOption(option.value, option.label ?? option.name ?? option.value);
+            opt.selected = (option.value === value);
+          });
+          dropdown.setValue(value);
+        });
+      } else {
+        if (!options || !options.length) {
+          options = this.get_dropdown_options(elm);
+        }
+        options.forEach(option => {
+          const opt = dropdown.addOption(option.value, option.label ?? option.name ?? option.value);
+          opt.selected = (option.value === value);
+        });
+        dropdown.setValue(value);
+      }
       dropdown.onChange((value) => {
         this.handle_on_change(path, value, elm, scope, settings_scope);
       });
-      dropdown.setValue(value);
     });
+  
   
     return smart_setting;
   }
@@ -579,20 +607,22 @@ export class SmartViewAdapter {
     if (elm.dataset.btn) {
       smart_setting.addButton(button => {
         button.setButtonText(elm.dataset.btn);
-        button.inputEl.addEventListener("click", (e) => {
-          if (elm.dataset.btnCallback && typeof scope[elm.dataset.btnCallback] === "function") {
-            if(elm.dataset.btnCallbackArg) scope[elm.dataset.btnCallback](elm.dataset.btnCallbackArg);
-            else scope[elm.dataset.btnCallback](path, null, smart_setting, scope);
-          } else if (elm.dataset.btnHref) {
-            this.open_url(elm.dataset.btnHref);
-          } else if (elm.dataset.callback && typeof this.main.get_by_path(scope, elm.dataset.callback) === "function") {
-            this.main.get_by_path(scope, elm.dataset.callback)(path, null, smart_setting, scope);
-          } else if (elm.dataset.href) {
-            this.open_url(elm.dataset.href);
-          } else {
-            console.error("No callback or href found for button.");
-          }
-        });
+        if(elm.dataset.btnCallback || elm.dataset.btnHref || elm.dataset.callback || elm.dataset.href) {
+          button.inputEl.addEventListener("click", (e) => {
+            if (elm.dataset.btnCallback && typeof scope[elm.dataset.btnCallback] === "function") {
+              if(elm.dataset.btnCallbackArg) scope[elm.dataset.btnCallback](elm.dataset.btnCallbackArg);
+              else scope[elm.dataset.btnCallback](path, null, smart_setting, scope);
+            } else if (elm.dataset.btnHref) {
+              this.open_url(elm.dataset.btnHref);
+            } else if (elm.dataset.callback && typeof this.main.get_by_path(scope, elm.dataset.callback) === "function") {
+              this.main.get_by_path(scope, elm.dataset.callback)(path, null, smart_setting, scope);
+            } else if (elm.dataset.href) {
+              this.open_url(elm.dataset.href);
+            } else {
+              console.error("No callback or href found for button.");
+            }
+          });
+        }
         if (elm.dataset.btnDisabled || (elm.dataset.disabled && elm.dataset.btnDisabled !== "false")) {
           button.inputEl.disabled = true;
         }
