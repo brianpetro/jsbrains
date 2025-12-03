@@ -29,6 +29,7 @@ import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
 import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 import { migrate_exclusion_settings_2025_08_22 } from './migrations/exclusion_settings.js';
+import { compare_versions } from './utils/compare_versions.js';
 
 const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
 
@@ -155,7 +156,7 @@ export class SmartEnv {
     if(this.global_env.state === 'loaded') return true;
     if(typeof this.global_env?.constructor?.version === 'undefined') return true;
     // If our new code is a higher version, reload:
-    if(this.global_env.constructor.version < this.version){
+    if(compare_versions(this.version, this.global_env.constructor?.version) > 0){
       console.warn(
         "SmartEnv: Reloading environment because of version mismatch",
         `${this.version} > ${this.global_env.constructor.version}`
@@ -214,27 +215,24 @@ export class SmartEnv {
    * Creates or updates a SmartEnv instance.
    * - If a global environment exists and is an older version or lacks 'init_main', it is replaced.
    * @param {Object} main - The main object to be added to the SmartEnv instance.
-   * @param {Object} [main_env_opts={}] - Options for configuring the SmartEnv instance.
+   * @param {Object} [env_config] - Options for configuring the SmartEnv instance.
    * @returns {SmartEnv} The SmartEnv instance.
    * @throws {TypeError} If an invalid main object is provided.
    * @throws {Error} If there's an error creating or updating the SmartEnv instance.
    */
-  static async create(main, main_env_opts = null) {
+  static async create(main, env_config) {
     if (!main || typeof main !== 'object') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
-    if(!main_env_opts) {
-      if(!main.smart_env_config) {
-        throw new Error('SmartEnv: No main_env_opts or main.smart_env_config provided');
-      }
-      main_env_opts = main.smart_env_config;
-    }
+    if(!env_config) throw new Error("SmartEnv.create: 'env_config' parameter is required.");
+    env_config.version = this.version;
 
-    this.add_main(main, main_env_opts);
+    this.add_main(main, env_config);
 
     if(this.should_reload){
       const opts = {};
-      if(this.global_env && this.version > (this.global_env.constructor?.version || 0)){
+      // if(this.global_env && this.version > (this.global_env.constructor?.version || 0)){
+      if(this.global_env && compare_versions(this.version, this.global_env.constructor?.version || 0) > 0){
         opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
       }
       if(this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
@@ -254,15 +252,15 @@ export class SmartEnv {
 
     return this.global_env;
   }
-  static add_main(main, main_env_opts = null) {
+  static add_main(main, env_config = null) {
     if (this.global_env) {
       this.global_env._config = null;                    // invalidate cache
       this.global_env._collections_version_signature = null;
     }
 
-    if (!main_env_opts) main_env_opts = main.smart_env_config;
+    // if (!env_config) env_config = main.smart_env_config;
     const main_key = camel_case_to_snake_case(main.constructor.name);
-    this.smart_env_configs[main_key] = { main, opts: main_env_opts };
+    this.smart_env_configs[main_key] = { main, opts: env_config };
     this.create_env_getter(main);
   }
   /**
