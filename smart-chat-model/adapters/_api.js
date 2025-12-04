@@ -189,11 +189,13 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     if(!http_resp) return null;
     const _res = new this.res_adapter(this, await http_resp.json());
     try{
-      return _res.to_openai();
+      const resp = _res.to_openai();
+      return resp;
     } catch (error) {
-      console.error('Error in SmartChatModelApiAdapter.complete():', error);
+      const normalized_error = normalize_error(error?.data || error);
+      console.error('Error in SmartChatModelApiAdapter.complete():', {normalized_error, error});
       console.error(http_resp);
-      return null;
+      return normalized_error;
     }
   }
 
@@ -692,6 +694,7 @@ export class SmartChatModelResponseAdapter {
    * @returns {Object} Response in OpenAI format
    */
   to_openai() {
+    if(this.error) return { error: normalize_error(this.error) };
     const res = {
       id: this.id,
       object: this.object,
@@ -700,7 +703,6 @@ export class SmartChatModelResponseAdapter {
       usage: this._transform_usage_to_openai(),
       raw: this._res,
     };
-    if(this.error) res.error = this.error;
     return res;
   }
 

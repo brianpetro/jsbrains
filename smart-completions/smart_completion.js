@@ -66,9 +66,11 @@ export class SmartCompletion extends CollectionItem {
     }
     await this.build_request();
     await this.complete(completion_opts);
-    await this.parse_response();
-    this.queue_save();
-    this.collection.process_save_queue();
+    if(this.is_completed){ // skip if error
+      await this.parse_response();
+      this.queue_save();
+      this.collection.process_save_queue();
+    }
   }
 
   get active_adapters(){
@@ -140,6 +142,7 @@ export class SmartCompletion extends CollectionItem {
         : await chat_model.complete(request_payload)
       ;
       if(!stream){
+        if (result.error) return this.handle_error(result.error);
         this.emit_event('completion:completed');
         this.data.completion.responses.push({
           timestamp: Date.now(),
