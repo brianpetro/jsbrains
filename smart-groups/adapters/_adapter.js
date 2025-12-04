@@ -24,6 +24,7 @@ export class GroupCollectionAdapter {
    * Build groups by scanning the primary source collection.
    * This should identify group keys (e.g., directory paths) and create/update items.
    * @async
+   * @abstract
    * @returns {Promise<void>}
    */
   async build_groups() { throw new Error("Not implemented"); }

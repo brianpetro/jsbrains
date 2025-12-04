@@ -45,6 +45,7 @@ export class EntitiesVectorAdapter {
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
    * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score descending.
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async nearest(vec, filter = {}) {
@@ -57,6 +58,7 @@ export class EntitiesVectorAdapter {
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
    * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score ascending (furthest).
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async furthest(vec, filter = {}) {
@@ -68,6 +70,7 @@ export class EntitiesVectorAdapter {
    * @async
    * @param {Object[]} entities - Array of entity instances to embed.
    * @returns {Promise<void>}
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async embed_batch(entities) {
@@ -80,6 +83,7 @@ export class EntitiesVectorAdapter {
    * @async
    * @param {Object[]} embed_queue - Array of entities to embed.
    * @returns {Promise<void>}
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async process_embed_queue(embed_queue) {
@@ -120,6 +124,7 @@ export class EntityVectorAdapter {
    * Retrieve the current vector embedding for this entity.
    * @async
    * @returns {Promise<number[]|undefined>} The entity's vector or undefined if not set.
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async get_vec() {
@@ -131,6 +136,7 @@ export class EntityVectorAdapter {
    * @async
    * @param {number[]} vec - The vector to set.
    * @returns {Promise<void>}
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async set_vec(vec) {
@@ -141,6 +147,7 @@ export class EntityVectorAdapter {
    * Delete/remove the vector embedding for this entity.
    * @async
    * @returns {Promise<void>}
+   * @abstract
    * @throws {Error} Not implemented by default.
    */
   async delete_vec() {

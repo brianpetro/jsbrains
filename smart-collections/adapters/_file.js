@@ -36,6 +36,11 @@ export class FileItemDataAdapter extends ItemDataAdapter {
   get fs() {
     return this.item.collection.data_fs || this.item.collection.env.data_fs;
   }
+  /**
+   * Resolve the file path for the item's data.
+   * @abstract
+   * @returns {string} Path to the persisted item data.
+   */
   get data_path() { throw new Error('Not implemented'); }
 
   async load_if_updated() {

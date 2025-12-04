@@ -45,6 +45,13 @@ export class SmartComponentAdapter {
     return item;
   }
 
+  /**
+   * Render the component for the provided scope.
+   * @abstract
+   * @param {Object} scope - Render scope from the hosting environment.
+   * @param {Object} [opts] - Optional render options.
+   * @returns {Promise<*>} Rendered output for the component.
+   */
   async render(scope, opts) { // eslint-disable-line no-unused-vars
     throw new Error('render() not implemented');
   }

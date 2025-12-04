@@ -39,6 +39,7 @@ export class CollectionDataAdapter {
   /**
    * Load a single item by its key using an `ItemDataAdapter`.
    * @async
+   * @abstract
    * @param {string} key - The key of the item to load.
    * @returns {Promise<void>} Resolves when the item is loaded.
    */
@@ -47,6 +48,7 @@ export class CollectionDataAdapter {
   /**
    * Save a single item by its key using its associated `ItemDataAdapter`.
    * @async
+   * @abstract
    * @param {string} key - The key of the item to save.
    * @returns {Promise<void>} Resolves when the item is saved.
    */
@@ -56,23 +58,26 @@ export class CollectionDataAdapter {
    * Delete a single item by its key. This may involve updating or removing its file,
    * as handled by the `ItemDataAdapter`.
    * @async
+   * @abstract
    * @param {string} key - The key of the item to delete.
    * @returns {Promise<void>} Resolves when the item is deleted.
    */
   async delete_item(key) { throw new Error('Not implemented'); }
 
   /**
-   * Process any queued load operations. Typically orchestrates calling `load_item()` 
+   * Process any queued load operations. Typically orchestrates calling `load_item()`
    * on items that have been flagged for loading.
    * @async
+   * @abstract
    * @returns {Promise<void>}
    */
   async process_load_queue() { throw new Error('Not implemented'); }
 
   /**
-   * Process any queued save operations. Typically orchestrates calling `save_item()` 
+   * Process any queued save operations. Typically orchestrates calling `save_item()`
    * on items that have been flagged for saving.
    * @async
+   * @abstract
    * @returns {Promise<void>}
    */
   async process_save_queue() { throw new Error('Not implemented'); }
@@ -109,17 +114,19 @@ export class ItemDataAdapter {
   }
 
   /**
-   * Load the item's data from storage. May involve reading a file and parsing 
+   * Load the item's data from storage. May involve reading a file and parsing
    * its contents, then updating `item.data`.
    * @async
+   * @abstract
    * @returns {Promise<void>} Resolves when the item is fully loaded.
    */
   async load() { throw new Error('Not implemented'); }
 
   /**
-   * Save the item's data to storage. May involve writing to a file or appending 
+   * Save the item's data to storage. May involve writing to a file or appending
    * lines in an append-only format.
    * @async
+   * @abstract
    * @param {string|null} [ajson=null] - An optional serialized representation of the item’s data.
    *                                     If not provided, the adapter should derive it from the item.
    * @returns {Promise<void>} Resolves when the item is saved.
@@ -127,16 +134,18 @@ export class ItemDataAdapter {
   async save(ajson = null) { throw new Error('Not implemented'); }
 
   /**
-   * Delete the item's data from storage. May involve removing a file or writing 
+   * Delete the item's data from storage. May involve removing a file or writing
    * a `null` entry in an append-only file to signify deletion.
    * @async
+   * @abstract
    * @returns {Promise<void>} Resolves when the item’s data is deleted.
    */
   async delete() { throw new Error('Not implemented'); }
 
   /**
-   * Returns the file path or unique identifier used by this adapter to locate and store 
+   * Returns the file path or unique identifier used by this adapter to locate and store
    * the item's data. This may be a file name derived from the item's key.
+   * @abstract
    * @returns {string} The path or identifier for the item's data.
    */
   get data_path() { throw new Error('Not implemented'); }
@@ -154,6 +163,7 @@ export class ItemDataAdapter {
   /**
    * Load the item's data from storage if it has been updated externally.
    * @async
+   * @abstract
    * @returns {Promise<void>} Resolves when the item is loaded.
    */
   async load_if_updated() { throw new Error('Not implemented'); }

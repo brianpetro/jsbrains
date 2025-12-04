@@ -163,6 +163,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   /**
    * Parses the raw model data from OpenAI API and transforms it into a more usable format.
    * @param {Object} model_data - The raw model data received from OpenAI API.
+   * @abstract
    * @returns {Array<Object>} An array of parsed model objects with the following properties:
    *   @property {string} model_name - The name/ID of the model as returned by the API.
    *   @property {string} id - The id used to identify the model (usually same as model_name).

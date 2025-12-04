@@ -93,6 +93,7 @@ export class SmartBlocks extends SmartEntities {
 
   /**
    * @async
+   * @abstract
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */
@@ -100,12 +101,14 @@ export class SmartBlocks extends SmartEntities {
 
   /**
    * @throws {Error} Throws an error indicating the method is not implemented.
+   * @abstract
    * @returns {void}
    */
   build_links_map() { throw "Not implemented: build_links_map"; }
 
   /**
    * @async
+   * @abstract
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */
@@ -113,6 +116,7 @@ export class SmartBlocks extends SmartEntities {
 
   /**
    * @async
+   * @abstract
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */
@@ -121,6 +125,7 @@ export class SmartBlocks extends SmartEntities {
 
   /**
    * @async
+   * @abstract
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */
@@ -128,6 +133,7 @@ export class SmartBlocks extends SmartEntities {
 
   /**
    * @async
+   * @abstract
    * @throws {Error} Throws an error indicating the method is not implemented.
    * @returns {Promise<void>}
    */

@@ -23,6 +23,11 @@ export class Models extends Collection {
     item.queue_save();
     return item;
   }
+  /**
+   * Retrieve the provider key used when creating a default model.
+   * @abstract
+   * @returns {string} provider key for the default model.
+   */
   get default_provider_key() {
     throw new Error('default_provider_key not implemented');
   }
