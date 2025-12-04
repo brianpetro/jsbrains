@@ -193,7 +193,6 @@ export class SmartChatModelOpenRouterResponseAdapter extends SmartChatModelRespo
   to_platform() { return this.to_openai(); }
   get object() { return 'chat.completion'; }
   get error() {
-    console.log('OpenROuter Error handling, this._res:', {error: this._res.error});
     if(!this._res.error) return null;
     const error = this._res.error;
     if(!error.message) error.message = '';
