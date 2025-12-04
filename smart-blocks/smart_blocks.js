@@ -1,4 +1,7 @@
-import { SmartEntities } from "smart-entities";
+import {
+  SmartEntities,
+  settings_config as entities_settings_config
+} from "smart-entities/smart_entities.js";
 
 /**
  * @class SmartBlocks
@@ -50,9 +53,9 @@ export class SmartBlocks extends SmartEntities {
   get settings_config() {
     return this.process_settings_config({
       "embed_blocks": {
-        name: 'Utilize Smart Blocks',
+        name: 'Embed blocks',
         type: "toggle",
-        description: "Creates more granular embeddings by splitting sources into smaller chunks. This may improve search results especially for large documents that have well-defined sections.",
+        description: "Blocks represent parts/sections of notes. Get more granular results.",
         default: true,
       },
       ...super.settings_config,
@@ -147,3 +150,27 @@ export class SmartBlocks extends SmartEntities {
     this.emit_event('blocks:cleaned', {expired_blocks_ct: expired_blocks.length});
   }
 }
+
+
+export const settings_config = (scope) => {
+  const config = {
+    "embed_blocks": {
+      name: 'Embed blocks',
+      type: "toggle",
+      description: "Blocks represent parts/sections of notes. Get more granular results.",
+      default: true,
+    },
+    ...entities_settings_config,
+  };
+  if (scope.settings.embed_blocks === false && config.min_chars) {
+    config.min_chars.disabled = true;
+  }
+  return config;
+};
+
+
+export default {
+  class: SmartBlocks,
+  collection_key: 'smart_blocks',
+  settings_config,
+};

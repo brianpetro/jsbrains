@@ -187,10 +187,11 @@ export class SmartView {
    * @returns {Promise<DocumentFragment>}
    */
   async render_settings(settings_config, opts = {}) {
-    if (typeof settings_config === 'function') {
-      settings_config = await settings_config(opts.scope);
-    }
-    const html = Object.entries(settings_config)
+    // if (typeof settings_config === 'function') {
+    //   settings_config = await settings_config(opts.scope);
+    // }
+    const is_fx = typeof settings_config === 'function';
+    const html = Object.entries(is_fx ? await settings_config(opts.scope) : settings_config)
       .map(([setting_key, setting_config]) => {
         if (!setting_config.setting) {
           setting_config.setting = setting_key;

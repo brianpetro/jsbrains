@@ -20,9 +20,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartBlock } from "./smart_block.js";
-import { SmartBlocks } from "./smart_blocks.js";
+import { SmartBlocks, settings_config } from "./smart_blocks.js";
 
 export {
   SmartBlock,
   SmartBlocks,
+  settings_config
 }
+
+export default "./smart_blocks.js";

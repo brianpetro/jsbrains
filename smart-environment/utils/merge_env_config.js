@@ -30,6 +30,8 @@ import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
  * @returns {object} The same `target` reference for chaining.
  */
 export function merge_env_config (target, incoming) {
+  const CUR_VER = target.version;
+  const NEW_VER = incoming.version;
   for (const [key, value] of Object.entries(incoming)) {
     /* ───────────────────────────── Collections ───────────────────────────── */
     if (key === 'collections' && value && typeof value === 'object') {
@@ -69,55 +71,58 @@ export function merge_env_config (target, incoming) {
     }
 
     // THIS LOGIC IS LIKELY CANONICAL
-    if (['actions', 'components'].includes(key) && value && typeof value === 'object') {
+    if (['actions', 'collections', 'components', 'item_types', 'modules'].includes(key) && value && typeof value === 'object') {
       if (!target[key]) target[key] = {};
 
       for (const [comp_key, comp_def] of Object.entries(value)) {
         if (!target[key][comp_key]) {
-          target[key][comp_key] = comp_def;
+          target[key][comp_key] = {...comp_def};
           continue;
         }
 
         const existing_comp = target[key][comp_key];
         const new_version_raw = comp_def && comp_def.version;
         const cur_version_raw = existing_comp && existing_comp.version;
-        const cmp = compare_versions(new_version_raw, cur_version_raw);
+        const cmp = compare_versions(new_version_raw || NEW_VER, cur_version_raw || CUR_VER);
 
         if (cmp > 0) {
-          // Newer component definition replaces older one outright
           target[key][comp_key] = comp_def;
+          // // Newer definition wins but keep keys the newer record omits
+          // const replaced = { ...comp_def };
+          // deep_merge_no_overwrite(replaced, existing_comp);
+          // target[key][comp_key] = replaced;
         } else {
-          // Same or older version – augment without overwriting
+          // Same or older version – additive merge (don’t overwrite)
           deep_merge_no_overwrite(existing_comp, comp_def);
         }
       }
       continue; // done with this top-level key
     }
 
-    // DEPRECATED item_types handles (use items and config in collections instead)
-    /* ───────────────────────────── Item types ───────────────────────────── */
-    if (key === 'item_types' && value && typeof value === 'object') {
-      if (!target.item_types) target.item_types = {};
+    // // DEPRECATED item_types handles (use items and config in collections instead)
+    // /* ───────────────────────────── Item types ───────────────────────────── */
+    // if (key === 'item_types' && value && typeof value === 'object') {
+    //   if (!target.item_types) target.item_types = {};
 
-      for (const [type_key, type_def] of Object.entries(value)) {
-        if (!target.item_types[type_key]) {
-          target.item_types[type_key] = type_def;
-          continue;
-        }
+    //   for (const [type_key, type_def] of Object.entries(value)) {
+    //     if (!target.item_types[type_key]) {
+    //       target.item_types[type_key] = type_def;
+    //       continue;
+    //     }
 
-        const existing_type = target.item_types[type_key];
-        const new_version_raw = type_def && type_def.version;
-        const cur_version_raw = existing_type && existing_type.version;
-        const cmp = compare_versions(new_version_raw, cur_version_raw);
+    //     const existing_type = target.item_types[type_key];
+    //     const new_version_raw = type_def && type_def.version;
+    //     const cur_version_raw = existing_type && existing_type.version;
+    //     const cmp = compare_versions(new_version_raw || NEW_VER, cur_version_raw || CUR_VER);
 
-        if (cmp > 0) {
-          target.item_types[type_key] = type_def;
-        } else {
-          deep_merge_no_overwrite(existing_type, type_def);
-        }
-      }
-      continue; // done with this top-level key
-    }
+    //     if (cmp > 0) {
+    //       target.item_types[type_key] = type_def;
+    //     } else {
+    //       deep_merge_no_overwrite(existing_type, type_def);
+    //     }
+    //   }
+    //   continue; // done with this top-level key
+    // }
 
     /* ───────────────────────────── Default path ──────────────────────────── */
     if (Array.isArray(value)) {

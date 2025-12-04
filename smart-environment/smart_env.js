@@ -41,12 +41,7 @@ const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('re
  * of the environment is created and acts as a central coordination point.
  */
 export class SmartEnv {
-  /**
-   * @type {number} version - Bump this number when shipping a new version of SmartEnv.
-   * If a newer version is loaded into a runtime that already has an older environment,
-   * an automatic reload of all existing mains will occur.
-   */
-  static version = 2.139293;
+  static version = '2.2.0';
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -60,11 +55,6 @@ export class SmartEnv {
     this._events = SmartEvents.create(this, build_events_opts(this.config?.modules?.smart_events));
     if (opts.primary_main_key) this.primary_main_key = opts.primary_main_key;
   }
-
-  // ========================================================================
-  // ──  CONFIG (now version-aware)                                          ──
-  // ========================================================================
-
   /**
    * Builds or returns the cached configuration object.
    * The cache is invalidated automatically whenever the “version signature”
