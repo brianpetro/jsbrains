@@ -16,7 +16,7 @@ export class SourceContextItemAdapter extends ContextItemAdapter {
     return this.ref?.mtime || null;
   }
   async get_text() {
-    return await this.ref.read();
+    return await this.ref?.read() || 'MISSING SOURCE';
   }
   async open(event = null) {
     this.ref.actions.source_open(event);

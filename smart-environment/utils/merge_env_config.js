@@ -80,20 +80,28 @@ export function merge_env_config (target, incoming) {
           continue;
         }
 
-        const existing_comp = target[key][comp_key];
-        const new_version_raw = comp_def && comp_def.version;
-        const cur_version_raw = existing_comp && existing_comp.version;
-        const cmp = compare_versions(new_version_raw || NEW_VER, cur_version_raw || CUR_VER);
+        const target_comp = target[key][comp_key];
+        const incoming_ver = comp_def && comp_def.version;
+        const target_ver = target_comp && target_comp.version;
+        const cmp = compare_versions(incoming_ver, target_ver);
+        // console.log(`Merging ${key} "${comp_key}": target version "${target_ver}" vs incoming "${incoming_ver}" → cmp=${cmp}`);
 
         if (cmp > 0) {
           target[key][comp_key] = comp_def;
+          target[key][comp_key].version = incoming_ver || -1;
           // // Newer definition wins but keep keys the newer record omits
           // const replaced = { ...comp_def };
-          // deep_merge_no_overwrite(replaced, existing_comp);
+          // deep_merge_no_overwrite(replaced, target_comp);
           // target[key][comp_key] = replaced;
         } else {
+          // DO NOT MERGE IF OLDER? MOVES RESPONSIBILITY TO OVERRIDES?
+          // Object.entries(comp_def).forEach(([k, v]) => {
+          //   if (typeof v === 'function') return; // skip functions
+          //   if(!target_comp[k]) target_comp[k] = v;
+          //   else deep_merge_no_overwrite(target_comp[k], v);
+          // });
           // Same or older version – additive merge (don’t overwrite)
-          deep_merge_no_overwrite(existing_comp, comp_def);
+          deep_merge_no_overwrite(target_comp, comp_def);
         }
       }
       continue; // done with this top-level key
