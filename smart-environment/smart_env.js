@@ -478,18 +478,11 @@ export class SmartEnv {
 
   /**
    * A built-in settings schema for this environment.
+   * @abstract
    * @returns {Object}
    */
   get settings_config() {
-    return {
-      is_obsidian_vault: {
-        name: 'Obsidian Vault',
-        description: 'Toggle on if this is an Obsidian vault.',
-        type: 'toggle',
-        default: false
-      },
-
-    };
+    return {};
   }
 
   get global_prop() {
