@@ -20,6 +20,9 @@ export class FileCollectionDataAdapter extends CollectionDataAdapter {
   get fs() {
     return this.collection.data_fs || this.collection.env.data_fs;
   }
+  async clear_all() {
+    await this.fs.remove_dir(this.data_dir, true);
+  } 
 }
 
 /**

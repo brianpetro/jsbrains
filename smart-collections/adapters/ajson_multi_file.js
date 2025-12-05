@@ -81,7 +81,8 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
       return;
     }
   
-    console.log(`Loading ${this.collection.collection_key}: ${load_queue.length} items`);
+    const now = Date.now();
+    console.log(`Loading ${this.collection.collection_key}: ${load_queue.length} items from disk`);
     const batch_size = 100; // could be configurable
   
     for (let i = 0; i < load_queue.length; i += batch_size) {
@@ -94,6 +95,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
         });
       }));
     }
+    console.log(`Loaded ${this.collection.collection_key} from disk in ${Date.now() - now}ms`);
   
     this.collection.loaded = load_queue.length;
     this.collection.clear_process_notice('loading_collection');

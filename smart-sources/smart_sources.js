@@ -636,7 +636,7 @@ export class SmartSources extends SmartEntities {
   async run_clear_all(){
     this.notices?.show('clearing_all');
     // Clear all data
-    await this.data_fs.remove_dir(this.data_dir, true);
+    await this.data_adapter.clear_all();
     this.clear();
     this.block_collection.clear();
     this._fs = null;
@@ -674,38 +674,38 @@ export class SmartSources extends SmartEntities {
     }, {});
   }
 
-  /**
-   * Deletes all *.ajson files in the "multi/" data_dir, then re-saves all sources (opts.force=true).
-   */
-  async run_clean_up_data() {
-    this.notices?.show('pruning_collection', { collection_key: this.block_collection.collection_key });
-    // Identify blocks to remove
-    const remove_smart_blocks = this.block_collection.filter(item => {
-      if(!item.vec) return false; // skip blocks that have no vec?
-      if(item.is_gone) {
-        item.reason = "is_gone";
-        return true;
-      }
-      if(!item.should_embed){
-        item.reason = "should not embed";
-        return true;
-      }
-      return false;
-    });
-    // Remove identified blocks
-    for(let i = 0; i < remove_smart_blocks.length; i++){
-      const item = remove_smart_blocks[i];
-      if(item.is_gone) item.delete();
-      else item.remove_embeddings();
-    }
-    this.notices?.remove('pruning_collection');
-    this.notices?.show('done_pruning_collection', { collection_key: this.block_collection.collection_key, count: remove_smart_blocks.length });
-    console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
-    // 1) remove all .ajson files in `this.data_dir` ("multi" by default)
-    await this.data_fs.remove_dir(this.data_dir, true);
-    // 2) forcibly re-save all items
-    await this.process_save_queue({ force: true });
-  }
+  // /**
+  //  * Deletes all *.ajson files in the "multi/" data_dir, then re-saves all sources (opts.force=true).
+  //  */
+  // async run_clean_up_data() {
+  //   this.notices?.show('pruning_collection', { collection_key: this.block_collection.collection_key });
+  //   // Identify blocks to remove
+  //   const remove_smart_blocks = this.block_collection.filter(item => {
+  //     if(!item.vec) return false; // skip blocks that have no vec?
+  //     if(item.is_gone) {
+  //       item.reason = "is_gone";
+  //       return true;
+  //     }
+  //     if(!item.should_embed){
+  //       item.reason = "should not embed";
+  //       return true;
+  //     }
+  //     return false;
+  //   });
+  //   // Remove identified blocks
+  //   for(let i = 0; i < remove_smart_blocks.length; i++){
+  //     const item = remove_smart_blocks[i];
+  //     if(item.is_gone) item.delete();
+  //     else item.remove_embeddings();
+  //   }
+  //   this.notices?.remove('pruning_collection');
+  //   this.notices?.show('done_pruning_collection', { collection_key: this.block_collection.collection_key, count: remove_smart_blocks.length });
+  //   console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
+  //   // 1) remove all .ajson files in `this.data_dir` ("multi" by default)
+  //   await this.data_fs.remove_dir(this.data_dir, true);
+  //   // 2) forcibly re-save all items
+  //   await this.process_save_queue({ force: true });
+  // }
 
   /**
    * Retrieves patterns for excluding files/folders from processing.

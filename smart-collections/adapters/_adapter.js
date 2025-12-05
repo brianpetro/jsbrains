@@ -93,6 +93,15 @@ export class CollectionDataAdapter {
     await adapter.load_if_updated();
   }
 
+  /**
+   * Clear all data associated with this collection.
+   * @async
+   * @abstract
+   * @returns {Promise<void>}
+   */
+  async clear_all() {
+    throw new Error('Not implemented');
+  }
 }
 
 
