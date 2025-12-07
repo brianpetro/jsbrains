@@ -152,31 +152,8 @@ export class SmartViewAdapter {
   render_dropdown_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);
     let options;
-    // if (elm.dataset.optionsCallback) {
-    //   console.log(`getting options callback: ${elm.dataset.optionsCallback}`);
-    //   const opts_callback = this.main.get_by_path(scope, elm.dataset.optionsCallback);
-    //   if(typeof opts_callback === "function") options = opts_callback();
-    //   else console.warn(`optionsCallback is not a function: ${elm.dataset.optionsCallback}`, scope);
-    // }
-  
-    // if (!options || !options.length) {
-    //   options = this.get_dropdown_options(elm);
-    // }
-    // smart_setting.addDropdown(dropdown => {
-    //   if (elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
-    //   options.forEach(option => {
-    //     const opt = dropdown.addOption(option.value, option.name ?? option.value);
-    //     opt.selected = (option.value === value);
-    //   });
-    //   dropdown.onChange((value) => {
-    //     this.handle_on_change(path, value, elm, scope, settings_scope);
-    //   });
-    //   dropdown.setValue(value);
-    // });
-    
-    // UPDATED to handle both async and sync options callbacks
     smart_setting.addDropdown(dropdown => {
-      if (elm.dataset.required) dropdown.inputEl.setAttribute("required", true);
+      if (elm.dataset.required) dropdown.selectEl.setAttribute("required", true);
       const opts_callback = elm.dataset.optionsCallback ? this.main.get_by_path(scope, elm.dataset.optionsCallback) : null;
       if (typeof opts_callback === "function") {
         console.log(`getting options callback: ${elm.dataset.optionsCallback}`);
@@ -184,6 +161,7 @@ export class SmartViewAdapter {
           opts.forEach(option => {
             const opt = dropdown.addOption(option.value, option.label ?? option.name ?? option.value);
             opt.selected = (option.value === value);
+            if(opts.length === 1 && opt.selected) dropdown.selectEl.classList.add("dropdown-no-options"); // hide if one option and is selected
           });
           dropdown.setValue(value);
         });
@@ -194,6 +172,7 @@ export class SmartViewAdapter {
         options.forEach(option => {
           const opt = dropdown.addOption(option.value, option.label ?? option.name ?? option.value);
           opt.selected = (option.value === value);
+          if(options.length === 1 && opt.selected) dropdown.selectEl.classList.add("dropdown-no-options"); // hide if one option and is selected
         });
         dropdown.setValue(value);
       }

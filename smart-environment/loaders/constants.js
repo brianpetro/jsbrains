@@ -1,4 +1,9 @@
-export const COMPONENT_EXPORT_PROPS = ['settings_config', 'version'];
+export const COMPONENT_EXPORT_PROPS = [
+  'settings_config',
+  'version',
+  'display_name',
+  'description',
+];
 
 export const ACTION_EXPORT_PROPS = [
   'settings_config',
