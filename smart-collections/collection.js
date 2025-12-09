@@ -262,6 +262,7 @@ export class Collection {
 
   /**
    * Data directory strategy for this collection. Defaults to 'multi'.
+   * @deprecated should be handled in adapters (2025-12-09)
    * @returns {string}
    */
   get data_dir() { return this.collection_key; }

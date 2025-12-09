@@ -21,7 +21,7 @@ export class FileCollectionDataAdapter extends CollectionDataAdapter {
     return this.collection.data_fs || this.collection.env.data_fs;
   }
   async clear_all() {
-    await this.fs.remove_dir(this.data_dir, true);
+    await this.fs.remove_dir(this.collection.data_dir, true);
   } 
 }
 
