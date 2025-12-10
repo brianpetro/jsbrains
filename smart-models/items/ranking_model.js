@@ -29,7 +29,7 @@ export class RankingModel extends Model {
   async test_model() {
     try {
       const resp = await this.rank("alphabetical order", ["z", "y", "x", "a", "b", "c"]);
-      const success = !resp.error && Boolean(resp.results);
+      const success = Boolean(!resp.error && Array.isArray(resp) && resp.length);
       this.data.test_passed = success;
       this.debounce_save();
       return {success, response: resp};
