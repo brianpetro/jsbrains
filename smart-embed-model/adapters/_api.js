@@ -3,6 +3,7 @@ import { SmartHttpRequest } from "smart-http-request";
 import { SmartHttpRequestFetchAdapter } from "smart-http-request/adapters/fetch.js";
 import { Tiktoken } from "js-tiktoken/lite";
 import { fetch_json_cached } from '../utils/fetch_cache.js';
+import { normalize_error } from 'smart-utils/normalize_error.js';
 
 const CL100K_URL = 'https://raw.githubusercontent.com/brianpetro/jsbrains/refs/heads/main/smart-embed-model/cl100k_base.json';
 
@@ -107,6 +108,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
       console.error("No response received for embedding request.");
       return [];
     }
+    if(resp.error) return [resp]; 
 
     const _res = new this.res_adapter(this, resp);
     const embeddings = _res.to_openai();
@@ -161,8 +163,12 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
         ...req,
       });
       const resp_json = await this.get_resp_json(resp);
+      if(resp_json.error) {
+        return {error: normalize_error(resp_json, resp.status())};
+      }
       return resp_json;
     } catch (error) {
+      console.warn("Request error:", error);
       return await this.handle_request_err(error, req, retries);
     }
   }

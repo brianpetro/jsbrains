@@ -477,6 +477,12 @@ export class Collection {
   emit_event(event_key, payload = {}) {
     this.env.events?.emit(event_key, { collection_key: this.collection_key, ...payload });
   }
+  on_event(event_key, callback) {
+    return this.env.events?.on(event_key, (payload) => {
+      if (payload?.collection_key && payload.collection_key !== this.collection_key) return;
+      callback(payload);
+    });
+  }
 
   /**
    * Lazily binds action functions to the collection instance.

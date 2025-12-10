@@ -30,7 +30,7 @@ export class EmbeddingModel extends Model {
   async test_model() {
     try {
       const resp = await this.embed("test input");
-      const success = !resp.error;
+      const success = resp && !resp?.error;
       this.data.test_passed = success;
       this.debounce_save();
       return {success, response: resp};

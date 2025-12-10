@@ -1,5 +1,5 @@
 import { SmartModel } from "smart-model";
-import { normalize_error } from './utils/normalize_error.js';
+import { normalize_error } from 'smart-utils/normalize_error.js';
 
 /**
  * SmartChatModel - A versatile class for handling chat operations using various platform adapters.

@@ -26,7 +26,8 @@
   "homepage": "https://jsbrains.org",
   "dependencies": {
     "smart-http-request": "*",
-    "smart-model": "*"
+    "smart-model": "*",
+    "smart-models": "*"
   },
   "devDependencies": {
     "ava": "^6.1.2",

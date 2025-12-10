@@ -117,7 +117,8 @@ export class Model extends CollectionItem {
     return proxy;
   }
 
-  debounce_save(ms = 500) {
+  debounce_save(ms = 100) {
+    this.emit_event('model:changed');
     if (this._debounce_save_timeout) {
       clearTimeout(this._debounce_save_timeout);
     }

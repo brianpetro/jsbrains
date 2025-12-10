@@ -65,7 +65,6 @@ export function settings_config(scope) {
       name: `${scope.model_type} model`,
       description: `Used as the default ${scope.model_type.toLowerCase()} model when no other is specified.`,
       options_callback: 'get_model_key_options',
-      btn: 'New',
     },
   };
 }
