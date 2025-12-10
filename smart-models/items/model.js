@@ -198,6 +198,11 @@ export class Model extends CollectionItem {
     };
   }
 
+  delete_model() {
+    this.delete();
+    this.debounce_save(); // emits model:changed
+  }
+
   /**
    * Reactive settings view for this model.
    * Mutating any property (including nested objects/arrays) via this proxy

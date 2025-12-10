@@ -33,11 +33,22 @@ export class Models extends Collection {
   }
 
   get default_model_key() {
-    if(!this.settings.default_model_key || !this.get(this.settings.default_model_key)) {
-      const new_default = this.new_model({ provider_key: this.default_provider_key }); // default provider
-      new_default.queue_save();
-      this.process_save_queue();
-      this.settings.default_model_key = new_default.key;
+    const should_update_default = !this.settings.default_model_key
+      || !this.get(this.settings.default_model_key)
+      || this.get(this.settings.default_model_key).deleted
+    ;
+    if(should_update_default) {
+      const existing = this.filter(m => !m.deleted)
+        .sort((a, b) => b.data.created_at - a.data.created_at)[0] // sort by most recently created
+      ;
+      if(existing) {
+        this.settings.default_model_key = existing.key;
+      } else {
+        const new_default = this.new_model({ provider_key: this.default_provider_key }); // default provider
+        new_default.queue_save();
+        this.process_save_queue();
+        this.settings.default_model_key = new_default.key;
+      }
     }
     return this.settings.default_model_key;
   }
@@ -50,7 +61,7 @@ export class Models extends Collection {
   }
 
   get_model_key_options() {
-    return this.filter().map(model => ({
+    return this.filter(i => !i.deleted).map(model => ({
       label: model.data.meta?.name || `${model.provider_key} - ${model.data.model_key}`,
       value: model.key,
     }));
