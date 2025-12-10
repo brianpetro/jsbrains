@@ -203,6 +203,9 @@ export class SmartChatModelOpenRouterResponseAdapter extends SmartChatModelRespo
         error.message += `\n\n${JSON.stringify(this._res.error.metadata.raw, null, 2)}`;
       }
     }
+    if(error.message.startsWith('No cookie auth')) {
+      error.suggested_action = 'Ensure your Open Router API key is set correctly.';
+    }
     return error;
   }
 }

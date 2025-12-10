@@ -98,13 +98,13 @@ function get_message_from_object(value) {
  * @param {unknown} error
  * @returns {{ message: string, details: NormalizedErrorDetails | null }}
  */
-export function normalize_error(error) {
+export function normalize_error(error, http_status=null) {
   if (error == null) {
-    return { message: 'Unknown error', details: null };
+    return { message: 'Unknown error', details: null, http_status };
   }
 
   if (typeof error === 'string') {
-    return { message: error, details: null };
+    return { message: error, details: null, http_status };
   }
 
   if (error instanceof Error) {
@@ -115,7 +115,8 @@ export function normalize_error(error) {
     );
     return {
       message,
-      details: is_empty_object(extra_details) ? null : extra_details
+      details: is_empty_object(extra_details) ? null : extra_details,
+      http_status
     };
   }
 
@@ -141,7 +142,8 @@ export function normalize_error(error) {
 
         return {
           message,
-          details: is_empty_object(combined_details) ? null : combined_details
+          details: is_empty_object(combined_details) ? null : combined_details,
+          http_status
         };
       }
 
@@ -153,10 +155,11 @@ export function normalize_error(error) {
       const details = extract_json_details(obj, ['message']);
       return {
         message: object_message,
-        details: is_empty_object(details) ? null : details
+        details: is_empty_object(details) ? null : details,
+        http_status
       };
     }
   }
 
-  return { message: 'Unknown error', details: null };
+  return { message: 'Unknown error', details: null, http_status };
 }

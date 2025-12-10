@@ -617,9 +617,10 @@ export class SmartChatModelResponseAdapter {
    * @param {SmartChatModelAdapter} adapter - The SmartChatModelAdapter instance
    * @param {Object} res - The response object
    */
-  constructor(adapter, res) {
+  constructor(adapter, res, status=null) {
     this.adapter = adapter;
     this._res = res || this.constructor.platform_res;
+    this.status = status;
   }
 
   /**
@@ -695,7 +696,7 @@ export class SmartChatModelResponseAdapter {
    * @returns {Object} Response in OpenAI format
    */
   to_openai() {
-    if(this.error) return { error: normalize_error(this.error) };
+    if(this.error) return { error: normalize_error(this.error, this.status) };
     const res = {
       id: this.id,
       object: this.object,
