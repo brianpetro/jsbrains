@@ -68,14 +68,18 @@ export class Models extends Collection {
   }
 
 }
-
+/**
+ * @returns {import('smart-types').SettingsConfig} Settings configuration for Models collection.
+ */
 export function settings_config(scope) {
   return {
     default_model_key: {
       type: 'dropdown',
-      name: `${scope.model_type} model`,
+      name: `Default ${scope.model_type.toLowerCase()} model`,
       description: `Used as the default ${scope.model_type.toLowerCase()} model when no other is specified.`,
-      options_callback: 'get_model_key_options',
+      options_callback: () => {
+        return scope.get_model_key_options();
+      },
     },
   };
 }
