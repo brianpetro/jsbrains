@@ -181,6 +181,7 @@ export class SmartView {
   /**
    * Renders settings from a config, returning a fragment.
    * @async
+   * @deprecated Use render_settings_config utility in Obsidian (obsidian-smart-env)
    * @param {Object} settings_config
    * @param {Object} opts
    * @param {Object} [opts.scope={}] - The scope to use when rendering settings (should have settings property).
