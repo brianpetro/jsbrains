@@ -125,7 +125,8 @@ export class SmartChatModelCustomAdapter extends SmartChatModelApiAdapter {
         type: 'dropdown',
         description: 'Pick a built-in or external adapter to parse request/response data.',
         // Provide a short selection set, or dynamically gather from keys of adapters_map
-        options_callback: 'adapter.get_adapters_as_options',
+        // options_callback: 'adapter.get_adapters_as_options',
+        options_callback: () => { this.get_adapters_as_options() }, // UNTESTED
         default: 'openai'
       },
       '[CHAT_ADAPTER].id': {
