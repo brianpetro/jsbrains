@@ -54,16 +54,6 @@ export class SmartCompletion extends CollectionItem {
    * You can also call it manually if needed.
    */
   async init(completion_opts={}) {
-    // instance in data causes validation error
-    // pass chat model instance directly to completion
-    if(!this.chat_model){
-      if(this.data.chat_completion_model_key && this.env.chat_completion_models.get(this.data.chat_completion_model_key)){
-        const model = this.env.chat_completion_models.get(this.data.chat_completion_model_key);
-        this.chat_model = model.instance;
-      }else{
-        this.chat_model = this.collection?.chat_model || null;
-      }
-    }
     await this.build_request();
     await this.complete(completion_opts);
     if(this.is_completed){ // skip if error
@@ -71,6 +61,40 @@ export class SmartCompletion extends CollectionItem {
       this.queue_save();
       this.collection.process_save_queue();
     }
+  }
+
+  get chat_completion_model () {
+    if(this.data.chat_completion_model_key && this.env.chat_completion_models.get(this.data.chat_completion_model_key)){
+      const model = this.env.chat_completion_models.get(this.data.chat_completion_model_key);
+      return model;
+    } else {
+      return this.env.chat_completion_models.default;
+    }
+  }
+
+  /**
+   * @deprecated 2025-12-13 migrate to model_instance
+   */
+  get chat_model () {
+    if(!this._chat_model){
+      return this.chat_completion_model?.instance || null;
+    }
+    return this._chat_model;
+  }
+  /**
+   * @deprecated 2025-12-13 set data.chat_completion_model_key instead
+   */
+  set chat_model(model_instance){
+    if(model_instance.collection_key === 'chat_completion_models'){
+      this.data.chat_completion_model_key = model_instance.key;
+    }else if (typeof model_instance.complete === 'function' && typeof model_instance.stream === 'function'){
+      this._chat_model = model_instance;
+    } else {
+      console.warn("Invalid chat model instance assigned to SmartCompletion");
+    }
+  }
+  get model_instance(){
+    return this.chat_completion_model?.instance || null;
   }
 
   get active_adapters(){
@@ -125,21 +149,21 @@ export class SmartCompletion extends CollectionItem {
       console.warn("No completion.request found, skipping complete().");
       return;
     }
-    const chat_model = this.get_chat_model(opts);
-    if (!chat_model) {
+    if (!this.model_instance) {
       console.warn("No chat model available for SmartCompletion. Check environment config.");
       return;
     }
     this.data.completion.chat_model = {
-      model_key: chat_model.model_key,
-      platform_key: chat_model.adapter_name,
+      platform_key: this.chat_completion_model?.data?.platform_key,
+      model_key: this.chat_completion_model?.data?.model_key,
+      chat_completion_model_key: this.chat_completion_model?.key,
     };
     try {
       const request_payload = this.data.completion.request;
       const stream = opts.stream;// && request_payload.tool_choice?.type !== 'function';
       const result = stream
-        ? await chat_model.stream(request_payload, this.stream_handlers(opts.stream_handlers))
-        : await chat_model.complete(request_payload)
+        ? await this.model_instance.stream(request_payload, this.stream_handlers(opts.stream_handlers))
+        : await this.model_instance.complete(request_payload)
       ;
       if(!stream){
         if (result.error) return this.handle_error(result.error);
@@ -205,21 +229,6 @@ export class SmartCompletion extends CollectionItem {
    */
   get completion_adapters() {
     return this.collection?.completion_adapters || {};
-  }
-
-  /**
-   * If a local chat_model config is present, creates a dedicated instance.
-   * Otherwise, returns the collection-level chat_model or null.
-   * @returns {Object|null}
-   */
-  get_chat_model() {
-    if(this.chat_model){
-      return this.chat_model;
-    }
-    else{
-      console.log('no chat_model, using collection chat_model');
-      return this.collection?.chat_model || null;
-    }
   }
 
   /**
