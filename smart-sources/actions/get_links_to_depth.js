@@ -90,8 +90,8 @@ export function get_links_to_depth(
 
     // ------ OUTLINKS ------
     if (direction === LINK_DIRECTIONS.OUT || direction === LINK_DIRECTIONS.BOTH) {
-      for (const path of current.src.outlinks) {
-        enqueue(collection.get(path), nextDepth);
+      for (const link of current.src.outlinks) {
+        enqueue(collection.get(link.key), nextDepth);
       }
     }
 

@@ -61,7 +61,7 @@ const append_entity_filters = (filter_opts, entity) => {
     exclude_starts = [...exclude_starts, ...entity.inlinks];
   }
   if (next.exclude_outlinks && Array.isArray(entity.outlinks) && entity.outlinks.length) {
-    exclude_starts = [...exclude_starts, ...entity.outlinks];
+    exclude_starts = [...exclude_starts, ...entity.outlinks.map(o => o.key)];
   }
   if (exclude_starts.length) next.exclude_key_starts_with_any = exclude_starts;
 

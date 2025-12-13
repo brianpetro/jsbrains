@@ -488,7 +488,10 @@ export class SmartSource extends SmartEntity {
         if(typeof link_ref !== 'string') return null;
         if(link_ref.startsWith("http")) return null;
         const link_path = this.fs.get_link_target_path(link_ref, this.file_path);
-        return link_path;
+        return {
+          key: link_path,
+          embedded: link.embedded || false,
+        };
       })
       .filter(link_path => link_path);
   }
