@@ -41,12 +41,12 @@ export class Model extends CollectionItem {
 
   get instance() {
     if (!this._instance) {
+      if(!this.ProviderAdapterClass) {
+        const new_default_model = this.collection.new_model({ provider_key: this.collection.default_provider_key });
+        return new_default_model.instance;
+      }
       const Class = this.ProviderAdapterClass;
       this._instance = new Class(this);
-      // // backward compatibility: load provider_models into data (for settings.id matching model_key)
-      // if (!this.data.provider_models || Object.keys(this.data.provider_models).length === 0) {
-      //   this.data.provider_models = this._instance.models;
-      // }
       this._instance.load();
       this.once_event('model:changed', () => {
         this._instance.unload?.();

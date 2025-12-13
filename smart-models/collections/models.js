@@ -20,6 +20,8 @@ export class Models extends Collection {
       ...data,
     });
     this.set(item);
+    this.settings.default_model_key = item.key;
+    this.emit_event('model:changed');
     item.queue_save();
     return item;
   }
@@ -61,7 +63,7 @@ export class Models extends Collection {
   }
 
   get_model_key_options() {
-    return this.filter(i => !i.deleted).map(model => ({
+    return this.filter(i => !i.deleted && i.ProviderAdapterClass).map(model => ({
       label: model.data.meta?.name || `${model.provider_key} - ${model.data.model_key}`,
       value: model.key,
     }));
@@ -79,6 +81,9 @@ export function settings_config(scope) {
       description: `Used as the default ${scope.model_type.toLowerCase()} model when no other is specified.`,
       options_callback: () => {
         return scope.get_model_key_options();
+      },
+      callback: async (value, setting) => {
+        scope.emit_event('model:changed');
       },
     },
   };
