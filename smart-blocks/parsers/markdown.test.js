@@ -302,6 +302,31 @@ Content under heading one
   t.deepEqual(result, expected);
 });
 
+test('should not mistake --- for frontmatter if not at beginning of file', t => {
+  const markdown = `Some introductory text.
+# Heading One
+Content under heading one
+
+---
+More text after line separator
+---
+
+# Heading Two
+Final text after second line separator
+`;
+
+  const expected = {
+    "#": [1, 1],
+    "#Heading One": [2, 8],
+    "#Heading One#{1}": [3, 8],
+    "#Heading Two": [9, 11],
+    "#Heading Two#{1}": [10, 11]
+  };
+
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
+  t.deepEqual(result, expected);
+});
+
 test('content prior to first heading with list items', t => {
   const markdown = `- list item one
 - list item two
@@ -537,7 +562,7 @@ test('opts.line_keys uses the first three longest words of line in block path ke
 * non-sensical list item three has extremely sophisticated words
   - sublist item three
 `.trim();
-  const {blocks: result, task_lines} = parse_markdown_blocks(markdown, { line_keys: true });
+  const {blocks: result, task_lines} = parse_markdown_blocks(markdown, { line_keys: true, list_key_word_len: 3 });
   const expected = {
     "#Heading": [1, 7],
     "#Heading#longest list item": [2, 3],

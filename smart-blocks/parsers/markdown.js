@@ -30,6 +30,7 @@
 export function parse_markdown_blocks(markdown, opts={}) {
   const { start_index = 1, line_keys = false } = opts;
   const lines = markdown.split('\n');
+  const LIST_KEY_WORD_LEN = opts.list_key_word_len || 10;
 
   // The final result object mapping block-keys to line ranges: [start_line, end_line].
   const result = {};
@@ -84,7 +85,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
     // Handle frontmatter start/end demarcations.
     if (trimmed_line === '---') {
-      if (!frontmatter_started) {
+      if (!frontmatter_started && line_number === 1) {
         // Start of frontmatter.
         frontmatter_started = true;
         in_frontmatter = true;
@@ -296,7 +297,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
         if (line_keys) {
           // Use the first N longest words of the list item content in the key (same order as in the line)
           const content_without_task = list_match[3].replace(/^\[(?: |x|X)\]\s*/, "");
-          const words = get_longest_words_in_order(content_without_task, 10);
+          const words = get_longest_words_in_order(content_without_task, LIST_KEY_WORD_LEN);
           key = `${parent_key}#${words}`;
         } else {
           key = `${parent_key}#{${n}}`;
