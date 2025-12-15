@@ -315,3 +315,28 @@ test('adds new item definition when missing', t => {
   merge_env_config(target, incoming);
   t.deepEqual(target.items.block.actions, { c: 3 });
 });
+
+
+test('handles versions components using semver', t => {
+  function render_0() {}
+  function render_1() {}
+  function render_2() {}
+  const comp_v1 = { render: render_1, version: '2.0.0' };
+  const comp_v2 = { render: render_2, version: '3.0.0' };
+  const target = { components: { render: render_0 } };
+  const incoming = { components: { render: comp_v1 } };
+
+  merge_env_config(target, incoming);
+  t.is(
+    target.components.render,
+    comp_v1,
+    '2.0.0 should replace no-version component'
+  );
+  const incoming2 = { components: { render: comp_v2 } };
+  merge_env_config(target, incoming2);
+  t.is(
+    target.components.render,
+    comp_v2,
+    '3.0.0 should replace 2.0.0 component'
+  );
+});
