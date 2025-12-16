@@ -99,6 +99,9 @@ function get_message_from_object(value) {
  * @returns {{ message: string, details: NormalizedErrorDetails | null }}
  */
 export function normalize_error(error, http_status=null) {
+  if (Array.isArray(error) && error.length > 0) {
+    return normalize_error(error[0], http_status);
+  }
   if (error == null) {
     return { message: 'Unknown error', details: null, http_status };
   }

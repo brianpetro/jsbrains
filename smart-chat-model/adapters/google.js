@@ -1,4 +1,5 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from './_api.js';
+import { normalize_error } from 'smart-utils/normalize_error.js';
 
 /**
  * Adapter for Google's Gemini API.
@@ -296,6 +297,7 @@ export class SmartChatModelGeminiResponseAdapter extends SmartChatModelResponseA
     };
   }
   to_openai() {
+    if(this.error) return { error: normalize_error(this.error, this.status) };
     const first_candidate = this._res.candidates[0];
     if(!this._res.id) this._res.id = 'gemini-' + Date.now().toString();
     return {
