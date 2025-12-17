@@ -174,6 +174,7 @@ export class CollectionItem {
 
   /**
    * Validates the item before saving. Checks for presence and validity of key.
+   * @deprecated should be better handled 2025-12-17 (wrong scope?)
    * @returns {boolean}
    */
   validate_save() {

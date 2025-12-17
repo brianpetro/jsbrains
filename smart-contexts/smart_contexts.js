@@ -11,13 +11,6 @@ import { SmartContext } from './smart_context.js';
  */
 export class SmartContexts extends Collection {
   static version = 0.1;
-
-  async load() {
-    console.log('SmartContexts: load called');
-    // TODO DECIDED: add default settings from merge_template action if not already present????
-    // ALT: handle in action itself? (easy access to the default settings there)
-  }
-
   /**
    * new_context
    * @param {object} data
