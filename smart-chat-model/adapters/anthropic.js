@@ -3,6 +3,7 @@ import {
   SmartChatModelRequestAdapter,
   SmartChatModelResponseAdapter
 } from './_api.js';
+import { normalize_error } from 'smart-utils/normalize_error.js';
 
 /**
  * Adapter for Anthropic's Claude API.
@@ -419,6 +420,7 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
    * @returns {Object} Response in OpenAI format
    */
   to_openai() {
+    if(this.error) return { error: normalize_error(this.error, this.status) };
     return {
       id: this._res.id,
       object: 'chat.completion',

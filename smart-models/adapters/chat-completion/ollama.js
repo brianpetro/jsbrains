@@ -27,6 +27,7 @@ const settings_config = {
     name: 'Ollama host',
     type: 'text',
     description: 'Enter the host for your Ollama instance',
+    default: 'http://localhost:11434',
   }
 };
 export default {

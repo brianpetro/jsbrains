@@ -25,7 +25,7 @@ export class SmartHttpRequest {
    * });
    * console.log(await response.json());
    */
-  async request(request_params) {
-    return await this.adapter.request(request_params);
+  async request(request_params, throw_on_error = false) {
+    return await this.adapter.request(request_params, throw_on_error);
   }
 }

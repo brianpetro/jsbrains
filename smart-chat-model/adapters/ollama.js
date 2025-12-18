@@ -1,4 +1,5 @@
 import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from "./_api.js";
+import { normalize_error } from 'smart-utils/normalize_error.js';
 
 /**
  * Adapter for Ollama's local API.
@@ -67,7 +68,9 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       this.model_data = this.parse_model_data(models_raw_data);
       await this.get_enriched_model_data();
       this.model.data.provider_models = this.model_data;
-      this.model.re_render_settings(); // re-render settings to update models dropdown
+      if(typeof this.model.re_render_settings === 'function') {
+        this.model.re_render_settings(); // re-render settings to update models dropdown
+      }
       this.model_data_loaded_at = Date.now();
       return this.model_data;
 
@@ -266,6 +269,7 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
    * @returns {Object} Response in OpenAI format
    */
   to_openai() {
+    if(this.error) return { error: normalize_error(this.error, this.status) };
     return {
       id: this._res.created_at,
       object: 'chat.completion',
