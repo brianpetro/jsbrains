@@ -78,6 +78,7 @@ export class EventLogs extends Collection {
       if (!event_log) {
         event_log = new EventLog(this.env, { key: event_key });
         this.set(event_log);
+        this.emit_event('event_log:first', {first_of_event_key: event_key});
       }
 
       const next = next_log_stats(
