@@ -112,7 +112,7 @@ export class SmartContext extends CollectionItem {
     if (typeof name !== 'string') throw new TypeError('Name must be a string');
     const was_nameless = !this.data.name || String(this.data.name).trim().length === 0;
     this.data.name = name;
-    if(was_nameless) this.emit_event('context:created'); // treat unnamed context as created
+    if(was_nameless) this.emit_event('context:named');
     else this.emit_event('context:renamed', { name });
     this.queue_save();
   }

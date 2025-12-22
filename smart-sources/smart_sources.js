@@ -518,6 +518,7 @@ export class SmartSources extends SmartEntities {
     else console.log("skipping process_embed_queue");
     await this.process_save_queue();
     await this.block_collection?.process_save_queue();
+    this.emit_event('sources:import_completed');
   }
 
   /**
