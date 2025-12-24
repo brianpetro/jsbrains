@@ -92,7 +92,6 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     signup_url: null, // Not applicable for local instance
     batch_size: 30,
     models: {},
-    model_key: 'nomic-embed-text',
   };
 
   get host() {
