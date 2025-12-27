@@ -141,6 +141,9 @@ export class SmartBlock extends SmartEntity {
     this.queue_save();
   }
 
+  get_display_name (params = {}) {
+    return this.block_adapter?.get_display_name(params);
+  }
 
   // Getters
 

@@ -175,6 +175,29 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
   async _reparse_source() {
     await this.item.source.import();
   }
+
+  get_display_name(params = {}) {
+    if (!this.item?.key) return '';
+    const show_full_path = params.show_full_path ?? true;
+    if(show_full_path) {
+      return this.item.key.replace(/#/g, ' > ').replace(/\//g, ' > ');
+    }
+    const pcs = [];
+    const [source_key, ...block_parts] = this.item.key.split('#');
+    const filename = source_key.split('/').pop();
+    pcs.push(filename);
+    if (block_parts.length) {
+      const last = block_parts[block_parts.length - 1];
+      if(last.startsWith('{') && last.endsWith('}')) {
+        block_parts.pop();
+        pcs.push(block_parts.pop());
+        if(this.item.lines) pcs.push(`Lines: ${this.item.lines.join('-')}`);
+      }else{
+        pcs.push(block_parts.pop());
+      }
+    }
+    return pcs.filter(Boolean).join(' > ');
+  }
 }
 
 export default {

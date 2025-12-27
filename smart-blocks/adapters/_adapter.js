@@ -79,6 +79,15 @@ export class BlockContentAdapter {
   async move_to(to_key) { throw new Error('Not implemented'); }
 
   /**
+   * @method get_display_name
+   * @abstract
+   * @param {Object} params Parameters for display name generation.
+   * @returns {string} The display name of the block.
+   * @throws {Error} If not implemented by subclass.
+   */
+  get_display_name(params) { throw new Error('Not implemented'); }
+
+  /**
    * @name data
    * @type {Object}
    * @readonly
