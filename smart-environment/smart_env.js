@@ -490,7 +490,7 @@ export class SmartEnv {
   }
 
   get item_types() {
-    return this.opts.item_types;
+    return this.config.item_types;
   }
 
 
