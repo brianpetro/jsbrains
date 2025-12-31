@@ -41,6 +41,7 @@ export class ContextItems extends Collection {
   }
   static get default_settings() {
     return {
+      template_preset: 'xml_structured',
       template_before: '<item loc="{{KEY}}" at="{{TIME_AGO}}">',
       template_after: '</item>',
     }

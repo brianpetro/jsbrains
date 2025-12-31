@@ -32,6 +32,7 @@ export class SmartContexts extends Collection {
    */
   static get default_settings() {
     return {
+      template_preset: 'xml_structured',
       template_before: '<context>\n{{FILE_TREE}}',
       template_after: '</context>',
     };
