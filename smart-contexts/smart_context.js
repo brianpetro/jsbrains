@@ -146,7 +146,7 @@ export class SmartContext extends CollectionItem {
     }
     const context_items_text = segments.join('\n');
     if (typeof this.actions.context_merge_template === 'function') {
-      return await this.actions.context_merge_template(context_items_text, context_items);
+      return await this.actions.context_merge_template(context_items_text, {context_items});
     }
     return context_items_text;
   }
