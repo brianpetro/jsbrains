@@ -1,3 +1,6 @@
+import { build_action_descriptor } from '../utils/build_action_descriptor.js';
+import { convert_openapi_to_tools } from '../utils/openapi_to_tools.js';
+
 export class SmartActionAdapter {
   constructor(item) {
     this.item = item;
@@ -29,55 +32,17 @@ export class SmartActionAdapter {
    */
   get as_tool() {
     if (!this.module) return null;
-    if (this.module.tool) return this.module.tool;
-    if (this.module.openapi) {
-      return convert_openapi_to_tools(this.module.openapi)[0] || null;
-    }
-    return null;
+    const descriptor = this.descriptor;
+    return descriptor?.tool || null;
   }
-}
 
-/**
- * Convert an OpenAPI spec to an array of OpenAI tool definitions.
- * Only a minimal subset of the spec is used.
- * @param {object} openapi_spec
- * @returns {Array<object>}
- */
-export function convert_openapi_to_tools(openapi_spec) {
-  const tools = [];
-  for (const path in openapi_spec.paths || {}) {
-    const methods = openapi_spec.paths[path];
-    for (const method in methods) {
-      const endpoint = methods[method];
-      const parameters = endpoint.parameters || [];
-      const requestBody = endpoint.requestBody;
-      const properties = {};
-      const required = [];
-      parameters.forEach(param => {
-        properties[param.name] = {
-          type: param.schema.type,
-          description: param.description || ''
-        };
-        if (param.required) required.push(param.name);
-      });
-      if (requestBody) {
-        const schema = requestBody.content['application/json'].schema;
-        Object.assign(properties, schema.properties);
-        if (schema.required) required.push(...schema.required);
-      }
-      tools.push({
-        type: 'function',
-        function: {
-          name: endpoint.operationId || `${method}_${path.replace(/\//g, '_').replace(/[{}]/g, '')}`,
-          description: endpoint.summary || endpoint.description || '',
-          parameters: {
-            type: 'object',
-            properties,
-            required
-          }
-        }
-      });
-    }
+  /**
+   * Build the Smart Action descriptor, including schema and tool definition.
+   * @returns {object|null}
+   */
+  get descriptor() {
+    if (!this.module) return null;
+    return build_action_descriptor({ module: this.module, action_key: this.item.key });
   }
-  return tools;
 }
+export { convert_openapi_to_tools };
