@@ -1,5 +1,6 @@
 import { FileSourceContentAdapter } from "./_file.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
+import { get_bases_cache_links } from "../utils/get_bases_cache_links.js";
 import { parse_frontmatter } from "../utils/parse_frontmatter.js";
 import { get_markdown_tags } from "../utils/get_markdown_tags.js";
 /**
@@ -78,7 +79,15 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   async get_links(content=null) {
     if(!content) content = await this.read();
     if(!content) return;
-    return get_markdown_links(content);
+    const markdown_links = get_markdown_links(content);
+    const bases_links = get_bases_cache_links({
+      source: this.item,
+      links: markdown_links,
+    });
+    return [
+      ...markdown_links,
+      ...bases_links,
+    ];
   }
 
   async get_metadata(content=null) {

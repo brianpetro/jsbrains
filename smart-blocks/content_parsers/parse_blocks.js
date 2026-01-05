@@ -1,4 +1,5 @@
 import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
+import { get_bases_cache_links } from "smart-sources/utils/get_bases_cache_links.js";
 import { get_line_range } from "smart-sources/utils/get_line_range.js";
 import { parse_markdown_blocks } from "../parsers/markdown.js";
 import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
@@ -28,11 +29,18 @@ export function parse_blocks(source, content) {
       continue;
     }
     const block_outlinks = get_markdown_links(block_content);
+    const bases_links = get_bases_cache_links({
+      source,
+      links: block_outlinks,
+    });
     const block_data = {
       key: block_key,
       lines: line_range,
       size: block_content.length,
-      outlinks: block_outlinks,
+      outlinks: [
+        ...block_outlinks,
+        ...bases_links,
+      ],
       last_read: {
         at: last_read_at,
         hash: murmur_hash_32_alphanumeric(block_content),
