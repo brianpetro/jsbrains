@@ -8,6 +8,22 @@
 import { CollectionItem } from 'smart-collections';
 import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
 
+/**
+ * @param {Record<string, object>} context_items
+ * @param {string} key
+ * @returns {boolean}
+ */
+const remove_context_item_data = (context_items, key) => {
+  if (!key || !context_items?.[key]) return false;
+  if (context_items[key].folder) {
+    if (context_items[key].exclude) return false;
+    context_items[key].exclude = true;
+    return true;
+  }
+  delete context_items[key];
+  return true;
+};
+
 export class SmartContext extends CollectionItem {
   static version = 1;
   static get defaults() {
@@ -67,18 +83,38 @@ export class SmartContext extends CollectionItem {
    * remove_item
    * Removes a path/ref from context and emits context:updated
    * @param {string} key
+   * @param {object} params
+   * @param {boolean} params.emit_updated
    */
-  remove_item(key) {
-    if(!key || !this.data?.context_items?.[key]) return;
-    if (this.data.context_items[key].folder) {
-      // folder property indicates this item was added via folder inclusion
-      // so mark as excluded to prevent unintended re-inclusion
-      this.data.context_items[key].exclude = true; // depended on by smart-context codeblock
-    } else {
-      delete this.data.context_items[key];
-    }
+  remove_item(key, params = {}) {
+    const { emit_updated = true } = params;
+    const removed = remove_context_item_data(this.data.context_items, key);
+    if (!removed) return;
     this.queue_save();
-    this.emit_event('context:updated', {removed_key: key});
+    if (emit_updated) this.emit_event('context:updated', { removed_key: key, removed_keys: [key] });
+  }
+
+  /**
+   * remove_items
+   * Removes paths/refs from context and emits context:updated once
+   * @param {string[]|string} keys
+   * @param {object} params
+   * @param {boolean} params.emit_updated
+   * @returns {string[]}
+   */
+  remove_items(keys, params = {}) {
+    const { emit_updated = true } = params;
+    const items = Array.isArray(keys) ? keys : [keys];
+    const removed_keys = [];
+    items.forEach((item_key) => {
+      if (remove_context_item_data(this.data.context_items, item_key)) {
+        removed_keys.push(item_key);
+      }
+    });
+    if (!removed_keys.length) return [];
+    this.queue_save();
+    if (emit_updated) this.emit_event('context:updated', { removed_keys });
+    return removed_keys;
   }
 
   clear_all () {
@@ -169,9 +205,12 @@ export class SmartContext extends CollectionItem {
       const Class = config.class;
       this._context_items = new Class(this.env, {...config, class: null});
       this._context_items.load_from_data(this.data.context_items || {});
-      this.on_event('context:updated', () => {
-        this._context_items = null; // reset cache
-      });
+      if (!this._context_items_listener_registered) {
+        this.on_event('context:updated', () => {
+          this._context_items = null; // reset cache
+        });
+        this._context_items_listener_registered = true;
+      }
     }
     return this._context_items;
   }
