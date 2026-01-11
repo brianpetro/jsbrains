@@ -29,11 +29,11 @@
 export class EntitiesVectorAdapter {
   /**
    * @constructor
-   * @param {Object} collection - The collection (SmartEntities or derived class) instance.
+   * @param {import('smart-entities').SmartEntities} collection - The collection (SmartEntities or derived class) instance.
    */
   constructor(collection) {
     /**
-     * @type {Object}
+     * @type {import('smart-entities').SmartEntities}
      * @description Reference to the SmartEntities collection instance.
      */
     this.collection = collection;
@@ -44,7 +44,7 @@ export class EntitiesVectorAdapter {
    * @async
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
-   * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score descending.
+   * @returns {Promise<Array<{item: import('smart-entities').SmartEntity, score:number}>>} Array of results sorted by score descending.
    * @abstract
    * @throws {Error} Not implemented by default.
    */
@@ -57,7 +57,7 @@ export class EntitiesVectorAdapter {
    * @async
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
-   * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score ascending (furthest).
+   * @returns {Promise<Array<{item: import('smart-entities').SmartEntity, score:number}>>} Array of results sorted by score ascending (furthest).
    * @abstract
    * @throws {Error} Not implemented by default.
    */
@@ -110,11 +110,11 @@ export class EntitiesVectorAdapter {
 export class EntityVectorAdapter {
   /**
    * @constructor
-   * @param {Object} item - The SmartEntity instance that this adapter is associated with.
+   * @param {import('smart-entities').SmartEntity} item - The SmartEntity instance that this adapter is associated with.
    */
   constructor(item) {
     /**
-     * @type {Object}
+     * @type {import('smart-entities').SmartEntity}
      * @description The SmartEntity instance this adapter manages.
      */
     this.item = item;

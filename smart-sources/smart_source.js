@@ -280,7 +280,7 @@ export class SmartSource extends SmartEntity {
    * Handles the destination as a string (new path) or entity (block or source).
    *
    * @async
-   * @param {string|Object|SmartEntity} entity_ref - The destination path or entity to move to.
+   * @param {string|SmartEntity} entity_ref - The destination path or entity to move to.
    * @throws {Error} If the entity reference is invalid.
    * @returns {Promise<void>} A promise that resolves when the move operation is complete.
    */

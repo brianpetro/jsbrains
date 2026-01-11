@@ -18,12 +18,12 @@ import { create_hash, murmur_hash_32_alphanumeric } from "smart-utils/create_has
 export class BlockContentAdapter {
   /**
    * @constructor
-   * @param {Object} item - The SmartBlock instance this adapter operates on.
+   * @param {import('smart-blocks').SmartBlock} item - The SmartBlock instance this adapter operates on.
    * The `item` should at least provide `data` and references to its parent source.
    */
   constructor(item) {
     /**
-     * @type {Object}
+     * @type {import('smart-blocks').SmartBlock}
      * @description The SmartBlock instance handled by this adapter.
      */
     this.item = item;

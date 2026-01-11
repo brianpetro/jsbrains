@@ -87,7 +87,7 @@ const append_entity_filters = (filter_opts, entity) => {
 /**
  * Normalizes filter options for the find_connections action.
  * Combines smart view settings with params and derives include/exclude filters based on the entity.
- * @param {Object} entity - The SmartEntity instance invoking the action.
+ * @param {import('smart-entities').SmartEntity} entity - The SmartEntity instance invoking the action.
  * @param {Object} [params={}] - Parameters passed to find_connections.
  * @returns {Object} Normalized filter options ready for nearest lookups.
  */
@@ -102,7 +102,7 @@ const create_find_connections_filter_opts = (entity, params = {}) => {
  * Finds connections relevant to this entity based on provided parameters.
  * @async
  * @param {Object} [params={}] - Parameters for finding connections.
- * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
+ * @returns {Array<{item: import('smart-entities').SmartEntity, score:number}>} An array of result objects with score and item.
  */
 async function find_connections(params = {}) {
   const limit = params.filter?.limit

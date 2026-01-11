@@ -31,7 +31,7 @@ export class Cluster extends CollectionItem {
   // API METHODS
   /**
    * @method add_member
-   * @param {CollectionItem} item - Should be SmartEntity sub-type (includes `vec`)
+   * @param {import('smart-entities').SmartEntity} item - Should be SmartEntity sub-type (includes `vec`)
    * @returns {Object} membership summary
    * FUTURE: add opts.output_type to change output format to array of { item, score, state }
    */
@@ -53,7 +53,7 @@ export class Cluster extends CollectionItem {
   }
   /**
    * @method add_members
-   * @param {Array} items - Array of items to add to the cluster
+   * @param {Array<import('smart-entities').SmartEntity>} items - Array of items to add to the cluster
    * @returns {Object} - Object with item keys as keys and membership summary as values
    */
   add_members(items) {
@@ -66,7 +66,7 @@ export class Cluster extends CollectionItem {
   }
   /**
    * @method remove_member
-   * @param {Object} item
+   * @param {string|import('smart-entities').SmartEntity} item
    * @returns {boolean}
    */
   remove_member(item) {
@@ -77,7 +77,7 @@ export class Cluster extends CollectionItem {
   }
   /**
    * @method remove_members
-   * @param {Array} items - Array of items to remove from the cluster
+   * @param {Array<string|import('smart-entities').SmartEntity>} items - Array of items to remove from the cluster
    * @returns {Object} - Object with item keys as keys and membership summary as values
    */
   remove_members(items) {
@@ -90,7 +90,7 @@ export class Cluster extends CollectionItem {
    * @description
    * Creates a new cluster (adding 'items' as additional centers) and a new group
    * that references that new cluster in place of this one.
-   * @param {Array} items - Array of items to become additional centers
+   * @param {Array<string|import('smart-entities').SmartEntity>} items - Array of items to become additional centers
    * @returns {Promise<{new_cluster: Cluster, new_cluster_group: ClusterGroup}>} - The newly created group (replacing this cluster with the new one)
    */
   async add_centers(items) {
@@ -107,7 +107,7 @@ export class Cluster extends CollectionItem {
    * @description
    * Creates a new cluster (adding 'item' as an additional center) and a new group
    * that references that new cluster in place of this one.
-   * @param {Object|string} item|item_key - The item to become an additional center
+   * @param {string|import('smart-entities').SmartEntity} item - The item to become an additional center
    * @returns {Promise<{new_cluster: Cluster, new_cluster_group: ClusterGroup}>} - The newly created group (replacing this cluster with the new one)
    */
   async add_center(item) {
@@ -118,7 +118,7 @@ export class Cluster extends CollectionItem {
    * @description
    * Creates a new cluster (removing 'item' as a center) and a new group
    * that references that new cluster in place of this one.
-   * @param {Object|string} item|item_key - The item to remove as a center
+   * @param {string|import('smart-entities').SmartEntity} item - The item to remove as a center
    * @returns {Promise<{new_cluster: Cluster, new_cluster_group: ClusterGroup}>} - The newly created group (replacing this cluster with the new one)
    */
   async remove_center(item) {
@@ -129,7 +129,7 @@ export class Cluster extends CollectionItem {
    * @description
    * Creates a new cluster (removing 'items' as centers) and a new group
    * that references that new cluster in place of this one.
-   * @param {Array} items - Array of items to remove as centers
+   * @param {Array<string|import('smart-entities').SmartEntity>} items - Array of items to remove as centers
    * @returns {Promise<{new_cluster: Cluster, new_cluster_group: ClusterGroup}>} - The newly created group (replacing this cluster with the new one)
    */
   async remove_centers(items) {
@@ -182,7 +182,7 @@ export class Cluster extends CollectionItem {
   }
   /**
    * @method #update_member_data
-   * @param {CollectionItem} item - The item to update
+   * @param {import('smart-entities').SmartEntity} item - The item to update
    * @param {number} state - The new state of the item (1 for added, -1 for removed)
    */
   #update_member_data(item, state) {
@@ -192,7 +192,7 @@ export class Cluster extends CollectionItem {
   }
   /**
    * @method #update_item_cluster_data
-   * @param {CollectionItem} item - The item to update
+   * @param {import('smart-entities').SmartEntity} item - The item to update
    * @param {number} state - The new state of the item (1 for added, -1 for removed)
    */
   #update_item_cluster_data(item, state) {
@@ -204,8 +204,8 @@ export class Cluster extends CollectionItem {
    * @method #validate_member_item
    * @description
    * Validates an item or item key, ensuring it's an object with a .key property.
-   * @param {Object|string} item|item_key - The item or item key to validate
-   * @returns {Object} - The validated item
+   * @param {string|import('smart-entities').SmartEntity} item - The item or item key to validate
+   * @returns {import('smart-entities').SmartEntity} - The validated item
    */
   #validate_member_item(item) {
     if (typeof item === 'string') item = this.env.smart_sources.get(item);
@@ -315,4 +315,3 @@ export class Cluster extends CollectionItem {
     console.log('queue_save', this.key);
   }
 }
-
