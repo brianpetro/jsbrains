@@ -4,6 +4,7 @@
  */
 
 import { Collection } from 'smart-collections';
+import { Cluster } from './cluster.js';
 
 /**
  * @class Clusters
@@ -15,5 +16,8 @@ export class Clusters extends Collection {
   data_dir = 'clusters';
   find_by(data) {
     return null;
+  }
+  get item_type () {
+    return Cluster;
   }
 }

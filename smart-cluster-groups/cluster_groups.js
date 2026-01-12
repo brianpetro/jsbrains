@@ -4,6 +4,7 @@
  */
 
 import { Collection } from 'smart-collections';
+import { ClusterGroup } from './cluster_group.js';
 
 /**
  * @class ClusterGroups
@@ -33,6 +34,9 @@ export class ClusterGroups extends Collection {
         return acc;
       }, {}),
     });
+  }
+  get item_type () {
+    return ClusterGroup;
   }
 }
 
