@@ -41,7 +41,7 @@ const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('re
  * of the environment is created and acts as a central coordination point.
  */
 export class SmartEnv {
-  static version = '2.2.7';
+  static version = '2.2.8';
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
