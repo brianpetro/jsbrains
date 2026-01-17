@@ -175,6 +175,7 @@ export const TEXT_FILE_EXTENSIONS = [
   '.re',
   '.rei',
   '.rego',
+  '.rendered',
   '.res',
   '.resi',
   '.rkt',
