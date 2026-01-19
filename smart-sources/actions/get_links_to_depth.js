@@ -2,11 +2,16 @@
  * @file get_links_to_depth.js
  * @module actions/get_links_to_depth
  * @description
- * Breadth‑first traversal over cached link data, returning an array of
+ * Breadth-first traversal over cached link data, returning an array of
  * `{ depth, item }` objects where `item` is a `SmartSource` instance and
- * `depth` is the hop‑count from the starting source.
+ * `depth` is the hop-count from the starting source.
  *
  * The function is pure: it never reads from disk or mutates entities.
+ *
+ * Notes:
+ * - OUTLINK expansion skips Bases-embed generated links for non-root nodes.
+ *   A link is treated as "from a Bases embed" when `link.bases_row` exists
+ *   and is a finite number.
  *
  * @example
  * ```js
@@ -32,13 +37,33 @@ export const LINK_DIRECTIONS = /** @type {const} */ ({
 });
 
 /**
+ * True if an outlink should be excluded because it came from a Bases embed
+ * AND the current node is not the root (depth > 0).
+ *
+ * Detection rule:
+ * - `bases_row` exists on the link object AND is a finite number.
+ *
+ * @param {any} link
+ * @param {number} source_depth
+ * @returns {boolean}
+ */
+function should_exclude_bases_embed_outlink(link, source_depth) {
+  if (typeof source_depth !== "number" || source_depth <= 0) return false;
+  if (!link || typeof link !== "object") return false;
+
+  if (!Object.prototype.hasOwnProperty.call(link, "bases_row")) return false;
+
+  return Number.isFinite(link.bases_row);
+}
+
+/**
  * Collect linked sources up to a chosen depth.
  *
- * @param {SmartSource} target_source                 – Root SmartSource.
- * @param {number}      [max_depth=1]                 – Max hops to follow.
- * @param {Object}      [opts={}]                     – Extra options.
- * @param {"out"|"in"|"both"} [opts.direction="out"] – Which link direction(s).
- * @param {boolean}     [opts.include_self=false]     – Include root in results.
+ * @param {SmartSource} target_source                 - Root SmartSource.
+ * @param {number}      [max_depth=1]                 - Max hops to follow.
+ * @param {Object}      [opts={}]                     - Extra options.
+ * @param {"out"|"in"|"both"} [opts.direction="out"]  - Which link direction(s).
+ * @param {boolean}     [opts.include_self=false]     - Include root in results.
  * @returns {Promise<Array<{ depth:number, item:SmartSource }>>}
  */
 export function get_links_to_depth(
@@ -55,7 +80,7 @@ export function get_links_to_depth(
   }
 
   const collection = target_source.collection;      // SmartSources instance
-  const links_map  = collection.links || {};        // { inlinkPath: { srcPath:true } }
+  const links_map = collection.links || {};         // { inlinkPath: { srcPath:true } }
 
   /** @type {Set<string>} */
   const visited = new Set();                        // Dedup by key
@@ -65,7 +90,7 @@ export function get_links_to_depth(
   /**
    * Enqueue neighbour if unseen.
    * @param {SmartSource|undefined|null} src
-   * @param {number} d – depth of neighbour
+   * @param {number} d - depth of neighbour
    */
   const enqueue = (src, d) => {
     if (!src) return;
@@ -85,13 +110,21 @@ export function get_links_to_depth(
 
   while (queue.length) {
     const current = queue.shift();
-    if (current.depth >= max_depth) continue;
-    const nextDepth = current.depth + 1;
+    if (!current) continue;
+
+    const current_depth = current.depth;
+    if (current_depth >= max_depth) continue;
+
+    const next_depth = current_depth + 1;
 
     // ------ OUTLINKS ------
     if (direction === LINK_DIRECTIONS.OUT || direction === LINK_DIRECTIONS.BOTH) {
-      for (const link of current.src.outlinks) {
-        enqueue(collection.get(link.key), nextDepth);
+      const outlinks = Array.isArray(current.src.outlinks) ? current.src.outlinks : [];
+      for (const link of outlinks) {
+        if (should_exclude_bases_embed_outlink(link, current_depth)) {
+          continue;
+        }
+        enqueue(collection.get(link.key), next_depth);
       }
     }
 
@@ -99,7 +132,7 @@ export function get_links_to_depth(
     if (direction === LINK_DIRECTIONS.IN || direction === LINK_DIRECTIONS.BOTH) {
       const inlink_paths = Object.keys(links_map[current.src.path] || {});
       for (const p of inlink_paths) {
-        enqueue(collection.get(p), nextDepth);
+        enqueue(collection.get(p), next_depth);
       }
     }
   }
