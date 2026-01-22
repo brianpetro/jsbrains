@@ -11,6 +11,7 @@ export const NO_EXTENSION_TEXT_FILES = [
   'Makefile',
   'Procfile',
   'Rakefile',
+  'post-commit',
 ];
 /**
  * An array of recognized text file extensions for is_text_file().
