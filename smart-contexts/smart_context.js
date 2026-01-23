@@ -9,13 +9,15 @@ import { CollectionItem } from 'smart-collections';
 import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
 
 /**
+ * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are 
+ * derived from folders or named contexts.
  * @param {Record<string, object>} context_items
  * @param {string} key
  * @returns {boolean}
  */
 const remove_context_item_data = (context_items, key) => {
   if (!key || !context_items?.[key]) return false;
-  if (context_items[key].folder) {
+  if (context_items[key].folder || context_items[key].from_named_context) {
     if (context_items[key].exclude) return false;
     context_items[key].exclude = true;
     return true;
