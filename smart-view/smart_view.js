@@ -17,6 +17,11 @@ import {
 } from 'smart-utils';
 import { murmur_hash_32_alphanumeric } from 'smart-utils/create_hash.js';
 
+export const get_style_sheet_id = (css_text) => {
+  if (typeof css_text !== 'string') return null;
+  return `style-sheet-${murmur_hash_32_alphanumeric(css_text)}`;
+};
+
 /**
  * Internal registry for element disposers.
  * WeakMap<HTMLElement, {
@@ -271,14 +276,15 @@ export class SmartView {
   apply_style_sheet(sheet) {
     // handle both string and CSSStyleSheet
     if (typeof sheet === 'string') {
-      const css_hash = murmur_hash_32_alphanumeric(sheet);
-      if (document.getElementById(`style-sheet-${css_hash}`)) {
+      const style_sheet_id = get_style_sheet_id(sheet);
+      if (!style_sheet_id) return;
+      if (document.getElementById(style_sheet_id)) {
         // Already applied
         return;
       }
       // Create a new CSSStyleSheet
       const styleEl = document.createElement('style');
-      styleEl.id = `style-sheet-${css_hash}`;
+      styleEl.id = style_sheet_id;
       styleEl.textContent = sheet;
       document.head.appendChild(styleEl);
       return;
