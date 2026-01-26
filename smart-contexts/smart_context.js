@@ -202,18 +202,25 @@ export class SmartContext extends CollectionItem {
   }
 
   get context_items () {
-    if(!this._context_items) {
+    // 2026-01-16 REMOVED caching logic because causing cross-contamination issues
+    // ex. when switching between contexts in Context Selector modal (from chat to external)
+    // if(!this._context_items) {
       const config = this.env.config.collections.context_items;
       const Class = config.class;
       this._context_items = new Class(this.env, {...config, class: null});
       this._context_items.load_from_data(this.data.context_items || {});
-      if (!this._context_items_listener_registered) {
-        this.on_event('context:updated', () => {
-          this._context_items = null; // reset cache
-        });
-        this._context_items_listener_registered = true;
-      }
-    }
+      // if (!this._context_items_listener_registered) {
+      //   let disposer;
+      //   disposer = this.on_event('context:updated', () => {
+      //     console.log('SmartContext: context updated, clearing context_items cache');
+      //     delete this._context_items;
+      //     this._context_items = null; // reset cache
+      //     disposer();
+      //     this._context_items_listener_registered = false;
+      //   });
+      //   this._context_items_listener_registered = true;
+      // }
+    // }
     return this._context_items;
   }
 
