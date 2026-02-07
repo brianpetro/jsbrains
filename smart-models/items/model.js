@@ -170,6 +170,7 @@ export class Model extends CollectionItem {
     return this.data.meta?.name || `${this.data.provider_key} - ${this.data.model_key}`;
   }
   get settings_config () {
+    const model = this;
     return {
       provider_key: {
         type: 'html',
@@ -184,15 +185,22 @@ export class Model extends CollectionItem {
         type: 'dropdown',
         name: 'Model',
         description: 'The model to use from the selected provider.',
-        options_callback: 'get_model_key_options',
-        callback: 'model_changed',
+        options_callback() {
+          return model.get_model_key_options();
+        },
+        callback(value, setting) {
+          return model.model_changed('model_key', value, setting);
+        },
       },
-      // add model_changed callback to each provider setting that doesn't already have callback defined 
+      // add model_changed callback to each provider setting that doesn't already have callback defined
       ...Object.fromEntries(
         Object.entries(this.provider_config.settings_config || {}).map(
-          ([setting_key, setting_config]) => (
-            [ setting_key, { ...setting_config, callback: setting_config.callback || 'model_changed' }]
-          )
+          ([setting_key, setting_config]) => {
+            const callback = setting_config.callback || ((value, setting) => {
+              return model.model_changed(setting_key, value, setting);
+            });
+            return [setting_key, { ...setting_config, callback }];
+          }
         )
       )
     };

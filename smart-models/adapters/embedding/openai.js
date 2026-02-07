@@ -66,10 +66,14 @@ export const settings_config = {
     name: 'Embedding Dimensions',
     type: "dropdown",
     description: "Select the number of dimensions for the embeddings (only for text-embedding-3 models).",
-    option_1: "256|256 (equivalent to ada using 'large' model)",
-    option_2: "512|512 (equivalent to ada using 'small' model)",
-    option_3: "1536|1536",
-    option_4: "3072|3072 (uses >10X more RAM/storage than 256)",
+    options_callback() {
+      return [
+        { value: '256', label: "256 (equivalent to ada using 'large' model)" },
+        { value: '512', label: "512 (equivalent to ada using 'small' model)" },
+        { value: '1536', label: '1536' },
+        { value: '3072', label: '3072 (uses >10X more RAM/storage than 256)' },
+      ];
+    },
     default: "512",
   }
 }
