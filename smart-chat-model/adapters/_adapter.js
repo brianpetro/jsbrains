@@ -71,6 +71,7 @@ export class SmartChatModelAdapter extends SmartModelAdapter {
   /**
    * Test if API key is valid.
    * @abstract
+   * @deprecated in favor of smart_model.test_model (should be safe to remove 2026-02-10)
    * @returns {Promise<boolean>} True if API key is valid
    */
   async test_api_key() {

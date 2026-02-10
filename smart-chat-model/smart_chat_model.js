@@ -93,6 +93,7 @@ export class SmartChatModel extends SmartModel {
 
   /**
    * Test if API key is valid.
+   * @deprecated in favor of smart_model.test_model (should be safe to remove 2026-02-10)
    * @returns {Promise<boolean>} True if API key is valid
    */
   async test_api_key() {

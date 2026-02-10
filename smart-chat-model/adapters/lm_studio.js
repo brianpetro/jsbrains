@@ -94,6 +94,7 @@ export class SmartChatModelLmStudioAdapter extends SmartChatModelApiAdapter {
 
   /**
    * Test API key - LM Studio doesn't require API key. Always true.
+   * @deprecated in favor of smart_model.test_model (should be safe to remove 2026-02-10)
    * @returns {Promise<boolean>}
    */
   async test_api_key() {
