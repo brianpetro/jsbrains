@@ -76,7 +76,13 @@ export class SmartChatModelAnthropicAdapter extends SmartChatModelApiAdapter {
   }
 
   is_end_of_stream(event) {
-    return event.data.includes('message_stop');
+    const data = String(event?.data || '').trim();
+    if (!data.startsWith('data: ')) return false; // prevent firing on non-data events
+    try {
+      return data.includes('message_stop');
+    } catch {
+      return false;
+    }
   }
 
   /**
