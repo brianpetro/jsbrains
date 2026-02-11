@@ -117,6 +117,10 @@ export class Model extends CollectionItem {
     return proxy;
   }
 
+  /**
+   * @private
+   * @param {number} [ms=100]
+   */
   debounce_save(ms = 100) {
     this.emit_event('model:changed');
     if (this._debounce_save_timeout) {
@@ -145,6 +149,12 @@ export class Model extends CollectionItem {
       return a.label.localeCompare(b.label);
     });
   }
+  /**
+   * @private
+   * @param {string} key
+   * @param {*} value
+   * @param {*} elm
+   */
   model_changed(key, value, elm) {
     if (key === 'model_key') {
       this.data.model_key = value;
@@ -227,7 +237,7 @@ export class Model extends CollectionItem {
   }
 
   /**
-   * @deprecated included for backward compatibility
+   * @deprecated included for backward compatibility (2026-02-11)
    */
   get opts() {
     return this.settings;

@@ -23,7 +23,6 @@ export class SmartEntity extends CollectionItem {
     super(env, opts);
     /** 
      * @type {DefaultEntityVectorAdapter} 
-     * @deprecated use vector_adapter instead
      * @description Adapter for this entity's vector operations.
      */
     this.entity_adapter = new DefaultEntityVectorAdapter(this);
@@ -45,12 +44,6 @@ export class SmartEntity extends CollectionItem {
         embeddings: {},
       },
     };
-  }
-  get vector_adapter() {
-    if(!this._vector_adapter) {
-      this._vector_adapter = new this.collection.opts.vector_adapter.item(this);
-    }
-    return this._vector_adapter;
   }
 
   /**
@@ -84,14 +77,6 @@ export class SmartEntity extends CollectionItem {
   }
 
   /**
-   * Finds the nearest entities to this entity.
-   * @param {Object} [filter={}] - Optional filters to apply.
-   * @deprecated use actions (getter) instead
-   * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
-   */
-  async nearest(filter = {}) { return await this.collection.nearest_to(this, filter); }
-
-  /**
    * Prepares the input for embedding.
    * @async
    * @param {string} [content=null] - Optional content to use instead of calling subsequent read()
@@ -110,32 +95,11 @@ export class SmartEntity extends CollectionItem {
    * Finds connections relevant to this entity based on provided parameters.
    * @async
    * @param {Object} [params={}] - Parameters for finding connections.
-   * @deprecated should be in actions (getter) but also see ConnectionsLists (smart-lists)
+   * @deprecated should be in actions (getter) but also see ConnectionsLists (smart-lists) (2026-02-11)
    * @returns {Array<{item:Object, score:number}>} An array of result objects with score and item.
    */
   async find_connections(params = {}) {
     return await this.actions.find_connections(params);
-  }
-
-  /**
-   * Retrieves connections from the cache based on the cache key.
-   * @param {string} cache_key - The cache key.
-   * @deprecated migrating to ConnectionsLists (smart-lists)
-   * @returns {Array<{item:Object, score:number}>} The cached connections.
-   */
-  connections_from_cache(cache_key) {
-    return this.env.connections_cache[cache_key];
-  }
-
-  /**
-   * Stores connections in the cache with the provided cache key.
-   * @param {string} cache_key - The cache key.
-   * @deprecated migrating to ConnectionsLists (smart-lists)
-   * @param {Array<{item:Object, score:number}>} connections - The connections to cache.
-   * @returns {void}
-   */
-  connections_to_cache(cache_key, connections) {
-    this.env.connections_cache[cache_key] = connections;
   }
 
   get read_hash() { return this.data.last_read?.hash; }

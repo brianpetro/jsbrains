@@ -43,10 +43,6 @@ export class SmartContexts extends Collection {
       ...(this.env.config.actions.context_merge_template?.settings_config || {}),
     };
   }
-  get_ref(key) {
-    const collection = key.includes('#') ? this.env.smart_blocks : this.env.smart_sources;
-    return collection.get(key);
-  }
 }
 
 /* default export consumed by SmartEnv */

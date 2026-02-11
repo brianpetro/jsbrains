@@ -249,6 +249,12 @@ export class Collection {
     }
     return this._data_adapter;
   }
+
+  /**
+   * @private
+   * @param {string} type
+   * @returns {Function}
+   */
   get_adapter_class(type) {
     const config = this.env.opts.collections?.[this.collection_key];
     const adapter_key = type + '_adapter';
@@ -304,6 +310,10 @@ export class Collection {
     return this._item_type;
   }
   // TEMP resolver (2025-11-03): until better handled on merging configs at obsidian-smart-env startup
+  /**
+   * @private
+   * @returns {Function}
+   */
   resolve_item_type() {
     const available = [
       this.env.config?.items?.[this.item_name],
@@ -441,7 +451,6 @@ export class Collection {
 
   /**
    * Displays a process notice if the operation exceeds one second.
-   *
    * @param {string} process - Identifier for the ongoing process.
    * @param {Object} [opts={}] - Additional options passed to the notice.
    */
@@ -455,7 +464,6 @@ export class Collection {
 
   /**
    * Clears any pending process notice timers and removes active notices.
-   *
    * @param {string} process - Identifier for the process notice to clear.
    */
   clear_process_notice(process) {
@@ -523,7 +531,7 @@ export class Collection {
 
   // BEGIN DEPRECATED
   /**
-   * @deprecated use env.smart_components~~env.smart_view~~ instead
+   * @deprecated use env.smart_components~~env.smart_view~~ instead (2026-02-11)
    * @returns {Object} smart_view instance
    */
   get smart_view() {
@@ -562,4 +570,3 @@ export class Collection {
     return container;
   }
 }
-

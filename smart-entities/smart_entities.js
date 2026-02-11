@@ -75,46 +75,6 @@ export class SmartEntities extends Collection {
   }
 
   /**
-   * Finds the nearest entities to a given entity.
-   * @async
-   * @param {Object} entity - The reference entity.
-   * @deprecated moved to action (type=score) and retrieve using filter_and_score()/get_results() patterns 
-   * @param {Object} [filter={}] - Optional filters to apply.
-   * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
-   */
-  async nearest_to(entity, filter = {}) { return await this.nearest(entity.vec, filter); }
-
-  /**
-   * Finds the nearest entities to a vector using the default adapter.
-   * @async
-   * @deprecated moved to action (type=score) and retrieve using filter_and_score()/get_results() patterns 
-   * @param {Array<number>} vec - The vector to compare against.
-   * @param {Object} [filter={}] - Optional filters to apply.
-   * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
-   */
-  async nearest(vec, filter = {}) {
-    if (!vec) {
-      console.warn("nearest: no vec");
-      return [];
-    }
-    return await this.entities_vector_adapter.nearest(vec, filter);
-  }
-
-
-  /**
-   * Finds the furthest entities from a vector using the default adapter.
-   * @async
-   * @deprecated moved to action (type=score) and retrieve using filter_and_score()/get_results() patterns 
-   * @param {Array<number>} vec - The vector to compare against.
-   * @param {Object} [filter={}] - Optional filters to apply.
-   * @returns {Promise<Array<{item:Object, score:number}>>} An array of result objects with score and item.
-   */
-  async furthest(vec, filter = {}) {
-    if (!vec) return console.warn("furthest: no vec");
-    return await this.entities_vector_adapter.furthest(vec, filter);
-  }
-
-  /**
    * Gets the file name based on collection key and embedding model key.
    * @readonly
    * @deprecated likely unused (2025-09-29)
@@ -125,7 +85,7 @@ export class SmartEntities extends Collection {
 
   /**
    * Looks up entities based on hypothetical content.
-   * @deprecated moved to action (type=score) and retrieve using get_results() (pre-process generates hypothetical vecs)
+   * @deprecated moved to action (type=score) and retrieve using get_results() (pre-process generates hypothetical vecs) (2026-02-11)
    * @async
    * @param {Object} [params={}] - The parameters for the lookup.
    * @param {Array<string>} [params.hypotheticals=[]] - The hypothetical content to lookup.
@@ -150,7 +110,7 @@ export class SmartEntities extends Collection {
     };
     const results = await hyp_vecs.reduce(async (acc_promise, embedding, i) => {
       const acc = await acc_promise;
-      const results = await this.nearest(embedding.vec, filter);
+      const results = await this.entities_vector_adapter.nearest(embedding.vec, filter);
       results.forEach(result => {
         if (!acc[result.item.path] || result.score > acc[result.item.path].score) {
           acc[result.item.path] = {

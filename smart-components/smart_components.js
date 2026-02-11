@@ -41,6 +41,10 @@ export class SmartComponents extends Collection {
     return this.constructor.default_component_adapters || [];
   }
 
+  /**
+   * @private
+   * @returns {Promise<void>}
+   */
   async load_components_from_config() {
     const records = flatten_components_config(this.env.config?.components || {});
     for (const record of records) {
@@ -48,6 +52,12 @@ export class SmartComponents extends Collection {
     }
   }
 
+  /**
+   * @private
+   * @param {string[]} component_properties
+   * @param {Object|Function} component_module
+   * @returns {Promise<import('./smart_component.js').SmartComponent|null>}
+   */
   async register_component(component_properties, component_module) {
     for (const AdapterClass of this.component_adapters) {
       const item = await AdapterClass.register_component(this, component_properties, component_module);

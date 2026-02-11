@@ -27,6 +27,12 @@ export class SmartGroup extends SmartEntity {
     }
     return this._group_adapter;
   }
+  get vector_adapter() {
+    if(!this._vector_adapter) {
+      this._vector_adapter = new this.collection.opts.vector_adapter.item(this);
+    }
+    return this._vector_adapter;
+  }
 
   /**
    * Gets all SmartSources contained in this directory
@@ -61,7 +67,7 @@ export class SmartGroup extends SmartEntity {
    * Gets the median vector of all contained sources
    */
   get median_vec() {
-    return this.entity_adapter.median_vec;
+    return this.vector_adapter.median_vec;
   }
   get vec() { return this.median_vec; }
   get group_vec() { return this.median_vec; }

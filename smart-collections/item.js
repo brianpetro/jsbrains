@@ -284,13 +284,6 @@ export class CollectionItem {
   }
 
 
-
-  /**
-   * Parses item data for additional processing. Override as needed.
-   * @deprecated is this used anywhere?
-   */
-  parse() { /* NO-OP by default */ }
-
   get actions() {
     if (!this._actions) {
       this._actions = create_actions_proxy(this, {

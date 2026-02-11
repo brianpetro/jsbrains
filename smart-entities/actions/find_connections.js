@@ -98,6 +98,14 @@ const create_find_connections_filter_opts = (entity, params = {}) => {
   return append_entity_filters(with_frontmatter, entity);
 };
 
+const ENTITIES_CONNECTIONS_CACHE = {};
+function connections_from_cache(cache_key) {
+  return ENTITIES_CONNECTIONS_CACHE[cache_key];
+}
+function connections_to_cache(cache_key, connections) {
+  ENTITIES_CONNECTIONS_CACHE[cache_key] = connections;
+}
+
 /**
  * Finds connections relevant to this entity based on provided parameters.
  * @async
@@ -113,14 +121,13 @@ async function find_connections(params = {}) {
   if (params.filter?.limit) delete params.filter.limit;
   if (params.limit) delete params.limit;
   const cache_key = this.key + murmur_hash_32_alphanumeric(JSON.stringify({ ...filter_opts, entity: null })); // no objects/instances in cache key
-  if (!this.env.connections_cache) this.env.connections_cache = {};
-  if (!this.env.connections_cache[cache_key]) {
-    const connections = (await this.nearest(filter_opts))
+  if (!ENTITIES_CONNECTIONS_CACHE[cache_key]) {
+    const connections = (await this.collection.entities_vector_adapter.nearest(this, filter_opts))
       .sort(sort_by_score)
       .slice(0, limit);
-    this.connections_to_cache(cache_key, connections);
+    connections_to_cache(cache_key, connections);
   }
-  return this.connections_from_cache(cache_key);
+  return connections_from_cache(cache_key);
 }
 find_connections.action_type = "connections";
 export { find_connections, create_find_connections_filter_opts };

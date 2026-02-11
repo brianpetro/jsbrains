@@ -156,10 +156,12 @@ export class SmartContext extends CollectionItem {
   }
   get size () {
     let size = 0;
-    const context_items = this.get_context_items();
-    context_items.forEach(item => {
-      if (item.size) size += item.size;
-    });
+    Object.entries(this.data?.context_items || {})
+      .filter(([key, item_data]) => !item_data.exclude)
+      .forEach(([key, item_data]) => {
+        if (item_data.size) size += item_data.size;
+      })
+    ;
     return size;
   }
   get item_count () {
@@ -224,12 +226,18 @@ export class SmartContext extends CollectionItem {
     return this._context_items;
   }
 
+  /**
+   * @private
+   */
   emit_get_text_error(item, item_text) {
     this.emit_event('notification:error', {
       message: `Context item did not return text: ${item.key}`,
       ...(item_text && typeof item_text === 'object' ? item_text : {})
     });
   }
+  /**
+   * @private
+   */
   emit_get_media_error(item, item_base64) {
     this.emit_event('notification:error', {
       message: `Context item did not return media: ${item.key}`,
@@ -237,50 +245,4 @@ export class SmartContext extends CollectionItem {
     });
   }
 
-
-  /**
-   * DEPRECATED
-   */
-  /**
-   * Return *ContextItem* instances (any depth) for a given key array.
-   * @deprecated use context_items property instead
-   * @param {string[]} keys
-   */
-  get_context_items(keys = this.context_item_keys) {
-    return filter_redundant_context_items(keys
-      .map(k => this.get_context_item(k))
-      .filter(Boolean)
-    );
-  }
-
-  /**
-   * @deprecated use context_items property instead
-   */
-  get_context_item(key) {
-    const existing = this.env.context_items.get(key);
-    if (existing) return existing;
-    return this.env.context_items.new_item({ key, ...(this.data.context_items[key] || {}) });
-  }
-
-
-  /**
-   * @method get_ref
-   * @deprecated moving to using ContextItem instances
-   */
-  get_ref(key) {
-    return this.collection.get_ref(key);
-  }
-
-  /**
-   * @deprecated
-   */
-  get_item_keys_by_depth(depth) {
-    return Object.keys(this.data.context_items)
-      .filter(k => {
-        const item_depth = this.data.context_items[k].d;
-        if(item_depth === depth) return true;
-        if(typeof item_depth === 'undefined' && depth === 0) return true;
-        return false;
-      });
-  }
 }
