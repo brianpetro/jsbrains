@@ -29,7 +29,6 @@ Implements a minimal DOM environment for Node.js and browsers without Obsidian.
 
 - `setting_class` – returns the `Setting` helper used by the adapter.
 - `get_icon_html(icon_name)` – returns SVG markup from `lucide-static`. Falls back to PascalCase.
-- `is_mod_event(event)` – detects `Ctrl` or `Cmd` key presses.
 - `render_markdown(markdown, scope)` – basic fallback rendering returning a `<pre>` element.
 
 ### `Setting` helper

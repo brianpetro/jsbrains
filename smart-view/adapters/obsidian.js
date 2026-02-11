@@ -37,8 +37,6 @@ export class SmartViewObsidianAdapter extends SmartViewAdapter {
     return frag;
   }
   get_icon_html(name) { return getIcon(name).outerHTML; }
-  // Obsidian Specific
-  is_mod_event(event) { return Keymap.isModEvent(event); }
 
   render_folder_select_component(elm, path, value, scope, settings_scope) {
     const smart_setting = new this.setting_class(elm);

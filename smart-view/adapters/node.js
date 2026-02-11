@@ -20,18 +20,6 @@ export class SmartViewNodeAdapter extends SmartViewAdapter {
     return lucide[icon_name] ?? lucide[to_pascal_case(icon_name)];
   }
   /**
-   * Check if the given event is a "mod" event, i.e., if a control or meta key is pressed.
-   * This serves as a fallback behavior for environments without Obsidian's Keymap.
-   * @param {Event} event - The keyboard or mouse event.
-   * @returns {boolean} True if the event is considered a "mod" event.
-   */
-  is_mod_event(event) {
-    // On Windows/Linux, Ctrl is often the "mod" key.
-    // On macOS, Cmd (metaKey) is the "mod" key.
-    // This heuristic checks both.
-    return !!(event && (event.ctrlKey || event.metaKey));
-  }
-  /**
    * Renders the given markdown content.
    * For a Node.js/browser environment without Obsidian's MarkdownRenderer,
    * we provide a simple fallback. If you want proper markdown to HTML conversion,
