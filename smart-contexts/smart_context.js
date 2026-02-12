@@ -6,7 +6,6 @@
  */
 
 import { CollectionItem } from 'smart-collections';
-import { filter_redundant_context_items } from './utils/filter_redundant_context_items.js';
 
 /**
  * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are 
@@ -27,7 +26,7 @@ const remove_context_item_data = (context_items, key) => {
 };
 
 export class SmartContext extends CollectionItem {
-  static version = 1;
+  static version = '2.0.1';
   static get defaults() {
     return {
       data: {
@@ -156,10 +155,9 @@ export class SmartContext extends CollectionItem {
   }
   get size () {
     let size = 0;
-    Object.entries(this.data?.context_items || {})
-      .filter(([key, item_data]) => !item_data.exclude)
-      .forEach(([key, item_data]) => {
-        if (item_data.size) size += item_data.size;
+    Object.values(this.context_items.items || {})
+      .forEach(item => {
+        if (item.size) size += item.size;
       })
     ;
     return size;

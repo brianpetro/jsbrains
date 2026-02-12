@@ -10,7 +10,7 @@ import { SmartContext } from './smart_context.js';
  * or data relevant to a specific use case (e.g., building a textual context for AI).
  */
 export class SmartContexts extends Collection {
-  static version = 0.1;
+  static version = '2.0.1';
   /**
    * new_context
    * @param {object} data
@@ -51,5 +51,5 @@ export default {
   collection_key : "smart_contexts",
   data_adapter   : AjsonSingleFileCollectionDataAdapter,
   item_type      : SmartContext,
-  version: 2,
+  version: SmartContexts.version,
 };
