@@ -68,11 +68,6 @@ export class SmartEntities extends Collection {
     throw new Error("DEPRECATED SMART ENVIRONMENT LOADED: UPDATE SMART PLUGINS.");
   }
   set embed_model(embed_model) { this.env._embed_model = embed_model; }
-  reload_embed_model() {
-    console.log("reload_embed_model");
-    this.embed_model.unload();
-    this.env._embed_model = null;
-  }
 
   /**
    * Gets the file name based on collection key and embedding model key.
