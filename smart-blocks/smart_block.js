@@ -1,5 +1,6 @@
 import { SmartEntity } from "smart-entities";
 import { find_connections } from "smart-entities/actions/find_connections.js";
+import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.js";
 import { get_block_display_name } from "./utils/get_block_display_name.js";
 
 /**
@@ -91,6 +92,18 @@ export class SmartBlock extends SmartEntity {
         throw e;
       }
     }
+  }
+
+  /**
+   * Filters block using base key filters and optional source frontmatter include/exclude filters.
+   * @param {Object} [filter_opts={}]
+   * @param {Object} [filter_opts.frontmatter]
+   * @returns {boolean}
+   */
+  filter(filter_opts = {}) {
+    if (!super.filter(filter_opts)) return false;
+    if (!filter_opts.frontmatter) return true;
+    return filter_by_frontmatter(this.source?.metadata || {}, filter_opts.frontmatter);
   }
 
   /**

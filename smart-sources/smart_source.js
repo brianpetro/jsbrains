@@ -1,4 +1,5 @@
 import { SmartEntity } from "smart-entities";
+import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.js";
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 import { find_connections } from "./actions/find_connections.js";
 
@@ -197,6 +198,18 @@ export class SmartSource extends SmartEntity {
     } else {
       return matching_keywords.length;
     }
+  }
+
+  /**
+   * Filters source using base key filters and optional frontmatter include/exclude filters.
+   * @param {Object} [filter_opts={}]
+   * @param {Object} [filter_opts.frontmatter]
+   * @returns {boolean}
+   */
+  filter(filter_opts = {}) {
+    if (!super.filter(filter_opts)) return false;
+    if (!filter_opts.frontmatter) return true;
+    return filter_by_frontmatter(this.metadata || {}, filter_opts.frontmatter);
   }
 
   /**
