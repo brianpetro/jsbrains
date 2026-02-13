@@ -185,7 +185,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       ...req,
       stream: false,
     });
-    const request_params = _req.to_platform();
+    const request_params = await _req.to_platform();
     const http_resp = await this.http_adapter.request(request_params);
     if(!http_resp) return null;
     const _res = new this.res_adapter(this, await http_resp.json());
@@ -212,9 +212,18 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {Promise<Object>} Complete response object
    */
   async stream(req, handlers = {}) {
-    const _req = new this.req_adapter(this, req);
-    const request_params = _req.to_platform(true);
-    if(this.streaming_chunk_splitting_regex) request_params.chunk_splitting_regex = this.streaming_chunk_splitting_regex; // handle Google's BS
+    let request_params;
+    try {
+      const _req = new this.req_adapter(this, req);
+      request_params = await _req.to_platform(true);
+      if(this.streaming_chunk_splitting_regex) request_params.chunk_splitting_regex = this.streaming_chunk_splitting_regex; // handle Google's BS
+    } catch (error) {
+      const normalized_error = normalize_error(error?.data || error);
+      console.error('Failed to start stream (request prep):', { error, normalized_error });
+      if (typeof handlers?.error === 'function') handlers.error(normalized_error);
+      this.stop_stream();
+      throw normalized_error;
+    }
     
     return await new Promise((resolve, reject) => {
       try {
