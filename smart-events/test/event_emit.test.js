@@ -1,5 +1,6 @@
 import test from 'ava';
 import { SmartEvents } from '../smart_events.js';
+import { get_next_notification_status } from '../event_logs.js';
 
 test('emits event with payload and timestamp', t => {
   const env = { create_env_getter(target) { target.env = env; } };
@@ -67,4 +68,10 @@ test('once uses precise token and unsubscribes its exact entry', t => {
   unsub();
   env.events.emit('q');
   t.is(count, 0);
+});
+
+test('get_next_notification_status handles milestone as attention-level event', t => {
+  t.is(get_next_notification_status(null, 'notification:milestone'), 'attention');
+  t.is(get_next_notification_status('warning', 'notification:milestone'), 'warning');
+  t.is(get_next_notification_status('error', 'notification:milestone'), 'error');
 });

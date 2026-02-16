@@ -10,6 +10,18 @@ const EXCLUDED_EVENT_KEYS = {
 };
 
 /**
+ * @param {string|null} current_status
+ * @param {string} event_key
+ * @returns {string|null}
+ */
+export function get_next_notification_status(current_status, event_key) {
+  if (event_key === 'notification:error') return 'error';
+  if (event_key === 'notification:warning' && current_status !== 'error') return 'warning';
+  if ((event_key === 'notification:attention' || event_key === 'notification:milestone') && !current_status) return 'attention';
+  return current_status;
+}
+
+/**
  * @class EventLogs
  * @extends Collection
  *
@@ -66,9 +78,7 @@ export class EventLogs extends Collection {
   on_any_event(event_key, event) {
     if (EXCLUDED_EVENT_KEYS[event_key]) return;
     this.session_events.push({ event_key, event });
-    if(event_key === 'notification:error') this.notification_status = 'error';
-    else if(event_key === 'notification:warning' && this.notification_status !== 'error') this.notification_status = 'warning';
-    else if(event_key === 'notification:attention' && !this.notification_status) this.notification_status = 'attention';
+    this.notification_status = get_next_notification_status(this.notification_status, event_key);
     try {
       if (typeof event_key !== 'string') return;
 
