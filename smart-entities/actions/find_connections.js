@@ -58,7 +58,7 @@ const append_entity_filters = (filter_opts, entity) => {
   const entity_key = entity.source_key || entity.key;
   if (entity_key) exclude_starts.push(entity_key);
   if (next.exclude_inlinks && Array.isArray(entity.inlinks) && entity.inlinks.length) {
-    exclude_starts = [...exclude_starts, ...entity.inlinks.map(i => i.key)];
+    exclude_starts = [...exclude_starts, ...entity.inlinks.map(i => i.source_key)];
   }
   if (next.exclude_outlinks && Array.isArray(entity.outlinks) && entity.outlinks.length) {
     exclude_starts = [...exclude_starts, ...entity.outlinks.map(o => o.key)];
