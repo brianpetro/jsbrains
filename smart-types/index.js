@@ -36,6 +36,7 @@ export const SettingPath = '';
 /**
  * @typedef {Object} LinkObject
  * @property {string} key - The key of the linked item.
+ * @property {string} source_key - The key of the source item that contains this link.
  * @property {number} [bases_row] - If the link is from a Bases embed, this indicates the row number in the Bases table.
  * @property {boolean} [embedded] - Whether the link is an embedded link.
  * @property {number} [line] - The line number where the link is located in the source file.

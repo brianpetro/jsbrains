@@ -468,7 +468,16 @@ export class SmartSource extends SmartEntity {
    * @readonly
    * @returns {Array<LinkObject>} An array of inlink paths.
    */
-  get inlinks() { return Object.values(this.collection.links?.[this.key] || {}); }
+  get inlinks() {
+    return Object.entries(this.collection.links?.[this.key] || {})
+      .map(([link_source_key, link_data]) => {
+        return {
+          source_key: link_source_key,
+          ...link_data,
+        };
+      })
+    ;
+  }
 
 
   get is_media() { return this.source_adapter.is_media || false; }
@@ -506,6 +515,7 @@ export class SmartSource extends SmartEntity {
           ...link,
           key: link_path,
           embedded: link.embedded || false,
+          source_key: this.key,
         };
       })
       .filter(link_path => link_path);
