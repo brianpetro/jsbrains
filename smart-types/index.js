@@ -30,3 +30,16 @@ export const SettingConfig = {};
  * @example 'models.default_model_key'
  */
 export const SettingPath = '';
+
+
+
+/**
+ * @typedef {Object} LinkObject
+ * @property {string} key - The key of the linked item.
+ * @property {number} [bases_row] - If the link is from a Bases embed, this indicates the row number in the Bases table.
+ * @property {boolean} [embedded] - Whether the link is an embedded link.
+ * @property {number} [line] - The line number where the link is located in the source file.
+ * @property {string} [target] - The original link target (e.g., Obsidian link) before path resolution.
+ * @property {boolean} [title] - Anchor text for the link, if available.
+ */
+export const LinkObject = {};

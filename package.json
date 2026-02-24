@@ -20,7 +20,8 @@
   },
   "homepage": "https://jsbrains.org",
   "devDependencies": {
-    "jsdoc": "^4.0.2"
+    "jsdoc": "^4.0.2",
+    "smart-types": "*"
   },
   "private": true,
   "workspaces": [
@@ -45,6 +46,7 @@
     "smart-rank-model",
     "smart-settings",
     "smart-sources",
+    "smart-types",
     "smart-utils",
     "smart-view"
   ]

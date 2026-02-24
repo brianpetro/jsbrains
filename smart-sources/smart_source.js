@@ -3,6 +3,7 @@ import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.j
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 import { find_connections } from "./actions/find_connections.js";
 
+
 /**
  * @class SmartSource
  * @extends SmartEntity
@@ -465,9 +466,9 @@ export class SmartSource extends SmartEntity {
   /**
    * Retrieves the paths of inlinks to this SmartSource.
    * @readonly
-   * @returns {Array<string>} An array of inlink paths.
+   * @returns {Array<LinkObject>} An array of inlink paths.
    */
-  get inlinks() { return Object.keys(this.collection.links?.[this.path] || {}); }
+  get inlinks() { return Object.values(this.collection.links?.[this.key] || {}); }
 
 
   get is_media() { return this.source_adapter.is_media || false; }
@@ -492,7 +493,7 @@ export class SmartSource extends SmartEntity {
   /**
    * Retrieves the outlink paths from the SmartSource.
    * @readonly
-   * @returns {Array<string>} An array of outlink paths.
+   * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
    */
   get outlinks() {
     return (this.data.outlinks || [])

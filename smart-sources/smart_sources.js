@@ -347,7 +347,7 @@ export class SmartSources extends SmartEntities {
     for (const source of Object.values(this.items)) {
       for (const link of source.outlinks) {
         if (!this.links[link.key]) this.links[link.key] = {};
-        this.links[link.key][source.key] = { ...link, key: undefined };
+        this.links[link.key][source.key] = { ...link };
       }
     }
     const end_time = Date.now();
