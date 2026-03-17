@@ -1,6 +1,6 @@
 import test from 'ava';
 import { SmartEvents } from '../smart_events.js';
-import { get_next_notification_status } from '../event_logs.js';
+import { get_next_notification_status } from '../event_level_utils.js';
 
 test('emits event with payload and timestamp', t => {
   const env = { create_env_getter(target) { target.env = env; } };
@@ -20,13 +20,13 @@ test('duplicate subscriptions of same function are independent; unsubscribe remo
   const unsub1 = env.events.on('ping', handler);
   const unsub2 = env.events.on('ping', handler);
 
-  unsub1(); // should remove exactly the first registration
+  unsub1();
   env.events.emit('ping');
-  t.is(count, 1); // second registration still active
+  t.is(count, 1);
 
-  unsub2(); // now remove the second
+  unsub2();
   env.events.emit('ping');
-  t.is(count, 1); // no further increments
+  t.is(count, 1);
 });
 
 test('off(key, fn) removes only the most recent matching registration (LIFO)', t => {
@@ -36,7 +36,7 @@ test('off(key, fn) removes only the most recent matching registration (LIFO)', t
   const handler = () => { count++; };
   env.events.on('k', handler);
   env.events.on('k', handler);
-  env.events.off('k', handler); // remove one, keep one
+  env.events.off('k', handler);
   env.events.emit('k');
   t.is(count, 1);
 });
@@ -45,14 +45,15 @@ test('callbacks with identical source but different closures are distinct', t =>
   const env = { create_env_getter(target) { target.env = env; } };
   SmartEvents.create(env);
 
-  let a = 0, b = 0;
+  let a = 0;
+  let b = 0;
   const h1 = (() => { const x = 1; return () => { a += x; }; })();
   const h2 = (() => { const x = 2; return () => { b += x; }; })();
 
   env.events.on('z', h1);
   env.events.on('z', h2);
 
-  env.events.off('z', h1); // should not remove h2
+  env.events.off('z', h1);
   env.events.emit('z');
 
   t.is(a, 0);
@@ -64,7 +65,6 @@ test('once uses precise token and unsubscribes its exact entry', t => {
   SmartEvents.create(env);
   let count = 0;
   const unsub = env.events.once('q', () => { count++; });
-  // Call the returned unsubscribe before the first emit; should remove that specific once handler.
   unsub();
   env.events.emit('q');
   t.is(count, 0);

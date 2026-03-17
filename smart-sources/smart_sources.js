@@ -1,5 +1,6 @@
 import { SmartEntities } from "smart-entities";
 import { sort_by_score } from "smart-utils/sort_by_score.js";
+
 /**
  * @class SmartSources
  * @extends SmartEntities
@@ -26,6 +27,7 @@ export class SmartSources extends SmartEntities {
     this.sources_re_import_timeout = null;
     /** @type {boolean} */
     this.sources_re_import_halted = false;
+    this.import_progress_state = null;
   }
 
   /**
@@ -120,11 +122,11 @@ export class SmartSources extends SmartEntities {
     if (!this.should_handle_event(event)) return;
     const key = this.get_event_path(event);
     if (!key) return;
-    if(this.fs.is_excluded(key)) return;
+    if (this.fs.is_excluded(key)) return;
     let source = this.get(key);
     if (!source) source = this.init_file_path(key);
     if (!source) {
-      console.warn('SmartSources: Unable to resolve source on modify event', {key, event});
+      console.warn('SmartSources: Unable to resolve source on modify event', { key, event });
       return;
     }
     this.queue_source_re_import(source, { event_source: event.event_source });
@@ -222,6 +224,27 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
+   * @returns {object|null}
+   */
+  get_import_progress_state() {
+    return this.import_progress_state ? { ...this.import_progress_state } : null;
+  }
+
+  /**
+   * @param {object|null} next_state
+   * @returns {void}
+   */
+  set_import_progress_state(next_state = null) {
+    this.import_progress_state = next_state
+      ? {
+          ...next_state,
+          updated_at: Date.now(),
+        }
+      : null
+    ;
+  }
+
+  /**
    * Processes the queued re-import tasks.
    * @returns {Promise<void>}
    */
@@ -231,10 +254,38 @@ export class SmartSources extends SmartEntities {
     if (!queue_entries.length) {
       if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
       this.sources_re_import_timeout = null;
+      this.set_import_progress_state(null);
       return;
     }
+
+    this.set_import_progress_state({
+      active: true,
+      stage: 'reimporting',
+      progress: 0,
+      total: queue_entries.length,
+    });
+    this.emit_event('sources:reimport_started', {
+      progress: 0,
+      total: queue_entries.length,
+      event_source: 'run_re_import',
+    });
+
+    let completed_count = 0;
     for (const [key, { source }] of queue_entries) {
       await source.import();
+      completed_count += 1;
+      this.set_import_progress_state({
+        active: true,
+        stage: 'reimporting',
+        progress: completed_count,
+        total: queue_entries.length,
+      });
+      this.emit_event('sources:reimport_progress', {
+        progress: completed_count,
+        total: queue_entries.length,
+        event_source: 'run_re_import',
+      });
+
       if (!this._embed_queue) this._embed_queue = [];
       if (source.should_embed) this._embed_queue.push(source);
       if (this.block_collection?.settings?.embed_blocks) {
@@ -251,33 +302,44 @@ export class SmartSources extends SmartEntities {
         break;
       }
     }
+
+    this.set_import_progress_state(null);
+
     if (this._embed_queue?.length) {
       const embed_start_at = Date.now();
       await this.process_embed_queue();
       console.log(`Processed embed queue in ${Date.now() - embed_start_at}ms`);
     }
+
+    if (!this.sources_re_import_halted) {
+      this.emit_event('sources:reimport_completed', {
+        count: completed_count,
+        total: queue_entries.length,
+        event_source: 'run_re_import',
+      });
+    }
+
     if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
     this.sources_re_import_timeout = null;
   }
 
   /**
    * Initializes items by letting each adapter do any necessary file-based scanning.
-   * Adapters that do not rely on file scanning can skip or do nothing.
    * @async
    * @returns {Promise<void>}
    */
   async init_items() {
-    this.emit_event('source:initial_scan_started');
-    this.show_process_notice('initial_scan');
+    this.emit_event('source:initial_scan_started', {
+      event_source: 'init_items',
+    });
     for (const AdapterClass of Object.values(this.source_adapters)) {
       if (typeof AdapterClass.init_items === 'function') {
-        // Sub-classes can store a timestamp in 'collection.fs_items_initialized' or similarly to skip if done
         await AdapterClass.init_items(this);
       }
     }
-    this.clear_process_notice('initial_scan');
-    this.emit_event('source:initial_scan_completed');
-    this.notices?.show('done_initial_scan', { collection_key: this.collection_key });
+    this.emit_event('source:initial_scan_completed', {
+      event_source: 'init_items',
+    });
   }
 
   /**
@@ -286,18 +348,17 @@ export class SmartSources extends SmartEntities {
    * @returns {SmartSource|undefined} The newly created or existing SmartSource, or undefined if no recognized extension
    */
   init_file_path(file_path) {
-    // Extract extension using a new helper:
     const ext = this.get_extension_for_path(file_path);
     if (!ext) {
       // skip if extension not recognized
       // console.warn(`No recognized extension for ${file_path}`);
       return;
     }
-    if(this.fs.is_excluded(file_path)) {
+    if (this.fs.is_excluded(file_path)) {
       console.warn(`File ${file_path} is excluded from processing.`);
       return;
     }
-    if(!this.fs.files[file_path]) {
+    if (!this.fs.files[file_path]) {
       this.fs.include_file(file_path); // Ensure file is included in the fs
     }
     // If item already exists, return it
@@ -385,15 +446,15 @@ export class SmartSources extends SmartEntities {
       limit,
       ...filter_opts
     } = search_filter;
-    if(!keywords){
+    if (!keywords) {
       console.warn("search_filter.keywords not set");
       return [];
     }
     this.search_results_ct = 0;
     const initial_results = this.filter(filter_opts);
     const search_results = [];
-    for (let i = 0; i < initial_results.length; i += 10) {
-      const batch = initial_results.slice(i, i + 10);
+    for (let index = 0; index < initial_results.length; index += 10) {
+      const batch = initial_results.slice(index, index + 10);
       const batch_results = await Promise.all(
         batch.map(async (item) => {
           try {
@@ -401,7 +462,8 @@ export class SmartSources extends SmartEntities {
             if (matches) {
               this.search_results_ct++;
               return { item, score: matches };
-            } else return null;
+            }
+            return null;
           } catch (error) {
             console.error(`Error searching item ${item.id || 'unknown'}:`, error);
             return null;
@@ -411,8 +473,8 @@ export class SmartSources extends SmartEntities {
       search_results.push(...batch_results.filter(Boolean));
     }
     return search_results
-      .sort((a, b) => b.score - a.score) // Sort by relevance 
-      .map(result => result.item)
+      .sort((a, b) => b.score - a.score)
+      .map((result) => result.item)
     ;
   }
 
@@ -425,20 +487,20 @@ export class SmartSources extends SmartEntities {
    * @param {number} [params.k] - Deprecated. Use `params.filter.limit` instead.
    * @returns {Promise<Array<SmartSource>>} A promise that resolves to an array of matching SmartSource entities.
    */
-  async lookup(params={}) {
+  async lookup(params = {}) {
     const limit = params.filter?.limit
-      || params.k // DEPRECATED: for backwards compatibility
+      || params.k // DEPRECATED: for backwards compatibility (likely safe to remove 2026-03-16)
       || this.env.settings.lookup_k
       || 10
     ;
-    if(params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
-    if(params.collection){
+    if (params.filter?.limit) delete params.filter.limit; // Remove to prevent limiting in initial filter (limit should happen after nearest for lookup)
+    if (params.collection) {
       const collection = this.env[params.collection];
-      if(collection && collection.lookup) {
+      if (collection && collection.lookup) {
         delete params.collection; // Remove to prevent passing collection name to lookup
         params.skip_blocks = true; // Skip blocks in this lookup
         const results = await collection.lookup(params);
-        if(results.error) {
+        if (results.error) {
           console.warn(results.error);
           return [];
         }
@@ -446,11 +508,11 @@ export class SmartSources extends SmartEntities {
       }
     }
     let results = await super.lookup(params);
-    if(results.error) {
+    if (results.error) {
       console.warn(results.error);
       return [];
     }
-    if(this.block_collection?.settings?.embed_blocks && !params.skip_blocks) {
+    if (this.block_collection?.settings?.embed_blocks && !params.skip_blocks) {
       results = [
         ...results,
         ...(await this.block_collection.lookup(params)),
@@ -461,19 +523,18 @@ export class SmartSources extends SmartEntities {
 
   /**
    * Processes the load queue by loading items and optionally importing them.
-   * Called after a "re-load" from settings, or after environment init.
    * @async
    * @returns {Promise<void>}
    */
-  async process_load_queue(){
+  async process_load_queue() {
     await super.process_load_queue();
-    if(this.collection_key === 'smart_sources' && this.env.smart_blocks){ // Excludes sub-classes
-      Object.values(this.env.smart_blocks.items).forEach(item => item.init()); // Sets _queue_embed if no vec
+    if (this.collection_key === 'smart_sources' && this.env.smart_blocks) { // Excludes sub-classes
+      Object.values(this.env.smart_blocks.items).forEach((item) => item.init()); // sets queue_embed if no vec
     }
-    if(this.block_collection){
+    if (this.block_collection) {
       this.block_collection.loaded = Object.keys(this.block_collection.items).length;
     }
-    if(!this.opts.prevent_import_on_load){
+    if (!this.opts.prevent_import_on_load) {
       await this.process_source_import_queue(this.opts); // this.opts passes process_embed_queue if present
     }
     this.build_links_map();
@@ -482,43 +543,65 @@ export class SmartSources extends SmartEntities {
 
   /**
    * @method process_source_import_queue
-   * @description 
+   * @description
    * Imports items (SmartSources or SmartBlocks) that have been flagged for import.
    */
-  async process_source_import_queue(opts={}){
+  async process_source_import_queue(opts = {}) {
     const { process_embed_queue = true, force = false } = opts;
-    if (force) Object.values(this.items).forEach(item => item._queue_import = true);
-    const import_queue = Object.values(this.items).filter(item => item._queue_import);
+    if (force) Object.values(this.items).forEach((item) => item._queue_import = true);
+    const import_queue = Object.values(this.items).filter((item) => item._queue_import);
     console.log("import_queue " + import_queue.length);
-    if(import_queue.length){
-      const time_start = Date.now();
-      // Import 100 at a time
-      for (let i = 0; i < import_queue.length; i += 100) {
-        this.notices?.show('import_progress', {
-          progress: i,
-          total: import_queue.length,
-        });
-        await Promise.all(import_queue.slice(i, i + 100).map(item => item.import()));
-      }
-      setTimeout(() => {
-        this.notices?.remove('import_progress');
-      }, 1000);
 
-      this.notices?.show('done_import', {
-        count: import_queue.length,
-        time_in_seconds: (Date.now() - time_start) / 1000
+    if (!import_queue.length) {
+      this.set_import_progress_state(null);
+      this.emit_event('sources:import_queue_empty', {
+        event_source: 'process_source_import_queue',
       });
-
-    } else {
-      this.notices?.show('no_import_queue');
+      return;
     }
 
+    const time_start = Date.now();
+    this.set_import_progress_state({
+      active: true,
+      stage: 'importing',
+      progress: 0,
+      total: import_queue.length,
+    });
+    this.emit_event('sources:import_started', {
+      progress: 0,
+      total: import_queue.length,
+      event_source: 'process_source_import_queue',
+    });
+
+    for (let index = 0; index < import_queue.length; index += 100) {
+      const batch = import_queue.slice(index, index + 100);
+      await Promise.all(batch.map((item) => item.import()));
+      const progress = Math.min(import_queue.length, index + batch.length);
+      this.set_import_progress_state({
+        active: true,
+        stage: 'importing',
+        progress,
+        total: import_queue.length,
+      });
+      this.emit_event('sources:import_progress', {
+        progress,
+        total: import_queue.length,
+        event_source: 'process_source_import_queue',
+      });
+    }
+
+    this.set_import_progress_state(null);
+
     this.build_links_map();
-    if(process_embed_queue) await this.process_embed_queue();
+    if (process_embed_queue) await this.process_embed_queue();
     else console.log("skipping process_embed_queue");
     await this.process_save_queue();
     await this.block_collection?.process_save_queue();
-    this.emit_event('sources:import_completed');
+    this.emit_event('sources:import_completed', {
+      count: import_queue.length,
+      time_in_seconds: (Date.now() - time_start) / 1000,
+      event_source: 'process_source_import_queue',
+    });
   }
 
   /**
@@ -527,14 +610,14 @@ export class SmartSources extends SmartEntities {
    * @returns {Object} An object mapping file extensions to adapter constructors.
    */
   get source_adapters() {
-    if(!this._source_adapters){
+    if (!this._source_adapters) {
       const source_adapters = Object.entries(this.env.opts.collections?.[this.collection_key]?.source_adapters || {});
       const _source_adapters = source_adapters.reduce((acc, [key, Adapter]) => {
-        if(Adapter.extensions) Adapter.extensions?.forEach(ext => acc[ext] = Adapter);
-        else if(typeof Adapter.detect_type === 'function') acc[key] = Adapter;
+        if (Adapter.extensions) Adapter.extensions?.forEach((ext) => acc[ext] = Adapter);
+        else if (typeof Adapter.detect_type === 'function') acc[key] = Adapter;
         return acc;
       }, {});
-      if(Object.keys(_source_adapters).length){
+      if (Object.keys(_source_adapters).length) {
         this._source_adapters = _source_adapters;
       }
     }
@@ -561,7 +644,7 @@ export class SmartSources extends SmartEntities {
    * @returns {SmartFS} The file system instance.
    */
   get fs() {
-    if(!this._fs){
+    if (!this._fs) {
       this._fs = new this.env.opts.modules.smart_fs.class(this.env, {
         adapter: this.env.opts.modules.smart_fs.adapter,
         fs_path: this.env.opts.env_path || '',
@@ -576,16 +659,15 @@ export class SmartSources extends SmartEntities {
    * @readonly
    * @returns {Object} The settings configuration object.
    */
-  get settings_config(){
+  get settings_config() {
     const _settings_config = {
       ...super.settings_config,
       ...this.process_settings_config(settings_config),
-      // ...this.process_settings_config(this.embed_model.settings_config, 'embed_model'),
       ...Object.entries(this.source_adapters).reduce((acc, [file_extension, adapter_constructor]) => {
-        if(acc[adapter_constructor]) return acc; // Skip if already added same adapter_constructor
-        const item = this.items[Object.keys(this.items).find(i => i.endsWith(file_extension))];
+        if (acc[adapter_constructor]) return acc; // Skip if already added same adapter_constructor
+        const item = this.items[Object.keys(this.items).find((key) => key.endsWith(file_extension))];
         const adapter_instance = new adapter_constructor(item || new this.item_type(this.env, {}));
-        if(adapter_instance.settings_config){
+        if (adapter_instance.settings_config) {
           acc[adapter_constructor.name] = {
             type: "html",
             value: `<h4>${adapter_constructor.name} adapter</h4>`
@@ -611,19 +693,18 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<Object>} The embed queue.
    */
   get embed_queue() {
-    if(!this._embed_queue.length){
-      try{
+    if (!this._embed_queue.length) {
+      try {
         const embed_blocks = this.block_collection.settings.embed_blocks;
         this._embed_queue = Object.values(this.items).reduce((acc, item) => {
-          if(item._queue_embed || (item.should_embed && item.is_unembedded)) acc.push(item);
-          if(embed_blocks) item.blocks.forEach(block => {
-            if(block._queue_embed || (block.should_embed && block.is_unembedded)) acc.push(block);
+          if (item._queue_embed || (item.should_embed && item.is_unembedded)) acc.push(item);
+          if (embed_blocks) item.blocks.forEach((block) => {
+            if (block._queue_embed || (block.should_embed && block.is_unembedded)) acc.push(block);
           });
           return acc;
         }, []);
-        // console.log(this._embed_queue.map(item => item.key));
-      }catch(e){
-        console.error(`Error getting embed queue:`, e);
+      } catch (error) {
+        console.error(`Error getting embed queue:`, error);
       }
     }
     return this._embed_queue;
@@ -634,33 +715,35 @@ export class SmartSources extends SmartEntities {
    * @async
    * @returns {Promise<void>}
    */
-  async run_clear_all(){
-    this.notices?.show('clearing_all');
-    // Clear all data
+  async run_clear_all() {
+    this.emit_event('sources:clear_started', {
+      event_source: 'run_clear_all',
+    });
     await this.data_adapter.clear_all();
     this.clear();
     this.block_collection.clear();
     this._fs = null;
 
-    // await this.fs.init();
     await this.init_fs();
 
     await this.init_items();
     this._excluded_headings = null;
-    
-    Object.values(this.items).forEach(item => {
+
+    Object.values(this.items).forEach((item) => {
       item.queue_import();
       item.queue_embed();
-      item.loaded_at = Date.now() + 9999999999; // Prevent immediate reload
+      item.loaded_at = Date.now() + 9999999999;
     });
-    
-    this.notices?.remove('clearing_all');
-    this.notices?.show('done_clearing_all');
+
+    this.emit_event('sources:clear_completed', {
+      event_source: 'run_clear_all',
+    });
     await this.process_source_import_queue();
   }
-  async init_fs(opts={}){
-    const {force_refresh = false} = opts;
-    if(force_refresh) await this.env.fs.refresh();
+
+  async init_fs(opts = {}) {
+    const { force_refresh = false } = opts;
+    if (force_refresh) await this.env.fs.refresh();
     await this.fs.load_exclusions();
     // prevent re-scanning all files (already done at env-level fs.init)
     this.fs.file_paths = this.fs.post_process(this.env.fs.file_paths);
@@ -675,39 +758,6 @@ export class SmartSources extends SmartEntities {
     }, {});
   }
 
-  // /**
-  //  * Deletes all *.ajson files in the "multi/" data_dir, then re-saves all sources (opts.force=true).
-  //  */
-  // async run_clean_up_data() {
-  //   this.notices?.show('pruning_collection', { collection_key: this.block_collection.collection_key });
-  //   // Identify blocks to remove
-  //   const remove_smart_blocks = this.block_collection.filter(item => {
-  //     if(!item.vec) return false; // skip blocks that have no vec?
-  //     if(item.is_gone) {
-  //       item.reason = "is_gone";
-  //       return true;
-  //     }
-  //     if(!item.should_embed){
-  //       item.reason = "should not embed";
-  //       return true;
-  //     }
-  //     return false;
-  //   });
-  //   // Remove identified blocks
-  //   for(let i = 0; i < remove_smart_blocks.length; i++){
-  //     const item = remove_smart_blocks[i];
-  //     if(item.is_gone) item.delete();
-  //     else item.remove_embeddings();
-  //   }
-  //   this.notices?.remove('pruning_collection');
-  //   this.notices?.show('done_pruning_collection', { collection_key: this.block_collection.collection_key, count: remove_smart_blocks.length });
-  //   console.log(`Pruned ${remove_smart_blocks.length} blocks:\n${remove_smart_blocks.map(item => `${item.reason} - ${item.key}`).join("\n")}`);
-  //   // 1) remove all .ajson files in `this.data_dir` ("multi" by default)
-  //   await this.data_fs.remove_dir(this.data_dir, true);
-  //   // 2) forcibly re-save all items
-  //   await this.process_save_queue({ force: true });
-  // }
-
   /**
    * Retrieves patterns for excluding files/folders from processing.
    * @readonly
@@ -715,8 +765,8 @@ export class SmartSources extends SmartEntities {
    */
   get excluded_patterns() {
     return [
-      ...(this.file_exclusions?.map(file => `${file}**`) || []),
-      ...(this.folder_exclusions || []).map(folder => `${folder}**`),
+      ...(this.file_exclusions?.map((file) => `${file}**`) || []),
+      ...(this.folder_exclusions || []).map((folder) => `${folder}**`),
       this.env.env_data_dir + "/**",
     ];
   }
@@ -728,7 +778,7 @@ export class SmartSources extends SmartEntities {
    */
   get file_exclusions() {
     const csv = this.env.settings?.smart_sources?.file_exclusions;
-    return csv?.length ? csv.split(",").map(file => file.trim()) : [];
+    return csv?.length ? csv.split(",").map((file) => file.trim()) : [];
   }
 
   /**
@@ -753,9 +803,9 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<string>} An array of excluded headings.
    */
   get excluded_headings() {
-    if (!this._excluded_headings){
+    if (!this._excluded_headings) {
       const csv = this.env.settings?.smart_sources?.excluded_headings;
-      this._excluded_headings = csv?.length ? csv.split(",").map(heading => heading.trim()) : [];
+      this._excluded_headings = csv?.length ? csv.split(",").map((heading) => heading.trim()) : [];
     }
     return this._excluded_headings;
   }
@@ -768,12 +818,13 @@ export class SmartSources extends SmartEntities {
   get included_files() {
     const extensions = Object.keys(this.source_adapters);
     return this.fs.file_paths
-      .filter(file_path => extensions.some(ext => file_path.endsWith(ext)) && !this.fs.is_excluded(file_path))
+      .filter((file_path) => extensions.some((ext) => file_path.endsWith(ext)) && !this.fs.is_excluded(file_path))
       .length;
   }
+
   get excluded_file_paths() {
     return this.env.fs.file_paths // use env-level fs (contains all files)
-      .filter(file_path => this.fs.is_excluded(file_path));
+      .filter((file_path) => this.fs.is_excluded(file_path));
   }
 
   /**
@@ -783,7 +834,7 @@ export class SmartSources extends SmartEntities {
    */
   get total_files() {
     return this.fs.file_paths
-      .filter(file => file.endsWith(".md") || file.endsWith(".canvas"))
+      .filter((file) => file.endsWith(".md") || file.endsWith(".canvas"))
       .length;
   }
 
@@ -796,6 +847,7 @@ export class SmartSources extends SmartEntities {
     if (this.sources_re_import_timeout) clearTimeout(this.sources_re_import_timeout);
     this.sources_re_import_timeout = null;
     this.sources_re_import_queue = {};
+    this.set_import_progress_state(null);
     super.unload();
   }
 
@@ -803,24 +855,4 @@ export class SmartSources extends SmartEntities {
 }
 
 export const settings_config = {
-  // file_exclusions: {
-  //   name: 'File Exclusions',
-  //   description: 'Comma-separated list of files to exclude.',
-  //   type: 'text',
-  //   default: '',
-  //   callback: 'update_exclusions',
-  // },
-  // folder_exclusions: {
-  //   name: 'Folder Exclusions',
-  //   description: 'Comma-separated list of folders to exclude.',
-  //   type: 'text',
-  //   default: '',
-  //   callback: 'update_exclusions',
-  // },
-  // excluded_headings: {
-  //   name: 'Excluded Headings',
-  //   description: 'Comma-separated list of headings to exclude.',
-  //   type: 'text',
-  //   default: '',
-  // },
 };

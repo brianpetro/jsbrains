@@ -3,23 +3,18 @@ import { EventLog, next_log_stats } from './event_log.js';
 import { SmartEvents } from './smart_events.js';
 import { WILDCARD_KEY } from './adapters/_adapter.js';
 import { AjsonSingleFileCollectionDataAdapter } from '../smart-collections/adapters/ajson_single_file.js';
+import {
+  get_event_level,
+  get_next_notification_status,
+} from './event_level_utils.js';
 
 const EXCLUDED_EVENT_KEYS = {
   'collection:save_started': true,
   'collection:save_completed': true,
+  'notifications:seen': true,
+  'notifications:seen_all': true,
+  'event_logs:mute_changed': true,
 };
-
-/**
- * @param {string|null} current_status
- * @param {string} event_key
- * @returns {string|null}
- */
-export function get_next_notification_status(current_status, event_key) {
-  if (event_key === 'notification:error') return 'error';
-  if (event_key === 'notification:warning' && current_status !== 'error') return 'warning';
-  if ((event_key === 'notification:attention' || event_key === 'notification:milestone') && !current_status) return 'attention';
-  return current_status;
-}
 
 /**
  * @class EventLogs
@@ -31,11 +26,11 @@ export function get_next_notification_status(current_status, event_key) {
  * - Queue item saves and debounce collection save
  */
 export class EventLogs extends Collection {
-  static version = 0.003;
+  static version = 0.004;
   constructor(env, opts = {}) {
     super(env, opts);
-    this.session_events = []; // per session event log
-    this.notification_status = null; // 'error' | 'warning' | 'info' | null
+    this.session_events = [];
+    this.notification_status = null;
   }
 
   /**
@@ -72,44 +67,139 @@ export class EventLogs extends Collection {
   /**
    * Handle any emitted event.
    * Persists counters and timestamps in epoch ms.
+   *
    * @param {string} event_key
    * @param {Record<string, unknown>} event
+   * @returns {{event_key: string, event: Record<string, unknown>, at: number, level: string | null, unseen: boolean, native_notice_shown: boolean} | null}
    */
   on_any_event(event_key, event) {
-    if (EXCLUDED_EVENT_KEYS[event_key]) return;
-    this.session_events.push({ event_key, event });
-    this.notification_status = get_next_notification_status(this.notification_status, event_key);
-    try {
-      if (typeof event_key !== 'string') return;
+    if (EXCLUDED_EVENT_KEYS[event_key]) return null;
 
-      const at_ms = Date.now();
+    const at_ms = typeof event?.at === 'number' ? event.at : Date.now();
+    const derived_level = get_event_level(event_key, event);
+    const session_entry = {
+      event_key,
+      event,
+      at: at_ms,
+      level: derived_level,
+      unseen: Boolean(derived_level),
+      native_notice_shown: false,
+    };
+
+    this.session_events.push(session_entry);
+    this.notification_status = get_next_notification_status(this.notification_status, event_key, event);
+
+    try {
+      if (typeof event_key !== 'string') return session_entry;
 
       let event_log = this.get(event_key);
       if (!event_log) {
         event_log = new EventLog(this.env, { key: event_key });
         this.set(event_log);
-        this.emit_event('event_log:first', {first_of_event_key: event_key});
+        this.emit_event('event_log:first', { first_of_event_key: event_key });
       }
 
       const next = next_log_stats(
-        { ct: event_log.data.ct, first_at: event_log.data.first_at, last_at: event_log.data.last_at },
-        at_ms
+        {
+          ct: event_log.data.ct,
+          first_at: event_log.data.first_at,
+          last_at: event_log.data.last_at,
+        },
+        at_ms,
       );
 
       event_log.data = { ...event_log.data, ...next };
-      if(event.event_source){
-        if(!event_log.data.event_sources) event_log.data.event_sources = {};
-        if(!event_log.data.event_sources[event.event_source]){
+      if (event?.event_source) {
+        if (!event_log.data.event_sources) event_log.data.event_sources = {};
+        if (!event_log.data.event_sources[event.event_source]) {
           event_log.data.event_sources[event.event_source] = 0;
         }
-        event_log.data.event_sources[event.event_source]++;
+        event_log.data.event_sources[event.event_source] += 1;
       }
       event_log.queue_save();
       this.queue_save();
     } catch (err) {
-      // Never throw from a listener; keep bus pure and resilient.
       console.error('[EventLogs] record failure', event_key, err);
     }
+
+    return session_entry;
+  }
+
+  /**
+   * Recompute severity status from unseen session entries.
+   *
+   * @returns {'attention'|'warning'|'error'|null}
+   */
+  refresh_notification_status() {
+    this.notification_status = this.session_events.reduce((current_status, session_entry) => {
+      if (!session_entry?.unseen) return current_status;
+      return get_next_notification_status(current_status, session_entry.event_key, session_entry.event);
+    }, null);
+    return this.notification_status;
+  }
+
+  /**
+   * Return unseen session entries.
+   *
+   * @returns {Array<object>}
+   */
+  get_unseen_notification_entries() {
+    return this.session_events.filter((session_entry) => session_entry?.unseen === true);
+  }
+
+  /**
+   * Count unseen canonical notifications.
+   *
+   * @returns {number}
+   */
+  get_unseen_notification_count() {
+    return this.get_unseen_notification_entries().length;
+  }
+
+  /**
+   * Mark a single session entry as seen.
+   *
+   * @param {object} session_entry
+   * @param {object} [params={}]
+   * @param {boolean} [params.native_notice_shown=false]
+   * @returns {boolean}
+   */
+  mark_session_entry_seen(session_entry, params = {}) {
+    if (!session_entry || session_entry.unseen !== true) return false;
+    const { native_notice_shown = false } = params;
+
+    session_entry.unseen = false;
+    if (native_notice_shown) {
+      session_entry.native_notice_shown = true;
+    }
+
+    this.refresh_notification_status();
+    this.env?.events?.emit?.('notifications:seen', {
+      event_key: session_entry.event_key,
+      native_notice_shown,
+    });
+    return true;
+  }
+
+  /**
+   * Mark all unseen canonical notifications as seen.
+   *
+   * @returns {boolean}
+   */
+  mark_all_notification_entries_seen() {
+    let seen_count = 0;
+
+    for (const session_entry of this.session_events) {
+      if (session_entry?.unseen !== true) continue;
+      session_entry.unseen = false;
+      seen_count += 1;
+    }
+
+    if (!seen_count) return false;
+
+    this.refresh_notification_status();
+    this.env?.events?.emit?.('notifications:seen_all', { count: seen_count });
+    return true;
   }
 
   /**

@@ -27,6 +27,9 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
      * @private
      */
     this._is_processing_embed_queue = false;
+    this._resume_after_pause = false;
+    this._resume_after_pause_delay = 0;
+    this._resume_embed_timeout = null;
     this._reset_embed_queue_stats();
   }
 
@@ -42,13 +45,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       throw new Error("Invalid vector input to nearest()");
     }
     const {
-      limit = 50, // TODO: default configured in settings
+      limit = 50,
     } = filter;
     const nearest = this.collection.filter(filter)
       .reduce((acc, item) => {
-        if (!item.vec) return acc; // skip if no vec
+        if (!item.vec) return acc;
         const result = { item, score: cos_sim(vec, item.vec) };
-        results_acc(acc, result, limit); // update acc
+        results_acc(acc, result, limit);
         return acc;
       }, { min: 0, results: new Set() });
     return Array.from(nearest.results).sort(sort_by_score_descending);
@@ -66,13 +69,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       throw new Error("Invalid vector input to furthest()");
     }
     const {
-      limit = 50, // TODO: default configured in settings
+      limit = 50,
     } = filter;
     const furthest = this.collection.filter(filter)
       .reduce((acc, item) => {
-        if (!item.vec) return acc; // skip if no vec
+        if (!item.vec) return acc;
         const result = { item, score: cos_sim(vec, item.vec) };
-        furthest_acc(acc, result, limit); // update acc
+        furthest_acc(acc, result, limit);
         return acc;
       }, { max: 0, results: new Set() });
     return Array.from(furthest.results).sort(sort_by_score_ascending);
@@ -88,16 +91,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     if (!this.collection.embed_model) {
       throw new Error('No embed_model found in collection for embedding');
     }
-    // Prepare input and get embeddings from the model
-    // Assuming each entity has a get_embed_input() method that sets `entity._embed_input`
-    await Promise.all(entities.map(e => e.get_embed_input()));
+    await Promise.all(entities.map((entity) => entity.get_embed_input()));
     const embeddings = await this.collection.embed_model.embed_batch(entities);
-    // Assign embeddings to entities
-    embeddings.forEach((emb, i) => {
-      const entity = entities[i];
-      entity.vec = emb.vec;
+    embeddings.forEach((embedding, index) => {
+      const entity = entities[index];
+      entity.vec = embedding.vec;
       entity.data.last_embed = entity.data.last_read;
-      if (emb.tokens !== undefined) entity.tokens = emb.tokens;
+      if (embedding.tokens !== undefined) entity.tokens = embedding.tokens;
       entity.emit_event('item:embedded');
     });
   }
@@ -105,6 +105,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Process a queue of entities waiting to be embedded.
    * Prevents multiple concurrent runs by using `_is_processing_embed_queue`.
+   * Paused queues fail closed and do not restart until resume explicitly clears
+   * the paused state.
    * @async
    * @returns {Promise<void>}
    */
@@ -113,26 +115,35 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       console.log("process_embed_queue is already running, skipping concurrent call.");
       return;
     }
+    if (this.is_embed_queue_paused() && !this._resume_after_pause) {
+      console.log("process_embed_queue is paused, skipping restart until resume.");
+      return;
+    }
     this._is_processing_embed_queue = true;
-    // load the embed_model if not already loaded
+    this._embed_run_error = false;
+
     try {
-      if(!this.collection.embed_model.is_loaded) {
+      if (!this.collection.embed_model.is_loaded) {
         await this.collection.embed_model.load();
       }
-    } catch (e) {
-      this.collection.emit_event('embed_model:load_failed');
-      this.notices?.show('Failed to load embed_model');
+    } catch (error) {
+      this.collection.emit_event('embed_model:load_failed', {
+        event_source: 'process_embed_queue',
+      });
+      this._emit_embedding_error({
+        message: `Failed to load embedding model ${this.collection.embed_model_key}.`,
+        details: error?.message || String(error || ''),
+      });
       return;
     }
 
     try {
       const datetime_start = Date.now();
       console.log(`Getting embed queue for ${this.collection.collection_key}...`);
-      await new Promise(resolve => setTimeout(resolve, 1)); // allow event loop to breathe
+      await new Promise((resolve) => setTimeout(resolve, 1));
       const embed_queue = this.collection.embed_queue;
-      // Reset stats as in SmartEntities
       this._reset_embed_queue_stats();
-      
+
       if (this.collection.embed_model_key === "None") {
         console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
         return;
@@ -151,146 +162,216 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       console.log(`Time spent getting embed queue: ${Date.now() - datetime_start}ms`);
       console.log(`Processing ${this.collection.collection_key} embed queue: ${embed_queue.length} items`);
 
-      // Process in batches according to embed_model.batch_size
-      for (let i = 0; i < embed_queue.length; i += this.collection.embed_model.batch_size) {
+      this.current_queue_total = embed_queue.length;
+      this._start_embed_progress_state(embed_queue.length);
+
+      for (let index = 0; index < embed_queue.length; index += this.collection.embed_model.batch_size) {
         if (this.is_queue_halted) {
-          this.is_queue_halted = false; // reset halt after break
           break;
         }
-        // Show progress notice every ~100 items
-        this._show_embed_progress_notice(embed_queue.length);
-        
-        // Prepare input
-        const batch = embed_queue.slice(i, i + this.collection.embed_model.batch_size);
-        await Promise.all(batch.map(item => item.get_embed_input()));
 
-        // Embed batch
+        const batch = embed_queue.slice(index, index + this.collection.embed_model.batch_size);
+        await Promise.all(batch.map((item) => item.get_embed_input()));
+
         try {
           const start_time = Date.now();
           await this.embed_batch(batch);
           this.total_time += Date.now() - start_time;
-        } catch (e) {
-          if (e && e.message && e.message.includes("API key not set")) {
-            this.halt_embed_queue_processing(`API key not set for ${this.collection.embed_model_key}\nPlease set the API key in the settings.`);
-          }
-          console.error(e);
-          console.error(`Error processing ${this.collection.collection_key} embed queue: ` + JSON.stringify((e || {}), null, 2));
+        } catch (error) {
+          console.error(error);
+          console.error(`Error processing ${this.collection.collection_key} embed queue: ` + JSON.stringify((error || {}), null, 2));
+          this._emit_embedding_error({
+            message: `Embedding failed while processing ${this.collection.collection_key}.`,
+            details: error?.message || JSON.stringify((error || {}), null, 2),
+          });
+          break;
         }
 
-        // Update hash and stats
-        batch.forEach(item => {
+        batch.forEach((item) => {
           item.embed_hash = item.read_hash;
           item._queue_save = true;
         });
         this.embedded_total += batch.length;
         this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
 
+        const processed_all = this.embedded_total >= embed_queue.length;
+        if (this.is_queue_halted && !processed_all) {
+          this._update_paused_progress_state(embed_queue.length, this.progress_state?.reason || '');
+        } else {
+          this._update_embed_progress_state(embed_queue.length);
+        }
 
-        // Process save queue every 1000 items
-        if (this.embedded_total - this.last_save_total > 1000) {
+        if (this.is_queue_halted && processed_all) {
+          this.is_queue_halted = false;
+        }
+
+        if (this.should_show_embed_progress_notice || processed_all) {
+          this._show_embed_progress_notice(embed_queue.length);
+        }
+
+        if (this.embedded_total - this.last_save_total > 99) {
           this.last_save_total = this.embedded_total;
           await this.collection.process_save_queue();
-          if(this.collection.block_collection) {
+          if (this.collection.block_collection) {
             console.log(`Saving ${this.collection.block_collection.collection_key} block collection`);
             await this.collection.block_collection.process_save_queue();
           }
         }
       }
 
-      // Show completion notice
-      this._show_embed_completion_notice(embed_queue.length);
+      const processed_all = this.embedded_total >= embed_queue.length;
+      const is_paused = Boolean(this.progress_state?.paused) && !processed_all;
+      if (!is_paused && !this._embed_run_error) {
+        this._show_embed_completion_notice(embed_queue.length);
+      }
+
       await this.collection.process_save_queue();
-      if(this.collection.block_collection) {
+      if (this.collection.block_collection) {
         await this.collection.block_collection.process_save_queue();
       }
     } finally {
-      // Always clear the concurrency flag, even on errors or halts
       this._is_processing_embed_queue = false;
+
+      const should_resume_after_pause = this._resume_after_pause && this.is_embed_queue_paused();
+      const resume_delay = this._resume_after_pause_delay || 0;
+      this._resume_after_pause = false;
+      this._resume_after_pause_delay = 0;
+
+      if (should_resume_after_pause) {
+        this.resume_embed_queue_processing(resume_delay);
+      }
     }
   }
 
   get should_show_embed_progress_notice() {
-    if((Date.now() - (this.last_notice_time ?? 0)) > 30000){
+    if ((Date.now() - (this.last_notice_time ?? 0)) > 20000) {
       return true;
     }
     return (this.embedded_total - this.last_notice_embedded_total) >= 100;
   }
+
   /**
-   * Displays the embedding progress notice.
+   * @returns {object|null}
+   */
+  get_progress_state() {
+    return this.progress_state ? { ...this.progress_state } : null;
+  }
+
+  /**
+   * Displays embed progress via env events and internal state.
    * @private
+   * @param {number} embed_queue_length
    * @returns {void}
    */
   _show_embed_progress_notice(embed_queue_length) {
-    if(embed_queue_length < 100) return; // return early if not enough items
-    if (!this.should_show_embed_progress_notice) return;
     this.last_notice_time = Date.now();
     this.last_notice_embedded_total = this.embedded_total;
-    this.collection.emit_event('embedding:progress_reported', {
+    this._update_embed_progress_state(embed_queue_length);
+    this.collection.emit_event('embedding:progress', {
       progress: this.embedded_total,
       total: embed_queue_length,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
-      model_name: this.collection.embed_model_key
-    });
-    this.notices?.show('embedding_progress', {
-      progress: this.embedded_total,
-      total: embed_queue_length,
-      tokens_per_second: this._calculate_embed_tokens_per_second(),
-      model_name: this.collection.embed_model_key
+      model_name: this.collection.embed_model_key,
+      event_source: 'process_embed_queue',
     });
   }
 
   /**
    * Displays the embedding completion notice.
    * @private
+   * @param {number} embed_queue_length
    * @returns {void}
    */
-  _show_embed_completion_notice() {
-    this.notices?.remove('embedding_progress');
-    if(this.embedded_total > 100) {
+  _show_embed_completion_notice(embed_queue_length) {
+    const payload = {
+      total_embeddings: this.embedded_total,
+      total: embed_queue_length,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key,
+      event_source: 'process_embed_queue',
+    };
+    this._set_progress_state(null);
+    if (this.embedded_total > 100) {
       this.collection.emit_event('embedding:completed', {
-        total_embeddings: this.embedded_total,
-        tokens_per_second: this._calculate_embed_tokens_per_second(),
-        model_name: this.collection.embed_model_key
+        level: 'info',
+        message: `Embedding completed for ${this.embedded_total} item${this.embedded_total === 1 ? '' : 's'}.`,
+        ...payload,
       });
-      this.notices?.show('embedding_complete', {
-        total_embeddings: this.embedded_total,
-        tokens_per_second: this._calculate_embed_tokens_per_second(),
-        model_name: this.collection.embed_model_key
-      });
+      return;
     }
+    this.collection.emit_event('embedding:completed', payload);
   }
 
   /**
    * Halts the embed queue processing.
+   * The current batch is allowed to finish, then the next loop iteration latches
+   * the paused state and exits. This keeps the status bar stable and prevents a
+   * half-finished batch from corrupting queue state.
    * @param {string|null} msg - Optional message.
+   * @returns {void}
    */
-  halt_embed_queue_processing(msg=null) {
+  halt_embed_queue_processing(msg = null) {
+    const total = this.progress_state?.total || this.current_queue_total || 0;
     this.is_queue_halted = true;
-    console.log("Embed queue processing halted");
-    this.notices?.remove('embedding_progress');
-    this.collection.emit_event('embedding:paused', {
+    this._set_progress_state({
+      active: true,
+      paused: true,
       progress: this.embedded_total,
-      total: this.collection._embed_queue.length,
+      total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
-      model_name: this.collection.embed_model_key
+      model_name: this.collection.embed_model_key,
+      reason: msg || '',
     });
-    this.notices?.show('embedding_paused', {
+    this.collection.emit_event('embedding:paused', {
+      level: 'attention',
+      message: `Embedding paused at ${this.embedded_total}/${total}.`,
+      details: msg || '',
       progress: this.embedded_total,
-      total: this.collection._embed_queue.length,
+      total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
-      model_name: this.collection.embed_model_key
+      model_name: this.collection.embed_model_key,
+      event_source: 'halt_embed_queue_processing',
     });
   }
 
   /**
+   * Returns whether the adapter is currently paused.
+   * Paused state remains sticky until resume explicitly clears it.
+   * @returns {boolean}
+   */
+  is_embed_queue_paused() {
+    return Boolean(this.progress_state?.paused);
+  }
+
+  /**
    * Resumes the embed queue processing after a delay.
+   * If the active batch has not yet latched the pause request, resume is deferred
+   * until the current run exits cleanly.
    * @param {number} [delay=0] - The delay in milliseconds before resuming.
    * @returns {void}
    */
   resume_embed_queue_processing(delay = 0) {
     console.log("resume_embed_queue_processing");
-    this.notices?.remove('embedding_paused');
-    setTimeout(() => {
+
+    if (this._resume_embed_timeout) {
+      clearTimeout(this._resume_embed_timeout);
+      this._resume_embed_timeout = null;
+    }
+
+    if (this._is_processing_embed_queue && this.is_queue_halted) {
+      this._resume_after_pause = true;
+      this._resume_after_pause_delay = delay;
+      return;
+    }
+
+    this.is_queue_halted = false;
+    this._set_progress_state(null);
+    this.collection.emit_event('embedding:resumed', {
+      model_name: this.collection.embed_model_key,
+      event_source: 'resume_embed_queue_processing',
+    });
+    this._resume_embed_timeout = setTimeout(() => {
+      this._resume_embed_timeout = null;
       this.embedded_total = 0;
       this.process_embed_queue();
     }, delay);
@@ -317,15 +398,119 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.is_queue_halted = false;
     this.last_save_total = 0;
     this.last_notice_embedded_total = 0;
+    this.last_notice_time = 0;
     this.total_tokens = 0;
     this.total_time = 0;
+    this.current_queue_total = 0;
+    this.progress_state = null;
+    this._embed_run_error = false;
+    this._resume_after_pause = false;
+    this._resume_after_pause_delay = 0;
+    if (this._resume_embed_timeout) {
+      clearTimeout(this._resume_embed_timeout);
+      this._resume_embed_timeout = null;
+    }
   }
-  
+
+  /**
+   * @private
+   * @param {object|null} next_state
+   * @returns {void}
+   */
+  _set_progress_state(next_state = null) {
+    this.progress_state = next_state
+      ? {
+          ...next_state,
+          updated_at: Date.now(),
+        }
+      : null
+    ;
+  }
+
+  /**
+   * @private
+   * @param {number} total
+   * @returns {void}
+   */
+  _start_embed_progress_state(total) {
+    this._set_progress_state({
+      active: true,
+      paused: false,
+      progress: 0,
+      total,
+      tokens_per_second: 0,
+      model_name: this.collection.embed_model_key,
+    });
+    this.collection.emit_event('embedding:started', {
+      progress: 0,
+      total,
+      model_name: this.collection.embed_model_key,
+      event_source: 'process_embed_queue',
+    });
+  }
+
+  /**
+   * @private
+   * @param {number} total
+   * @returns {void}
+   */
+  _update_embed_progress_state(total) {
+    this._set_progress_state({
+      active: true,
+      paused: false,
+      progress: this.embedded_total,
+      total,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key,
+    });
+  }
+
+  /**
+   * @private
+   * @param {number} total
+   * @param {string} reason
+   * @returns {void}
+   */
+  _update_paused_progress_state(total, reason = '') {
+    this._set_progress_state({
+      active: true,
+      paused: true,
+      progress: this.embedded_total,
+      total,
+      tokens_per_second: this._calculate_embed_tokens_per_second(),
+      model_name: this.collection.embed_model_key,
+      reason,
+    });
+  }
+
+  /**
+   * @private
+   * @param {object} [params={}]
+   * @param {string} [params.message]
+   * @param {string} [params.details]
+   * @returns {void}
+   */
+  _emit_embedding_error(params = {}) {
+    const {
+      message = 'Embedding failed.',
+      details = '',
+    } = params;
+    this._embed_run_error = true;
+    this.is_queue_halted = true;
+    this._set_progress_state(null);
+    this.collection.emit_event('embedding:error', {
+      level: 'error',
+      message,
+      details,
+      model_name: this.collection.embed_model_key,
+      event_source: 'process_embed_queue',
+    });
+  }
+
   get notices() {
     return this.collection.env.notices;
   }
 }
-
 
 /**
  * @class DefaultEntityVectorAdapter
@@ -337,6 +522,7 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
   get data() {
     return this.item.data;
   }
+
   /**
    * Retrieve the current vector embedding for this entity.
    * @async
@@ -367,11 +553,11 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
     }
   }
 
-  // adds synchronous get/set for vec
   get vec() {
     return this.item.data?.embeddings?.[this.item.embed_model_key]?.vec;
   }
-  set vec(vec){
+
+  set vec(vec) {
     if (!this.item.data.embeddings) {
       this.item.data.embeddings = {};
     }
