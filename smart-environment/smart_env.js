@@ -51,7 +51,8 @@ export class SmartEnv {
     this._components = {};
     this.collections = {};
     this.load_timeout = null;
-    this._collections_version_signature = null; // ← new
+    this._load_promise = null;
+    this._collections_version_signature = null;
     this._events = SmartEvents.create(this, build_events_opts(this.config?.modules?.smart_events));
     if (opts.primary_main_key) this.primary_main_key = opts.primary_main_key;
   }
@@ -66,10 +67,10 @@ export class SmartEnv {
     const signature = this.compute_collections_version_signature();
 
     if (this._config && signature === this._collections_version_signature) {
-      return this._config;                       // still current – use cache
+      return this._config;
     }
 
-    // cache miss or collections updated → rebuild
+    // cache miss or collections updated -> rebuild
     this._collections_version_signature = signature;
     this._config = {};
 
@@ -77,18 +78,18 @@ export class SmartEnv {
       .sort(([main_key]) => {
         if (!this.primary_main_key) return 0;
         return main_key === this.primary_main_key ? -1 : 0;
-      });
+      })
+    ;
 
-      
     for (const [key, rec] of sorted_configs) {
       if (!rec?.main) {
         console.warn(`SmartEnv: '${key}' unloaded, skipping`);
         delete this.smart_env_configs[key];
         continue;
       }
-      if (!rec?.opts){
+      if (!rec?.opts) {
         console.warn(`SmartEnv: '${key}' opts missing, skipping`);
-        continue;          // extra safety
+        continue;
       }
       merge_env_config(
         this._config,
@@ -100,8 +101,8 @@ export class SmartEnv {
 
   /**
    * Produces a deterministic string representing the current versions of every
-   * collection class across all mains.  When any collection ships a higher
-   * `static version`, the signature changes – automatically invalidating the
+   * collection class across all mains. When any collection ships a higher
+   * `static version`, the signature changes - automatically invalidating the
    * cached `config`.
    *
    * @returns {string} pipe-delimited version signature
@@ -122,11 +123,11 @@ export class SmartEnv {
   }
 
   // ========================================================================
-  // ──  GLOBAL HELPERS / STATIC API                                         ──
+  // -- GLOBAL HELPERS / STATIC API                                         --
   // ========================================================================
 
   get env_start_wait_time() {
-    if(typeof this.config.env_start_wait_time === 'number') return this.config.env_start_wait_time;
+    if (typeof this.config.env_start_wait_time === 'number') return this.config.env_start_wait_time;
     return 5000;
   }
   static get global_env() {
@@ -142,25 +143,25 @@ export class SmartEnv {
     return Object.keys(this.global_ref.smart_env_configs || {});
   }
   static get should_reload() {
-    if(!this.global_env) return true;
-    if(this.global_env.state === 'loaded') return true;
-    if(typeof this.global_env?.constructor?.version === 'undefined') return true;
+    if (!this.global_env) return true;
+    if (this.global_env.state === 'loaded') return true;
+    if (typeof this.global_env?.constructor?.version === 'undefined') return true;
     // If our new code is a higher version, reload:
-    if(compare_versions(this.version, this.global_env.constructor?.version) > 0){
+    if (compare_versions(this.version, this.global_env.constructor?.version) > 0) {
       console.warn(
-        "SmartEnv: Reloading environment because of version mismatch",
-        `${this.version} > ${this.global_env.constructor.version}`
+        'SmartEnv: Reloading environment because of version mismatch',
+        `${this.version} > ${this.global_env.constructor.version}`,
       );
       return true;
     }
     return false;
   }
   static get smart_env_configs() {
-    if(!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
+    if (!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
     return this.global_ref.smart_env_configs;
   }
   get smart_env_configs() {
-    if(!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
+    if (!this.global_ref.smart_env_configs) this.global_ref.smart_env_configs = {};
     return this.global_ref.smart_env_configs;
   }
 
@@ -214,23 +215,22 @@ export class SmartEnv {
     if (!main || typeof main !== 'object') {
       throw new TypeError('SmartEnv: Invalid main object provided');
     }
-    if(!env_config) throw new Error("SmartEnv.create: 'env_config' parameter is required.");
+    if (!env_config) throw new Error("SmartEnv.create: 'env_config' parameter is required.");
     env_config.version = this.version;
 
     this.add_main(main, env_config);
 
-    if(this.should_reload){
+    if (this.should_reload) {
       const opts = {};
-      // if(this.global_env && this.version > (this.global_env.constructor?.version || 0)){
-      if(this.global_env && compare_versions(this.version, this.global_env.constructor?.version || 0) > 0){
+      if (this.global_env && compare_versions(this.version, this.global_env.constructor?.version || 0) > 0) {
         opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
       }
-      if(this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
+      if (this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
 
       this.global_env = new this(opts);
 
       const g = this.global_ref;
-      if(!g.all_envs) g.all_envs = [];
+      if (!g.all_envs) g.all_envs = [];
       g.all_envs.push(this.global_env);
     }
 
@@ -244,11 +244,10 @@ export class SmartEnv {
   }
   static add_main(main, env_config = null) {
     if (this.global_env) {
-      this.global_env._config = null;                    // invalidate cache
+      this.global_env._config = null;
       this.global_env._collections_version_signature = null;
     }
 
-    // if (!env_config) env_config = main.smart_env_config;
     const main_key = camel_case_to_snake_case(main.constructor.name);
     this.smart_env_configs[main_key] = { main, opts: env_config };
     this.create_env_getter(main);
@@ -268,50 +267,79 @@ export class SmartEnv {
     this.constructor.create_env_getter(instance_to_receive_getter);
   }
   async load() {
+    if (this._load_promise) return this._load_promise;
+
+    this._load_promise = this.run_load();
+    try {
+      await this._load_promise;
+      return this;
+    } finally {
+      this._load_promise = null;
+    }
+  }
+  async run_load() {
     this.state = 'loading';
     await this.fs.load_files(); // skip exclusions; detect env_data_dir
-    if(!this.settings) await SmartSettings.create(this);
-    if(this.config.default_settings){
+    if (!this.settings) await SmartSettings.create(this);
+    if (this.config.default_settings) {
       // takes precedence over default_settings in collection classes (merged by subsequent init_collections)
       deep_merge_no_overwrite(this.settings, this.config.default_settings);
     }
     migrate_exclusion_settings_2025_08_22(this.settings);
     this.smart_settings.save();
     await this.init_collections();
-    for(const [main_key, {main, opts}] of Object.entries(this.smart_env_configs)){
+    for (const [main_key, { main }] of Object.entries(this.smart_env_configs)) {
       this[main_key] = main;
     }
     await this.ready_to_load_collections();
     await this.load_collections();
     this.state = 'loaded';
+    return this;
   }
   /**
    * Initializes collection classes if they have an 'init' function.
    * @param {Object} [config=this.config]
-  */
+   */
   async init_collections(config = this.config) {
     for (const key of Object.keys(config.collections || {})) {
-      const _class = config.collections[key]?.class;
-      if (!_class) continue;
-      if (_class.default_settings) {
+      const collection_config = config.collections[key] || {};
+      const _class = collection_config.class;
+
+      if (_class?.default_settings) {
         deep_merge_no_overwrite(
           this.settings,
           {
-            [key]: _class.default_settings
-          }
+            [key]: _class.default_settings,
+          },
         );
       }
-      if (typeof _class.init !== 'function') continue; // skip if not a class or no init
-      await _class.init(this, { ...config.collections[key] });
+      if (!_class || typeof _class.init !== 'function') continue;
+
+      const existing_collection = this[key];
+      if (existing_collection) {
+        const should_replace_collection = existing_collection.constructor !== _class
+          || get_version_number(_class) > get_version_number(existing_collection.constructor)
+        ;
+
+        if (should_replace_collection) {
+          existing_collection.unload?.();
+          this[key] = null;
+          this.collections[key] = null;
+        } else if (this.collections[key]) {
+          continue;
+        }
+      }
+
+      await _class.init(this, { ...collection_config });
       this.collections[key] = 'init';
     }
   }
   /**
-   * Hook/Override this method to wait for any conditions before loading collections. 
+   * Hook/Override this method to wait for any conditions before loading collections.
    * @param {Object} main
    */
   async ready_to_load_collections() {
-    // OVVERRIDE IF NEEDED TO WAIT BEFORE LOADING COLLECTIONS
+    // OVERRIDE IF NEEDED TO WAIT BEFORE LOADING COLLECTIONS
   }
   /**
    * Loads any available collections, processing their load queues.
@@ -319,7 +347,7 @@ export class SmartEnv {
    */
   async load_collections(collections = this.collections) {
     const collection_keys = Object.keys(collections || {})
-      // sort by this.config.collections[key].load_order || 0 (ascending)
+      .filter((key) => collections[key] !== 'loaded')
       .sort((a, b) => {
         const order_a = this.config.collections?.[a]?.load_order || 0;
         const order_b = this.config.collections?.[b]?.load_order || 0;
@@ -330,7 +358,7 @@ export class SmartEnv {
       const time_start = Date.now();
       if (typeof this[key]?.process_load_queue === 'function') {
         await this[key].process_load_queue();
-        this[key].load_time_ms = Date.now() - time_start; 
+        this[key].load_time_ms = Date.now() - time_start;
         this.collections[key] = 'loaded';
         console.log(`Loaded ${this[key].collection_key} in ${this[key].load_time_ms}ms`);
       }
@@ -372,12 +400,12 @@ export class SmartEnv {
     }
     opts = {
       ...{ ...module_config, class: null },
-      ...opts
+      ...opts,
     };
     return new module_config.class(opts);
   }
   get notices() {
-    if(!this._notices) {
+    if (!this._notices) {
       const SmartNoticesClass = this.config.modules.smart_notices.class;
       this._notices = new SmartNoticesClass(this, {
         adapter: this.config.modules.smart_notices.adapter,
@@ -421,7 +449,7 @@ export class SmartEnv {
    */
   async render_component(component_key, scope, opts = {}) {
     const component_renderer = this.get_component(component_key, scope);
-    if(!component_renderer) {
+    if (!component_renderer) {
       console.warn(`SmartEnv: component ${component_key} not found for scope ${scope.constructor.name}`);
       return this.smart_view.create_doc_fragment(`<div class="smart-env-component-not-found">
         <h1>Component Not Found</h1>
@@ -448,33 +476,32 @@ export class SmartEnv {
           const component_config = this.opts.components[scope_name][component_key];
           const component = component_config.render || component_config;
           this._components[_cache_key] = component.bind(
-            this.init_module('smart_view')
+            this.init_module('smart_view'),
           );
         } else if (this.opts.components[component_key]) {
           const component_config = this.opts.components[component_key];
           const component = component_config.render || component_config;
           this._components[_cache_key] = component.bind(
-            this.init_module('smart_view')
+            this.init_module('smart_view'),
           );
         } else {
           console.warn(
-            `SmartEnv: component ${component_key} not found for scope ${scope_name}`
+            `SmartEnv: component ${component_key} not found for scope ${scope_name}`,
           );
         }
       } catch (e) {
         console.error('Error getting component', e);
         console.log(
           `scope_name: ${scope_name}; component_key: ${component_key}; this.opts.components: ${Object.keys(
-            this.opts.components || {}
+            this.opts.components || {},
           ).join(', ')}; this.opts.components[scope_name]: ${Object.keys(
-            this.opts.components[scope_name] || {}
-          ).join(', ')}`
+            this.opts.components[scope_name] || {},
+          ).join(', ')}`,
         );
       }
     }
     return this._components[_cache_key];
   }
-
 
   /**
    * A built-in settings schema for this environment.
@@ -493,7 +520,6 @@ export class SmartEnv {
     return this.config.item_types;
   }
 
-
   get fs_module_config() {
     return this.opts.modules.smart_fs;
   }
@@ -502,7 +528,7 @@ export class SmartEnv {
     if (!this.smart_fs) {
       this.smart_fs = new this.fs_module_config.class(this, {
         adapter: this.fs_module_config.adapter,
-        fs_path: this.opts.env_path || ''
+        fs_path: this.opts.env_path || '',
       });
     }
     return this.smart_fs;
@@ -519,12 +545,12 @@ export class SmartEnv {
           const dir = path.split('/').slice(-2, -1)[0];
           return {
             dir,
-            count: this.fs.file_paths.filter((p) => p.includes(dir)).length
+            count: this.fs.file_paths.filter((p) => p.includes(dir)).length,
           };
         });
         env_data_dir = env_data_dir_counts.reduce(
-          (max, dirObj) => (dirObj.count > max.count ? dirObj : max),
-          env_data_dir_counts[0]
+          (max, dir_obj) => (dir_obj.count > max.count ? dir_obj : max),
+          env_data_dir_counts[0],
         ).dir;
       } else {
         env_data_dir = env_settings_files[0].split('/').slice(-2, -1)[0];
@@ -537,14 +563,14 @@ export class SmartEnv {
     if (!this._fs) {
       this._fs = new this.fs_module_config.class(this, {
         adapter: this.fs_module_config.adapter,
-        fs_path: this.data_fs_path
+        fs_path: this.data_fs_path,
       });
     }
     return this._fs;
   }
 
   get data_fs_path() {
-    if(!this._data_fs_path) {
+    if (!this._data_fs_path) {
       this._data_fs_path = (this.opts.env_path
         + (this.opts.env_path ? (this.opts.env_path.includes('\\') ? '\\' : '/') : '')
         + this.env_data_dir).replace(/\\\\/g, '\\').replace(/\/\//g, '/')
@@ -577,8 +603,8 @@ export class SmartEnv {
     let settings = JSON.parse(JSON.stringify(this.config.default_settings || {})); // set defaults if provided
     deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
     this._saved = true;
-    if(this.fs.auto_excluded_files) {
-      const existing_file_exclusions = settings.smart_sources.file_exclusions.split(',').map(s => s.trim()).filter(Boolean);
+    if (this.fs.auto_excluded_files) {
+      const existing_file_exclusions = settings.smart_sources.file_exclusions.split(',').map((s) => s.trim()).filter(Boolean);
       settings.smart_sources.file_exclusions = [...existing_file_exclusions, ...this.fs.auto_excluded_files]
         .filter((value, index, self) => self.indexOf(value) === index)
         .join(',')
@@ -593,7 +619,6 @@ export class SmartEnv {
    */
   async update_exclusions() {
     this.smart_sources._fs = null;
-    // await this.smart_sources.fs.init();
     await this.smart_sources.init_fs();
   }
 
@@ -612,7 +637,7 @@ export class SmartEnv {
   }
 
   /** @deprecated access `this.state` and `collection.state` directly instead */
-  get collections_loaded(){
+  get collections_loaded() {
     return this.state === 'loaded';
   }
   /** @deprecated Use this['main_class_name'] instead of this.main/this.plugin */
@@ -666,4 +691,8 @@ function build_events_opts(module_config) {
   }
   const adapter_class = module_config.adapter_class || module_config.adapter;
   return adapter_class ? { adapter_class } : {};
+}
+
+function get_version_number(subject) {
+  return typeof subject?.version === 'number' ? subject.version : 0;
 }
