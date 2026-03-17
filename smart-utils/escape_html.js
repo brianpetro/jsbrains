@@ -1,14 +1,14 @@
 /**
- * escape_html
- * Escape HTML special characters.
- * @param {string} str
+ * Escape HTML entities in text.
+ * @param {string} value
  * @returns {string}
  */
-export function escape_html(str = '') {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+export function escape_html(value = '') {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+  ;
 }
