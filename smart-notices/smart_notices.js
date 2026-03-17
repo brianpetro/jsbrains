@@ -73,6 +73,7 @@ export function define_default_create_methods(notices) {
  * Manages user-facing notices for the plugin, with support for:
  *   - Muting notices by key
  *   - Combining default notice config from NOTICES with user-provided opts
+ * @deprecated 2026-03-17 use EventLogs sub-class to handle platform-specific notification emission
  */
 export class SmartNotices {
   /**
