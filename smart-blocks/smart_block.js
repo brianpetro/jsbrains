@@ -51,7 +51,7 @@ export class SmartBlock extends SmartEntity {
    */
   queue_embed() {
     this._queue_embed = this.should_embed;
-    this.source?.queue_embed();
+    // this.source?.queue_embed(); // is this causing extraneous source embeds?
   }
 
   /**

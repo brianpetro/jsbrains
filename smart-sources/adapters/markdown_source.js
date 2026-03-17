@@ -148,22 +148,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   get outdated() {
     try{
       if(!this.data.last_import){
-        // temp for backwards compatibility 2024-12-12
-        if(this.data.mtime && this.data.size && this.data.hash){
-          this.data.last_import = {
-            mtime: this.data.mtime,
-            size: this.data.size,
-            at: Date.now(),
-            hash: this.data.hash,
-          }
-          delete this.data.mtime;
-          delete this.data.size;
-          delete this.data.hash;
-        }else{
-          return true;
-        }
-        // FUTURE: remove above and return true if no last_import
-        // return true;
+        return true;
       }
       if(this.data.last_read.at > this.data.last_import.at){
         if(this.data.last_import?.hash !== this.data.last_read?.hash) return true;

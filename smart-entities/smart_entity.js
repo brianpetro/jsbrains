@@ -73,7 +73,8 @@ export class SmartEntity extends CollectionItem {
    * @returns {void}
    */
   queue_embed() {
-    this._queue_embed = true;
+    // this._queue_embed = true;
+    this._queue_embed = this.should_embed;
   }
 
   /**
