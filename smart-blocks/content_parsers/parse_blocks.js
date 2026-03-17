@@ -19,13 +19,14 @@ export function parse_blocks(source, content) {
     const block_key = source.key + sub_key;
     const existing_block = source.block_collection.get(block_key);
     const block_content = get_line_range(content, line_range[0], line_range[1]);
-    if(
+    const next_hash = murmur_hash_32_alphanumeric(block_content);
+    if (
       existing_block
-      && existing_block.lines[0] === line_range[0]
-      && existing_block.lines[1] === line_range[1]
+      && existing_block.lines?.[0] === line_range[0]
+      && existing_block.lines?.[1] === line_range[1]
       && existing_block.size === block_content.length
-      && existing_block.vec
-    ){
+      && existing_block.data?.last_read?.hash === next_hash
+    ) {
       continue;
     }
     const block_outlinks = get_markdown_links(block_content);
@@ -43,20 +44,26 @@ export function parse_blocks(source, content) {
       ],
       last_read: {
         at: last_read_at,
-        hash: murmur_hash_32_alphanumeric(block_content),
+        hash: next_hash,
       },
     };
-    // Check hash AFTER building new data since lines updated
-    // if no lines change than continues above
+    const block_changed = has_block_data_changes(existing_block, block_data);
+
+    if (!block_changed && existing_block?.vec) {
+      continue;
+    }
+
     if(!existing_block || (existing_block?.data.last_read?.hash !== block_data.last_read.hash)) {
       // prevent premature save by not using create_or_update
       const new_item = new source.block_collection.item_type(source.env, block_data);
+      if (block_changed) new_item.queue_save();
       source.block_collection.set(new_item);
-    }else{
+    }else if(block_changed){
       existing_block.data = {
         ...existing_block.data,
         ...block_data, // overwrites lines, last_read
-      }
+      };
+      existing_block.queue_save();
     }
   }
   
@@ -65,10 +72,34 @@ export function parse_blocks(source, content) {
   // Queue embedding for blocks that should be embedded but are not yet embedded
   // MUST LOOP AFTER creating all blocks because should_embed logic checks adjecent blocks
   for (const block of source.blocks) {
-    if(!block.vec) {
-      block.queue_embed(); // only queues if should_embed
+    if (!block.vec || block.embed_hash !== block.read_hash) {
+      block.queue_embed();
     }
   }
+}
+
+function has_block_data_changes(existing_block, block_data) {
+  if (!existing_block) return true;
+
+  const existing_lines = existing_block.lines || [];
+  if (existing_lines[0] !== block_data.lines[0] || existing_lines[1] !== block_data.lines[1]) {
+    return true;
+  }
+
+  if (existing_block.size !== block_data.size) {
+    return true;
+  }
+
+  if (existing_block?.data?.last_read?.hash !== block_data.last_read.hash) {
+    return true;
+  }
+
+  const existing_outlinks = existing_block?.data?.outlinks || [];
+  if (JSON.stringify(existing_outlinks) !== JSON.stringify(block_data.outlinks)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
