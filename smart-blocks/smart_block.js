@@ -317,26 +317,57 @@ export class SmartBlock extends SmartEntity {
    */
   get should_embed() {
     try{
-      if(this.settings?.min_chars && this.size < this.settings.min_chars) return false;
-      const match_line_start = this.line_start + 1;
-      const match_line_end = this.line_end;
-      // check if sub-blocks should be embedded individually
-      const { has_line_start, has_line_end } = Object.entries(this.source?.data?.blocks || {})
-        .reduce((acc, [key, range]) => {
-          if(!key.startsWith(this.sub_key+"#")) return acc;
-          if(range[0] === match_line_start) acc.has_line_start = key;
-          if(range[1] === match_line_end) acc.has_line_end = key;
-          return acc;
-        }, {has_line_start: null, has_line_end: null});
-      if (has_line_start && has_line_end){
-        // Ensure start and end blocks are large enough to embed before skipping embedding for this block
-        const start_block = this.collection.get(this.source_key + has_line_start);
-        if(start_block?.should_embed){
-          const end_block = this.collection.get(this.source_key + has_line_end);
-          if(end_block?.should_embed) return false;
+      const source_hash = this.source?.data?.last_read?.hash;
+      const cached_should_embed = this._should_embed_cache;
+
+      if(source_hash != null && cached_should_embed?.hash === source_hash){
+        return cached_should_embed.value;
+      }
+
+      const min_chars = this.settings?.min_chars;
+      let should_embed = true;
+
+      if(min_chars && this.size < min_chars){
+        should_embed = false;
+      }else{
+        const match_line_start = this.line_start + 1;
+        const match_line_end = this.line_end;
+        const blocks = this.source?.data?.blocks;
+        const prefix = this.sub_key + "#";
+
+        let has_line_start = null;
+        let has_line_end = null;
+
+        if(blocks){
+          for(const key in blocks){
+            if(!Object.prototype.hasOwnProperty.call(blocks, key)) continue;
+            if(!key.startsWith(prefix)) continue;
+
+            const range = blocks[key];
+            if(range[0] === match_line_start) has_line_start = key;
+            if(range[1] === match_line_end) has_line_end = key;
+
+            if(has_line_start && has_line_end) break;
+          }
+        }
+
+        if(has_line_start && has_line_end){
+          const start_block = this.collection.get(this.source_key + has_line_start);
+          if(start_block?.should_embed){
+            const end_block = this.collection.get(this.source_key + has_line_end);
+            if(end_block?.should_embed) should_embed = false;
+          }
         }
       }
-      return true;
+
+      if(source_hash != null){
+        this._should_embed_cache = {
+          hash: source_hash,
+          value: should_embed
+        };
+      }
+
+      return should_embed;
     }catch(e){
       console.error(e, e.stack);
       console.error(`Error getting should_embed for ${this.key}: ` + JSON.stringify((e || {}), null, 2));
