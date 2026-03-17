@@ -14,6 +14,7 @@ const EXCLUDED_EVENT_KEYS = {
   'notifications:seen': true,
   'notifications:seen_all': true,
   'event_logs:mute_changed': true,
+  'event_log:first': true,
 };
 
 /**
