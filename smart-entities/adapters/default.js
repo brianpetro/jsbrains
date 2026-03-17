@@ -5,10 +5,10 @@
  * Uses cosine similarity for nearest/furthest queries.
  */
 
-import { EntitiesVectorAdapter, EntityVectorAdapter } from "./_adapter.js";
+import { EntitiesVectorAdapter, EntityVectorAdapter } from './_adapter.js';
 import { cos_sim } from 'smart-utils/cos_sim.js';
-import { results_acc, furthest_acc } from "smart-utils/results_acc.js";
-import { sort_by_score_ascending, sort_by_score_descending } from "smart-utils/sort_by_score.js";
+import { results_acc, furthest_acc } from 'smart-utils/results_acc.js';
+import { sort_by_score_ascending, sort_by_score_descending } from 'smart-utils/sort_by_score.js';
 
 /**
  * @class DefaultEntitiesVectorAdapter
@@ -42,7 +42,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    */
   async nearest(vec, filter = {}) {
     if (!vec || !Array.isArray(vec)) {
-      throw new Error("Invalid vector input to nearest()");
+      throw new Error('Invalid vector input to nearest()');
     }
     const {
       limit = 50,
@@ -66,7 +66,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    */
   async furthest(vec, filter = {}) {
     if (!vec || !Array.isArray(vec)) {
-      throw new Error("Invalid vector input to furthest()");
+      throw new Error('Invalid vector input to furthest()');
     }
     const {
       limit = 50,
@@ -112,11 +112,11 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    */
   async process_embed_queue() {
     if (this._is_processing_embed_queue) {
-      console.log("process_embed_queue is already running, skipping concurrent call.");
+      console.log('process_embed_queue is already running, skipping concurrent call.');
       return;
     }
     if (this.is_embed_queue_paused() && !this._resume_after_pause) {
-      console.log("process_embed_queue is paused, skipping restart until resume.");
+      console.log('process_embed_queue is paused, skipping restart until resume.');
       return;
     }
     this._is_processing_embed_queue = true;
@@ -144,7 +144,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       const embed_queue = this.collection.embed_queue;
       this._reset_embed_queue_stats();
 
-      if (this.collection.embed_model_key === "None") {
+      if (this.collection.embed_model_key === 'None') {
         console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
         return;
       }
@@ -307,11 +307,20 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * The current batch is allowed to finish, then the next loop iteration latches
    * the paused state and exits. This keeps the status bar stable and prevents a
    * half-finished batch from corrupting queue state.
+   * Duplicate pause requests fail closed and do not emit extra paused events.
+   *
    * @param {string|null} msg - Optional message.
    * @returns {void}
    */
   halt_embed_queue_processing(msg = null) {
     const total = this.progress_state?.total || this.current_queue_total || 0;
+    const next_reason = msg || this.progress_state?.reason || '';
+
+    if (this.is_embed_queue_paused()) {
+      this._update_paused_progress_state(total, next_reason);
+      return;
+    }
+
     this.is_queue_halted = true;
     this._set_progress_state({
       active: true,
@@ -320,12 +329,12 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
       model_name: this.collection.embed_model_key,
-      reason: msg || '',
+      reason: next_reason,
     });
     this.collection.emit_event('embedding:paused', {
       level: 'attention',
       message: `Embedding paused at ${this.embedded_total}/${total}.`,
-      details: msg || '',
+      details: next_reason,
       progress: this.embedded_total,
       total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
@@ -351,7 +360,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @returns {void}
    */
   resume_embed_queue_processing(delay = 0) {
-    console.log("resume_embed_queue_processing");
+    console.log('resume_embed_queue_processing');
 
     if (this._resume_embed_timeout) {
       clearTimeout(this._resume_embed_timeout);
@@ -570,5 +579,5 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
 
 export default {
   collection: DefaultEntitiesVectorAdapter,
-  item: DefaultEntityVectorAdapter
+  item: DefaultEntityVectorAdapter,
 };
