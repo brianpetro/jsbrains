@@ -8,7 +8,7 @@
 import { CollectionItem } from 'smart-collections';
 
 /**
- * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are 
+ * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are
  * derived from folders or named contexts.
  * @param {Record<string, object>} context_items
  * @param {string} key
@@ -26,17 +26,18 @@ const remove_context_item_data = (context_items, key) => {
 };
 
 export class SmartContext extends CollectionItem {
-  static version = '2.0.1';
+  static version = '2.0.2';
+
   static get defaults() {
     return {
       data: {
         key: '',
         context_items: {},
-        context_opts: {}
-      }
+        context_opts: {},
+      },
     };
   }
-  
+
   // queue_save to debounce process save queue
   queue_save() {
     super.queue_save();
@@ -47,14 +48,14 @@ export class SmartContext extends CollectionItem {
    * add_item
    * @param {string|object} item
    */
-  add_item(item, params={}) {
+  add_item(item, params = {}) {
     const {
-      emit_updated = true
+      emit_updated = true,
     } = params;
     let key;
-    if(typeof item === 'object') {
+    if (typeof item === 'object') {
       key = item.key || item.path;
-    }else{
+    } else {
       key = item;
     }
     const existing = this.data.context_items[key];
@@ -62,12 +63,12 @@ export class SmartContext extends CollectionItem {
       d: 0,
       at: Date.now(),
       ...(existing || {}),
-      ...(typeof item === 'object' ? item : {})
+      ...(typeof item === 'object' ? item : {}),
     };
-    if(!key) return console.error('SmartContext: add_item called with invalid item', item);
+    if (!key) return console.error('SmartContext: add_item called with invalid item', item);
     this.data.context_items[key] = context_item;
     this.queue_save();
-    if(emit_updated) this.emit_event('context:updated', {add_item: key});
+    if (emit_updated) this.emit_event('context:updated', { add_item: key });
   }
 
   /**
@@ -75,9 +76,11 @@ export class SmartContext extends CollectionItem {
    * @param {string[]|object[]} items
    */
   add_items(items) {
-    if(!Array.isArray(items)) items = [items];
-    items.forEach(item => this.add_item(item, { emit_updated: false }));
-    this.emit_event('context:updated', { added_items: items.map(item => typeof item === 'object' ? item.key || item.path : item) });
+    if (!Array.isArray(items)) items = [items];
+    items.forEach((item) => this.add_item(item, { emit_updated: false }));
+    this.emit_event('context:updated', {
+      added_items: items.map((item) => (typeof item === 'object' ? item.key || item.path : item)),
+    });
   }
 
   /**
@@ -118,17 +121,16 @@ export class SmartContext extends CollectionItem {
     return removed_keys;
   }
 
-  clear_all () {
+  clear_all() {
     this.data.context_items = {};
     this.queue_save();
     this.emit_event('context:updated', { cleared: true });
   }
 
-
   get context_item_keys() {
     return Object.entries(this.data?.context_items || {})
-      .filter(([key, item_data]) => !item_data.exclude)
-      .map(([key, item_data]) => key)
+      .filter(([, item_data]) => !item_data.exclude)
+      .map(([key]) => key)
     ;
   }
 
@@ -138,53 +140,65 @@ export class SmartContext extends CollectionItem {
     }
     return this.data.key;
   }
+
   get has_context_items() {
     return Object.keys(this.data.context_items || {}).length > 0;
   }
 
-  get name () {
+  get name() {
     return this.data.name;
   }
-  set name (name) {
+
+  set name(name) {
     if (typeof name !== 'string') throw new TypeError('Name must be a string');
-    const was_nameless = !this.data.name || String(this.data.name).trim().length === 0;
+    const previous_name = typeof this.data.name === 'string' ? this.data.name : '';
+    const was_nameless = !previous_name || String(previous_name).trim().length === 0;
     this.data.name = name;
-    if(was_nameless) this.emit_event('context:named');
-    else this.emit_event('context:renamed', { name });
+    if (was_nameless) {
+      this.emit_event('context:named', { name });
+    } else {
+      this.emit_event('context:renamed', {
+        old_name: previous_name,
+        name,
+      });
+    }
     this.queue_save();
   }
-  get size () {
+
+  get size() {
     let size = 0;
     Object.values(this.context_items.items || {})
-      .forEach(item => {
+      .forEach((item) => {
         if (item.size) size += item.size;
       })
     ;
     return size;
   }
-  get item_count () {
+
+  get item_count() {
     return Object.entries(this.data?.context_items || {})
-      .filter(([key, item_data]) => !item_data.exclude)
+      .filter(([, item_data]) => !item_data.exclude)
       .length
     ;
   }
+
   // v3
   async get_text(params = {}) {
     const segments = [];
     const context_items = this.context_items
       .filter(params.filter)
-      .sort((a, b) => a.data.d - b.data.d) // sort by depth ascending
+      .sort((a, b) => a.data.d - b.data.d)
     ;
-    console.log("get_text context_items", context_items);
+    console.log('get_text context_items', context_items);
     for (const item of context_items) {
-      if (item.is_media) continue; 
+      if (item.is_media) continue;
       const item_text = await item.get_text();
-      if(typeof item_text === 'string') segments.push(item_text);
+      if (typeof item_text === 'string') segments.push(item_text);
       else this.emit_get_text_error(item, item_text);
     }
     const context_items_text = segments.join('\n');
     if (typeof this.actions.context_merge_template === 'function') {
-      return await this.actions.context_merge_template(context_items_text, {context_items});
+      return await this.actions.context_merge_template(context_items_text, { context_items });
     }
     return context_items_text;
   }
@@ -195,32 +209,17 @@ export class SmartContext extends CollectionItem {
     for (const item of context_items) {
       if (!item.is_media) continue;
       const item_base64 = await item.get_base64();
-      if(item_base64.error) this.emit_get_media_error(item, item_base64);
+      if (item_base64.error) this.emit_get_media_error(item, item_base64);
       else out.push(item_base64);
     }
     return out;
   }
 
-  get context_items () {
-    // 2026-01-16 REMOVED caching logic because causing cross-contamination issues
-    // ex. when switching between contexts in Context Selector modal (from chat to external)
-    // if(!this._context_items) {
-      const config = this.env.config.collections.context_items;
-      const Class = config.class;
-      this._context_items = new Class(this.env, {...config, class: null});
-      this._context_items.load_from_data(this.data.context_items || {});
-      // if (!this._context_items_listener_registered) {
-      //   let disposer;
-      //   disposer = this.on_event('context:updated', () => {
-      //     console.log('SmartContext: context updated, clearing context_items cache');
-      //     delete this._context_items;
-      //     this._context_items = null; // reset cache
-      //     disposer();
-      //     this._context_items_listener_registered = false;
-      //   });
-      //   this._context_items_listener_registered = true;
-      // }
-    // }
+  get context_items() {
+    const config = this.env.config.collections.context_items;
+    const Class = config.class;
+    this._context_items = new Class(this.env, { ...config, class: null });
+    this._context_items.load_from_data(this.data.context_items || {});
     return this._context_items;
   }
 
@@ -230,17 +229,17 @@ export class SmartContext extends CollectionItem {
   emit_get_text_error(item, item_text) {
     this.emit_event('notification:error', {
       message: `Context item did not return text: ${item.key}`,
-      ...(item_text && typeof item_text === 'object' ? item_text : {})
+      ...(item_text && typeof item_text === 'object' ? item_text : {}),
     });
   }
+
   /**
    * @private
    */
   emit_get_media_error(item, item_base64) {
     this.emit_event('notification:error', {
       message: `Context item did not return media: ${item.key}`,
-      ...(item_base64 && typeof item_base64 === 'object' ? item_base64 : {})
+      ...(item_base64 && typeof item_base64 === 'object' ? item_base64 : {}),
     });
   }
-
 }
