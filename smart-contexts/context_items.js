@@ -6,16 +6,17 @@ import { SourceContextItemAdapter } from './adapters/context-items/source.js';
 import { ImageContextItemAdapter } from './adapters/context-items/image.js';
 import { PdfContextItemAdapter } from './adapters/context-items/pdf.js';
 
-
 export class ContextItems extends Collection {
   async load() {
     console.log('ContextItems: load called');
     // TODO DECIDED: add default settings from context_item_merge_template action if not already present????
     // ALT: handle in action itself? (easy access to the default settings there)
   }
+
   static version = 1;
+
   get context_item_adapters() {
-    if(!this._context_item_adapters) {
+    if (!this._context_item_adapters) {
       this._context_item_adapters = Object.values(this.opts.context_item_adapters).sort((a, b) => {
         const order_a = a.order || 0;
         const order_b = b.order || 0;
@@ -24,12 +25,15 @@ export class ContextItems extends Collection {
     }
     return this._context_item_adapters;
   }
+
   new_item(data) {
     const item = new this.item_type(this.env, data);
     this.set(item);
     return item;
   }
+
   process_load_queue() { /* skip */ }
+
   get settings_config() {
     return {
       ...(this.env.config.actions.context_item_merge_template?.settings_config || {}),
@@ -41,18 +45,22 @@ export class ContextItems extends Collection {
       template_preset: 'xml_structured',
       template_before: '<item loc="{{KEY}}" at="{{TIME_AGO}}">',
       template_after: '</item>',
-    }
+    };
   }
-  load_from_data(context_items_data) {
+
+  load_from_data(context_items_data, params = {}) {
+    const include_excluded = params.include_excluded === true;
+
     delete this.items; // clear existing items
     this.items = {};
+
     const entries = Object.entries(context_items_data || {});
-    for(let i = 0; i < entries.length; i++) {
+    for (let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
-      if(item_data.exclude) continue; // skip excluded items
+      if (item_data.exclude && !include_excluded) continue;
       this.new_item({
         key,
-        ...item_data
+        ...item_data,
       });
     }
   }
@@ -68,5 +76,5 @@ export default {
     SourceContextItemAdapter,
     ImageContextItemAdapter,
     PdfContextItemAdapter,
-  }
+  },
 };
