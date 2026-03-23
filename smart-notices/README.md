@@ -1,3 +1,5 @@
+> DEPRECATED 2026-03-23
+
 # Smart Notices
 
 ## Overview
