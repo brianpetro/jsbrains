@@ -10,17 +10,27 @@ import { CollectionItem } from 'smart-collections';
 /**
  * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are
  * derived from folders or named contexts.
+ *
+ * Once a derived item is already excluded, a second remove should delete the exclusion marker so the
+ * builder can expose a reversible "remove exclusion" action.
+ *
  * @param {Record<string, object>} context_items
  * @param {string} key
  * @returns {boolean}
  */
 const remove_context_item_data = (context_items, key) => {
   if (!key || !context_items?.[key]) return false;
-  if (context_items[key].folder || context_items[key].from_named_context) {
-    if (context_items[key].exclude) return false;
-    context_items[key].exclude = true;
+
+  const item_data = context_items[key];
+  if (item_data.folder || item_data.from_named_context) {
+    if (item_data.exclude) {
+      delete context_items[key];
+      return true;
+    }
+    item_data.exclude = true;
     return true;
   }
+
   delete context_items[key];
   return true;
 };
@@ -215,12 +225,27 @@ export class SmartContext extends CollectionItem {
     return out;
   }
 
-  get context_items() {
+  /**
+   * Build a ContextItems collection on demand.
+   *
+   * The builder sometimes needs excluded entries in addition to active items,
+   * so this helper accepts the same params consumed by
+   * ContextItems.load_from_data(...).
+   *
+   * @param {object} [params={}]
+   * @param {boolean} [params.include_excluded=false]
+   * @returns {import('smart-contexts/context_items.js').ContextItems}
+   */
+  get_context_items(params = {}) {
     const config = this.env.config.collections.context_items;
     const Class = config.class;
-    this._context_items = new Class(this.env, { ...config, class: null });
-    this._context_items.load_from_data(this.data.context_items || {});
-    return this._context_items;
+    const context_items = new Class(this.env, { ...config, class: null });
+    context_items.load_from_data(this.data.context_items || {}, params);
+    return context_items;
+  }
+
+  get context_items() {
+    return this.get_context_items();
   }
 
   /**
