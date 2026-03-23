@@ -88,7 +88,6 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
 
     // Show notice if available
     this.collection.emit_event('collection:load_started');
-    this.collection.notices?.show('loading_collection', { collection_key: this.collection.collection_key });
 
 
     // Load each item individually
@@ -103,7 +102,6 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
     }
 
     this.collection.loaded = load_queue.length;
-    this.collection.notices?.remove('loading_collection');
     this.collection.emit_event('collection:load_completed');
 
   }
@@ -119,7 +117,6 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
 
     // Show notice if available
     this.collection.emit_event('collection:save_started');
-    this.collection.notices?.show('saving_collection', { collection_key: this.collection.collection_key });
 
 
     for (const item of save_queue) {
@@ -132,7 +129,6 @@ export class LocalStorageCollectionDataAdapter extends CollectionDataAdapter {
       }
     }
 
-    this.collection.notices?.remove('saving_collection');
     this.collection.emit_event('collection:save_completed');
   }
 }

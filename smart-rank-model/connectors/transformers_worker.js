@@ -98,7 +98,6 @@ var SmartModel = class {
           await this.load();
           this.set_state("loaded");
           this.env?.events?.emit("model:loaded", { model_key: this.model_key });
-          this.notices?.show("Loaded model: " + this.model_key);
         }, 6e4);
       }
       throw new Error(`Failed to load model: ${err.message}`);
