@@ -144,6 +144,13 @@ export class SmartContext extends CollectionItem {
     ;
   }
 
+  get excluded_context_item_keys() {
+    return Object.entries(this.data?.context_items || {})
+      .filter(([, item_data]) => item_data?.exclude)
+      .map(([key]) => key)
+    ;
+  }
+
   get key() {
     if (!this.data.key) {
       this.data.key = Date.now().toString();
@@ -152,7 +159,15 @@ export class SmartContext extends CollectionItem {
   }
 
   get has_context_items() {
-    return Object.keys(this.data.context_items || {}).length > 0;
+    return this.item_count > 0;
+  }
+
+  get has_excluded_context_items() {
+    return this.excluded_item_count > 0;
+  }
+
+  get excluded_item_count() {
+    return this.excluded_context_item_keys.length;
   }
 
   get name() {
