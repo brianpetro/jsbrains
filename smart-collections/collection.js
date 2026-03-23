@@ -450,32 +450,6 @@ export class Collection {
   }
 
   /**
-   * Displays a process notice if the operation exceeds one second.
-   * @param {string} process - Identifier for the ongoing process.
-   * @param {Object} [opts={}] - Additional options passed to the notice.
-   */
-  show_process_notice(process, opts = {}) {
-    if(!this.debounce_process_notice) this.debounce_process_notice = {};
-    this.debounce_process_notice[process] = setTimeout(() => {
-      this.debounce_process_notice[process] = null;
-      this.env.notices?.show(process, { collection_key: this.collection_key, ...opts });
-    }, 1000);
-  }
-
-  /**
-   * Clears any pending process notice timers and removes active notices.
-   * @param {string} process - Identifier for the process notice to clear.
-   */
-  clear_process_notice(process) {
-    if (this.debounce_process_notice?.[process]) {
-      clearTimeout(this.debounce_process_notice[process]);
-      this.debounce_process_notice[process] = null;
-    } else {
-      this.env.notices?.remove(process);
-    }
-  }
-
-  /**
    * Emits an event with collection metadata.
    *
    * @param {string} event_key

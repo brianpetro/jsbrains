@@ -66,8 +66,6 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    */
   async process_load_queue() {
     this.collection.emit_event('collection:load_started');
-    this.collection.show_process_notice('loading_collection');
-
 
     // check if directory exists
     if(!(await this.fs.exists(this.collection.data_dir))){
@@ -76,30 +74,27 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
     }
   
     const load_queue = Object.values(this.collection.items).filter(item => item._queue_load);
-    if (!load_queue.length) {
-      this.collection.clear_process_notice('loading_collection');
-      return;
+    const load_queue_length = load_queue.length;
+    if (load_queue_length) {
+      const now = Date.now();
+      console.log(`Loading ${this.collection.collection_key}: ${load_queue_length} items from disk`);
+      const batch_size = 100; // could be configurable
+    
+      for (let i = 0; i < load_queue.length; i += batch_size) {
+        const batch = load_queue.slice(i, i + batch_size);
+        await Promise.all(batch.map(item => {
+          const adapter = this.create_item_adapter(item);
+          return adapter.load().catch(err => {
+            console.warn(`Error loading item ${item.key}`, err);
+            item.queue_load(); // re-queue or handle differently
+          });
+        }));
+      }
+      console.log(`Loaded ${this.collection.collection_key} from disk in ${Date.now() - now}ms`);
     }
   
-    const now = Date.now();
-    console.log(`Loading ${this.collection.collection_key}: ${load_queue.length} items from disk`);
-    const batch_size = 100; // could be configurable
-  
-    for (let i = 0; i < load_queue.length; i += batch_size) {
-      const batch = load_queue.slice(i, i + batch_size);
-      await Promise.all(batch.map(item => {
-        const adapter = this.create_item_adapter(item);
-        return adapter.load().catch(err => {
-          console.warn(`Error loading item ${item.key}`, err);
-          item.queue_load(); // re-queue or handle differently
-        });
-      }));
-    }
-    console.log(`Loaded ${this.collection.collection_key} from disk in ${Date.now() - now}ms`);
-  
-    this.collection.loaded = load_queue.length;
-    this.collection.clear_process_notice('loading_collection');
-    this.collection.emit_event('collection:load_completed');
+    this.collection.loaded = load_queue_length;
+    this.collection.emit_event('collection:load_completed', { loaded: load_queue_length });
   }
   
   /**
@@ -109,11 +104,10 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
    */
   async process_save_queue() {
     this.collection.emit_event('collection:save_started');
-    this.collection.show_process_notice('saving_collection');
-  
 
     const save_queue = Object.values(this.collection.items).filter(item => item._queue_save);
-    console.log(`Saving ${this.collection.collection_key}: ${save_queue.length} items`);
+    const save_queue_length = save_queue.length;
+    console.log(`Saving ${this.collection.collection_key}: ${save_queue_length} items`);
     const time_start = Date.now();
     const batch_size = 50; // configurable
   
@@ -135,8 +129,7 @@ export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapt
     }
   
     console.log(`Saved ${this.collection.collection_key} in ${Date.now() - time_start}ms`);
-    this.collection.clear_process_notice('saving_collection');
-    this.collection.emit_event('collection:save_completed');
+    this.collection.emit_event('collection:save_completed', { saved: save_queue_length });
 
   }
 
