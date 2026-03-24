@@ -49,20 +49,32 @@ export class ContextItems extends Collection {
   }
 
   load_from_data(context_items_data, params = {}) {
-    const include_excluded = params.include_excluded === true;
-
-    delete this.items; // clear existing items
-    this.items = {};
-
+    // delete this.items; // clear existing items (REMOVED TO ALLOW RECURSION FOR NAMED CONTEXTS)
+    if(!this.items) this.items = {};
     const entries = Object.entries(context_items_data || {});
     for (let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
-      if (item_data.exclude && !include_excluded) continue;
-      this.new_item({
-        key,
-        ...item_data,
-      });
+      this.load_item_from_data(key, item_data);
     }
+  }
+
+  load_item_from_data(key, item_data) {
+    if (item_data.named_context) {
+      const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === key)[0];
+      if (named_context) {
+        this.load_from_data(named_context.data.context_items || {});
+      } else {
+        console.warn(`ContextItems.load_from_data: named context "${item_data.named_context}" not found for item with key "${key}"`);
+        this.emit_error_event('context_items:load_from_data', {
+          message: 'Named context not found',
+          named_context: item_data.named_context,
+        });
+      }
+    }
+    this.new_item({
+      key,
+      ...item_data,
+    });
   }
 }
 
