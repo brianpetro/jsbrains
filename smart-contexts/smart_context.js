@@ -227,19 +227,6 @@ export class SmartContext extends CollectionItem {
     }
     return context_items_text;
   }
-
-  async get_media(params = {}) {
-    const context_items = this.context_items.filter(params.filter);
-    const out = [];
-    for (const item of context_items) {
-      if (!item.is_media) continue;
-      const item_base64 = await item.get_base64();
-      if (item_base64.error) this.emit_get_media_error(item, item_base64);
-      else out.push(item_base64);
-    }
-    return out;
-  }
-
   /**
    * Build a ContextItems collection on demand.
    *
@@ -273,6 +260,21 @@ export class SmartContext extends CollectionItem {
     });
   }
 
+
+  /**
+   * Move below to pro subclass
+   */
+  async get_media(params = {}) {
+    const context_items = this.context_items.filter(params.filter);
+    const out = [];
+    for (const item of context_items) {
+      if (!item.is_media) continue;
+      const item_base64 = await item.get_base64();
+      if (item_base64.error) this.emit_get_media_error(item, item_base64);
+      else out.push(item_base64);
+    }
+    return out;
+  }
   /**
    * @private
    */
