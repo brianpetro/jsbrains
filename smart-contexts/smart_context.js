@@ -235,7 +235,6 @@ export class SmartContext extends CollectionItem {
    * ContextItems.load_from_data(...).
    *
    * @param {object} [params={}]
-   * @param {boolean} [params.include_excluded=false]
    * @returns {import('smart-contexts/context_items.js').ContextItems}
    */
   get_context_items(params = {}) {
