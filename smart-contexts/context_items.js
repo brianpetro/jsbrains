@@ -54,15 +54,22 @@ export class ContextItems extends Collection {
     const entries = Object.entries(context_items_data || {});
     for (let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
-      this.load_item_from_data(key, item_data);
+      this.load_item_from_data(key, item_data, params);
     }
   }
 
-  load_item_from_data(key, item_data) {
+  load_item_from_data(key, item_data, params = {}) {
     if (item_data.named_context) {
       const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === key)[0];
       if (named_context) {
         this.load_from_data(named_context.data.context_items || {});
+        // if params.codeblock_source_key is present
+        if(typeof params.codeblock_source_key === 'undefined') {
+          // add reference to named context use in name change syncing
+          if(!named_context.data.codeblock_inclusions) named_context.data.codeblock_inclusions = {};
+          named_context.data.codeblock_inclusions[params.codeblock_source_key] = true;
+          named_context.queue_save();
+        }
       } else {
         console.warn(`ContextItems.load_from_data: named context "${item_data.named_context}" not found for item with key "${key}"`);
         this.emit_error_event('context_items:load_from_data', {
