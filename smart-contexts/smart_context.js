@@ -180,9 +180,9 @@ export class SmartContext extends CollectionItem {
     const was_nameless = !previous_name || String(previous_name).trim().length === 0;
     this.data.name = name;
     if (was_nameless) {
-      this.emit_event('context:named', { name });
+      this.emit_info_event('context:named', { name });
     } else {
-      this.emit_event('context:renamed', {
+      this.emit_info_event('context:renamed', {
         old_name: previous_name,
         name,
       });
