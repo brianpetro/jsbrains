@@ -16,6 +16,7 @@ import { CollectionItem } from 'smart-collections';
  *
  * @param {Record<string, object>} context_items
  * @param {string} key
+ * @deprecated Is this deprecated???? 2026-03-24 (see remove_by_path for latest handling)
  * @returns {boolean}
  */
 const remove_context_item_data = (context_items, key) => {
