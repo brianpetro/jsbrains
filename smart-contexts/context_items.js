@@ -77,11 +77,13 @@ export class ContextItems extends Collection {
           named_context: item_data.named_context,
         });
       }
+    } else {
+      // DO NOT ADD ITEM FOR GROUP-TYPE CONTEXT ITEMS (those with "folder"/"named_context" property)
+      this.new_item({
+        key,
+        ...item_data,
+      });
     }
-    this.new_item({
-      key,
-      ...item_data,
-    });
   }
 }
 
