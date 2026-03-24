@@ -459,6 +459,12 @@ export class Collection {
   emit_event(event_key, payload = {}) {
     this.env.events?.emit(event_key, { collection_key: this.collection_key, ...payload });
   }
+  emit_info_event(event_key, payload = {}) {
+    this.emit_event(event_key, { level: 'info', ...payload });
+  }
+  emit_error_event(event_key, payload = {}) {
+    this.emit_event(event_key, { level: 'error', ...payload });
+  }
   on_event(event_key, callback) {
     return this.env.events?.on(event_key, (payload) => {
       if (payload?.collection_key && payload.collection_key !== this.collection_key) return;
