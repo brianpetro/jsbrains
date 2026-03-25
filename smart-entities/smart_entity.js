@@ -55,8 +55,8 @@ export class SmartEntity extends CollectionItem {
    */
   init() {
     super.init();
-    if (!this.vec || !this.vec.length){
-      this.vec = null;
+    if (!this.vec?.length){
+      this.entity_adapter.vec = null;
       this.queue_embed();
     }
     // Only keep active model embeddings
@@ -118,12 +118,12 @@ export class SmartEntity extends CollectionItem {
     if(!this.embedding_data.last_embed){
       this.embedding_data.last_embed = {};
 
-      // temporary for backwards compatibility
-      if(this.data.last_embed){
-        this.embedding_data.last_embed = this.data.last_embed;
-        delete this.data.last_embed;
-        this.queue_save();
-      }
+      // // temporary for backwards compatibility (removed 2026-03-25)
+      // if(this.data.last_embed){
+      //   this.embedding_data.last_embed = this.data.last_embed;
+      //   delete this.data.last_embed;
+      //   this.queue_save();
+      // }
     }
     return this.embedding_data.last_embed;
   }

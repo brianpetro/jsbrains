@@ -117,7 +117,7 @@ function clean_and_update_source_blocks(source, blocks_obj, task_lines=[], tasks
   for(let i = 0; i < blocks.length; i++){
     if(!current_block_keys.has(blocks[i].key)){
       blocks[i].deleted = true;
-      blocks[i].queue_save(); 
+      blocks[i].queue_save();
     }
   }
   // Update source data with new blocks

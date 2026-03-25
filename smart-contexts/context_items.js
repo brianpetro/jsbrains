@@ -93,7 +93,7 @@ export class ContextItems extends Collection {
 }
 
 export default {
-  version: 1,
+  version: ContextItems.version,
   class: ContextItems,
   collection_key: 'context_items',
   item_type: ContextItem,
