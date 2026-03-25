@@ -7,6 +7,10 @@ import { ImageContextItemAdapter } from './adapters/context-items/image.js';
 import { PdfContextItemAdapter } from './adapters/context-items/pdf.js';
 
 export class ContextItems extends Collection {
+  constructor(smart_context, opts = {}) {
+    super(smart_context.env || smart_context, opts); // OR pass directly for env loading (temp patch, should now be loaded by env)
+    this.smart_context = smart_context;
+  }
   async load() {
     console.log('ContextItems: load called');
     // TODO DECIDED: add default settings from context_item_merge_template action if not already present????
@@ -51,26 +55,11 @@ export class ContextItems extends Collection {
   load_from_data(context_items_data, params = {}) {
     // delete this.items; // clear existing items (REMOVED TO ALLOW RECURSION FOR NAMED CONTEXTS)
     if(!this.items) this.items = {};
-    const entries = Object.entries(context_items_data || {})
-      // sort by exclude first (exclude === true)
-      .sort(([, a_data], [, b_data]) => {
-        const a_exclude = a_data.exclude === true ? 1 : 0;
-        const b_exclude = b_data.exclude === true ? 1 : 0;
-        return a_exclude - b_exclude; // ascending: non-exclude (0) before exclude (1)
-      })
-    ;
+    const entries = Object.entries(context_items_data || {});
     for (let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
-      if(item_data.exclude) {
-        this.load_exclusion_from_data(key, item_data, params);
-      }
       this.load_item_from_data(key, item_data, params);
     }
-  }
-
-  load_exclusion_from_data(key, item_data, params = {}) {
-    if(!this._exclude_patterns) this._exclude_patterns = [];
-    this._exclude_patterns.push(key);
   }
 
   load_item_from_data(key, item_data, params = {}) {
@@ -100,6 +89,7 @@ export class ContextItems extends Collection {
       });
     }
   }
+
 }
 
 export default {

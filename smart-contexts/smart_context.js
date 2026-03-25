@@ -44,7 +44,7 @@ export class SmartContext extends CollectionItem {
       data: {
         key: '',
         context_items: {},
-        context_opts: {},
+        context_opts: {}, // REMOVE?
       },
     };
   }
@@ -241,7 +241,7 @@ export class SmartContext extends CollectionItem {
   get_context_items(params = {}) {
     const config = this.env.config.collections.context_items;
     const Class = config.class;
-    const context_items = new Class(this.env, { ...config, class: null });
+    const context_items = new Class(this, { ...config, class: null });
     context_items.load_from_data(this.data.context_items || {}, params);
     return context_items;
   }
