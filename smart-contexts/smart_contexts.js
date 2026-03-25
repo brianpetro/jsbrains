@@ -26,6 +26,9 @@ export class SmartContexts extends Collection {
     item.emit_event('context:created');
     return item;
   }
+  get_named_context(name) {
+    return this.filter((ctx) => ctx.data?.name === name)[0];
+  }
   /**
    * Default settings for all SmartContext items in this collection.
    * @readonly
