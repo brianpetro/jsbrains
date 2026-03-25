@@ -223,11 +223,7 @@ export function should_ignore(relative_path, patterns, aggregator=[]) {
   patterns = [...new Set([
     ...patterns,
     // Default patterns to ignore common folders and files
-    '**/.git/**',
-    '.git/**',
-    '**/node_modules/**',
-    'node_modules/**',
-    'package-lock.json',
+    ...DEFAULT_IGNORE_PATTERNS,
   ])]; // deduplicated patterns
   for (const raw_pattern of patterns) {
     // Expand each pattern again here, so that
@@ -243,3 +239,12 @@ export function should_ignore(relative_path, patterns, aggregator=[]) {
   }
   return false;
 }
+
+export const DEFAULT_IGNORE_PATTERNS = [
+  '**/.git/**',
+  '.git/**',
+  '**/node_modules/**',
+  'node_modules/**',
+  'package-lock.json',
+  '.env',
+];
