@@ -67,10 +67,10 @@ export class ContextItems extends Collection {
       if (named_context) {
         this.load_from_data(named_context.data.context_items || {});
         // if params.codeblock_source_key is present
-        if(typeof params.codeblock_source_key === 'undefined') {
+        if(typeof params.codeblock_source_key !== 'undefined') {
           // add reference to named context use in name change syncing
           if(!named_context.data.codeblock_inclusions) named_context.data.codeblock_inclusions = {};
-          named_context.data.codeblock_inclusions[params.codeblock_source_key] = true;
+          named_context.data.codeblock_inclusions[params.codeblock_source_key] = Date.now();
           named_context.queue_save();
         }
       } else {
