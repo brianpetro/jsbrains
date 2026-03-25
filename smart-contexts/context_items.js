@@ -74,7 +74,7 @@ export class ContextItems extends Collection {
           named_context.queue_save();
         }
       } else {
-        console.warn(`ContextItems.load_from_data: named context "${item_data.named_context}" not found for item with key "${key}"`);
+        console.warn(`ContextItems.load_from_data: named context "${item_data.key}" not found`);
         this.emit_error_event('context_items:load_from_data', {
           message: 'Named context not found',
           named_context: item_data.named_context,
