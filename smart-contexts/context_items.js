@@ -53,7 +53,6 @@ export class ContextItems extends Collection {
   }
 
   load_from_data(context_items_data, params = {}) {
-    // delete this.items; // clear existing items (REMOVED TO ALLOW RECURSION FOR NAMED CONTEXTS)
     if(!this.items) this.items = {};
     const entries = Object.entries(context_items_data || {});
     for (let i = 0; i < entries.length; i++) {
