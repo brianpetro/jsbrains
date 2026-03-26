@@ -52,20 +52,49 @@ export class ContextItems extends Collection {
     };
   }
 
+  /**
+   * @param {object} context_items_data - data.context_items{}
+   * @param {object} params
+   * @param {string} [params.codeblock_source_key] - Optional key of the current source for codeblock context (glues name change sync)
+   * @returns {ContextItem[]}
+   */
   load_from_data(context_items_data, params = {}) {
+    const loaded_items = [];
     if(!this.items) this.items = {};
     const entries = Object.entries(context_items_data || {});
     for (let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
-      this.load_item_from_data(key, item_data, params);
+      const loaded = this.load_item_from_data(key, item_data, params);
+      if (loaded) {
+        if (Array.isArray(loaded)) {
+          const total_size = loaded.reduce((sum, item) => sum + (item.size || 0), 0);
+          const latest_mtime = Math.max(...loaded.map((item) => item.mtime));
+          item_data.size = total_size;
+          item_data.mtime = latest_mtime;
+          item_data.group_items_ct = loaded.length;
+          loaded_items.push(...loaded);
+        } else {
+          item_data.size = loaded.size;
+          item_data.mtime = loaded.mtime;
+          loaded_items.push(loaded);
+        }
+      }
     }
+    return loaded_items;
   }
 
+  /**
+   * @param {string} key
+   * @param {object} item_data
+   * @param {object} params
+   * @param {string} [params.codeblock_source_key] - Optional key of the current source for codeblock context (glues name change sync)
+   * @return {ContextItem|ContextItem[]|null}
+   */
   load_item_from_data(key, item_data, params = {}) {
     if (item_data.named_context) {
       const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === key)[0];
       if (named_context) {
-        this.load_from_data(named_context.data.context_items || {});
+        const loaded_items = this.load_from_data(named_context.data.context_items || {});
         // if params.codeblock_source_key is present
         if(typeof params.codeblock_source_key !== 'undefined') {
           // add reference to named context use in name change syncing
@@ -73,16 +102,18 @@ export class ContextItems extends Collection {
           named_context.data.codeblock_inclusions[params.codeblock_source_key] = Date.now();
           named_context.queue_save();
         }
+        return loaded_items;
       } else {
         console.warn(`ContextItems.load_from_data: named context "${item_data.key}" not found`);
         this.emit_error_event('context_items:load_from_data', {
           message: 'Named context not found',
           named_context: item_data.named_context,
         });
+        return null;
       }
     } else {
       // DO NOT ADD ITEM FOR GROUP-TYPE CONTEXT ITEMS (those with "folder"/"named_context" property)
-      this.new_item({
+      return this.new_item({
         key,
         ...item_data,
       });
