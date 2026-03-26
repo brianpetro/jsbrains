@@ -92,25 +92,7 @@ export class ContextItems extends Collection {
    */
   load_item_from_data(key, item_data, params = {}) {
     if (item_data.named_context) {
-      const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === key)[0];
-      if (named_context) {
-        const loaded_items = this.load_from_data(named_context.data.context_items || {});
-        // if params.codeblock_source_key is present
-        if(typeof params.codeblock_source_key !== 'undefined') {
-          // add reference to named context use in name change syncing
-          if(!named_context.data.codeblock_inclusions) named_context.data.codeblock_inclusions = {};
-          named_context.data.codeblock_inclusions[params.codeblock_source_key] = Date.now();
-          named_context.queue_save();
-        }
-        return loaded_items;
-      } else {
-        console.warn(`ContextItems.load_from_data: named context "${item_data.key}" not found`);
-        this.emit_error_event('context_items:load_from_data', {
-          message: 'Named context not found',
-          named_context: item_data.named_context,
-        });
-        return null;
-      }
+      return this.load_named_context_items(key, item_data, params);
     } else {
       // DO NOT ADD ITEM FOR GROUP-TYPE CONTEXT ITEMS (those with "folder"/"named_context" property)
       return this.new_item({
@@ -120,6 +102,30 @@ export class ContextItems extends Collection {
     }
   }
 
+
+  load_named_context_items(key, item_data, params) {
+    let resp = null;
+    const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === key)[0];
+    if (named_context) {
+      const loaded_items = this.load_from_data(named_context.data.context_items || {});
+      // if params.codeblock_source_key is present
+      if (typeof params.codeblock_source_key !== 'undefined') {
+        // add reference to named context use in name change syncing
+        if (!named_context.data.codeblock_inclusions) named_context.data.codeblock_inclusions = {};
+        named_context.data.codeblock_inclusions[params.codeblock_source_key] = Date.now();
+        named_context.queue_save();
+      }
+      resp = loaded_items;
+    } else {
+      console.warn(`ContextItems.load_from_data: named context "${item_data.key}" not found`);
+      this.emit_error_event('context_items:load_from_data', {
+        message: 'Named context not found',
+        named_context: item_data.named_context,
+      });
+      resp = null;
+    }
+    return resp;
+  }
 }
 
 export default {
