@@ -410,12 +410,13 @@ export class SmartBlock extends SmartEntity {
   /**
    * Retrieves the display name of the block.
    * @readonly
+   * @deprecated Use `get_item_display_name()` as platform-specific util. Move to sub-class in obsidian-smart-env to use respective util and settings (2026-03-27).
    * @returns {string} The display name.
    */
   get name() {
     return get_block_display_name(
       this.key,
-      this.env.settings.smart_view_filter?.show_full_path
+      this.env.settings.smart_view_filter?.show_full_path // This probably does nothing (2026-03-27): see updated settings
     );
   }
   /**
