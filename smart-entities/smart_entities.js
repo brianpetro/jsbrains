@@ -144,18 +144,19 @@ export class SmartEntities extends Collection {
   get settings_config() {
     return settings_config;
   }
-  /**
-   * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
-   */
-  async render_settings(container=this.settings_container, opts = {}) {
-    container = await this.render_collection_settings(container, opts);
-    const embed_model_settings_frag = await this.env.render_component('settings', this.embed_model, opts);
-    container.appendChild(embed_model_settings_frag);
-    return container;
-  }
+  // /**
+  //  * @deprecated use env.render_component('collection_settings', this) instead (2025-05-25: decouple UI from collections)
+  //  */
+  // async render_settings(container=this.settings_container, opts = {}) {
+  //   container = await this.render_collection_settings(container, opts);
+  //   const embed_model_settings_frag = await this.env.render_component('settings', this.embed_model, opts);
+  //   container.appendChild(embed_model_settings_frag);
+  //   return container;
+  // }
 
   /**
    * Gets the notices from the environment.
+   * @deprecated use event system with levels instead of notices (2026-03-17)
    * @readonly
    * @returns {Object} The notices object.
    */
@@ -185,17 +186,18 @@ export class SmartEntities extends Collection {
   }
 
 
-  /**
-   * Handles changes to the embedding model by reinitializing and processing the load queue.
-   * @async
-   * @returns {Promise<void>}
-   */
-  async embed_model_changed() {
-    await this.unload();
-    await this.init();
-    this.render_settings();
-    await this.process_load_queue();
-  }
+  // /**
+  //  * Handles changes to the embedding model by reinitializing and processing the load queue.
+  //  * @async
+  //  * @deprecated unused since adding SmartModels collection
+  //  * @returns {Promise<void>}
+  //  */
+  // async embed_model_changed() {
+  //   await this.unload();
+  //   await this.init();
+  //   this.render_settings();
+  //   await this.process_load_queue();
+  // }
 
   /**
    * @deprecated since v4 2025-11-28

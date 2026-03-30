@@ -61,9 +61,10 @@ export class SmartBlocks extends SmartEntities {
       ...super.settings_config,
     });
   }
-  render_settings(container, opts = {}) {
-    return this.render_collection_settings(container, opts);
-  }
+  // should remove (2026-03-30)
+  // render_settings(container, opts = {}) {
+  //   return this.render_collection_settings(container, opts);
+  // }
   get data_dir() { return 'multi'; }
 
   /**
