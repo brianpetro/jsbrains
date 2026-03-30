@@ -10,6 +10,7 @@
 
 /**
  * Provides a dictionary of notices keyed by their exact notice ID.
+ * @deprecated use event system with levels
  * @type {Record<string, NoticeEntry>}
  */
 export const NOTICES = {

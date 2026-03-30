@@ -105,6 +105,7 @@ export class SmartNotices {
    *
    * @param {string} id - The notice key or custom ID
    * @param {object} opts - Additional user opts
+   * @deprecated in favor of event system with levels
    */
   show(id, opts = {}) {
     let message = null;
