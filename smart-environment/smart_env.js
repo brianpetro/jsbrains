@@ -424,6 +424,7 @@ export class SmartEnv {
 
   /**
    * Renders settings UI into a container, using the environment's `settings_template`.
+   * @deprecated use render_settings_config helper (2026-03-30)
    * @param {HTMLElement} [container=this.settings_container]
    */
   async render_settings(container = this.settings_container) {
