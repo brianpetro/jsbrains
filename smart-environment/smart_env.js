@@ -40,7 +40,7 @@ const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('re
  * of the environment is created and acts as a central coordination point.
  */
 export class SmartEnv {
-  static version = '2.2.13';
+  static version = '2.4.0';
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -268,18 +268,25 @@ export class SmartEnv {
     this.constructor.create_env_getter(instance_to_receive_getter);
   }
   async load() {
+    this.state = 'loading';
     if (this._load_promise) return this._load_promise;
-
+    if (this.state === 'superceded') {
+      throw new Error('This environment instance has been superceded by a newer version and cannot be loaded.');
+    }
     this._load_promise = this.run_load();
     try {
       await this._load_promise;
+      await this.after_load();
+      this.state = 'loaded';
       return this;
+    } catch (e) {
+      console.error('Error loading SmartEnv:', e);
+      this.state = 'load_error';
     } finally {
       this._load_promise = null;
     }
   }
   async run_load() {
-    this.state = 'loading';
     await this.fs.load_files(); // skip exclusions; detect env_data_dir
     if (!this.settings) await SmartSettings.create(this);
     if (this.config.default_settings) {
@@ -293,9 +300,23 @@ export class SmartEnv {
     }
     await this.ready_to_load_collections();
     await this.load_collections();
-    this.state = 'loaded';
     return this;
   }
+  /**
+   * Must call before calling `load()`. If it returns false, the load process is aborted.
+   * @returns {Promise<void>}
+   */
+  async before_load() {
+    return true;
+  }
+
+  /**
+   * Called automatically after `load()` completes. Override to perform any actions that require a fully loaded environment (e.g. registering source watchers, workspace events, etc).
+   * Completes before state is set to 'loaded', so any async operations here will delay the environment becoming available.
+   *
+   * @returns {Promise<void>}
+   */
+  async after_load() {}
   /**
    * Initializes collection classes if they have an 'init' function.
    * @param {Object} [config=this.config]
@@ -404,6 +425,9 @@ export class SmartEnv {
     };
     return new module_config.class(opts);
   }
+  /**
+   * @deprecated 2026-03-31
+   */
   get notices() {
     if (!this._notices) {
       const SmartNoticesClass = this.config.modules.smart_notices.class;
