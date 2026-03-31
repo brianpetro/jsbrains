@@ -278,13 +278,32 @@ export class SmartEnv {
       await this._load_promise;
       await this.after_load();
       this.state = 'loaded';
+      // prevent any future reloads by locking the global reference
+      const _instance = this;
+      Object.defineProperty(this.global_ref, 'smart_env', {
+        get() {
+          return _instance;
+        },
+        set(incoming_env) {
+          _instance.handle_env_load_attempt_after_loaded(incoming_env);
+        },
+        configurable: false,
+      });
       return this;
     } catch (e) {
       console.error('Error loading SmartEnv:', e);
       this.state = 'load_error';
     } finally {
-      this._load_promise = null;
+      // this._load_promise = null;
     }
+  }
+  /**
+   * Handle load attempts after load
+   */
+  handle_env_load_attempt_after_loaded(incoming_env) {
+    console.warn('Received attempt to load another SmartEnv after one has already loaded', incoming_env);
+    // stacktrace to help identify source of load attempt:
+    console.warn(new Error('Stacktrace of SmartEnv load attempt after environment is already loaded'));
   }
   async run_load() {
     await this.fs.load_files(); // skip exclusions; detect env_data_dir
