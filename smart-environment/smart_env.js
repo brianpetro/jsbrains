@@ -144,7 +144,7 @@ export class SmartEnv {
   }
   static get should_reload() {
     if (!this.global_env) return true;
-    if (this.global_env.state === 'loaded') return true;
+    // if (this.global_env.state === 'loaded') return true; // no more reloads after initial load, even if new mains are added
     if (typeof this.global_env?.constructor?.version === 'undefined') return true;
     // If our new code is a higher version, reload:
     if (compare_versions(this.version, this.global_env.constructor?.version) > 0) {
