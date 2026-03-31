@@ -1,3 +1,4 @@
+// Removed 2026-03-31
 /**
  * Moves deprecated exclusion settings at the root of the environment settings
  * into their module-specific locations.

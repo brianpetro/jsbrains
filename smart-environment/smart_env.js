@@ -28,7 +28,6 @@ import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
 import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
-import { migrate_exclusion_settings_2025_08_22 } from './migrations/exclusion_settings.js';
 import { compare_versions } from './utils/compare_versions.js';
 
 const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
@@ -223,6 +222,8 @@ export class SmartEnv {
     if (this.should_reload) {
       const opts = {};
       if (this.global_env && compare_versions(this.version, this.global_env.constructor?.version || 0) > 0) {
+        // this instance of SmartEnv is newer than the existing global_env -> supercede the old one with the new one
+        this.global_env.state = 'superceded';
         opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
       }
       if (this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
@@ -285,7 +286,6 @@ export class SmartEnv {
       // takes precedence over default_settings in collection classes (merged by subsequent init_collections)
       deep_merge_no_overwrite(this.settings, this.config.default_settings);
     }
-    migrate_exclusion_settings_2025_08_22(this.settings);
     this.smart_settings.save();
     await this.init_collections();
     for (const [main_key, { main }] of Object.entries(this.smart_env_configs)) {
