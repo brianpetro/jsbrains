@@ -27,7 +27,7 @@
   "dependencies": {
     "smart-http-request": "*",
     "smart-model": "*",
-    "smart-models": "*"
+    "smart-models": "file:../smart-models"
   },
   "devDependencies": {
     "ava": "^6.1.2",
