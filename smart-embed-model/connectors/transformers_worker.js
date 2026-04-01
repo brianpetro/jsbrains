@@ -746,7 +746,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
    * @returns {Promise<void>}
    */
   async load_transformers_with_fallback() {
-    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0");
+    const { pipeline, env, AutoTokenizer } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.0");
     env.allowLocalModels = false;
     if (typeof env.useBrowserCache !== "undefined") {
       env.useBrowserCache = true;
