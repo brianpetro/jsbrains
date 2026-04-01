@@ -8,6 +8,7 @@ import {
   get_next_notification_status,
 } from './event_level_utils.js';
 
+// TODO: clarified more amenable handling (should be able to register excluded downstream)
 const EXCLUDED_EVENT_KEYS = {
   'collection:save_started': true,
   'collection:save_completed': true,
@@ -15,6 +16,7 @@ const EXCLUDED_EVENT_KEYS = {
   'notifications:seen_all': true,
   'event_logs:mute_changed': true,
   'event_log:first': true,
+  'connect_pro:ping': true,
 };
 
 /**
