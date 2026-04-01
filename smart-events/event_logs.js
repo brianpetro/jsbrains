@@ -16,7 +16,6 @@ const EXCLUDED_EVENT_KEYS = {
   'notifications:seen_all': true,
   'event_logs:mute_changed': true,
   'event_log:first': true,
-  'connect_pro:ping': true,
 };
 
 /**
@@ -73,6 +72,7 @@ export class EventLogs extends Collection {
    *
    * @param {string} event_key
    * @param {Record<string, unknown>} event
+   * @param {boolean} [event.skip_save_log_collection=false] - avoid unnecessary saves for high-frequency events
    * @returns {{event_key: string, event: Record<string, unknown>, at: number, level: string | null, unseen: boolean, native_notice_shown: boolean} | null}
    */
   on_any_event(event_key, event) {
@@ -120,7 +120,7 @@ export class EventLogs extends Collection {
         event_log.data.event_sources[event.event_source] += 1;
       }
       event_log.queue_save();
-      this.queue_save();
+      if(!event.skip_save_log_collection) this.queue_save();
     } catch (err) {
       console.error('[EventLogs] record failure', event_key, err);
     }
