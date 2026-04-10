@@ -165,7 +165,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
     }
 
     // If not in code block, check for headings (lines starting with one or more "#" followed by space).
-    const heading_match = trimmed_line.match(/^(#{1,6})\s*(.+)$/);
+    const heading_match = trimmed_line.match(/^(#{1,6})\s+(.+)$/);
     if (heading_match && !in_code_block) {
       const level = heading_match[1].length; // Number of "#" is the heading level
       let title = heading_match[2].trim();
