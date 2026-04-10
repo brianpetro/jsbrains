@@ -462,6 +462,9 @@ export class Collection {
   emit_info_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'info', ...payload });
   }
+  emit_warning_event(event_key, payload = {}) {
+    this.emit_event(event_key, { level: 'warning', ...payload });
+  }
   emit_error_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'error', ...payload });
   }
