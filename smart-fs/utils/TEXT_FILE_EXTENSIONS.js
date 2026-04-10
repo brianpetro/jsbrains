@@ -26,6 +26,7 @@ export const TEXT_FILE_EXTENSIONS = [
   '.bash_profile',
   '.bashrc',
   '.bas',
+  '.base',
   '.bat',
   '.bats',
   '.bib',
