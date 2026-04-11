@@ -82,7 +82,7 @@ export function merge_env_config (target, incoming) {
 
         const target_comp = target[key][comp_key];
         const incoming_ver = (comp_def && (comp_def.version || comp_def?.class?.version)) ? (comp_def.version || comp_def?.class?.version) : NEW_VER;
-        const target_ver = (target_comp && (target_comp.version || target_comp?.class?.version)) ? (target_comp.version || target_comp?.class?.version) : CUR_VER;
+        const target_ver = (target_comp && (target_comp.version || target_comp?.class?.version)) ? (target_comp.version || target_comp?.class?.version) : 0;
         const cmp = compare_versions(incoming_ver, target_ver);
         // console.log(`Merging ${key} "${comp_key}": target version "${target_ver}" vs incoming "${incoming_ver}" → cmp=${cmp}`);
 
