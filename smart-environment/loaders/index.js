@@ -1,4 +1,4 @@
-export { COMPONENT_EXPORT_PROPS, ACTION_EXPORT_PROPS } from './constants.js';
+export { ITEM_EXPORT_PROPS, COMPONENT_EXPORT_PROPS, ACTION_EXPORT_PROPS } from './constants.js';
 export { BaseLoader } from './base.js';
 export { CollectionsLoader } from './collections_loader.js';
 export { ItemsLoader } from './items_loader.js';

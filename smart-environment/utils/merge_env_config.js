@@ -71,7 +71,7 @@ export function merge_env_config (target, incoming) {
     }
 
     // THIS LOGIC IS LIKELY CANONICAL
-    if (['actions', 'collections', 'components', 'item_types', 'modules'].includes(key) && value && typeof value === 'object') {
+    if (['actions', 'collections', 'components', 'item_types', 'modules', 'items'].includes(key) && value && typeof value === 'object') {
       if (!target[key]) target[key] = {};
 
       for (const [comp_key, comp_def] of Object.entries(value)) {
@@ -81,8 +81,8 @@ export function merge_env_config (target, incoming) {
         }
 
         const target_comp = target[key][comp_key];
-        const incoming_ver = comp_def && comp_def.version;
-        const target_ver = target_comp && target_comp.version;
+        const incoming_ver = (comp_def && (comp_def.version || comp_def?.class?.version)) ? (comp_def.version || comp_def?.class?.version) : NEW_VER;
+        const target_ver = (target_comp && (target_comp.version || target_comp?.class?.version)) ? (target_comp.version || target_comp?.class?.version) : CUR_VER;
         const cmp = compare_versions(incoming_ver, target_ver);
         // console.log(`Merging ${key} "${comp_key}": target version "${target_ver}" vs incoming "${incoming_ver}" → cmp=${cmp}`);
 

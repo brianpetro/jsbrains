@@ -1,3 +1,7 @@
+export const ITEM_EXPORT_PROPS = [
+  'version'
+];
+
 export const COMPONENT_EXPORT_PROPS = [
   'settings_config',
   'version',
