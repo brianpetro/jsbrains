@@ -468,24 +468,6 @@ export class SmartEnv {
   }
 
   /**
-   * Renders settings UI into a container, using the environment's `settings_template`.
-   * @deprecated use render_settings_config helper (2026-03-30)
-   * @param {HTMLElement} [container=this.settings_container]
-   */
-  async render_settings(container = this.settings_container) {
-    if (!this.settings_container || container !== this.settings_container) {
-      this.settings_container = container;
-    }
-    if (!container) {
-      throw new Error('Container is required');
-    }
-    const frag = await this.render_component('settings', this, {});
-    this.smart_view.empty(container);
-    container.appendChild(frag);
-    return frag;
-  }
-
-  /**
    * Renders a named component using an optional scope and options.
    * @deprecated use env.smart_components.render instead (2025-10-11)
    * @param {string} component_key
@@ -494,59 +476,7 @@ export class SmartEnv {
    * @returns {Promise<HTMLElement>}
    */
   async render_component(component_key, scope, opts = {}) {
-    const component_renderer = this.get_component(component_key, scope);
-    if (!component_renderer) {
-      console.warn(`SmartEnv: component ${component_key} not found for scope ${scope.constructor.name}`);
-      return this.smart_view.create_doc_fragment(`<div class="smart-env-component-not-found">
-        <h1>Component Not Found</h1>
-        <p>The component ${component_key} was not found for scope ${scope.constructor.name}.</p>
-      </div>`);
-    }
-    const frag = await component_renderer(scope, opts);
-    return frag;
-  }
-
-  /**
-   * Retrieves or creates a memoized component renderer function.
-   * @deprecated use env.smart_components instead (2025-10-11)
-   * @param {string} component_key
-   * @param {Object} scope
-   * @returns {Function|undefined}
-   */
-  get_component(component_key, scope) {
-    const scope_name = scope.collection_key ?? scope.scope_name;
-    const _cache_key = scope_name ? `${scope_name}-${component_key}` : component_key;
-    if (!this._components[_cache_key]) {
-      try {
-        if (this.opts.components[scope_name]?.[component_key]) {
-          const component_config = this.opts.components[scope_name][component_key];
-          const component = component_config.render || component_config;
-          this._components[_cache_key] = component.bind(
-            this.init_module('smart_view'),
-          );
-        } else if (this.opts.components[component_key]) {
-          const component_config = this.opts.components[component_key];
-          const component = component_config.render || component_config;
-          this._components[_cache_key] = component.bind(
-            this.init_module('smart_view'),
-          );
-        } else {
-          console.warn(
-            `SmartEnv: component ${component_key} not found for scope ${scope_name}`,
-          );
-        }
-      } catch (e) {
-        console.error('Error getting component', e);
-        console.log(
-          `scope_name: ${scope_name}; component_key: ${component_key}; this.opts.components: ${Object.keys(
-            this.opts.components || {},
-          ).join(', ')}; this.opts.components[scope_name]: ${Object.keys(
-            this.opts.components[scope_name] || {},
-          ).join(', ')}`,
-        );
-      }
-    }
-    return this._components[_cache_key];
+    return this.smart_components.render_component(component_key, scope, opts);
   }
 
   /**
