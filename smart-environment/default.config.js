@@ -17,10 +17,6 @@ export const smart_env_config = {
     },
     smart_blocks: SmartBlocks,
   },
-  item_types: {
-    SmartSource,
-    SmartBlock,
-  },
   modules: {
     smart_embed_model: {
       class: SmartEmbedModel,

@@ -28,13 +28,12 @@ import { Cluster, Clusters } from 'smart-clusters';
 ### 2. Register Item Types in Your Environment
 
 ```js
-env.item_types.Cluster = Cluster;
 env.collections.clusters = new Clusters(env, {
 	collection_key: 'clusters'
 });
 ```
 
-Or if your environment dynamically loads modules, ensure `Cluster` and `Clusters` are registered under the appropriate `env.item_types` and `env.collections` keys.
+Or if your environment dynamically loads modules, ensure `Cluster` and `Clusters` are registered under the appropriate SmartEnvConfig.
 
 ### 3. Creating or Retrieving Clusters
 

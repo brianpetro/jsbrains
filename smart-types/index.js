@@ -186,7 +186,6 @@ export const SmartEnvModalConfig = {};
  * @property {Object.<string, SmartEnvCollectionDefinition>} [collections] - Collection registry.
  * @property {Object.<string, SmartEnvModuleDefinition>} [modules] - Module registry.
  * @property {Object.<string, SmartEnvItemDefinition>} [items] - Canonical item registry.
- * @property {Object.<string, (SmartEnvClass|SmartEnvItemConfig)>} [item_types] - Deprecated compatibility alias for item registration. Prefer `items`.
  * @property {Object.<string, (SmartEnvComponentConfig|SmartEnvComponentMap)>} [components] - Flat component registry or legacy scoped component map.
  * @property {Object.<string, (SmartEnvActionConfig|SmartEnvActionMap)>} [actions] - Flat action registry or legacy scoped action map.
  * @property {Object.<string, SmartEnvModalConfig>} [modals] - Optional modal registry.

@@ -23,8 +23,12 @@ export function normalize_opts(opts) {
     }
     if(!opts.collections[new_key].collection_key) opts.collections[new_key].collection_key = new_key;
     if(val.item_type){
-      opts.items[val.item_type.key || camel_case_to_snake_case(val.item_type.name)] = {
+      const item_config_key = val.item_type.key || camel_case_to_snake_case(val.item_type.name);
+      opts.items[item_config_key] = {
         class: val.item_type,
+        ...(val.item_type.version ? {version: val.item_type.version} : {}), // include version if defined on the class itself
+        // if already exists
+        ...(opts.items[item_config_key] || {}) // preserve existing item config (e.g. actions) if already defined
       };
     }
   });
@@ -38,19 +42,6 @@ export function normalize_opts(opts) {
       delete opts.modules[key];
     }
   });
-  // item_types
-  /** @deprecated use opts.items instead */
-  if (!opts.item_types) opts.item_types = {};
   if (!opts.items) opts.items = {};
-  Object.entries(opts.item_types).forEach(([key, val]) => {
-    if (typeof val === 'function') {
-      const new_key = camel_case_to_snake_case(key);
-      opts.items[new_key] = {
-        class: val,
-        actions: {},
-        ...(opts.items[new_key] || {})
-      };
-    }
-  });
   return opts;
 }

@@ -17,7 +17,6 @@ function create_env() {
     collections: {},
     config: { collections: { test_items: {} } },
     opts: { collections: { test_items: { data_adapter: { collection: MockCollectionDataAdapter } } } },
-    item_types: {},
     data_fs: { async write() {}, async read() { return ''; }, async exists() { return false; }, sep: '/' },
     notices: { show() {}, remove() {} },
     settings: {},
@@ -33,7 +32,6 @@ class TestItems extends Collection {
 }
 
 function create_collection(env) {
-  env.item_types.TestItem = TestItem;
   return new TestItems(env, { collection_key: 'test_items', item_type: TestItem });
 }
 

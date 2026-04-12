@@ -25,12 +25,13 @@ class TestMain {
       collections: {
         clusters: {
           class: Clusters,
+          item_type: Cluster,
           // If you have a custom data adapter, define it here:
           // data_adapter: MyAjsonMultiFileClustersAdapter,
         }
       },
-      item_types: {
-        Cluster
+      items: {
+        cluster: { class: Cluster }
       },
     };
   }

@@ -44,18 +44,11 @@ function create_env_and_collection(itemType = TestItem, collection_opts = {}) {
         }
       }
     },
-    item_types: {
-      TestItem: itemType
-    },
     data_fs: {
       async write() {},
       async read() { return ''; },
       async exists() { return false; },
       sep: '/'
-    },
-    notices: {
-      show() {},
-      remove() {}
     },
     settings: {},
   };

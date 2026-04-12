@@ -38,10 +38,6 @@ class TestMultiFileSourceMain {
           data_adapter: SqliteSourceDataAdapter,
         },
       },
-      item_types: {
-        SmartSource,
-        SmartBlock,
-      },
       default_settings: {
         smart_sources: {
           sqlite_db_path: 'test.sqlite',

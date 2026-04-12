@@ -32,7 +32,8 @@ export class ItemsLoader extends BaseLoader {
         this.items[key] = {
           import_var,
           import_path: this.normalize_relative_path(abs_path),
-          meta
+          meta,
+          version_literal: this.get_symbol_version_literal(content, import_var)
         };
       });
   }
@@ -59,27 +60,33 @@ export class ItemsLoader extends BaseLoader {
       .join('\n');
   }
 
-  build_item_types_config() {
-    const spacer = ' '.repeat(4);
-    return Object.entries(this.items)
-      .sort(([a], [b]) => this.compare_strings(a, b))
-      .map(([, { import_var }]) => `${spacer}${import_var}`)
-      .join(',\n');
-  }
+  // build_item_types_config() {
+  //   const spacer = ' '.repeat(4);
+  //   return Object.entries(this.items)
+  //     .sort(([a], [b]) => this.compare_strings(a, b))
+  //     .map(([, { import_var }]) => `${spacer}${import_var}`)
+  //     .join(',\n');
+  // }
 
-  build_items_config() {
+  build_items_config(params = {}) {
     const spacer = ' '.repeat(4);
     return Object.entries(this.items)
       .sort(([a], [b]) => this.compare_strings(a, b))
-      .map(([key, { import_var, meta }]) => {
+      .map(([key, { import_var, meta, version_literal }]) => {
         const inner = [`class: ${import_var}`];
 
         ITEM_EXPORT_PROPS.forEach(export_name => {
+          if (export_name === 'version') return;
           const import_alias = meta[export_name];
           if (import_alias) {
             inner.push(`${export_name}: ${import_alias}`);
           }
         });
+
+        const version_value = meta.version || version_literal || this.get_default_version_literal(params);
+        if (version_value) {
+          inner.push(`version: ${version_value}`);
+        }
 
         return `${spacer}${key}: { ${inner.join(', ')} }`;
       })

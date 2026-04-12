@@ -53,7 +53,11 @@ export class ComponentsLoader extends BaseLoader {
         import_path
       });
 
-      this.components_config[config_key] = { render_import_var, meta };
+      this.components_config[config_key] = {
+        render_import_var,
+        meta,
+        version_literal: this.get_symbol_version_literal(content, 'render')
+      };
     });
   }
 
@@ -86,7 +90,7 @@ export class ComponentsLoader extends BaseLoader {
       .join('\n');
   }
 
-  build_config() {
+  build_config(params = {}) {
     const spacer = ' '.repeat(4);
     return Object.entries(this.components_config)
       .sort(([a], [b]) => this.compare_strings(a, b))
@@ -95,11 +99,17 @@ export class ComponentsLoader extends BaseLoader {
         const meta = value.meta || {};
 
         COMPONENT_EXPORT_PROPS.forEach(export_name => {
+          if (export_name === 'version') return;
           const import_var = meta[export_name];
           if (import_var) {
             inner.push(`${export_name}: ${import_var}`);
           }
         });
+
+        const version_value = meta.version || value.version_literal || this.get_default_version_literal(params);
+        if (version_value) {
+          inner.push(`version: ${version_value}`);
+        }
 
         return `${spacer}${key}: { ${inner.join(', ')} }`;
       })

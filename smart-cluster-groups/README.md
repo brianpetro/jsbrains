@@ -19,7 +19,6 @@ import { ClusterGroup, ClusterGroups } from 'smart-cluster-groups';
 Similar to other collections:
 
 ```js
-env.item_types.ClusterGroup = ClusterGroup;
 env.collections.cluster_groups = new ClusterGroups(env, {
 	collection_key: 'cluster_groups'
 });

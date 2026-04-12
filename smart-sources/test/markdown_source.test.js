@@ -77,10 +77,6 @@ async function create_test_env() {
         }
       },
     },
-    item_types: {
-      SmartSource,
-      SmartBlock,
-    },
     default_settings: {
       smart_sources: {
         data_dir: 'multi'

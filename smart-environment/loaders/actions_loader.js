@@ -59,7 +59,11 @@ export class ActionsLoader extends BaseLoader {
         meta
       });
 
-      this.actions_config[flattened_key] = { action_import_var, meta };
+      this.actions_config[flattened_key] = {
+        action_import_var,
+        meta,
+        version_literal: this.get_symbol_version_literal(content, action_export_name)
+      };
     });
   }
 
@@ -92,7 +96,7 @@ export class ActionsLoader extends BaseLoader {
       .join('\n');
   }
 
-  build_config() {
+  build_config(params = {}) {
     const spacer = ' '.repeat(4);
     return Object.entries(this.actions_config)
       .sort(([a], [b]) => this.compare_strings(a, b))
@@ -101,11 +105,17 @@ export class ActionsLoader extends BaseLoader {
         const meta = value.meta || {};
 
         ACTION_EXPORT_PROPS.forEach(export_name => {
+          if (export_name === 'version') return;
           const import_var = meta[export_name];
           if (import_var) {
             inner.push(`${export_name}: ${import_var}`);
           }
         });
+
+        const version_value = meta.version || value.version_literal || this.get_default_version_literal(params);
+        if (version_value) {
+          inner.push(`version: ${version_value}`);
+        }
 
         return `${spacer}${key}: { ${inner.join(', ')} }`;
       })

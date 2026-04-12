@@ -4,7 +4,7 @@ import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
 
 /**
  * Deep-merge `incoming` into `target` without losing data, honouring
- * version semantics for collections, components, and item_types.
+ * version semantics
  *
  * Version handling:
  *   - `version` may be a number or a string (semver, e.g. "1.0.0").
@@ -18,9 +18,6 @@ import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
  *     record (newer wins) but preserve keys the new record omits.
  *   - If versions are equal or incoming is older → additive merge
  *     (`deep_merge_no_overwrite`) without overwriting existing keys.
- *
- * `components` and `item_types` honour the same version comparison, but a
- * newer definition simply replaces the old one.
  *
  * Arrays are concatenated. Primitive arrays are deduplicated.
  * Objects are merged via `deep_merge_no_overwrite`. Primitive keys overwrite.
@@ -71,11 +68,19 @@ export function merge_env_config (target, incoming) {
     }
 
     // THIS LOGIC IS LIKELY CANONICAL
-    if (['actions', 'collections', 'components', 'item_types', 'modules', 'items'].includes(key) && value && typeof value === 'object') {
+    if (['actions', 'collections', 'components', 'modules', 'items'].includes(key) && value && typeof value === 'object') {
       if (!target[key]) target[key] = {};
 
       for (const [comp_key, comp_def] of Object.entries(value)) {
         if (!target[key][comp_key]) {
+          // if comp_def is a class then wrap in {class: comp_def} and preserve version if defined on the class itself
+          if (typeof comp_def === 'function') {
+            target[key][comp_key] = {
+              class: comp_def,
+              ...(comp_def.version ? {version: comp_def.version} : {})
+            };
+            continue;
+          }
           target[key][comp_key] = {...comp_def};
           continue;
         }
@@ -106,31 +111,6 @@ export function merge_env_config (target, incoming) {
       }
       continue; // done with this top-level key
     }
-
-    // // DEPRECATED item_types handles (use items and config in collections instead)
-    // /* ───────────────────────────── Item types ───────────────────────────── */
-    // if (key === 'item_types' && value && typeof value === 'object') {
-    //   if (!target.item_types) target.item_types = {};
-
-    //   for (const [type_key, type_def] of Object.entries(value)) {
-    //     if (!target.item_types[type_key]) {
-    //       target.item_types[type_key] = type_def;
-    //       continue;
-    //     }
-
-    //     const existing_type = target.item_types[type_key];
-    //     const new_version_raw = type_def && type_def.version;
-    //     const cur_version_raw = existing_type && existing_type.version;
-    //     const cmp = compare_versions(new_version_raw || NEW_VER, cur_version_raw || CUR_VER);
-
-    //     if (cmp > 0) {
-    //       target.item_types[type_key] = type_def;
-    //     } else {
-    //       deep_merge_no_overwrite(existing_type, type_def);
-    //     }
-    //   }
-    //   continue; // done with this top-level key
-    // }
 
     /* ───────────────────────────── Default path ──────────────────────────── */
     if (Array.isArray(value)) {

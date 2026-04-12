@@ -122,7 +122,7 @@ This approach is particularly powerful for use cases where items may be frequent
 The Smart Collections architecture is designed to be extensible:
 
 - **Custom Item Types**:  
-	Define a new subclass of `CollectionItem` with custom logic, validation, parsing, and additional methods. Register it with `env.item_types` so the `Collection` can find it.
+	Define a new subclass of `CollectionItem` with custom logic, validation, parsing, and additional methods. 
 
 - **New Collections**:  
 	Extend `Collection` to provide specialized filtering logic, default settings, or custom initialization routines.

@@ -29,6 +29,7 @@ import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
 import { deep_merge_no_overwrite } from './utils/deep_merge_no_overwrite.js';
 import { compare_versions } from './utils/compare_versions.js';
+import pkg from './package.json' with { type: 'json' };
 
 const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
 
@@ -40,7 +41,7 @@ const ROOT_SCOPE = typeof globalThis !== 'undefined' ? globalThis : Function('re
  * of the environment is created and acts as a central coordination point.
  */
 export class SmartEnv {
-  static version = '2.4.1';
+  static version = pkg.version;
   scope_name = 'smart_env';
   static global_ref = ROOT_SCOPE;
   global_ref = this.constructor.global_ref;
@@ -558,10 +559,6 @@ export class SmartEnv {
 
   get global_prop() {
     return this.opts.global_prop ?? 'smart_env';
-  }
-
-  get item_types() {
-    return this.config.item_types;
   }
 
   get fs_module_config() {

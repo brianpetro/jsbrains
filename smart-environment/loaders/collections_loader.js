@@ -32,7 +32,7 @@ export class CollectionsLoader extends BaseLoader {
       .join('\n');
   }
 
-  build_config() {
+  build_config(params = {}) { // eslint-disable-line no-unused-vars
     const spacer = ' '.repeat(4);
     return this.sorted_keys(this.collections)
       .map(key => `${spacer}${key}`)

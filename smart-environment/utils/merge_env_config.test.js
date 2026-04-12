@@ -204,24 +204,6 @@ test('component semver string compares against numeric version', t => {
   );
 });
 
-test('item_types semver strings are respected', t => {
-  function ItemTypeV1 () {}
-  ItemTypeV1.version = '1.0.0';
-  function ItemTypeV2 () {}
-  ItemTypeV2.version = '2.0.0';
-
-  const target = { item_types: { Foo: ItemTypeV1 } };
-  const incoming = { item_types: { Foo: ItemTypeV2 } };
-
-  merge_env_config(target, incoming);
-
-  t.is(
-    target.item_types.Foo,
-    ItemTypeV2,
-    'item_types should use semver to pick newer constructor'
-  );
-});
-
 function a_parser () {}
 test("same collection version doesn't duplicate existing same function in array", t => {
   const target = {

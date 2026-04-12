@@ -38,10 +38,6 @@ class TestMultiFileSourceMain {
           data_adapter: AjsonMultiFileSourceDataAdapter,
         },
       },
-      item_types: {
-        SmartSource,
-        SmartBlock,
-      },
       default_settings: {
         smart_sources: {
           data_dir: 'multi', // Directory where .ajson files will be stored
