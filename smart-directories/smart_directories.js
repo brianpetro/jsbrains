@@ -63,7 +63,7 @@ export class SmartDirectories extends SmartGroups {
   async render_directories(container, opts = {}) {
     opts.expanded_view = this.env.settings.expanded_view; // Pass the current state
     if(container) this.env.smart_view.safe_inner_html(container, 'Loading directories...');
-    const frag = await this.env.render_component('directories', this, opts);
+    const frag = await this.env.smart_components.render_component('directories', this, opts);
     if(container) {
       this.env.smart_view.empty(container);
       container.appendChild(frag);

@@ -432,6 +432,7 @@ export class SmartEnv {
    * Initialize a module from the configured `this.opts.modules`.
    * @param {string} module_key
    * @param {object} opts
+   * @deprecated smart_env_config.modules is deprecated (2026-04-12)
    * @returns {object|null} instance of the requested module or null if not found
    */
   init_module(module_key, opts = {}) {
