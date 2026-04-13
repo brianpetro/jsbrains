@@ -578,3 +578,65 @@ test('task_lines captures markdown tasks', t => {
   const {blocks: result, task_lines} = parse_markdown_blocks(markdown);
   t.deepEqual(task_lines, [2, 4]);
 });
+
+test('standalone #tag lines are incorrectly parsed as headings (bug)', t => {
+  // A note that uses #tags on their own lines, as is common in Obsidian.
+  // According to CommonMark / Obsidian conventions these lines should NOT
+  // create heading-level block boundaries; they are inline tags.
+  // The regex  /^(#{1,6})\s*(.+)$/  used in markdown.js does NOT require a
+  // space after the hash(es), so "#tag" matches as a level-1 heading.
+  const markdown = [
+    '#tag',                        // line 1 – lone tag, no space after #
+    'Some content here.',          // line 2
+    '#tag1 #tag2',                 // line 3 – two tags on one line
+    'More content.',               // line 4
+    '# Real Heading',             // line 5 – legitimate heading
+    'Content under heading.',     // line 6
+    'Inline tag in prose #tag.',  // line 7 – tag inside prose (safe)
+  ].join('\n');
+
+  const { blocks: result } = parse_markdown_blocks(markdown);
+
+  // ── Actual current behaviour (parser treats lone #tag as a heading) ──────
+  // Line 1 ("#tag") matches /^(#{1,6})\s*(.+)$/ → heading key "#tag"
+  // Line 3 ("#tag1 #tag2") matches the same regex → heading key "#tag1 #tag2"
+  // Both create block boundaries, which is the bug being demonstrated.
+  t.deepEqual(result, {
+    '#tag':                  [1, 4],   // BUG: "#tag" treated as H1 heading
+    '#tag1 #tag2':           [3, 4],   // BUG: "#tag1 #tag2" treated as H1 heading
+    '#Real Heading':         [5, 7],   // correct: proper heading
+    '#Real Heading#{1}':     [6, 7],   // correct: content block under heading
+  });
+
+  // ── What CORRECT behaviour should look like ──────────────────────────────
+  // If the regex were changed to require a space:  /^(#{1,6})\s+(.+)$/
+  // the expected result would instead be:
+  //
+  // t.deepEqual(result, {
+  //   '#':             [1, 4],   // root block for lines before any real heading
+  //   '##{1}':         [1, 2],   // "#tag\nSome content here." as a content sub-block
+  //   '##{2}':         [3, 4],   // "#tag1 #tag2\nMore content." as a content sub-block
+  //   '#Real Heading': [5, 7],   // correct heading
+  //   '#Real Heading#{1}': [6, 7],
+  // });
+});
+
+
+test('inline #tags inside prose are not parsed as headings', t => {
+  // Confirm that tags embedded within a sentence do NOT create block
+  // boundaries (the regex only fires on trimmed line-start hashes).
+  const markdown = [
+    '# Heading',                        // line 1
+    'Content mentioning #topic here.',  // line 2 – inline tag; safe
+    'Another line with #foo and #bar.', // line 3 – multiple inline tags; safe
+  ].join('\n');
+
+  const { blocks: result } = parse_markdown_blocks(markdown);
+
+  // Inline tags are correctly not treated as headings.
+  // All prose lines fall into a single content sub-block under #Heading.
+  t.deepEqual(result, {
+    '#Heading':      [1, 3],
+    '#Heading#{1}':  [2, 3],
+  });
+});
