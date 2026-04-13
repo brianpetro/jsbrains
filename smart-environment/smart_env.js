@@ -20,7 +20,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SmartEvents } from 'smart-events';
-import { render as settings_template } from './components/settings.js';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { deep_merge } from 'smart-utils/deep_merge.js';
 import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.js';
@@ -457,14 +456,6 @@ export class SmartEnv {
       });
     }
     return this._notices;
-  }
-
-  /**
-   * Exposes a settings template function from environment opts or defaults.
-   * @returns {Function}
-   */
-  get settings_template() {
-    return this.opts.components?.smart_env?.settings || settings_template;
   }
 
   /**
