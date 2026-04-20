@@ -93,6 +93,16 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     batch_size: 30,
     models: {},
   };
+  
+  /**
+   * @override
+   * always return 'something' to allow this adapter to be used without an API key since it's connecting to a local instance that doesn't require authentication
+   * Problem/Reason( 2026-04-20): embed_batch method on parent class throws if this is falsy
+   * should be better handed in future
+   */
+  get api_key() {
+    return this.model.data.api_key || 'something';
+  }
 
   get host() {
     return this.model.data.host || this.constructor.defaults.host;
