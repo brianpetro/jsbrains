@@ -17,6 +17,7 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         this.origin = window.location.origin;
         /** @type {string} */
         this.iframe_id = `smart_embed_iframe`;
+        this._bound_handle_message = this._handle_message.bind(this);
     }
 
     /**
@@ -24,10 +25,12 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
      * @returns {Promise<void>}
      */
     async load() {
+        this.unload();
         // check if iframe already exists
         const existing_iframe = document.getElementById(this.iframe_id);
         if(existing_iframe) {
             // remove existing iframe
+            existing_iframe.onload = null;
             existing_iframe.remove();
         }
         // Create and append iframe
@@ -36,7 +39,7 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         this.iframe.id = this.iframe_id;
         document.body.appendChild(this.iframe);
         // Set up message listener
-        window.addEventListener('message', this._handle_message.bind(this));
+        window.addEventListener('message', this._bound_handle_message);
 
         // Load the iframe content
         this.iframe.srcdoc = `
@@ -83,12 +86,30 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         });
     }
 
+    unload() {
+        window.removeEventListener('message', this._bound_handle_message);
+        const iframe = this.iframe || document.getElementById(this.iframe_id);
+        if (iframe) {
+            iframe.onload = null;
+            iframe.remove();
+        }
+        this.iframe = null;
+        if (this.model) {
+            this.model.model_loaded = false;
+            this.model.load_result = null;
+        }
+        super.unload();
+    }
+
     /**
      * Post message to iframe
      * @protected
      * @param {Object} message_data - Message to send
      */
     _post_message(message_data) {
+        if (!this.iframe?.contentWindow) {
+            throw new Error('Iframe not loaded');
+        }
         this.iframe.contentWindow.postMessage({ ...message_data, iframe_id: this.iframe_id }, this.origin);
     }
 
@@ -98,7 +119,8 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
      * @param {MessageEvent} event - Message event
      */
     _handle_message(event) {
-        if (event.origin !== this.origin || event.data.iframe_id !== this.iframe_id) return;
+        if (event.origin !== this.origin || event.data?.iframe_id !== this.iframe_id) return;
+        if (event.source !== this.iframe?.contentWindow) return;
         const { id, result, error } = event.data;
         this._handle_message_result(id, result, error);
     }

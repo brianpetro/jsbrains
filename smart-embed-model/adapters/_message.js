@@ -60,8 +60,26 @@ export class SmartEmbedMessageAdapter extends SmartEmbedAdapter {
         return new Promise((resolve, reject) => {
             const id = `${this.message_prefix}${this.message_id++}`;
             this.message_queue[id] = { resolve, reject };
-            this._post_message({ method, params, id });
+            try {
+                this._post_message({ method, params, id });
+            } catch (error) {
+                delete this.message_queue[id];
+                reject(error instanceof Error ? error : new Error(String(error || 'Unknown error')));
+            }
         });
+    }
+
+    unload() {
+        const unload_error = new Error('Message adapter unloaded');
+        Object.values(this.message_queue).forEach((queue_entry) => {
+            if (!queue_entry) return;
+            if (typeof this.clear_message_timeout === 'function') {
+                this.clear_message_timeout(queue_entry);
+            }
+            queue_entry.reject(unload_error);
+        });
+        this.message_queue = {};
+        super.unload();
     }
 
     /**
@@ -112,8 +130,11 @@ export class SmartEmbedMessageAdapter extends SmartEmbedAdapter {
         const result = await this._send_message('embed_batch', { inputs: embed_inputs });
 
         return inputs.map((item, i) => {
-            item.vec = result[i].vec;
-            item.tokens = result[i].tokens;
+            const item_result = result[i] || {};
+            if ('vec' in item_result) item.vec = item_result.vec;
+            if ('tokens' in item_result) item.tokens = item_result.tokens;
+            if ('error' in item_result) item.error = item_result.error;
+            else delete item.error;
             return item;
         });
     }

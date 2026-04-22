@@ -663,7 +663,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     this.has_gpu = await is_webgpu_available();
     try {
       if (this.loading) {
-        console.warn("[Transformers v2] load already in progress, waiting...");
+        console.warn("[Transformers v3] load already in progress, waiting...");
         while (this.loading) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
@@ -677,12 +677,12 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
         await this.load_transformers_with_fallback();
         this.loading = false;
         this.loaded = true;
-        console.log(`[Transformers v2] model loaded using ${this.active_config_key}`, this);
+        console.log(`[Transformers v3] model loaded using ${this.active_config_key}`, this);
       }
     } catch (e) {
       this.loading = false;
       this.loaded = false;
-      console.error("[Transformers v2] load failed", e);
+      console.error("[Transformers v3] load failed", e);
       throw e;
     }
   }
@@ -700,7 +700,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
         }
       }
     } catch (err) {
-      console.warn("[Transformers v2] error while disposing pipeline", err);
+      console.warn("[Transformers v3] error while disposing pipeline", err);
     }
     this.pipeline = null;
     this.tokenizer = null;
@@ -760,21 +760,21 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
     for (const config of CONFIG_LIST_ORDER) {
       if (this.pipeline) break;
       if (config.includes("gpu") && !this.gpu_enabled) {
-        console.warn(`[Transformers v2: ${config}] skipping ${config} as GPU is disabled`);
+        console.warn(`[Transformers v3: ${config}] skipping ${config} as GPU is disabled`);
         continue;
       }
       try {
-        console.log(`[Transformers v2] trying to load pipeline on ${config}`);
+        console.log(`[Transformers v3] trying to load pipeline on ${config}`);
         this.pipeline = await try_create(config);
         this.active_config_key = config;
         break;
       } catch (err) {
-        console.warn(`[Transformers v2: ${config}] failed to load pipeline on ${config}`, err);
+        console.warn(`[Transformers v3: ${config}] failed to load pipeline on ${config}`, err);
         last_error = err;
       }
     }
     if (this.pipeline) {
-      console.log(`[Transformers v2: ${this.active_config_key}] pipeline initialized using ${this.active_config_key}`);
+      console.log(`[Transformers v3: ${this.active_config_key}] pipeline initialized using ${this.active_config_key}`);
     } else {
       throw last_error || new Error("Failed to initialize transformers pipeline");
     }
@@ -832,7 +832,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
         return item;
       });
     } catch (err) {
-      console.error("[Transformers v2] batch embed failed \u2013 retrying items individually", err);
+      console.error("[Transformers v3] batch embed failed \u2013 retrying items individually", err);
       return await this._retry_items_individually(batch_inputs);
     }
   }
@@ -880,7 +880,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
           tokens: prepared.tokens
         });
       } catch (single_err) {
-        console.error("[Transformers v2] single item embed failed \u2013 skipping", single_err);
+        console.error("[Transformers v3] single item embed failed \u2013 skipping", single_err);
         results.push({
           ...item,
           vec: [],
@@ -906,7 +906,7 @@ var SmartEmbedTransformersAdapter = class extends SmartEmbedAdapter {
         }
       }
     } catch (err) {
-      console.warn("[Transformers v2] error while resetting pipeline", err);
+      console.warn("[Transformers v3] error while resetting pipeline", err);
     }
     this.pipeline = null;
     await this.load_transformers_with_fallback();

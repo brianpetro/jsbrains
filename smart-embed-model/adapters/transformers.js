@@ -1,7 +1,7 @@
 import { SmartEmbedAdapter } from "./_adapter.js";
 
 /**
- * Default configuration for Transformers v2 adapter.
+ * Default configuration for Transformers v3 adapter.
  * Exposes only model_key; device, quantization and threading are auto-managed.
  */
 export const transformers_defaults = {
@@ -82,7 +82,7 @@ const is_webgpu_available = async () => {
 
 
 /**
- * Transformers v2 embedding adapter.
+ * Transformers v3 embedding adapter.
  *
  * - Tries WebGPU first, then falls back to CPU/WASM with 4 threads.
  * - Automatically truncates long inputs to model max_tokens.
@@ -113,7 +113,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     this.has_gpu = await is_webgpu_available();
     try{
       if(this.loading) {
-        console.warn('[Transformers v2] load already in progress, waiting...');
+        console.warn('[Transformers v3] load already in progress, waiting...');
         while(this.loading) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -128,12 +128,12 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
         await this.load_transformers_with_fallback();
         this.loading = false;
         this.loaded = true;
-        console.log(`[Transformers v2] model loaded using ${this.active_config_key}`, this);
+        console.log(`[Transformers v3] model loaded using ${this.active_config_key}`, this);
       }
     }catch(e){
       this.loading = false;
       this.loaded = false;
-      console.error('[Transformers v2] load failed', e);
+      console.error('[Transformers v3] load failed', e);
       throw e;
     }
   }
@@ -152,7 +152,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
         }
       }
     } catch (err) {
-      console.warn('[Transformers v2] error while disposing pipeline', err);
+      console.warn('[Transformers v3] error while disposing pipeline', err);
     }
     this.pipeline = null;
     this.tokenizer = null;
@@ -220,21 +220,21 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
     for (const config of CONFIG_LIST_ORDER) {
       if (this.pipeline) break;
       if (config.includes("gpu") && !this.gpu_enabled) {
-        console.warn(`[Transformers v2: ${config}] skipping ${config} as GPU is disabled`);
+        console.warn(`[Transformers v3: ${config}] skipping ${config} as GPU is disabled`);
         continue;
       }
       try {
-        console.log(`[Transformers v2] trying to load pipeline on ${config}`);
+        console.log(`[Transformers v3] trying to load pipeline on ${config}`);
         this.pipeline = await try_create(config);
         this.active_config_key = config;
         break;
       } catch (err) {
-        console.warn(`[Transformers v2: ${config}] failed to load pipeline on ${config}`, err);
+        console.warn(`[Transformers v3: ${config}] failed to load pipeline on ${config}`, err);
         last_error = err;
       }
     }
     if (this.pipeline) {
-      console.log(`[Transformers v2: ${this.active_config_key}] pipeline initialized using ${this.active_config_key}`);
+      console.log(`[Transformers v3: ${this.active_config_key}] pipeline initialized using ${this.active_config_key}`);
     }else{
       throw last_error || new Error('Failed to initialize transformers pipeline');
     }
@@ -299,7 +299,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
         return item;
       });
     } catch (err) {
-      console.error('[Transformers v2] batch embed failed – retrying items individually', err);
+      console.error('[Transformers v3] batch embed failed – retrying items individually', err);
       return await this._retry_items_individually(batch_inputs);
     }
   }
@@ -351,7 +351,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
           tokens: prepared.tokens,
         });
       } catch (single_err) {
-        console.error('[Transformers v2] single item embed failed – skipping', single_err);
+        console.error('[Transformers v3] single item embed failed – skipping', single_err);
         results.push({
           ...item,
           vec: [],
@@ -378,7 +378,7 @@ export class SmartEmbedTransformersAdapter extends SmartEmbedAdapter {
         }
       }
     } catch (err) {
-      console.warn('[Transformers v2] error while resetting pipeline', err);
+      console.warn('[Transformers v3] error while resetting pipeline', err);
     }
     this.pipeline = null;
 
