@@ -20,7 +20,7 @@ export class SmartEmbedTransformersIframeAdapter extends SmartEmbedIframeAdapter
     super(model);
     /** @type {string} Connector script content */
     this.connector = transformers_connector
-      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.0')
+      .replace('@huggingface/transformers', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0')
     ;
     console.log('transformers iframe connector', this.model);
   }
