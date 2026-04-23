@@ -73,7 +73,7 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
         // console.log({load_opts});
         // Initialize the model in the iframe
         await this._send_message('load', load_opts);
-            
+
         return new Promise(resolve => {
             const check_model_loaded = () => {
                 if (this.model.model_loaded) {
@@ -84,6 +84,39 @@ export class SmartEmbedIframeAdapter extends SmartEmbedMessageAdapter {
             };
             check_model_loaded();
         });
+    }
+
+    /**
+     * Detect expected cancellation caused by tearing down the iframe adapter
+     * while a background load is in flight.
+     * @param {Error|*} error
+     * @returns {boolean}
+     */
+    is_unload_error(error) {
+        return error?.message === 'Message adapter unloaded';
+    }
+
+    /**
+     * Start loading in the background and suppress only expected unload
+     * cancellation from fire-and-forget call sites.
+     * @returns {Promise<void>}
+     */
+    load_background() {
+        if (this._load_background_promise) {
+            return this._load_background_promise;
+        }
+
+        this._load_background_promise = Promise.resolve(this.load())
+            .catch((error) => {
+                if (this.is_unload_error(error)) return;
+                console.error(`[${this.constructor.name}] load failed`, error);
+            })
+            .finally(() => {
+                this._load_background_promise = null;
+            })
+        ;
+
+        return this._load_background_promise;
     }
 
     unload() {

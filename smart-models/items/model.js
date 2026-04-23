@@ -47,7 +47,11 @@ export class Model extends CollectionItem {
       }
       const Class = this.ProviderAdapterClass;
       this._instance = new Class(this);
-      this._instance.load();
+      if (typeof this._instance.load_background === 'function') {
+        this._instance.load_background();
+      } else {
+        this._instance.load();
+      }
       this.once_event('model:changed', () => {
         this._instance.unload?.();
         this._instance = null;
