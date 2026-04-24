@@ -11,13 +11,19 @@ import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
  *   - Missing `version` is treated as 0.
  *   - When comparing semver strings and numbers that represent the same
  *     numeric value (e.g. "1" vs 1), the semver string wins.
+ *   - If two config records have the same version, the root SmartEnv config
+ *     versions break the tie: higher incoming.version wins; otherwise the
+ *     existing record is preserved.
  *
  * Rules for `collections`:
- *   - If `target` does not have the collection → copy it straight in.
- *   - If both have it and incoming.version is higher → replace the whole
+ *   - If `target` does not have the collection -> copy it straight in.
+ *   - If both have it and incoming.version is higher -> replace the whole
  *     record (newer wins) but preserve keys the new record omits.
- *   - If versions are equal or incoming is older → additive merge
- *     (`deep_merge_no_overwrite`) without overwriting existing keys.
+ *   - If versions are equal and incoming's root SmartEnv version is higher ->
+ *     replace the whole record but preserve keys the new record omits.
+ *   - If incoming is older, or the versions are equal without a higher root
+ *     SmartEnv version -> additive merge (`deep_merge_no_overwrite`) without
+ *     overwriting existing keys.
  *
  * Arrays are concatenated. Primitive arrays are deduplicated.
  * Objects are merged via `deep_merge_no_overwrite`. Primitive keys overwrite.
@@ -30,29 +36,22 @@ export function merge_env_config (target, incoming) {
   const CUR_VER = target.version;
   const NEW_VER = incoming.version;
   for (const [key, value] of Object.entries(incoming)) {
-    /* ───────────────────────────── Collections ───────────────────────────── */
+    /* ----------------------------- Collections ----------------------------- */
     if (key === 'collections' && value && typeof value === 'object') {
       if (!target.collections) target.collections = {};
 
       for (const [col_key, col_def] of Object.entries(value)) {
         const existing_def = target.collections[col_key];
 
-        // First time we meet this collection – just take it.
+        // First time we meet this collection - just take it.
         if (!existing_def) {
           target.collections[col_key] = { ...col_def };
           continue;
         }
 
-        const new_version_raw =
-          (col_def && col_def.version !== undefined
-            ? col_def.version
-            : col_def?.class?.version);
-        const cur_version_raw =
-          (existing_def && existing_def.version !== undefined
-            ? existing_def.version
-            : existing_def?.class?.version);
-
-        const cmp = compare_versions(new_version_raw, cur_version_raw);
+        const new_version_raw = get_config_record_version(col_def);
+        const cur_version_raw = get_config_record_version(existing_def);
+        const cmp = compare_config_record_versions(new_version_raw, cur_version_raw, NEW_VER, CUR_VER);
 
         if (cmp > 0) {
           // Newer definition wins but keep keys the newer record omits
@@ -60,7 +59,7 @@ export function merge_env_config (target, incoming) {
           deep_merge_no_overwrite(replaced, existing_def);
           target.collections[col_key] = replaced;
         } else {
-          // Same or older version – additive merge (don’t overwrite)
+          // Same or older version - additive merge (don't overwrite)
           deep_merge_no_overwrite(existing_def, col_def);
         }
       }
@@ -75,25 +74,26 @@ export function merge_env_config (target, incoming) {
         if (!target[key][comp_key]) {
           // if comp_def is a class then wrap in {class: comp_def} and preserve version if defined on the class itself
           if (typeof comp_def === 'function') {
+            const comp_version = get_config_record_version(comp_def);
             target[key][comp_key] = {
               class: comp_def,
-              ...(comp_def.version ? {version: comp_def.version} : {})
+              ...(comp_version !== undefined ? { version: comp_version } : {})
             };
             continue;
           }
-          target[key][comp_key] = {...comp_def};
+          target[key][comp_key] = { ...comp_def };
           continue;
         }
 
         const target_comp = target[key][comp_key];
-        const incoming_ver = (comp_def && (comp_def.version || comp_def?.class?.version)) ? (comp_def.version || comp_def?.class?.version) : NEW_VER;
-        const target_ver = (target_comp && (target_comp.version || target_comp?.class?.version)) ? (target_comp.version || target_comp?.class?.version) : 0;
-        const cmp = compare_versions(incoming_ver, target_ver);
-        // console.log(`Merging ${key} "${comp_key}": target version "${target_ver}" vs incoming "${incoming_ver}" → cmp=${cmp}`);
+        const incoming_ver = get_config_record_version(comp_def);
+        const target_ver = get_config_record_version(target_comp);
+        const cmp = compare_config_record_versions(incoming_ver, target_ver, NEW_VER, CUR_VER);
+        // console.log(`Merging ${key} "${comp_key}": target version "${target_ver}" vs incoming "${incoming_ver}" -> cmp=${cmp}`);
 
         if (cmp > 0) {
           target[key][comp_key] = comp_def;
-          target[key][comp_key].version = incoming_ver || -1;
+          set_config_record_version(target[key][comp_key], incoming_ver);
           // // Newer definition wins but keep keys the newer record omits
           // const replaced = { ...comp_def };
           // deep_merge_no_overwrite(replaced, target_comp);
@@ -105,14 +105,14 @@ export function merge_env_config (target, incoming) {
           //   if(!target_comp[k]) target_comp[k] = v;
           //   else deep_merge_no_overwrite(target_comp[k], v);
           // });
-          // Same or older version – additive merge (don’t overwrite)
+          // Same or older version - additive merge (don't overwrite)
           deep_merge_no_overwrite(target_comp, comp_def);
         }
       }
       continue; // done with this top-level key
     }
 
-    /* ───────────────────────────── Default path ──────────────────────────── */
+    /* ----------------------------- Default path ---------------------------- */
     if (Array.isArray(value)) {
       if (Array.isArray(target[key])) {
         // Merge arrays, deduplicate for primitives (string/number/boolean)
@@ -150,4 +150,22 @@ export function merge_env_config (target, incoming) {
   }
 
   return target;
+}
+
+function get_config_record_version(record) {
+  if (!record) return undefined;
+  if (record.version !== undefined) return record.version;
+  return record?.class?.version;
+}
+
+function compare_config_record_versions(new_record_version, cur_record_version, new_env_version, cur_env_version) {
+  const record_cmp = compare_versions(new_record_version, cur_record_version);
+  if (record_cmp !== 0) return record_cmp;
+  return compare_versions(new_env_version, cur_env_version);
+}
+
+function set_config_record_version(record, version) {
+  if (version === undefined) return;
+  if (!record || (typeof record !== 'object' && typeof record !== 'function')) return;
+  record.version = version;
 }

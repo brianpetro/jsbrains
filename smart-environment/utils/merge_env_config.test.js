@@ -284,6 +284,104 @@ test('newer component version replaces older one', t => {
   );
 });
 
+test('same component version prefers incoming from higher SmartEnv version', t => {
+  const old_render = () => 'old';
+  const new_render = () => 'new';
+  const target = {
+    version: '2.4.2',
+    components: {
+      panel: { render: old_render, version: '1.0.0', target_only: true }
+    }
+  };
+  const incoming = {
+    version: '2.4.3',
+    components: {
+      panel: { render: new_render, version: '1.0.0' }
+    }
+  };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.components.panel.render, new_render);
+  t.false(Object.prototype.hasOwnProperty.call(target.components.panel, 'target_only'));
+});
+
+test('same component version keeps existing from higher SmartEnv version', t => {
+  const old_render = () => 'old';
+  const new_render = () => 'new';
+  const target = {
+    version: '2.4.3',
+    components: {
+      panel: { render: old_render, version: '1.0.0' }
+    }
+  };
+  const incoming = {
+    version: '2.4.2',
+    components: {
+      panel: { render: new_render, version: '1.0.0', incoming_only: true }
+    }
+  };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.components.panel.render, old_render);
+  t.true(target.components.panel.incoming_only);
+});
+
+test('same collection version prefers incoming from higher SmartEnv version', t => {
+  class ColSameOld {}
+  class ColSameNew {}
+  const target = {
+    version: '2.4.2',
+    collections: {
+      notes: { class: ColSameOld, version: '1.0.0', target_only: true }
+    }
+  };
+  const incoming = {
+    version: '2.4.3',
+    collections: {
+      notes: { class: ColSameNew, version: '1.0.0', incoming_only: true }
+    }
+  };
+
+  merge_env_config(target, incoming);
+
+  t.is(target.collections.notes.class, ColSameNew);
+  t.true(target.collections.notes.incoming_only);
+  t.true(target.collections.notes.target_only);
+});
+
+test('unversioned components use SmartEnv version as tie-breaker', t => {
+  const old_render = () => 'old';
+  const newer_render = () => 'newer';
+  const lower_version_render = () => 'lower';
+  const target = {
+    version: '2.4.2',
+    components: {
+      panel: { render: old_render }
+    }
+  };
+
+  merge_env_config(target, {
+    version: '2.4.3',
+    components: {
+      panel: { render: newer_render }
+    }
+  });
+
+  t.is(target.components.panel.render, newer_render);
+  t.false(Object.prototype.hasOwnProperty.call(target.components.panel, 'version'));
+
+  merge_env_config(target, {
+    version: '2.4.1',
+    components: {
+      panel: { render: lower_version_render }
+    }
+  });
+
+  t.is(target.components.panel.render, newer_render);
+});
+
 test('merges item actions without overwriting', t => {
   const target = { items: { note: { actions: { a: 1 } } } };
   const incoming = { items: { note: { actions: { b: 2, a: 3 } } } };
