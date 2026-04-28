@@ -9,6 +9,9 @@ export class ImageContextItemAdapter extends ContextItemAdapter {
   get exists() {
     return this.item.env.smart_sources.fs.exists_sync(this.item.key);
   }
+  get icon_type() {
+    return 'image-file';
+  }
   get is_media() {
     return true;
   }

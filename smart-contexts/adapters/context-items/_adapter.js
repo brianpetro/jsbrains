@@ -5,6 +5,7 @@ export class ContextItemAdapter {
   static detect(key, data={}) { return false; }
   get env() { return this.item.env; }
   get exists() { return true; }
+  get icon_type() { return null; }
 
   // v3 API
   /**

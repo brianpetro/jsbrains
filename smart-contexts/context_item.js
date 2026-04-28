@@ -18,6 +18,10 @@ export class ContextItem extends CollectionItem {
     return this.context_type_adapter.exists;
   }
 
+  get icon_type() {
+    return this.context_type_adapter.icon_type || null;
+  }
+
   // v3
   async get_text() {
     const item_text = await this.context_type_adapter.get_text();
@@ -50,3 +54,4 @@ export class ContextItem extends CollectionItem {
     return this.data.mtime || this.context_type_adapter.mtime || null;
   }
 }
+

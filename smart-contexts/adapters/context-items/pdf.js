@@ -2,12 +2,15 @@ import { ContextItemAdapter } from './_adapter.js';
 
 export class PdfContextItemAdapter extends ContextItemAdapter {
   static detect(key) {
-    if (key.endsWith('.pdf')) return 'pdf';
+    if (String(key || '').toLowerCase().endsWith('.pdf')) return 'pdf';
     return false;
   }
   async add_to_snapshot(snapshot) {
     if (!snapshot.pdfs) snapshot.pdfs = [];
     snapshot.pdfs.push(this.item.key);
+  }
+  get icon_type() {
+    return 'file-text';
   }
   get is_media() {
     return true;
