@@ -105,9 +105,14 @@ export class ContextItems extends Collection {
 
   load_named_context_items(key, item_data, params) {
     let resp = null;
-    const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === key)[0];
+    const named_context_name = item_data?.key || key;
+    const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === named_context_name)[0];
     if (named_context) {
       const loaded_items = this.load_from_data(named_context.data.context_items || {});
+      loaded_items.forEach((item) => {
+        if (!item?.data || typeof item.data !== 'object') return;
+        item.data.from_named_context = named_context_name;
+      });
       // if params.codeblock_source_key is present
       if (typeof params.codeblock_source_key !== 'undefined') {
         // add reference to named context use in name change syncing
