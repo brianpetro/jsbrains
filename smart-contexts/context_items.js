@@ -61,12 +61,21 @@ export class ContextItems extends Collection {
   load_from_data(context_items_data, params = {}) {
     const loaded_items = [];
     if(!this.items) this.items = {};
+    const named_context_stack = Array.isArray(params.named_context_stack)
+      ? params.named_context_stack
+      : [this.smart_context?.data?.name].filter(Boolean)
+    ;
+    const load_params = {
+      ...params,
+      named_context_stack,
+    };
     const entries = Object.entries(context_items_data || {});
     for (let i = 0; i < entries.length; i++) {
       const [key, item_data] = entries[i];
-      const loaded = this.load_item_from_data(key, item_data, params);
+      const loaded = this.load_item_from_data(key, item_data, load_params);
       if (loaded) {
         if (Array.isArray(loaded)) {
+          if (!loaded.length) continue;
           const total_size = loaded.reduce((sum, item) => sum + (item.size || 0), 0);
           const latest_mtime = Math.max(...loaded.map((item) => item.mtime));
           item_data.size = total_size;
@@ -103,12 +112,23 @@ export class ContextItems extends Collection {
   }
 
 
-  load_named_context_items(key, item_data, params) {
+  load_named_context_items(key, item_data, params = {}) {
     let resp = null;
     const named_context_name = item_data?.key || key;
+    const named_context_stack = Array.isArray(params.named_context_stack)
+      ? params.named_context_stack
+      : []
+    ;
     const named_context = this.env.smart_contexts.filter((ctx) => ctx.data.name === named_context_name)[0];
     if (named_context) {
-      const loaded_items = this.load_from_data(named_context.data.context_items || {});
+      if (named_context === this.smart_context || named_context_stack.includes(named_context_name)) {
+        return null; // prevent circular reference and self reference
+      }
+      const loaded_items = this.load_from_data(named_context.data.context_items || {}, {
+        ...params,
+        named_context_stack: [...named_context_stack, named_context_name],
+      });
+      if (!loaded_items.length) return null;
       loaded_items.forEach((item) => {
         if (!item?.data || typeof item.data !== 'object') return;
         item.data.from_named_context = named_context_name;
