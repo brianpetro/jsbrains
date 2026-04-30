@@ -271,9 +271,25 @@ export class SmartSources extends SmartEntities {
     });
 
     let completed_count = 0;
-    for (const [key, { source }] of queue_entries) {
-      await source.import();
-      completed_count += 1;
+    for (let index = 0; index < queue_entries.length; index += 100) {
+      const batch = queue_entries.slice(index, index + 100);
+      await Promise.all(batch.map(([, { source }]) => source.import()));
+
+      for (const [key, { source }] of batch) {
+        if (!this._embed_queue) this._embed_queue = [];
+        if (source.should_embed) this._embed_queue.push(source);
+        if (this.block_collection?.settings?.embed_blocks) {
+          for (const block of source.blocks || []) {
+            if (block._queue_embed || (block.should_embed && block.is_unembedded)) {
+              this._embed_queue.push(block);
+              block._queue_embed = true;
+            }
+          }
+        }
+        delete this.sources_re_import_queue[key];
+      }
+
+      completed_count += batch.length;
       this.set_import_progress_state({
         active: true,
         stage: 'reimporting',
@@ -286,17 +302,6 @@ export class SmartSources extends SmartEntities {
         event_source: 'run_re_import',
       });
 
-      if (!this._embed_queue) this._embed_queue = [];
-      if (source.should_embed) this._embed_queue.push(source);
-      if (this.block_collection?.settings?.embed_blocks) {
-        for (const block of source.blocks || []) {
-          if (block._queue_embed || (block.should_embed && block.is_unembedded)) {
-            this._embed_queue.push(block);
-            block._queue_embed = true;
-          }
-        }
-      }
-      delete this.sources_re_import_queue[key];
       if (this.sources_re_import_halted) {
         this.debounce_re_import_queue();
         break;

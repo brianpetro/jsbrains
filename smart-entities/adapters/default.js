@@ -98,7 +98,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       entity.vec = embedding.vec;
       entity.data.last_embed = entity.data.last_read;
       if (embedding.tokens !== undefined) entity.tokens = embedding.tokens;
-      entity.emit_event('item:embedded');
+      entity.emit_event('item:embedded', {skip_save_log_collection: true});
     });
   }
 
@@ -273,6 +273,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       tokens_per_second: this._calculate_embed_tokens_per_second(),
       model_name: this.collection.embed_model_key,
       event_source: 'process_embed_queue',
+      skip_save_log_collection: true,
     });
   }
 
