@@ -21,22 +21,25 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     // streaming: false, // TODO: Implement streaming
     streaming: true,
   }
-
   req_adapter = SmartChatModelOllamaRequestAdapter;
   res_adapter = SmartChatModelOllamaResponseAdapter;
 
   get host() {
     return this.model.data.host || this.constructor.defaults.host;
   }
+
   get endpoint() {
     return `${this.host}${this.constructor.defaults.endpoint}`;
   }
+
   get models_endpoint() {
     return `${this.host}${this.constructor.defaults.models_endpoint}`;
   }
+
   get model_show_endpoint() {
     return `${this.host}/api/show`;
   }
+
   get models_endpoint_method () { return 'GET'; }
 
   /**
@@ -73,7 +76,6 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       }
       this.model_data_loaded_at = Date.now();
       return this.model_data;
-
     } catch (error) {
       console.error('Failed to fetch model data:', error);
       return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
@@ -99,14 +101,18 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
       }};
       return this.model_data;
     }
+
     return model_data
       .reduce((acc, model) => {
         if(model.name.includes('embed')) return acc; // skip embedding models
+        const context_entry = Object.entries(model.model_info || {})
+          .find(m => m[0].includes('.context_length'))
+        ;
         const out = {
           model_name: model.name,
           id: model.name,
           multimodal: false,
-          max_input_tokens: Object.entries(model.model_info).find(m => m[0].includes('.context_length'))[1],
+          max_input_tokens: context_entry?.[1] || 4096,
         };
         acc[model.name] = out;
         return acc;
@@ -129,6 +135,7 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
     };
     return config;
   }
+
   is_end_of_stream(event) {
     return event.data.includes('"done_reason"');
   }
@@ -147,7 +154,6 @@ export class SmartChatModelOllamaRequestAdapter extends SmartChatModelRequestAda
       stream: streaming || this.stream,
       // format: 'json', // only used for tool calls since returns JSON in content body
     };
-
     if (this.tools) {
       ollama_body.tools = this._transform_functions_to_tools();
       if(this.tool_choice?.function?.name){
@@ -155,7 +161,6 @@ export class SmartChatModelOllamaRequestAdapter extends SmartChatModelRequestAda
         ollama_body.format = 'json';
       }
     }
-
     return {
       url: this.adapter.endpoint,
       method: 'POST',
@@ -174,14 +179,12 @@ export class SmartChatModelOllamaRequestAdapter extends SmartChatModelRequestAda
         role: message.role,
         content: this._transform_content_to_ollama(message.content)
       };
-
       // Extract images if present
       const images = this._extract_images_from_content(message.content);
       if (images.length > 0) {
         // remove preceeding data:image/*;base64,
         ollama_message.images = images.map(img => img.replace(/^data:image\/[^;]+;base64,/, ''));
       }
-
       return ollama_message;
     });
   }
@@ -231,13 +234,11 @@ export class SmartChatModelOllamaRequestAdapter extends SmartChatModelRequestAda
    */
   _transform_parameters_to_ollama() {
     const options = {};
-    
     if (this.max_tokens) options.num_predict = this.max_tokens;
     if (this.temperature) options.temperature = this.temperature;
     if (this.top_p) options.top_p = this.top_p;
     if (this.frequency_penalty) options.frequency_penalty = this.frequency_penalty;
     if (this.presence_penalty) options.presence_penalty = this.presence_penalty;
-    
     return options;
   }
 }
@@ -264,6 +265,7 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
       eval_duration: 0
     };
   }
+
   /**
    * Convert response to OpenAI format
    * @returns {Object} Response in OpenAI format
@@ -311,6 +313,7 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
       total_tokens: (this._res.prompt_eval_count || 0) + (this._res.eval_count || 0)
     };
   }
+
   /**
    * Parse chunk adds delta to content as expected output format
    */
@@ -359,5 +362,3 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
     return raw;
   }
 }
-
-
