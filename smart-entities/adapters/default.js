@@ -98,7 +98,6 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       entity.vec = embedding.vec;
       entity.data.last_embed = entity.data.last_read;
       if (embedding.tokens !== undefined) entity.tokens = embedding.tokens;
-      entity.emit_event('item:embedded', {skip_save_log_collection: true});
     });
   }
 
@@ -143,6 +142,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       await new Promise((resolve) => setTimeout(resolve, 1));
       const embed_queue = this.collection.embed_queue;
       this._reset_embed_queue_stats();
+      const embedded_keys_by_collection = {};
 
       if (this.collection.embed_model_key === 'None') {
         console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
@@ -190,6 +190,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         batch.forEach((item) => {
           item.embed_hash = item.read_hash;
           item._queue_save = true;
+          embedded_keys_by_collection[item.collection_key] ||= [];
+          embedded_keys_by_collection[item.collection_key].push(item.key);
         });
         this.embedded_total += batch.length;
         this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
@@ -218,6 +220,15 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
           }
         }
       }
+
+      Object.entries(embedded_keys_by_collection).forEach(([collection_key, keys]) => {
+        this.collection.env.events?.emit('items:embedded', {
+          collection_key,
+          keys,
+          event_source: 'process_embed_queue',
+          skip_save_log_collection: true,
+        });
+      });
 
       const processed_all = this.embedded_total >= embed_queue.length;
       const is_paused = Boolean(this.progress_state?.paused) && !processed_all;
