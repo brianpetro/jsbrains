@@ -382,6 +382,57 @@ test('unversioned components use SmartEnv version as tie-breaker', t => {
   t.is(target.components.panel.render, newer_render);
 });
 
+test('same component version keeps record from highest source SmartEnv version across multiple merges', t => {
+  const latest_render = () => 'latest';
+  const oldest_render = () => 'oldest';
+  const middle_render = () => 'middle';
+  const target = {};
+
+  merge_env_config(target, {
+    version: '2.4.3',
+    components: {
+      panel: { render: latest_render, version: '1.0.0' }
+    }
+  });
+  merge_env_config(target, {
+    version: '2.4.1',
+    components: {
+      panel: { render: oldest_render, version: '1.0.0' }
+    }
+  });
+  merge_env_config(target, {
+    version: '2.4.2',
+    components: {
+      panel: { render: middle_render, version: '1.0.0' }
+    }
+  });
+
+  t.is(target.components.panel.render, latest_render);
+  t.is(target.version, '2.4.3');
+});
+
+test('same component version can upgrade a lower source record even when root version is already higher', t => {
+  const older_render = () => 'older';
+  const newer_render = () => 'newer';
+  const target = { version: '2.4.3', components: {} };
+
+  merge_env_config(target, {
+    version: '2.4.1',
+    components: {
+      panel: { render: older_render, version: '1.0.0' }
+    }
+  });
+  merge_env_config(target, {
+    version: '2.4.2',
+    components: {
+      panel: { render: newer_render, version: '1.0.0' }
+    }
+  });
+
+  t.is(target.components.panel.render, newer_render);
+  t.is(target.version, '2.4.3');
+});
+
 test('merges item actions without overwriting', t => {
   const target = { items: { note: { actions: { a: 1 } } } };
   const incoming = { items: { note: { actions: { b: 2, a: 3 } } } };
@@ -420,3 +471,4 @@ test('handles versions components using semver', t => {
     '3.0.0 should replace 2.0.0 component'
   );
 });
+

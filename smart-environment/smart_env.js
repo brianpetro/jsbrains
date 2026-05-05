@@ -57,7 +57,7 @@ export class SmartEnv {
   }
   /**
    * Builds or returns the cached configuration object.
-   * The cache is invalidated automatically whenever the “version signature”
+   * The cache is invalidated automatically whenever the "version signature"
    * of any collection class changes (controlled by its static `version`).
    *
    * @returns {Object} the merged, up-to-date environment config
@@ -74,9 +74,11 @@ export class SmartEnv {
     this._config = {};
 
     const sorted_configs = Object.entries(this.smart_env_configs)
-      .sort(([main_key]) => {
+      .sort(([a_key], [b_key]) => {
         if (!this.primary_main_key) return 0;
-        return main_key === this.primary_main_key ? -1 : 0;
+        if (a_key === this.primary_main_key) return -1;
+        if (b_key === this.primary_main_key) return 1;
+        return 0;
       })
     ;
 
@@ -143,7 +145,8 @@ export class SmartEnv {
   }
   static get should_reload() {
     if (!this.global_env) return true;
-    // if (this.global_env.state === 'loaded') return true; // no more reloads after initial load, even if new mains are added
+    // Once the global env has loaded, its global reference is locked. It cannot be replaced safely.
+    if (this.global_env.state === 'loaded' || is_global_env_locked(this.global_ref)) return false;
     if (typeof this.global_env?.constructor?.version === 'undefined') return true;
     // If our new code is a higher version, reload:
     if (compare_versions(this.version, this.global_env.constructor?.version) > 0) {
@@ -217,13 +220,24 @@ export class SmartEnv {
     if (!env_config) throw new Error("SmartEnv.create: 'env_config' parameter is required.");
     env_config.version = this.version;
 
+    const existing_env = this.global_env;
     this.add_main(main, env_config);
+
+    if (existing_env && (existing_env.state === 'loaded' || is_global_env_locked(this.global_ref))) {
+      return existing_env;
+    }
 
     if (this.should_reload) {
       const opts = {};
-      if (this.global_env && compare_versions(this.version, this.global_env.constructor?.version || 0) > 0) {
+      const reload_env = this.global_env;
+      if (
+        reload_env
+        && reload_env.state !== 'loaded'
+        && !is_global_env_locked(this.global_ref)
+        && compare_versions(this.version, reload_env.constructor?.version || 0) > 0
+      ) {
         // this instance of SmartEnv is newer than the existing global_env -> supercede the old one with the new one
-        this.global_env.state = 'superceded';
+        reload_env.state = 'superceded';
         opts.primary_main_key = camel_case_to_snake_case(main.constructor.name);
       }
       if (this.global_env?.load_timeout) clearTimeout(this.global_env.load_timeout);
@@ -268,15 +282,18 @@ export class SmartEnv {
     this.constructor.create_env_getter(instance_to_receive_getter);
   }
   async load() {
-    this.state = 'loading';
     if (this._load_promise) return this._load_promise;
     if (this.state === 'superceded') {
       throw new Error('This environment instance has been superceded by a newer version and cannot be loaded.');
     }
+
+    this.state = 'loading';
     this._load_promise = this.run_load();
     try {
       await this._load_promise;
+      if (this.state === 'superceded') return this;
       await this.after_load();
+      if (this.state === 'superceded') return this;
       this.state = 'loaded';
       // prevent any future reloads by locking the global reference
       const _instance = this;
@@ -291,6 +308,10 @@ export class SmartEnv {
       });
       return this;
     } catch (e) {
+      if (this.state === 'superceded') {
+        console.warn('SmartEnv load aborted because this environment was superceded by a newer version.');
+        return this;
+      }
       console.error('Error loading SmartEnv:', e);
       this.state = 'load_error';
     } finally {
@@ -659,3 +680,8 @@ function build_events_opts(module_config) {
 function get_version_number(subject) {
   return typeof subject?.version === 'number' ? subject.version : 0;
 }
+
+function is_global_env_locked(global_ref) {
+  return Object.getOwnPropertyDescriptor(global_ref, 'smart_env')?.configurable === false;
+}
+
