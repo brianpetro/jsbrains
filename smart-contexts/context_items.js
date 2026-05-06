@@ -17,7 +17,7 @@ export class ContextItems extends Collection {
     // ALT: handle in action itself? (easy access to the default settings there)
   }
 
-  static version = 1;
+  static version = '1.1.0';
 
   get context_item_adapters() {
     if (!this._context_item_adapters) {
@@ -83,6 +83,9 @@ export class ContextItems extends Collection {
           item_data.group_items_ct = loaded.length;
           loaded_items.push(...loaded);
         } else {
+          if (!loaded.exists) {
+            this.smart_context.emit_missing_context_item_event(key, 'Context item does not exist');
+          }
           item_data.size = loaded.size;
           item_data.mtime = loaded.mtime;
           loaded_items.push(loaded);

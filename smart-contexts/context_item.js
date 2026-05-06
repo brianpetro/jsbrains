@@ -1,6 +1,7 @@
 import { CollectionItem } from 'smart-collections';
 
 export class ContextItem extends CollectionItem {
+  static version = '1.1.0';
   // special handling because current name_to_collection_key removes "Items" suffix
   get collection_key () {
     return 'context_items';

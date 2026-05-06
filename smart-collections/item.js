@@ -18,7 +18,7 @@ import { create_actions_proxy } from './utils/create_actions_proxy.js';
  * - Can be filtered by a variety of key-based filters.
  */
 export class CollectionItem {
-  static version = 0.002;
+  static version = '0.1.0';
   /**
    * Default properties for an instance of CollectionItem.
    * Override in subclasses to define different defaults.
@@ -347,6 +347,9 @@ export class CollectionItem {
   }
   emit_info_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'info', ...payload });
+  }
+  emit_warning_event(event_key, payload = {}) {
+    this.emit_event(event_key, { level: 'warning', ...payload });
   }
   emit_error_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'error', ...payload });
