@@ -16,6 +16,16 @@ export class OpenAIEmbeddingModelAdapter extends SmartEmbedOpenAIAdapter {
     return this._http_adapter;
   }
 
+  get dims() {
+    if (this.model_key === 'text-embedding-ada-002') return 1536;
+    return Number(this.model.data.dimensions || 512);
+  }
+
+  async embed_batch(inputs) {
+    this.model.data.dims = this.dims;
+    return await super.embed_batch(inputs);
+  }
+
   // backward compatibility
   get batch_size() {
     return 30;
