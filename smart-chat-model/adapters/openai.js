@@ -1,4 +1,4 @@
-import { SmartChatModelApiAdapter, SmartChatModelResponseAdapter } from "./_api.js";
+import { SmartChatModelApiAdapter, SmartChatModelRequestAdapter, SmartChatModelResponseAdapter } from "./_api.js";
 
 const EXCLUDED_PREFIXES = [
   'text-', 
@@ -21,6 +21,8 @@ const EXCLUDED_PREFIXES = [
   'o3-deep-research',
   'gpt-image'
 ];
+
+
 /**
  * Adapter for OpenAI's chat API.
  * Handles token counting and API communication for OpenAI chat models.
@@ -49,10 +51,14 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   };
 
   res_adapter = SmartChatModelOpenaiResponseAdapter;
+
+  get req_adapter() {
+    return SmartChatModelOpenaiRequestAdapter;
+  }
   
   /**
    * Parse model data from OpenAI API response.
-   * Filters for GPT models and adds context window information.
+   * Filters for GPT models. Token limits are enriched from models.dev data.
    * @param {Object} model_data - Raw model data from OpenAI
    * @returns {Object} Map of model objects with capabilities and limits
    */
@@ -64,13 +70,8 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
           model_name: model.id,
           id: model.id,
           multimodal: true,
-          max_input_tokens: get_max_input_tokens(model.id),
+          raw: model,
         };
-        // const m = Object.entries(model_context).find(m => m[0] === model.id || model.id.startsWith(m[0] + '-'));
-        // if (m) {
-        //   out.max_input_tokens = m[1].context;
-        //   out.description = `context: ${m[1].context}, output: ${m[1].max_out}`;
-        // }
         acc[model.id] = out;
         return acc;
       }, {})
@@ -108,28 +109,48 @@ export class SmartChatModelOpenaiAdapter extends SmartChatModelApiAdapter {
   }
 }
 
+export class SmartChatModelOpenaiRequestAdapter extends SmartChatModelRequestAdapter {
+  to_openai(streaming = false) {
+    const req = super.to_openai(streaming);
+    const body = JSON.parse(req.body);
 
-function get_max_input_tokens(model_id){
-  if(model_id.startsWith('gpt-4.1')){
-    return 1_000_000;
+    // const number_params = this.model_id?.startsWith('o1-')
+    //   ? ['top_p', 'presence_penalty', 'frequency_penalty']
+    //   : ['temperature', 'top_p', 'presence_penalty', 'frequency_penalty']
+    // ;
+    // for (const key of number_params) {
+    //   const value = this.get_request_value(key);
+    //   if (value === undefined) continue;
+    //   const number = Number(value);
+    //   if (Number.isFinite(number)) body[key] = number;
+    // }
+
+    for (const key of ['reasoning_effort', 'verbosity']) {
+      const value = this.get_request_value(key);
+      if (value) body[key] = value;
+    }
+
+    const max_completion_tokens = this.get_request_value('max_completion_tokens') || this.get_request_value('max_tokens');
+    if (max_completion_tokens) {
+      const number = Number(max_completion_tokens);
+      if (Number.isFinite(number) && number > 0) body.max_completion_tokens = Math.floor(number);
+    }
+
+    if(streaming) {
+      body.stream_options = {include_usage: true};
+    }
+
+    req.body = JSON.stringify(body);
+    return req;
   }
-  if(model_id.startsWith('o')){
-    return 200_000;
+
+  get_request_value(key) {
+    if (this._req[key] !== undefined && this._req[key] !== null && this._req[key] !== '') return this._req[key];
+    const settings_value = this.adapter.model.data?.[key];
+    if (settings_value !== undefined && settings_value !== null && settings_value !== '') return settings_value;
   }
-  if(model_id.startsWith('gpt-5')){
-    return 400_000;
-  }
-  if(model_id.startsWith('gpt-4o') || model_id.startsWith('gpt-4.5') || model_id.startsWith('gpt-4-turbo')){
-    return 128_000;
-  }
-  if(model_id.startsWith('gpt-4')){
-    return 8192;
-  }
-  if(model_id.startsWith('gpt-3')){
-    return 16385;
-  }
-  return 8000;
 }
+
 
 /**
  * Response adapter for OpenAI API
@@ -137,94 +158,12 @@ function get_max_input_tokens(model_id){
  * @extends SmartChatModelResponseAdapter
  */
 class SmartChatModelOpenaiResponseAdapter extends SmartChatModelResponseAdapter {
+  handle_chunk(chunk) {
+    if(chunk === 'data: [DONE]') return;
+    const parsed = JSON.parse(chunk.split('data: ')[1] || '{}');
+    if(parsed.usage) this._res.usage = parsed.usage;
+    if(!parsed.choices?.length) return;
+    return super.handle_chunk(chunk);
+  }
 }
 
-
-// // Manual model context for now since OpenAI doesn't provide this info in the API response
-// // may require updating when new models are released
-// const model_context = {
-//   "gpt-3.5-turbo-0125": {
-//     "context": 16385,
-//     "max_out": 4096
-//   },
-//   "gpt-3.5-turbo-0301": {
-//     "context": 4097,
-//     "max_out": 4097
-//   },
-//   "gpt-3.5-turbo-0613": {
-//     "context": 4097,
-//     "max_out": 4097
-//   },
-//   "gpt-3.5-turbo-1106": {
-//     "context": 16385,
-//     "max_out": 4096
-//   },
-//   "gpt-3.5-turbo-16k": {
-//     "context": 16385,
-//     "max_out": 16385
-//   },
-//   "gpt-3.5-turbo-16k-0613": {
-//     "context": 16385,
-//     "max_out": 16385
-//   },
-//   "gpt-4-0125-preview": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4-0314": {
-//     "context": 8192,
-//     "max_out": 8192
-//   },
-//   "gpt-4-0613": {
-//     "context": 8192,
-//     "max_out": 8192
-//   },
-//   "gpt-4-1106-preview": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4-1106-vision-preview": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4-32k-0314": {
-//     "context": 32768,
-//     "max_out": 32768
-//   },
-//   "gpt-4-32k-0613": {
-//     "context": 32768,
-//     "max_out": 32768
-//   },
-//   "gpt-4-turbo-2024-04-09": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4-turbo-preview": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4-vision-preview": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-3.5-turbo": {
-//     "context": 16385,
-//     "max_out": 4096
-//   },
-//   "gpt-4-turbo": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4-32k": {
-//     "context": 32768,
-//     "max_out": 32768
-//   },
-//   "gpt-4o": {
-//     "context": 128000,
-//     "max_out": 4096
-//   },
-//   "gpt-4": {
-//     "context": 8192,
-//     "max_out": 8192
-//   }
-// };

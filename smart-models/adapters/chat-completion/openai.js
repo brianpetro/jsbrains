@@ -23,6 +23,56 @@ const settings_config = {
     type: "password",
     description: "Enter your OpenAI API key.",
   },
+  // "max_completion_tokens": {
+  //   name: 'Max completion tokens',
+  //   type: 'number',
+  //   description: 'Optional. Upper bound for generated tokens, including visible output and reasoning tokens.',
+  // },
+  // "temperature": {
+  //   name: 'Temperature',
+  //   type: 'number',
+  //   description: 'Optional. Sampling temperature from 0 to 2.',
+  // },
+  // "top_p": {
+  //   name: 'Top P',
+  //   type: 'number',
+  //   description: 'Optional. Nucleus sampling value from 0 to 1.',
+  // },
+  // "presence_penalty": {
+  //   name: 'Presence penalty',
+  //   type: 'number',
+  //   description: 'Optional. Value from -2 to 2. Positive values increase new-topic likelihood.',
+  // },
+  // "frequency_penalty": {
+  //   name: 'Frequency penalty',
+  //   type: 'number',
+  //   description: 'Optional. Value from -2 to 2. Positive values reduce repeated lines.',
+  // },
+  "reasoning_effort": {
+    name: 'Reasoning effort',
+    type: 'dropdown',
+    description: 'Optional. Controls effort on reasoning for supported models.',
+    options_callback: () => [
+      {value: '', name: 'Default'},
+      {value: 'none', name: 'None'},
+      {value: 'minimal', name: 'Minimal'},
+      {value: 'low', name: 'Low'},
+      {value: 'medium', name: 'Medium'},
+      {value: 'high', name: 'High'},
+      {value: 'xhigh', name: 'Extra High'}
+    ],
+  },
+  "verbosity": {
+    name: 'Verbosity',
+    type: 'dropdown',
+    description: 'Optional. Controls response verbosity for supported models.',
+    options_callback: () => [
+      {value: '', name: 'Default'},
+      {value: 'low', name: 'Low'},
+      {value: 'medium', name: 'Medium'},
+      {value: 'high', name: 'High'}
+    ],
+  },
   "openai_note": {
     name: 'Note about using OpenAI',
     type: "html",
