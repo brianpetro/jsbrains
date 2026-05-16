@@ -120,6 +120,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
 
   async load() {
     await this.get_models();
+    this.sync_selected_model_data();
     await super.load();
   }
 
@@ -213,11 +214,13 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
       }
       const model_data = this.parse_model_data(models_raw);
       this.model_data = model_data;
+      this.sync_selected_model_data();
       if(typeof this.model.re_render_settings === 'function') {
         this.model.re_render_settings(); // re-render settings to update models dropdown
       }
       return model_data;
     }
+    this.sync_selected_model_data();
     return this.model_data;
   }
   /**
@@ -257,18 +260,71 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
       const info = model.model_info || {};
       const ctx = Object.entries(info).find(([k]) => k.includes('context_length'))?.[1];
       const dims = Object.entries(info).find(([k]) => k.includes('embedding_length'))?.[1];
+      const parsed_ctx = Number(ctx);
+      const parsed_dims = Number(dims);
       acc[model.name] = {
         model_name: model.name,
         id: model.name,
         multimodal: false,
-        max_tokens: ctx || this.max_tokens,
-        dims,
+        max_tokens: Number.isFinite(parsed_ctx) && parsed_ctx > 0
+          ? parsed_ctx
+          : this.max_tokens,
+        dims: Number.isFinite(parsed_dims) && parsed_dims > 0
+          ? parsed_dims
+          : undefined,
         description: model.description || `Model: ${model.name}`,
       };
       return acc;
     }, {});
     this._models = this.model_data;
     return this.model_data;
+  }
+
+  /**
+   * Persist discovered metadata for the selected Ollama model.
+   *
+   * Ollama model dimensions are discovered from `/api/show`, while the model
+   * item may still carry the default 384 dims. Persisting the selected model's
+   * real metadata keeps downstream vector consumers aligned with actual output.
+   *
+   * @returns {boolean} true when model data changed
+   */
+  sync_selected_model_data() {
+    const selected_model_key = this.model?.data?.model_key;
+    const selected_model = selected_model_key
+      ? this.model_data?.[selected_model_key] || this.models?.[selected_model_key]
+      : null
+    ;
+    if (!selected_model || !this.model?.data) return false;
+
+    let changed = false;
+    changed = this.set_model_number_data('dims', selected_model.dims) || changed;
+    changed = this.set_model_number_data('max_tokens', selected_model.max_tokens) || changed;
+
+    if (!changed) return false;
+
+    if (typeof this.model.debounce_save === 'function') {
+      this.model.debounce_save();
+    } else if (typeof this.model.queue_save === 'function') {
+      this.model.queue_save();
+    }
+
+    return true;
+  }
+
+  /**
+   * Set a numeric field on the backing model data when the discovered value is usable.
+   * @param {string} key
+   * @param {number|string|undefined} value
+   * @returns {boolean}
+   */
+  set_model_number_data(key, value) {
+    const numeric_value = Number(value);
+    if (!Number.isFinite(numeric_value) || numeric_value <= 0) return false;
+    if (Number(this.model.data[key]) === numeric_value) return false;
+
+    this.model.data[key] = numeric_value;
+    return true;
   }
   /**
    * Get the models.
