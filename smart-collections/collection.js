@@ -5,20 +5,21 @@ import { create_actions_proxy } from './utils/create_actions_proxy.js';
 
 /** @typedef {import('./item.js').CollectionItem} CollectionItem */
 /** @typedef {import('./adapters/_adapter.js').CollectionDataAdapter} CollectionDataAdapter */
-/** @typedef {import('smart-types').CollectionEnvLike} CollectionEnvLike */
+/** @typedef {import('smart-types').CollectionEnv} CollectionEnv */
 /** @typedef {import('smart-types').CollectionItemData} CollectionItemData */
 /** @typedef {import('smart-types').CollectionFilterOptions} CollectionFilterOptions */
 /** @typedef {import('smart-types').CollectionOptions} CollectionOptions */
 /** @typedef {import('smart-types').CollectionQueueOptions} CollectionQueueOptions */
 /** @typedef {import('smart-types').CollectionEventPayload} CollectionEventPayload */
 /** @typedef {import('smart-types').CollectionEventCallback} CollectionEventCallback */
-/** @typedef {import('smart-types').FileSystemLike} FileSystemLike */
+/** @typedef {import('smart-types').FileSystem} FileSystem */
 /** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
-/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnvLike, data: CollectionItemData, key: string}} CollectionItemLike */
-/** @typedef {CollectionFilterOptions|((item: CollectionItemLike) => boolean)} CollectionFilterInput */
-/** @typedef {new (env: CollectionEnvLike, data?: Partial<CollectionItemData>|null) => CollectionItemLike} CollectionItemConstructor */
-/** @typedef {new (collection: CollectionThis) => CollectionDataAdapter} CollectionDataAdapterConstructor */
-/** @typedef {Collection & Object.<string, *> & {env: CollectionEnvLike, opts: CollectionOptions, items: Object.<string, CollectionItemLike>, collection_key: string, data_adapter: CollectionDataAdapter, item_type: CollectionItemConstructor, constructor: typeof Collection & {key?: string}}} CollectionThis */
+/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnv, data: CollectionItemData, key: string}} CollectionItemRuntime */
+/** @typedef {CollectionFilterOptions|((item: CollectionItemRuntime) => boolean)} CollectionFilterInput */
+/** @typedef {new (env: CollectionEnv, data?: Partial<CollectionItemData>|null) => CollectionItemRuntime} CollectionItemConstructor */
+/** @typedef {CollectionDataAdapter & {process_save_queue: (opts?: CollectionQueueOptions) => Promise<void>}} CollectionDataAdapterRuntime */
+/** @typedef {new (collection: CollectionThis) => CollectionDataAdapterRuntime} CollectionDataAdapterConstructor */
+/** @typedef {Collection & Object.<string, *> & {env: CollectionEnv, opts: CollectionOptions, items: Object.<string, CollectionItemRuntime>, collection_key: string, data_adapter: CollectionDataAdapterRuntime, item_type: CollectionItemConstructor, constructor: typeof Collection & {key?: string}}} CollectionThis */
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
@@ -44,7 +45,7 @@ export class Collection {
    * Constructs a new Collection instance.
    *
    * @this {CollectionThis}
-   * @param {CollectionEnvLike} env - The environment context containing configurations and adapters.
+   * @param {CollectionEnv} env - The environment context containing configurations and adapters.
    * @param {CollectionOptions} [opts={}] - Optional configuration.
    */
   constructor(env, opts = {}) {
@@ -64,7 +65,7 @@ export class Collection {
   /**
    * Initializes a new collection in the environment. Override in subclass if needed.
    *
-   * @param {CollectionEnvLike} env
+   * @param {CollectionEnv} env
    * @param {CollectionOptions} [opts={}]
    * @returns {Promise<void>}
    */
@@ -104,7 +105,7 @@ export class Collection {
    *
    * @this {CollectionThis}
    * @param {Partial<CollectionItemData>} [data={}] - Data for creating/updating an item.
-   * @returns {Promise<CollectionItemLike>|CollectionItemLike} The created or updated item. May return a promise if `init()` is async.
+   * @returns {Promise<CollectionItemRuntime>|CollectionItemRuntime} The created or updated item. May return a promise if `init()` is async.
    */
 
   create_or_update(data = {}) {
@@ -152,7 +153,7 @@ export class Collection {
    *
    * @this {CollectionThis}
    * @param {Partial<CollectionItemData>} data - Data to match against.
-   * @returns {CollectionItemLike|null|undefined}
+   * @returns {CollectionItemRuntime|null|undefined}
    */
   find_by(data) {
     if (data.key) return this.get(data.key);
@@ -167,7 +168,7 @@ export class Collection {
    *
    * @this {CollectionThis}
    * @param {*} [filter_opts={}] - Filter options or a predicate function.
-   * @returns {CollectionItemLike[]} Array of filtered items.
+   * @returns {CollectionItemRuntime[]} Array of filtered items.
    */
   filter(filter_opts = {}) {
     if (typeof filter_opts === 'function') {
@@ -188,7 +189,7 @@ export class Collection {
    * Alias for `filter()`
    * @this {CollectionThis}
    * @param {*} filter_opts
-   * @returns {CollectionItemLike[]}
+   * @returns {CollectionItemRuntime[]}
    */
   list(filter_opts) { return this.filter(filter_opts); }
 
@@ -196,7 +197,7 @@ export class Collection {
    * Retrieves an item by key.
    * @this {CollectionThis}
    * @param {string} key
-   * @returns {CollectionItemLike|undefined}
+   * @returns {CollectionItemRuntime|undefined}
    */
   get(key) { return this.items[key]; }
 
@@ -218,7 +219,7 @@ export class Collection {
    * Retrieves a random item from the collection, optionally filtered by options.
    * @this {CollectionThis}
    * @param {*} [opts]
-   * @returns {CollectionItemLike|undefined}
+   * @returns {CollectionItemRuntime|undefined}
    */
   get_rand(opts = null) {
     if (opts) {
@@ -232,7 +233,7 @@ export class Collection {
   /**
    * Adds or updates an item in the collection.
    * @this {CollectionThis}
-   * @param {CollectionItemLike} item
+   * @param {CollectionItemRuntime} item
    */
   set(item) {
     if (!item.key) throw new Error("Item must have a key property");
@@ -270,7 +271,7 @@ export class Collection {
   /**
    * Lazily initializes and returns the data adapter instance for this collection.
    * @this {CollectionThis}
-   * @returns {CollectionDataAdapter} The data adapter instance.
+   * @returns {CollectionDataAdapterRuntime} The data adapter instance.
    */
   get data_adapter() {
     if (!this._data_adapter) {
@@ -308,7 +309,7 @@ export class Collection {
   /**
    * File system adapter from the environment.
    * @this {CollectionThis}
-   * @returns {FileSystemLike}
+   * @returns {FileSystem}
    */
   get data_fs() { return this.env.data_fs; }
 

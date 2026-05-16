@@ -85,7 +85,7 @@ export class CollectionDataAdapter {
   /**
    * Load the item's data from storage if it has been updated externally.
    * @async
-   * @param {string} key - The key of the item to load.
+   * @param {Object} item - The item to load.
    * @returns {Promise<void>} Resolves when the item is loaded.
    */
   async load_item_if_updated(item) {
@@ -136,8 +136,8 @@ export class ItemDataAdapter {
    * lines in an append-only format.
    * @async
    * @abstract
-   * @param {string|null} [ajson=null] - An optional serialized representation of the item’s data.
-   *                                     If not provided, the adapter should derive it from the item.
+   * @param {*} [ajson=null] - An optional serialized representation of the item’s data.
+   *                           If not provided, the adapter should derive it from the item.
    * @returns {Promise<void>} Resolves when the item is saved.
    */
   async save(ajson = null) { throw new Error('Not implemented'); }
@@ -160,7 +160,7 @@ export class ItemDataAdapter {
   get data_path() { throw new Error('Not implemented'); }
 
   /**
-   * @returns {CollectionDataAdapter} The collection data adapter that this item data adapter belongs to.
+   * @returns {*} The collection data adapter that this item data adapter belongs to.
    */
   get collection_adapter() {
     return this.item.collection.data_adapter;

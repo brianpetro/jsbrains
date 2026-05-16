@@ -1,12 +1,14 @@
 // ESM module
 // No deps. 2-space indent. snake_case for locals and methods. Semicolons.
 
+/** @typedef {Object.<string, any> & {constructor: Function & {key?: string}}} ActionsProxyContext */
+
 /**
  * Create a lazy-binding, reflective Proxy over an actions object.
  * Functions are bound to ctx on first access and cached. Non-functions are passed through.
  * Snapshot semantics: the available keys and their base values are captured at creation.
  *
- * @param {import('../collection.js').Collection|import('../item.js').CollectionItem} ctx collection/item instance used as `this` for action functions
+ * @param {ActionsProxyContext} ctx collection/item instance used as `this` for action functions
  * @param {Record<string | symbol, any>} actions_source object containing available actions
  * @returns {Record<string | symbol, any>} proxy that lazily binds and preserves reflection
  */

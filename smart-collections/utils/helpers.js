@@ -4,7 +4,7 @@ export { collection_instance_name_from, deep_merge };
 /**
  * Creates a unique identifier for the given data without using cryptographic methods.
  * @param {Object} data - The data object to create a UID for.
- * @returns {string} A unique identifier based on the input data.
+ * @returns {*} A unique identifier based on the input data.
  */
 export function create_uid(data) {
   const str = JSON.stringify(data);

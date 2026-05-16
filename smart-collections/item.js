@@ -9,14 +9,14 @@ import { get_item_display_name } from "./utils/get_item_display_name.js";
 import { create_actions_proxy } from './utils/create_actions_proxy.js';
 
 /** @typedef {import('./collection.js').Collection} Collection */
-/** @typedef {import('smart-types').CollectionEnvLike} CollectionEnvLike */
+/** @typedef {import('smart-types').CollectionEnv} CollectionEnv */
 /** @typedef {import('smart-types').CollectionItemData} CollectionItemData */
 /** @typedef {import('smart-types').CollectionItemRef} CollectionItemRef */
 /** @typedef {import('smart-types').CollectionFilterOptions} CollectionFilterOptions */
 /** @typedef {import('smart-types').CollectionScoreResult} CollectionScoreResult */
 /** @typedef {import('smart-types').CollectionEventPayload} CollectionEventPayload */
 /** @typedef {import('smart-types').CollectionEventCallback} CollectionEventCallback */
-/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnvLike, data: CollectionItemData, key: string, collection: Collection, actions: Object.<string, *>, data_adapter: *, constructor: *}} CollectionItemThis */
+/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnv, data: CollectionItemData, key: string, collection: Collection, actions: Object.<string, *>, data_adapter: *, constructor: *}} CollectionItemThis */
 
 /**
  * @class CollectionItem
@@ -44,7 +44,7 @@ export class CollectionItem {
 
   /**
    * @this {CollectionItemThis}
-   * @param {CollectionEnvLike} env - The environment/context.
+   * @param {CollectionEnv} env - The environment/context.
    * @param {Partial<CollectionItemData>|null} [data=null] - Initial data for the item.
    */
   constructor(env, data = null) {
@@ -59,7 +59,7 @@ export class CollectionItem {
 
   /**
    * Loads an item from data and initializes it.
-   * @param {CollectionEnvLike} env
+   * @param {CollectionEnv} env
    * @param {Partial<CollectionItemData>} data
    * @returns {CollectionItem}
    */

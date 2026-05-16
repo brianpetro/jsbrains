@@ -28,7 +28,7 @@ const class_to_collection_key = {
 export class AjsonMultiFileCollectionDataAdapter extends FileCollectionDataAdapter {
   /**
    * The class to use for item adapters.
-   * @type {typeof ItemDataAdapter}
+   * @type {typeof AjsonMultiFileItemDataAdapter}
    */
   ItemDataAdapter = AjsonMultiFileItemDataAdapter;
 
@@ -217,7 +217,7 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
    * Parse the entire AJSON content as a JSON object, handle legacy keys, and extract final state.
    * @private
    * @param {string} ajson 
-   * @returns {boolean}
+   * @returns {*}
    */
   _parse(ajson) {
     try {
@@ -324,7 +324,6 @@ export class AjsonMultiFileItemDataAdapter extends FileItemDataAdapter {
 
   /**
    * Build a single AJSON line for the given item and data.
-   * @param {Object} item 
    * @returns {string}
    */
   get_item_ajson() {

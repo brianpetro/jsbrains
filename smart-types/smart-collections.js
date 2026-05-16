@@ -90,21 +90,21 @@ export const CollectionScoreParams = {};
 export const CollectionScoreResult = {};
 
 /**
- * @typedef {Object} FileStatLike
+ * @typedef {Object} FileStat
  * @property {number} mtime - Last modified timestamp in milliseconds.
  */
-export const FileStatLike = {};
+export const FileStat = {};
 
 /**
- * @typedef {Object} FileSystemAdapterLike
+ * @typedef {Object} FileSystemAdapter
  * @property {(path: string, encoding?: string, opts?: Object.<string, *>) => Promise<string>} [read] - Read file contents.
  */
-export const FileSystemAdapterLike = {};
+export const FileSystemAdapter = {};
 
 /**
- * @typedef {Object} FileSystemLike
+ * @typedef {Object} FileSystem
  * @property {string} [sep] - Path separator.
- * @property {FileSystemAdapterLike} [adapter] - Optional lower-level adapter.
+ * @property {FileSystemAdapter} [adapter] - Optional lower-level adapter.
  * @property {(path: string) => Promise<boolean>} exists - Whether a path exists.
  * @property {(path: string) => Promise<void>} mkdir - Create a directory.
  * @property {(path: string) => Promise<void>} remove - Remove a file.
@@ -112,23 +112,23 @@ export const FileSystemAdapterLike = {};
  * @property {(path: string, data: string) => Promise<void>} write - Write file contents.
  * @property {(path: string, data: string) => Promise<void>} append - Append file contents.
  * @property {(path: string, encoding?: string, opts?: Object.<string, *>) => Promise<string>} read - Read file contents.
- * @property {(path: string) => Promise<FileStatLike>} stat - Read file metadata.
+ * @property {(path: string) => Promise<FileStat>} stat - Read file metadata.
  */
-export const FileSystemLike = {};
+export const FileSystem = {};
 
 /**
- * @typedef {Object.<string, *>} CollectionEnvLike
+ * @typedef {Object.<string, *>} CollectionEnv
  * @property {(target: Object) => void} create_env_getter - Defines an env getter on the target object.
  * @property {import('./smart-environment.js').SmartEnvConfig} [config] - Merged Smart Environment config.
  * @property {Object.<string, *>} [opts] - Runtime environment options.
  * @property {Object.<string, *>} [settings] - Runtime settings store.
  * @property {Object.<string, *>} [collections] - Collection load-state registry.
  * @property {{emit?: Function, on?: Function, once?: Function}} [events] - Event bus.
- * @property {FileSystemLike} [data_fs] - Data filesystem adapter.
+ * @property {FileSystem} [data_fs] - Data filesystem adapter.
  * @property {(module_key: string) => *} [init_module] - Lazy module initializer.
  * @property {{save?: Function}} [smart_settings] - Settings persistence module.
  */
-export const CollectionEnvLike = {};
+export const CollectionEnv = {};
 
 /**
  * @typedef {Object} CollectionDataAdapterModule

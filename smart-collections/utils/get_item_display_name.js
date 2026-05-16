@@ -1,6 +1,6 @@
 /**
  * Pure helper to format the display name for a collection item.
- * @param {string} key
+ * @param {*} key
  * @param {boolean} show_full_path
  * @returns {string}
  */
