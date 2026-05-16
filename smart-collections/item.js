@@ -1,3 +1,5 @@
+// @ts-check
+
 import { create_uid } from './utils/helpers.js';
 import { deep_merge } from 'smart-utils/deep_merge.js';
 import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.js';
@@ -5,6 +7,16 @@ import { collection_instance_name_from } from "./utils/collection_instance_name_
 import { deep_equal } from "./utils/deep_equal.js";
 import { get_item_display_name } from "./utils/get_item_display_name.js";
 import { create_actions_proxy } from './utils/create_actions_proxy.js';
+
+/** @typedef {import('./collection.js').Collection} Collection */
+/** @typedef {import('smart-types').CollectionEnvLike} CollectionEnvLike */
+/** @typedef {import('smart-types').CollectionItemData} CollectionItemData */
+/** @typedef {import('smart-types').CollectionItemRef} CollectionItemRef */
+/** @typedef {import('smart-types').CollectionFilterOptions} CollectionFilterOptions */
+/** @typedef {import('smart-types').CollectionScoreResult} CollectionScoreResult */
+/** @typedef {import('smart-types').CollectionEventPayload} CollectionEventPayload */
+/** @typedef {import('smart-types').CollectionEventCallback} CollectionEventCallback */
+/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnvLike, data: CollectionItemData, key: string, collection: Collection, actions: Object.<string, *>, data_adapter: *, constructor: *}} CollectionItemThis */
 
 /**
  * @class CollectionItem
@@ -22,7 +34,7 @@ export class CollectionItem {
   /**
    * Default properties for an instance of CollectionItem.
    * Override in subclasses to define different defaults.
-   * @returns {Object}
+   * @returns {Object.<string, *>}
    */
   static get defaults() {
     return {
@@ -31,8 +43,9 @@ export class CollectionItem {
   }
 
   /**
-   * @param {Object} env - The environment/context.
-   * @param {Object|null} [data=null] - Initial data for the item.
+   * @this {CollectionItemThis}
+   * @param {CollectionEnvLike} env - The environment/context.
+   * @param {Partial<CollectionItemData>|null} [data=null] - Initial data for the item.
    */
   constructor(env, data = null) {
     // this.env = env;
@@ -46,8 +59,8 @@ export class CollectionItem {
 
   /**
    * Loads an item from data and initializes it.
-   * @param {Object} env
-   * @param {Object} data
+   * @param {CollectionEnvLike} env
+   * @param {Partial<CollectionItemData>} data
    * @returns {CollectionItem}
    */
   static load(env, data) {
@@ -59,6 +72,7 @@ export class CollectionItem {
   /**
    * Merge default properties from the entire inheritance chain.
    * @private
+   * @this {CollectionItemThis}
    */
   merge_defaults() {
     let current_class = this.constructor;
@@ -81,6 +95,7 @@ export class CollectionItem {
    * - `[i]` for sequences
    * - `/` for super-sources (groups, directories, clusters)
    * - `#` for sub-sources (blocks)
+   * @this {CollectionItemThis}
    * @returns {string} The unique key
    */
   get_key() {
@@ -89,7 +104,8 @@ export class CollectionItem {
 
   /**
    * Updates the item data and returns true if changed.
-   * @param {Object} data
+   * @this {CollectionItemThis}
+   * @param {Partial<CollectionItemData>} data
    * @returns {boolean} True if data changed.
    */
   update_data(data) {
@@ -104,6 +120,7 @@ export class CollectionItem {
 
   /**
    * Sanitizes data for saving. Ensures no circular references.
+   * @this {CollectionItemThis}
    * @param {*} data
    * @returns {*} Sanitized data.
    */
@@ -121,17 +138,20 @@ export class CollectionItem {
 
   /**
    * Initializes the item. Override as needed.
-   * @param {Object} [input_data] - Additional data that might be provided on creation.
+   * @param {Partial<CollectionItemData>} [input_data] - Additional data that might be provided on creation.
+   * @returns {*}
    */
   init(input_data) { /* NO-OP by default */ }
 
   /**
    * Queues this item for saving.
+   * @this {CollectionItemThis}
    */
   queue_save() { this._queue_save = true; }
 
   /**
    * Saves this item using its data adapter.
+   * @this {CollectionItemThis}
    * @returns {Promise<void>}
    */
   async save() {
@@ -146,11 +166,13 @@ export class CollectionItem {
 
   /**
    * Queues this item for loading.
+   * @this {CollectionItemThis}
    */
   queue_load() { this._queue_load = true; }
 
   /**
    * Loads this item using its data adapter.
+   * @this {CollectionItemThis}
    * @returns {Promise<void>}
    */
   async load() {
@@ -166,6 +188,7 @@ export class CollectionItem {
   /**
    * Handles load errors by re-queuing for load.
    * Override if needed.
+   * @this {CollectionItemThis}
    * @param {Error} err
    */
   on_load_error(err) {
@@ -175,6 +198,7 @@ export class CollectionItem {
   /**
    * Validates the item before saving. Checks for presence and validity of key.
    * @deprecated should be better handled 2025-12-17 (wrong scope?)
+   * @this {CollectionItemThis}
    * @returns {boolean}
    */
   validate_save() {
@@ -187,6 +211,7 @@ export class CollectionItem {
   /**
    * Marks this item as deleted. This does not immediately remove it from memory,
    * but queues a save that will result in the item being removed from persistent storage.
+   * @this {CollectionItemThis}
    */
   delete() {
     this.deleted = true;
@@ -196,19 +221,8 @@ export class CollectionItem {
   /**
    * Filters items in the collection based on provided options.
    * functional filter (returns true or false) for filtering items in collection; called by collection class
-   * @param {Object} filter_opts - Filtering options.
-   * @param {string} [filter_opts.exclude_key] - A single key to exclude.
-   * @param {string[]} [filter_opts.exclude_keys] - An array of keys to exclude. If exclude_key is provided, it's added to this array.
-   * @param {string} [filter_opts.exclude_key_starts_with] - Exclude keys starting with this string.
-   * @param {string[]} [filter_opts.exclude_key_starts_with_any] - Exclude keys starting with any of these strings.
-   * @param {string} [filter_opts.exclude_key_includes] - Exclude keys that include this string.
-   * @param {string[]} [filter_opts.exclude_key_includes_any] - Exclude keys that include any of these strings.
-   * @param {string} [filter_opts.exclude_key_ends_with] - Exclude keys ending with this string.
-   * @param {string[]} [filter_opts.exclude_key_ends_with_any] - Exclude keys ending with any of these strings.
-   * @param {string} [filter_opts.key_ends_with] - Include only keys ending with this string.
-   * @param {string} [filter_opts.key_starts_with] - Include only keys starting with this string.
-   * @param {string[]} [filter_opts.key_starts_with_any] - Include only keys starting with any of these strings.
-   * @param {string} [filter_opts.key_includes] - Include only keys that include this string.
+   * @this {CollectionItemThis}
+   * @param {CollectionFilterOptions} filter_opts - Filtering options.
    * @returns {boolean} True if the item passes the filter, false otherwise.
    */
   filter(filter_opts = {}) {
@@ -236,7 +250,7 @@ export class CollectionItem {
 
     // Exclude keys that start with any of the provided prefixes
     if (exclude_key_starts_with_any && exclude_key_starts_with_any.some((prefix) => this.key.startsWith(prefix))) return false;
-    
+
     // Exclude keys that include a specific string
     if (exclude_key_includes && this.key.includes(exclude_key_includes)) return false;
 
@@ -270,10 +284,20 @@ export class CollectionItem {
     return true;
   }
 
+  /**
+   * @this {CollectionItemThis}
+   * @param {Object.<string, *>} [params={}]
+   * @returns {CollectionScoreResult|null}
+   */
   filter_and_score(params={}) {
     if(this.filter(params.filter) === false) return null;
     return this.score(params);
   }
+  /**
+   * @this {CollectionItemThis}
+   * @param {Object.<string, *>} [params={}]
+   * @returns {CollectionScoreResult}
+   */
   score(params={}) {
     const score_action = this.actions[params.score_algo_key];
     if(typeof score_action !== 'function') throw new Error(`Missing score action: ${params.score_algo_key}`);
@@ -284,6 +308,10 @@ export class CollectionItem {
   }
 
 
+  /**
+   * @this {CollectionItemThis}
+   * @returns {Object}
+   */
   get actions() {
     if (!this._actions) {
       this._actions = create_actions_proxy(this, {
@@ -315,6 +343,7 @@ export class CollectionItem {
 
   /**
    * Retrieves the parent collection from the environment.
+   * @this {CollectionItemThis}
    * @returns {Collection}
    */
   get collection() {
@@ -322,12 +351,16 @@ export class CollectionItem {
   }
 
   /**
+   * @this {CollectionItemThis}
    * @returns {string} The item's key.
    */
   get key() {
     return this.data?.key || this.get_key();
   }
 
+  /**
+   * @returns {string}
+   */
   get item_type_key() {
     let name = this.constructor.name;
     if (name.match(/\d$/)) name = name.slice(0, -1);
@@ -338,28 +371,59 @@ export class CollectionItem {
   /**
    * Emits an event with item metadata.
    *
+   * @this {CollectionItemThis}
    * @param {string} event_key
-   * @param {Object} [payload={}]
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
    * @returns {void}
    */
   emit_event(event_key, payload = {}) {
     this.env.events?.emit(event_key, { collection_key: this.collection_key, item_key: this.key, ...payload });
   }
+  /**
+   * @this {CollectionItemThis}
+   * @param {string} event_key
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
+   * @returns {void}
+   */
   emit_info_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'info', ...payload });
   }
+  /**
+   * @this {CollectionItemThis}
+   * @param {string} event_key
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
+   * @returns {void}
+   */
   emit_warning_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'warning', ...payload });
   }
+  /**
+   * @this {CollectionItemThis}
+   * @param {string} event_key
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
+   * @returns {void}
+   */
   emit_error_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'error', ...payload });
   }
+  /**
+   * @this {CollectionItemThis}
+   * @param {string} event_key
+   * @param {CollectionEventCallback} callback
+   * @returns {*}
+   */
   on_event(event_key, callback) {
     return this.env.events?.on(event_key, (payload) => {
       if (payload?.item_key && payload.item_key !== this.key) return;
       callback(payload);
     });
   }
+  /**
+   * @this {CollectionItemThis}
+   * @param {string} event_key
+   * @param {CollectionEventCallback} callback
+   * @returns {*}
+   */
   once_event(event_key, callback) {
     return this.env.events?.once(event_key, (payload) => {
       if (payload?.item_key && payload.item_key !== this.key) return;
@@ -368,13 +432,15 @@ export class CollectionItem {
   }
 
   /**
-   * @returns {Object} The data adapter for this item's collection.
+   * @this {CollectionItemThis}
+   * @returns {*} The data adapter for this item's collection.
    */
   get data_adapter() {
     return this.collection.data_adapter; 
   }
 
   /**
+   * @this {CollectionItemThis}
    * @returns {Object} The filesystem adapter.
    */
   get data_fs() { 
@@ -383,6 +449,7 @@ export class CollectionItem {
 
   /**
    * Access to collection-level settings.
+   * @this {CollectionItemThis}
    * @returns {Object}
    */
   get settings() {
@@ -390,6 +457,10 @@ export class CollectionItem {
     return this.env.settings[this.collection_key];
   }
 
+  /**
+   * @this {CollectionItemThis}
+   * @param {Object.<string, *>} settings
+   */
   set settings(settings) {
     this.env.settings[this.collection_key] = settings;
     this.env.smart_settings.save();
@@ -398,7 +469,8 @@ export class CollectionItem {
   /**
    * A simple reference object for this item.
    * @deprecated 2025-11-11 lacks adoption
-   * @returns {{collection_key: string, key: string}}
+   * @this {CollectionItemThis}
+   * @returns {CollectionItemRef}
    */
   get ref() {
     return { collection_key: this.collection_key, key: this.key };
@@ -406,6 +478,7 @@ export class CollectionItem {
 
   /**
    * @deprecated use env.smart_components~~env.smart_view~~ instead
+   * @this {CollectionItemThis}
    */
   get smart_view() {
     if (!this._smart_view) this._smart_view = this.env.init_module('smart_view');
@@ -416,6 +489,7 @@ export class CollectionItem {
    * Retrieves the display name of the collection item.
    * @readonly
    * @deprecated Use `get_item_display_name(key, show_full_path)` instead (keep UI logic out of collections).
+   * @this {CollectionItemThis}
    * @returns {string} The display name.
    */
   get name() {

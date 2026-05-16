@@ -1,5 +1,24 @@
+// @ts-check
+
 import { deep_merge } from 'smart-utils/deep_merge.js';
 import { create_actions_proxy } from './utils/create_actions_proxy.js';
+
+/** @typedef {import('./item.js').CollectionItem} CollectionItem */
+/** @typedef {import('./adapters/_adapter.js').CollectionDataAdapter} CollectionDataAdapter */
+/** @typedef {import('smart-types').CollectionEnvLike} CollectionEnvLike */
+/** @typedef {import('smart-types').CollectionItemData} CollectionItemData */
+/** @typedef {import('smart-types').CollectionFilterOptions} CollectionFilterOptions */
+/** @typedef {import('smart-types').CollectionOptions} CollectionOptions */
+/** @typedef {import('smart-types').CollectionQueueOptions} CollectionQueueOptions */
+/** @typedef {import('smart-types').CollectionEventPayload} CollectionEventPayload */
+/** @typedef {import('smart-types').CollectionEventCallback} CollectionEventCallback */
+/** @typedef {import('smart-types').FileSystemLike} FileSystemLike */
+/** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
+/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnvLike, data: CollectionItemData, key: string}} CollectionItemLike */
+/** @typedef {CollectionFilterOptions|((item: CollectionItemLike) => boolean)} CollectionFilterInput */
+/** @typedef {new (env: CollectionEnvLike, data?: Partial<CollectionItemData>|null) => CollectionItemLike} CollectionItemConstructor */
+/** @typedef {new (collection: CollectionThis) => CollectionDataAdapter} CollectionDataAdapterConstructor */
+/** @typedef {Collection & Object.<string, *> & {env: CollectionEnvLike, opts: CollectionOptions, items: Object.<string, CollectionItemLike>, collection_key: string, data_adapter: CollectionDataAdapter, item_type: CollectionItemConstructor, constructor: typeof Collection & {key?: string}}} CollectionThis */
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
@@ -24,10 +43,9 @@ export class Collection {
   /**
    * Constructs a new Collection instance.
    *
-   * @param {Object} env - The environment context containing configurations and adapters.
-   * @param {Object} [opts={}] - Optional configuration.
-   * @param {string} [opts.collection_key] - Custom key to override default collection name.
-   * @param {string} [opts.data_dir] - Custom data directory path.
+   * @this {CollectionThis}
+   * @param {CollectionEnvLike} env - The environment context containing configurations and adapters.
+   * @param {CollectionOptions} [opts={}] - Optional configuration.
    */
   constructor(env, opts = {}) {
     // this.env = env;
@@ -46,8 +64,8 @@ export class Collection {
   /**
    * Initializes a new collection in the environment. Override in subclass if needed.
    *
-   * @param {Object} env
-   * @param {Object} [opts={}]
+   * @param {CollectionEnvLike} env
+   * @param {CollectionOptions} [opts={}]
    * @returns {Promise<void>}
    */
   static async init(env, opts = {}) {
@@ -84,8 +102,9 @@ export class Collection {
    * 
    * NOTE: wrapping in try/catch seems to fail to catch errors thrown in async init functions when awaiting create_or_update
    *
-   * @param {Object} [data={}] - Data for creating/updating an item.
-   * @returns {Promise<Item>|Item} The created or updated item. May return a promise if `init()` is async.
+   * @this {CollectionThis}
+   * @param {Partial<CollectionItemData>} [data={}] - Data for creating/updating an item.
+   * @returns {Promise<CollectionItemLike>|CollectionItemLike} The created or updated item. May return a promise if `init()` is async.
    */
 
   create_or_update(data = {}) {
@@ -131,8 +150,9 @@ export class Collection {
    * Finds an item by partial data match (first checks key). If `data.key` provided,
    * returns the item with that key; otherwise attempts a match by merging data.
    *
-   * @param {Object} data - Data to match against.
-   * @returns {Item|null}
+   * @this {CollectionThis}
+   * @param {Partial<CollectionItemData>} data - Data to match against.
+   * @returns {CollectionItemLike|null|undefined}
    */
   find_by(data) {
     if (data.key) return this.get(data.key);
@@ -145,8 +165,9 @@ export class Collection {
   /**
    * Filters items based on provided filter options or a custom function.
    *
-   * @param {Object|Function} [filter_opts={}] - Filter options or a predicate function.
-   * @returns {Item[]} Array of filtered items.
+   * @this {CollectionThis}
+   * @param {*} [filter_opts={}] - Filter options or a predicate function.
+   * @returns {CollectionItemLike[]} Array of filtered items.
    */
   filter(filter_opts = {}) {
     if (typeof filter_opts === 'function') {
@@ -165,22 +186,25 @@ export class Collection {
 
   /**
    * Alias for `filter()`
-   * @param {Object|Function} filter_opts
-   * @returns {Item[]}
+   * @this {CollectionThis}
+   * @param {*} filter_opts
+   * @returns {CollectionItemLike[]}
    */
   list(filter_opts) { return this.filter(filter_opts); }
 
   /**
    * Retrieves an item by key.
+   * @this {CollectionThis}
    * @param {string} key
-   * @returns {Item|undefined}
+   * @returns {CollectionItemLike|undefined}
    */
   get(key) { return this.items[key]; }
 
   /**
    * Retrieves multiple items by an array of keys.
+   * @this {CollectionThis}
    * @param {string[]} keys
-   * @returns {Item[]}
+   * @returns {Array<*>}
    */
   get_many(keys = []) {
     if (!Array.isArray(keys)) {
@@ -192,8 +216,9 @@ export class Collection {
 
   /**
    * Retrieves a random item from the collection, optionally filtered by options.
-   * @param {Object} [opts]
-   * @returns {Item|undefined}
+   * @this {CollectionThis}
+   * @param {*} [opts]
+   * @returns {CollectionItemLike|undefined}
    */
   get_rand(opts = null) {
     if (opts) {
@@ -206,7 +231,8 @@ export class Collection {
 
   /**
    * Adds or updates an item in the collection.
-   * @param {Item} item
+   * @this {CollectionThis}
+   * @param {CollectionItemLike} item
    */
   set(item) {
     if (!item.key) throw new Error("Item must have a key property");
@@ -215,8 +241,9 @@ export class Collection {
 
   /**
    * Updates multiple items by their keys.
+   * @this {CollectionThis}
    * @param {string[]} keys
-   * @param {Object} data
+   * @param {Partial<CollectionItemData>} data
    */
   update_many(keys = [], data = {}) {
     this.get_many(keys).forEach((item) => item.update_data(data));
@@ -224,12 +251,14 @@ export class Collection {
 
   /**
    * Clears all items from the collection.
+   * @this {CollectionThis}
    */
   clear() {
     this.items = {};
   }
 
   /**
+   * @this {CollectionThis}
    * @returns {string} The collection key, can be overridden by opts.collection_key
    */
   get collection_key() {
@@ -240,7 +269,8 @@ export class Collection {
 
   /**
    * Lazily initializes and returns the data adapter instance for this collection.
-   * @returns {Object} The data adapter instance.
+   * @this {CollectionThis}
+   * @returns {CollectionDataAdapter} The data adapter instance.
    */
   get data_adapter() {
     if (!this._data_adapter) {
@@ -252,8 +282,9 @@ export class Collection {
 
   /**
    * @private
+   * @this {CollectionThis}
    * @param {string} type
-   * @returns {Function}
+   * @returns {*}
    */
   get_adapter_class(type) {
     const config = this.env.opts.collections?.[this.collection_key];
@@ -269,13 +300,15 @@ export class Collection {
   /**
    * Data directory strategy for this collection. Defaults to 'multi'.
    * @deprecated should be handled in adapters (2025-12-09)
+   * @this {CollectionThis}
    * @returns {string}
    */
   get data_dir() { return this.collection_key; }
 
   /**
    * File system adapter from the environment.
-   * @returns {Object}
+   * @this {CollectionThis}
+   * @returns {FileSystemLike}
    */
   get data_fs() { return this.env.data_fs; }
 
@@ -294,6 +327,7 @@ export class Collection {
 
   /**
    * Derives a readable item name from the item class name.
+   * @this {CollectionThis}
    * @returns {string}
    */
   get item_name() {
@@ -303,7 +337,8 @@ export class Collection {
   /**
    * Retrieves the item type (constructor) from the environment.
    * @deprecated replace with item_class with strict adherence to conventions (2025-10-28)
-   * @returns {Function} Item constructor.
+   * @this {CollectionThis}
+   * @returns {CollectionItemConstructor} Item constructor.
    */
   get item_type() {
     if(!this._item_type) this._item_type = this.resolve_item_type();
@@ -312,7 +347,8 @@ export class Collection {
   // TEMP resolver (2025-11-03): until better handled on merging configs at obsidian-smart-env startup
   /**
    * @private
-   * @returns {Function}
+   * @this {CollectionThis}
+   * @returns {*}
    */
   resolve_item_type() {
     const available = [
@@ -332,12 +368,14 @@ export class Collection {
 
   /**
    * Returns an array of all keys in the collection.
+   * @this {CollectionThis}
    * @returns {string[]}
    */
   get keys() { return Object.keys(this.items); }
 
   /**
    * @deprecated use data_adapter instead (2024-09-14)
+   * @this {CollectionThis}
    */
   get adapter() { return this.data_adapter; }
 
@@ -347,6 +385,9 @@ export class Collection {
    * @description 
    * Saves items flagged for saving (_queue_save) back to AJSON or SQLite. This ensures persistent storage 
    * of any updates made since last load/import. This method also writes changes to disk (AJSON files or DB).
+   * @this {CollectionThis}
+   * @param {CollectionQueueOptions} [opts={}]
+   * @returns {Promise<void>}
    */
   async process_save_queue(opts = {}) {
     if(opts.force) {
@@ -357,6 +398,8 @@ export class Collection {
   }
   /**
    * @alias process_save_queue
+   * @this {CollectionThis}
+   * @param {CollectionQueueOptions} [opts={}]
    * @returns {Promise<void>}
    */
   async save(opts = {}) { await this.process_save_queue(opts); }
@@ -367,6 +410,8 @@ export class Collection {
    * Loads items that have been flagged for loading (_queue_load). This may involve 
    * reading from AJSON/SQLite or re-importing from markdown if needed. 
    * Called once initial environment is ready and collections are known.
+   * @this {CollectionThis}
+   * @returns {Promise<void>}
    */
   async process_load_queue() {
     // Just delegate to the adapter
@@ -375,7 +420,8 @@ export class Collection {
 
   /**
    * Retrieves processed settings configuration.
-   * @returns {Object}
+   * @this {CollectionThis}
+   * @returns {SettingsConfig}
    */
   get settings_config() { return this.process_settings_config({}); }
 
@@ -384,9 +430,10 @@ export class Collection {
    * @deprecated removing settings_config from collections (2025-11-24)
    *
    * @private
-   * @param {Object} _settings_config
+   * @this {CollectionThis}
+   * @param {SettingsConfig} _settings_config
    * @param {string} [prefix='']
-   * @returns {Object}
+   * @returns {SettingsConfig}
    */
   process_settings_config(_settings_config, prefix = '') {
     const add_prefix = (key) =>
@@ -426,6 +473,7 @@ export class Collection {
   /**
    * Current settings for the collection.
    * Initializes with default settings if none exist.
+   * @this {CollectionThis}
    * @returns {Object}
    */
   get settings() {
@@ -438,6 +486,7 @@ export class Collection {
 
   /**
    * Unloads collection data from memory.
+   * @this {CollectionThis}
    */
   unload() {
     this.clear();
@@ -448,22 +497,47 @@ export class Collection {
   /**
    * Emits an event with collection metadata.
    *
+   * @this {CollectionThis}
    * @param {string} event_key
-   * @param {Object} [payload={}]
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
    * @returns {void}
    */
   emit_event(event_key, payload = {}) {
     this.env.events?.emit(event_key, { collection_key: this.collection_key, ...payload });
   }
+  /**
+   * @this {CollectionThis}
+   * @param {string} event_key
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
+   * @returns {void}
+   */
   emit_info_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'info', ...payload });
   }
+  /**
+   * @this {CollectionThis}
+   * @param {string} event_key
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
+   * @returns {void}
+   */
   emit_warning_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'warning', ...payload });
   }
+  /**
+   * @this {CollectionThis}
+   * @param {string} event_key
+   * @param {CollectionEventPayload & Object.<string, *>} [payload={}]
+   * @returns {void}
+   */
   emit_error_event(event_key, payload = {}) {
     this.emit_event(event_key, { level: 'error', ...payload });
   }
+  /**
+   * @this {CollectionThis}
+   * @param {string} event_key
+   * @param {CollectionEventCallback} callback
+   * @returns {*}
+   */
   on_event(event_key, callback) {
     return this.env.events?.on(event_key, (payload) => {
       if (payload?.collection_key && payload.collection_key !== this.collection_key) return;
@@ -474,6 +548,7 @@ export class Collection {
   /**
    * Lazily binds action functions to the collection instance.
    *
+   * @this {CollectionThis}
    * @returns {Object} Bound action functions keyed by name.
    */
   get actions() {
@@ -493,6 +568,7 @@ export class Collection {
 
   /**
    * Clears cached actions proxy and rebuilds on next access.
+   * @this {CollectionThis}
    * @returns {Object} Rebuilt proxy with latest source snapshot.
    */
   refresh_actions() {
@@ -501,6 +577,10 @@ export class Collection {
   }
 
   // debounce running process save queue
+  /**
+   * @this {CollectionThis}
+   * @returns {void}
+   */
   queue_save() {
     if(this._debounce_queue_save) clearTimeout(this._debounce_queue_save);
     this._debounce_queue_save = setTimeout(() => {
@@ -511,6 +591,7 @@ export class Collection {
   // BEGIN DEPRECATED
   /**
    * @deprecated use env.smart_components~~env.smart_view~~ instead (2026-02-11)
+   * @this {CollectionThis}
    * @returns {Object} smart_view instance
    */
   get smart_view() {
