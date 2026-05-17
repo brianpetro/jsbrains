@@ -145,10 +145,11 @@ export class ContextItems extends Collection {
       }
       resp = loaded_items;
     } else {
-      console.warn(`ContextItems.load_from_data: named context "${item_data.key}" not found`);
-      this.emit_error_event('context_items:load_from_data', {
-        message: 'Named context not found',
-        named_context: item_data.named_context,
+      const message = `Named context not found: "${named_context_name}"`;
+      console.warn(`ContextItems.load_from_data: ${message}`);
+      this.smart_context.emit_missing_context_item_event(key, message, {
+        message,
+        btn_text: 'Remove missing named context',
       });
       resp = null;
     }

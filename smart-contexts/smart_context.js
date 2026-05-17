@@ -296,6 +296,8 @@ export class SmartContext extends CollectionItem {
    * @param {Error|string} error
    * @param {object} [params={}]
    * @param {number} [params.debounce_ms=250]
+   * @param {string} [params.message]
+   * @param {string} [params.btn_text]
    * @returns {void}
    */
   emit_missing_context_item_event(key, error, params = {}) {
@@ -320,11 +322,11 @@ export class SmartContext extends CollectionItem {
       if (!this.data?.context_items?.[missing_key]) return;
 
       this.emit_warning_event('smart_context:missing_item', {
-        message: 'Failed to find context item: ' + missing_key,
+        message: params.message || 'Failed to find context item: ' + missing_key,
         missing_key,
         context_key: this.key,
         error: error?.toString?.() || String(error || ''),
-        btn_text: 'Remove missing item',
+        btn_text: params.btn_text || 'Remove missing item',
         btn_callback: 'smart_contexts:remove_missing_item', // should be able to be removed once notifications feed modal detects btn_event_key and btn_event_payload as valid action (to show button)
         btn_event_key: 'smart_contexts:remove_missing_item',
         btn_event_payload: {
