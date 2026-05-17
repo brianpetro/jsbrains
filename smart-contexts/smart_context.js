@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @file smart_context.js
  *
@@ -7,6 +9,21 @@
 
 import { CollectionItem } from 'smart-collections';
 
+/** @typedef {import('./context_items.js').ContextItems} ContextItems */
+/** @typedef {import('./context_item.js').ContextItem} ContextItem */
+/** @typedef {import('smart-types').SmartContextData} SmartContextData */
+/** @typedef {import('smart-types').ContextItemData} ContextItemData */
+/** @typedef {import('smart-types').ContextItemsData} ContextItemsData */
+/** @typedef {import('smart-types').SmartContextAddItemParams} SmartContextAddItemParams */
+/** @typedef {import('smart-types').SmartContextRemoveItemParams} SmartContextRemoveItemParams */
+/** @typedef {import('smart-types').SmartContextMissingItemParams} SmartContextMissingItemParams */
+/** @typedef {import('smart-types').ContextItemMediaResult} ContextItemMediaResult */
+/** @typedef {import('smart-types').ContextItemTextResult} ContextItemTextResult */
+/** @typedef {import('smart-types').ContextMediaPayload} ContextMediaPayload */
+/** @typedef {ContextItem & Object.<string, *> & {env: *, data: ContextItemData & Object.<string, *>, key: string, collection: *, context_type_adapter: *, is_media: boolean, size: number, mtime: number, get_text: function(): Promise<ContextItemTextResult>, get_base64: function(): Promise<ContextItemMediaResult>}} ContextItemInstance */
+/** @typedef {Object.<string, *> & {items: Object.<string, ContextItemInstance>, filter: Function}} ContextItemsInstance */
+/** @typedef {SmartContext & Object.<string, *> & {data: SmartContextData & Object.<string, *>, env: *, collection: *, context_items: ContextItemsInstance, actions: Object.<string, *>, key: string, _missing_context_item_event_timers: Map<string, *>}} SmartContextThis */
+
 /**
  * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are
  * derived from folders or named contexts.
@@ -14,7 +31,7 @@ import { CollectionItem } from 'smart-collections';
  * Once a derived item is already excluded, a second remove should delete the exclusion marker so the
  * builder can expose a reversible "remove exclusion" action.
  *
- * @param {Record<string, object>} context_items
+ * @param {ContextItemsData} context_items
  * @param {string} key
  * @deprecated Is this deprecated???? 2026-03-24 (see remove_by_path for latest handling)
  * @returns {boolean}
@@ -39,6 +56,9 @@ const remove_context_item_data = (context_items, key) => {
 export class SmartContext extends CollectionItem {
   static version = '2.0.2';
 
+  /**
+   * @returns {{data: SmartContextData}}
+   */
   static get defaults() {
     return {
       data: {
@@ -50,6 +70,10 @@ export class SmartContext extends CollectionItem {
   }
 
   // queue_save to debounce process save queue
+  /**
+   * @this {*}
+   * @returns {void}
+   */
   queue_save() {
     super.queue_save();
     this.collection.queue_save();
@@ -57,7 +81,10 @@ export class SmartContext extends CollectionItem {
 
   /**
    * add_item
-   * @param {string|object} item
+   * @this {SmartContextThis}
+   * @param {string|Object.<string, *>} item
+   * @param {SmartContextAddItemParams} [params={}]
+   * @returns {void|*}
    */
   add_item(item, params = {}) {
     const {
@@ -84,7 +111,9 @@ export class SmartContext extends CollectionItem {
 
   /**
    * add_items
-   * @param {string[]|object[]} items
+   * @this {SmartContextThis}
+   * @param {Array<string|Object.<string, *>>|string|Object.<string, *>} items
+   * @returns {void}
    */
   add_items(items) {
     if (!Array.isArray(items)) items = [items];
@@ -97,9 +126,10 @@ export class SmartContext extends CollectionItem {
   /**
    * remove_item
    * Removes a path/ref from context and emits context:updated
+   * @this {SmartContextThis}
    * @param {string} key
-   * @param {object} params
-   * @param {boolean} params.emit_updated
+   * @param {SmartContextRemoveItemParams} params
+   * @returns {void}
    */
   remove_item(key, params = {}) {
     const { emit_updated = true } = params;
@@ -112,9 +142,9 @@ export class SmartContext extends CollectionItem {
   /**
    * remove_items
    * Removes paths/refs from context and emits context:updated once
+   * @this {SmartContextThis}
    * @param {string[]|string} keys
-   * @param {object} params
-   * @param {boolean} params.emit_updated
+   * @param {SmartContextRemoveItemParams} params
    * @returns {string[]}
    */
   remove_items(keys, params = {}) {
@@ -132,12 +162,20 @@ export class SmartContext extends CollectionItem {
     return removed_keys;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {void}
+   */
   clear_all() {
     this.data.context_items = {};
     this.queue_save();
     this.emit_event('context:updated', { cleared: true });
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {string[]}
+   */
   get context_item_keys() {
     return Object.entries(this.data?.context_items || {})
       .filter(([, item_data]) => !item_data.exclude)
@@ -145,6 +183,10 @@ export class SmartContext extends CollectionItem {
     ;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {string[]}
+   */
   get excluded_context_item_keys() {
     return Object.entries(this.data?.context_items || {})
       .filter(([, item_data]) => item_data?.exclude)
@@ -152,6 +194,10 @@ export class SmartContext extends CollectionItem {
     ;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {string}
+   */
   get key() {
     if (!this.data.key) {
       this.data.key = Date.now().toString();
@@ -159,22 +205,42 @@ export class SmartContext extends CollectionItem {
     return this.data.key;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {boolean}
+   */
   get has_context_items() {
     return this.item_count > 0;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {boolean}
+   */
   get has_excluded_context_items() {
     return this.excluded_item_count > 0;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {number}
+   */
   get excluded_item_count() {
     return this.excluded_context_item_keys.length;
   }
 
+  /**
+   * @this {*}
+   * @returns {*}
+   */
   get name() {
     return this.data.name;
   }
 
+  /**
+   * @this {*}
+   * @param {string} name
+   */
   set name(name) {
     if (typeof name !== 'string') throw new TypeError('Name must be a string');
     const previous_name = typeof this.data.name === 'string' ? this.data.name : '';
@@ -191,6 +257,10 @@ export class SmartContext extends CollectionItem {
     this.queue_save();
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {number}
+   */
   get size() {
     let size = 0;
     Object.values(this.context_items.items || {})
@@ -201,6 +271,10 @@ export class SmartContext extends CollectionItem {
     return size;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {number}
+   */
   get item_count() {
     return Object.entries(this.data?.context_items || {})
       .filter(([, item_data]) => !item_data.exclude)
@@ -209,6 +283,11 @@ export class SmartContext extends CollectionItem {
   }
 
   // v3
+  /**
+   * @this {SmartContextThis}
+   * @param {Object.<string, *>} [params={}]
+   * @returns {Promise<string>}
+   */
   async get_text(params = {}) {
     const segments = [];
     const context_items = this.context_items
@@ -235,8 +314,9 @@ export class SmartContext extends CollectionItem {
    * so this helper accepts the same params consumed by
    * ContextItems.load_from_data(...).
    *
-   * @param {object} [params={}]
-   * @returns {import('smart-contexts/context_items.js').ContextItems}
+   * @this {SmartContextThis}
+   * @param {Object.<string, *>} [params={}]
+   * @returns {ContextItemsInstance}
    */
   get_context_items(params = {}) {
     const config = this.env.config.collections.context_items;
@@ -246,12 +326,20 @@ export class SmartContext extends CollectionItem {
     return context_items;
   }
 
+  /**
+   * @this {SmartContextThis}
+   * @returns {ContextItemsInstance}
+   */
   get context_items() {
     return this.get_context_items();
   }
 
   /**
    * @private
+   * @this {SmartContextThis}
+   * @param {*} item
+   * @param {ContextItemTextResult} item_text
+   * @returns {void}
    */
   emit_get_text_error(item, item_text) {
     this.emit_event('notification:error', {
@@ -263,6 +351,9 @@ export class SmartContext extends CollectionItem {
 
   /**
    * Move below to pro subclass
+   * @this {SmartContextThis}
+   * @param {Object.<string, *>} [params={}]
+   * @returns {Promise<ContextMediaPayload[]>}
    */
   async get_media(params = {}) {
     const context_items = this.context_items.filter(params.filter);
@@ -277,6 +368,10 @@ export class SmartContext extends CollectionItem {
   }
   /**
    * @private
+   * @this {SmartContextThis}
+   * @param {*} item
+   * @param {ContextItemMediaResult} item_base64
+   * @returns {void}
    */
   emit_get_media_error(item, item_base64) {
     this.emit_event('notification:error', {
@@ -292,12 +387,10 @@ export class SmartContext extends CollectionItem {
    * durable SmartContext instance to avoid duplicate native notices for the same
    * missing item.
    *
+   * @this {SmartContextThis}
    * @param {string} key
    * @param {Error|string} error
-   * @param {object} [params={}]
-   * @param {number} [params.debounce_ms=250]
-   * @param {string} [params.message]
-   * @param {string} [params.btn_text]
+   * @param {SmartContextMissingItemParams} [params={}]
    * @returns {void}
    */
   emit_missing_context_item_event(key, error, params = {}) {

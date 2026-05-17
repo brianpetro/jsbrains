@@ -17,9 +17,9 @@ import { DefaultEntitiesVectorAdapter } from "./adapters/default.js";
 /** @typedef {import('smart-types').EntityLookupResult} EntityLookupResult */
 /** @typedef {import('smart-types').EmbedModel} EmbedModel */
 /** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
-/** @typedef {SmartEntity & Object.<string, *> & {path: string, key: string, vec?: Array<number>, should_embed: boolean, is_unembedded: boolean}} SmartEntityRuntime */
-/** @typedef {DefaultEntitiesVectorAdapter & Object.<string, *>} DefaultEntitiesVectorAdapterRuntime */
-/** @typedef {SmartEntities & Object.<string, *> & {env: SmartEntitiesEnv, opts: SmartEntitiesOptions, items: Object.<string, SmartEntityRuntime>, entities_vector_adapter: DefaultEntitiesVectorAdapterRuntime, embed_model: EmbedModel, embed_model_key: string, collection_key: string}} SmartEntitiesThis */
+/** @typedef {SmartEntity & Object.<string, *> & {path: string, key: string, vec?: Array<number>, should_embed: boolean, is_unembedded: boolean}} SmartEntityInstance */
+/** @typedef {DefaultEntitiesVectorAdapter & Object.<string, *>} DefaultEntitiesVectorAdapterInstance */
+/** @typedef {SmartEntities & Object.<string, *> & {env: SmartEntitiesEnv, opts: SmartEntitiesOptions, items: Object.<string, SmartEntityInstance>, entities_vector_adapter: DefaultEntitiesVectorAdapterInstance, embed_model: EmbedModel, embed_model_key: string, collection_key: string}} SmartEntitiesThis */
 
 /**
  * @class SmartEntities
@@ -178,7 +178,7 @@ export class SmartEntities extends Collection {
    * Gets the embed queue containing items to be embedded.
    * @readonly
    * @this {SmartEntitiesThis}
-   * @returns {Array<SmartEntityRuntime>} The embed queue.
+   * @returns {Array<SmartEntityInstance>} The embed queue.
    */
   get embed_queue() {
     if(!this._embed_queue?.length){

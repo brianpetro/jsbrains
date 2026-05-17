@@ -1,21 +1,44 @@
+// @ts-check
+
 import { ContextItemAdapter } from './_adapter.js';
 import { image_extension_regex } from 'smart-contexts/utils/image_extension_regex.js';
 
+/** @typedef {import('smart-types').ContextItemMediaResult} ContextItemMediaResult */
+/** @typedef {ImageContextItemAdapter & Object.<string, *> & {item: *}} ImageContextItemAdapterThis */
+
 export class ImageContextItemAdapter extends ContextItemAdapter {
+  /**
+   * @param {string} key
+   * @returns {boolean|string}
+   */
   static detect(key) {
     if (image_extension_regex.test(key)) return 'image';
     return false;
   }
+  /**
+   * @this {ImageContextItemAdapterThis}
+   * @returns {boolean}
+   */
   get exists() {
     return this.item.env.smart_sources.fs.exists_sync(this.item.key);
   }
+  /**
+   * @returns {string}
+   */
   get icon_type() {
     return 'image-file';
   }
+  /**
+   * @returns {boolean}
+   */
   get is_media() {
     return true;
   }
 
+  /**
+   * @this {ImageContextItemAdapterThis}
+   * @returns {Promise<ContextItemMediaResult>}
+   */
   async get_base64() {
     const ext = this.item.key.split('.').pop().toLowerCase();
     try {

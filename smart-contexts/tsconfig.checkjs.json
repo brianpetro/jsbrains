@@ -1,0 +1,69 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "paths": {
+      "smart-contexts": [
+        "./index.js"
+      ],
+      "smart-contexts/*": [
+        "./*"
+      ],
+      "smart-collections": [
+        "../smart-collections/main.js"
+      ],
+      "smart-collections/*": [
+        "../smart-collections/*"
+      ],
+      "smart-types": [
+        "../smart-types/index.js"
+      ],
+      "smart-types/*": [
+        "../smart-types/*"
+      ],
+      "smart-blocks": [
+        "../smart-blocks/index.js"
+      ],
+      "smart-blocks/*": [
+        "../smart-blocks/*"
+      ],
+      "smart-sources": [
+        "../smart-sources/index.js"
+      ],
+      "smart-sources/*": [
+        "../smart-sources/*"
+      ],
+      "smart-utils/*": [
+        "../smart-utils/*"
+      ]
+    },
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "./index.js",
+    "./smart_contexts.js",
+    "./smart_context.js",
+    "./context_items.js",
+    "./context_item.js",
+    "./adapters/**/*.js",
+    "./utils/**/*.js"
+  ],
+  "exclude": [
+    "./test/**/*.js",
+    "./tests/**/*.js",
+    "./**/*.test.js",
+    "./node_modules/**"
+  ]
+}

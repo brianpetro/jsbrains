@@ -14,12 +14,12 @@ import { create_actions_proxy } from './utils/create_actions_proxy.js';
 /** @typedef {import('smart-types').CollectionEventCallback} CollectionEventCallback */
 /** @typedef {import('smart-types').FileSystem} FileSystem */
 /** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
-/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnv, data: CollectionItemData, key: string}} CollectionItemRuntime */
-/** @typedef {CollectionFilterOptions|((item: CollectionItemRuntime) => boolean)} CollectionFilterInput */
-/** @typedef {new (env: CollectionEnv, data?: Partial<CollectionItemData>|null) => CollectionItemRuntime} CollectionItemConstructor */
-/** @typedef {CollectionDataAdapter & {process_save_queue: (opts?: CollectionQueueOptions) => Promise<void>}} CollectionDataAdapterRuntime */
-/** @typedef {new (collection: CollectionThis) => CollectionDataAdapterRuntime} CollectionDataAdapterConstructor */
-/** @typedef {Collection & Object.<string, *> & {env: CollectionEnv, opts: CollectionOptions, items: Object.<string, CollectionItemRuntime>, collection_key: string, data_adapter: CollectionDataAdapterRuntime, item_type: CollectionItemConstructor, constructor: typeof Collection & {key?: string}}} CollectionThis */
+/** @typedef {CollectionItem & Object.<string, *> & {env: CollectionEnv, data: CollectionItemData, key: string}} CollectionItemInstance */
+/** @typedef {CollectionFilterOptions|((item: CollectionItemInstance) => boolean)} CollectionFilterInput */
+/** @typedef {new (env: CollectionEnv, data?: Partial<CollectionItemData>|null) => CollectionItemInstance} CollectionItemConstructor */
+/** @typedef {CollectionDataAdapter & {process_save_queue: (opts?: CollectionQueueOptions) => Promise<void>}} CollectionDataAdapterInstance */
+/** @typedef {new (collection: CollectionThis) => CollectionDataAdapterInstance} CollectionDataAdapterConstructor */
+/** @typedef {Collection & Object.<string, *> & {env: CollectionEnv, opts: CollectionOptions, items: Object.<string, CollectionItemInstance>, collection_key: string, data_adapter: CollectionDataAdapterInstance, item_type: CollectionItemConstructor, constructor: typeof Collection & {key?: string}}} CollectionThis */
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
@@ -40,6 +40,7 @@ const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
  * - Supports rendering settings and using components pattern for UI
  */
 export class Collection {
+  /** @type {string|number} */
   static version = 0.001;
   /**
    * Constructs a new Collection instance.
@@ -105,7 +106,7 @@ export class Collection {
    *
    * @this {CollectionThis}
    * @param {Partial<CollectionItemData>} [data={}] - Data for creating/updating an item.
-   * @returns {Promise<CollectionItemRuntime>|CollectionItemRuntime} The created or updated item. May return a promise if `init()` is async.
+   * @returns {Promise<CollectionItemInstance>|CollectionItemInstance} The created or updated item. May return a promise if `init()` is async.
    */
 
   create_or_update(data = {}) {
@@ -153,7 +154,7 @@ export class Collection {
    *
    * @this {CollectionThis}
    * @param {Partial<CollectionItemData>} data - Data to match against.
-   * @returns {CollectionItemRuntime|null|undefined}
+   * @returns {CollectionItemInstance|null|undefined}
    */
   find_by(data) {
     if (data.key) return this.get(data.key);
@@ -168,7 +169,7 @@ export class Collection {
    *
    * @this {CollectionThis}
    * @param {*} [filter_opts={}] - Filter options or a predicate function.
-   * @returns {CollectionItemRuntime[]} Array of filtered items.
+   * @returns {CollectionItemInstance[]} Array of filtered items.
    */
   filter(filter_opts = {}) {
     if (typeof filter_opts === 'function') {
@@ -189,7 +190,7 @@ export class Collection {
    * Alias for `filter()`
    * @this {CollectionThis}
    * @param {*} filter_opts
-   * @returns {CollectionItemRuntime[]}
+   * @returns {CollectionItemInstance[]}
    */
   list(filter_opts) { return this.filter(filter_opts); }
 
@@ -197,7 +198,7 @@ export class Collection {
    * Retrieves an item by key.
    * @this {CollectionThis}
    * @param {string} key
-   * @returns {CollectionItemRuntime|undefined}
+   * @returns {CollectionItemInstance|undefined}
    */
   get(key) { return this.items[key]; }
 
@@ -219,7 +220,7 @@ export class Collection {
    * Retrieves a random item from the collection, optionally filtered by options.
    * @this {CollectionThis}
    * @param {*} [opts]
-   * @returns {CollectionItemRuntime|undefined}
+   * @returns {CollectionItemInstance|undefined}
    */
   get_rand(opts = null) {
     if (opts) {
@@ -233,7 +234,7 @@ export class Collection {
   /**
    * Adds or updates an item in the collection.
    * @this {CollectionThis}
-   * @param {CollectionItemRuntime} item
+   * @param {CollectionItemInstance} item
    */
   set(item) {
     if (!item.key) throw new Error("Item must have a key property");
@@ -271,7 +272,7 @@ export class Collection {
   /**
    * Lazily initializes and returns the data adapter instance for this collection.
    * @this {CollectionThis}
-   * @returns {CollectionDataAdapterRuntime} The data adapter instance.
+   * @returns {CollectionDataAdapterInstance} The data adapter instance.
    */
   get data_adapter() {
     if (!this._data_adapter) {

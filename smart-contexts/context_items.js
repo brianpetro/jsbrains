@@ -1,3 +1,5 @@
+// @ts-check
+
 import { Collection } from 'smart-collections';
 import { ContextItem } from './context_item.js';
 
@@ -6,11 +8,29 @@ import { SourceContextItemAdapter } from './adapters/context-items/source.js';
 import { ImageContextItemAdapter } from './adapters/context-items/image.js';
 import { PdfContextItemAdapter } from './adapters/context-items/pdf.js';
 
+/** @typedef {import('./smart_context.js').SmartContext} SmartContext */
+/** @typedef {import('smart-types').ContextItemData} ContextItemData */
+/** @typedef {import('smart-types').ContextItemsData} ContextItemsData */
+/** @typedef {import('smart-types').ContextItemsLoadParams} ContextItemsLoadParams */
+/** @typedef {import('smart-types').ContextItemAdapterConstructor} ContextItemAdapterConstructor */
+/** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
+/** @typedef {ContextItem & Object.<string, *> & {env: *, data: ContextItemData, key: string, collection: *, context_type_adapter: *, exists: boolean, size: number, mtime: number}} ContextItemInstance */
+/** @typedef {SmartContext & Object.<string, *> & {env: *, data: Object.<string, *>, key: string, collection: *, context_items: *, actions: Object.<string, *>, data_adapter: *, constructor: *, _missing_context_item_event_timers: Map<string, *>}} SmartContextInstance */
+/** @typedef {ContextItems & Object.<string, *> & {env: *, opts: Object.<string, *>, items: Object.<string, ContextItemInstance>, smart_context: SmartContextInstance, item_type: new (env: *, data?: Object.<string, *>) => ContextItemInstance, context_item_adapters: ContextItemAdapterConstructor[], constructor: typeof Collection & {key?: string}}} ContextItemsThis */
+
 export class ContextItems extends Collection {
+  /**
+   * @this {*}
+   * @param {*|SmartContext} smart_context
+   * @param {Object.<string, *>} [opts={}]
+   */
   constructor(smart_context, opts = {}) {
     super(smart_context.env || smart_context, opts); // OR pass directly for env loading (temp patch, should now be loaded by env)
     this.smart_context = smart_context;
   }
+  /**
+   * @returns {Promise<void>}
+   */
   async load() {
     console.log('ContextItems: load called');
     // TODO DECIDED: add default settings from context_item_merge_template action if not already present????
@@ -19,6 +39,10 @@ export class ContextItems extends Collection {
 
   static version = '1.1.0';
 
+  /**
+   * @this {ContextItemsThis}
+   * @returns {ContextItemAdapterConstructor[]}
+   */
   get context_item_adapters() {
     if (!this._context_item_adapters) {
       this._context_item_adapters = Object.values(this.opts.context_item_adapters).sort((a, b) => {
@@ -30,20 +54,35 @@ export class ContextItems extends Collection {
     return this._context_item_adapters;
   }
 
+  /**
+   * @this {ContextItemsThis}
+   * @param {Partial<ContextItemData> & Object.<string, *>} data
+   * @returns {ContextItemInstance}
+   */
   new_item(data) {
     const item = new this.item_type(this.env, data);
     this.set(item);
     return item;
   }
 
+  /**
+   * @returns {*}
+   */
   process_load_queue() { /* skip */ }
 
+  /**
+   * @this {ContextItemsThis}
+   * @returns {SettingsConfig}
+   */
   get settings_config() {
     return {
       ...(this.env.config.actions.context_item_merge_template?.settings_config || {}),
     };
   }
 
+  /**
+   * @returns {Object.<string, *>}
+   */
   static get default_settings() {
     return {
       template_preset: 'xml_structured',
@@ -53,10 +92,10 @@ export class ContextItems extends Collection {
   }
 
   /**
-   * @param {object} context_items_data - data.context_items{}
-   * @param {object} params
-   * @param {string} [params.codeblock_source_key] - Optional key of the current source for codeblock context (glues name change sync)
-   * @returns {ContextItem[]}
+   * @this {ContextItemsThis}
+   * @param {ContextItemsData} context_items_data - data.context_items{}
+   * @param {ContextItemsLoadParams} params
+   * @returns {ContextItemInstance[]}
    */
   load_from_data(context_items_data, params = {}) {
     const loaded_items = [];
@@ -96,11 +135,11 @@ export class ContextItems extends Collection {
   }
 
   /**
+   * @this {ContextItemsThis}
    * @param {string} key
-   * @param {object} item_data
-   * @param {object} params
-   * @param {string} [params.codeblock_source_key] - Optional key of the current source for codeblock context (glues name change sync)
-   * @return {ContextItem|ContextItem[]|null}
+   * @param {ContextItemData} item_data
+   * @param {ContextItemsLoadParams} params
+   * @return {ContextItemInstance|ContextItemInstance[]|null}
    */
   load_item_from_data(key, item_data, params = {}) {
     if (item_data.named_context) {
@@ -115,6 +154,13 @@ export class ContextItems extends Collection {
   }
 
 
+  /**
+   * @this {ContextItemsThis}
+   * @param {string} key
+   * @param {ContextItemData} item_data
+   * @param {ContextItemsLoadParams} params
+   * @returns {ContextItemInstance[]|null}
+   */
   load_named_context_items(key, item_data, params = {}) {
     let resp = null;
     const named_context_name = item_data?.key || key;

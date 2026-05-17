@@ -16,8 +16,8 @@ import { DefaultEntityVectorAdapter } from "./adapters/default.js";
 /** @typedef {import('smart-types').EntityLastEmbed} EntityLastEmbed */
 /** @typedef {import('smart-types').EntityConnectionResult} EntityConnectionResult */
 /** @typedef {import('smart-types').CollectionItemRef} CollectionItemRef */
-/** @typedef {SmartEntities & Object.<string, *> & {embed_model_key: string, embed_model: *, data_adapter: *}} SmartEntitiesRuntime */
-/** @typedef {SmartEntity & Object.<string, *> & {env: SmartEntitiesEnv, data: Object.<string, *>, collection: SmartEntitiesRuntime, entity_adapter: DefaultEntityVectorAdapter, embed_model_key: string, embedding_data: EntityEmbeddingRecord & Object.<string, *>, last_embed: EntityLastEmbed & Object.<string, *>}} SmartEntityThis */
+/** @typedef {SmartEntities & Object.<string, *> & {embed_model_key: string, embed_model: *, data_adapter: *}} SmartEntitiesInstance */
+/** @typedef {SmartEntity & Object.<string, *> & {env: SmartEntitiesEnv, data: Object.<string, *>, collection: SmartEntitiesInstance, entity_adapter: DefaultEntityVectorAdapter, embed_model_key: string, embedding_data: EntityEmbeddingRecord & Object.<string, *>, last_embed: EntityLastEmbed & Object.<string, *>}} SmartEntityThis */
 
 /**
  * @class SmartEntity

@@ -1,7 +1,10 @@
+// @ts-check
+
 import { SmartContexts } from './smart_contexts.js';
 import { SmartContext } from './smart_context.js';
 import { AjsonSingleFileCollectionDataAdapter } from 'smart-collections/adapters/ajson_single_file.js';
 
+/** @type {import('smart-types').SmartEnvCollectionConfig & Object.<string, *>} */
 export const smart_contexts_default_config = {
   class: SmartContexts,
   data_adapter: AjsonSingleFileCollectionDataAdapter,
