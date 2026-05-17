@@ -7,7 +7,8 @@
   "description": "Easy to manage embedded collections.",
   "main": "main.js",
   "scripts": {
-    "test": "npx ava --verbose"
+    "test": "npx ava --verbose",
+    "typecheck": "npx --yes --package typescript tsc -p tsconfig.checkjs.json"
   },
   "keywords": [
     "embeddings"

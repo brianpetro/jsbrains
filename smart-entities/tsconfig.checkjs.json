@@ -1,0 +1,56 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "paths": {
+      "smart-entities": [
+        "./main.js"
+      ],
+      "smart-entities/*": [
+        "./*"
+      ],
+      "smart-collections": [
+        "../smart-collections/main.js"
+      ],
+      "smart-collections/*": [
+        "../smart-collections/*"
+      ],
+      "smart-types": [
+        "../smart-types/index.js"
+      ],
+      "smart-types/*": [
+        "../smart-types/*"
+      ],
+      "smart-utils/*": [
+        "../smart-utils/*"
+      ]
+    },
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "./main.js",
+    "./smart_entities.js",
+    "./smart_entity.js",
+    "./adapters/**/*.js",
+    "./actions/**/*.js",
+    "./utils/**/*.js"
+  ],
+  "exclude": [
+    "./test/**/*.js",
+    "./tests/**/*.js",
+    "./**/*.test.js",
+    "./node_modules/**"
+  ]
+}

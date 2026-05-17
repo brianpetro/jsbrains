@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @file default.js
  * @description Default vector adapters for SmartEntities and SmartCollections
@@ -10,6 +12,11 @@ import { cos_sim } from 'smart-utils/cos_sim.js';
 import { results_acc, furthest_acc } from 'smart-utils/results_acc.js';
 import { sort_by_score_ascending, sort_by_score_descending } from 'smart-utils/sort_by_score.js';
 
+/** @typedef {import('smart-types').EntityConnectionResult} EntityConnectionResult */
+/** @typedef {import('smart-types').EntitiesVectorProgressState} EntitiesVectorProgressState */
+/** @typedef {Object.<string, *> & {collection: *}} DefaultEntitiesVectorAdapterThis */
+/** @typedef {Object.<string, *> & {item: *}} DefaultEntityVectorAdapterThis */
+
 /**
  * @class DefaultEntitiesVectorAdapter
  * @extends EntitiesVectorAdapter
@@ -19,6 +26,10 @@ import { sort_by_score_ascending, sort_by_score_descending } from 'smart-utils/s
  * Supports nearest/furthest queries and batch embedding via the collection's embed_model.
  */
 export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
+  /**
+   * @this {DefaultEntitiesVectorAdapterThis}
+   * @param {*} collection
+   */
   constructor(collection) {
     super(collection);
     /**
@@ -36,9 +47,10 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Find the nearest entities to the given vector.
    * @async
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
-   * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score descending.
+   * @returns {Promise<Array<EntityConnectionResult>>} Array of results sorted by score descending.
    */
   async nearest(vec, filter = {}) {
     if (!vec || !Array.isArray(vec)) {
@@ -60,9 +72,10 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Find the furthest entities from the given vector.
    * @async
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
-   * @returns {Promise<Array<{item:Object, score:number}>>} Array of results sorted by score ascending (furthest).
+   * @returns {Promise<Array<EntityConnectionResult>>} Array of results sorted by score ascending (furthest).
    */
   async furthest(vec, filter = {}) {
     if (!vec || !Array.isArray(vec)) {
@@ -84,6 +97,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Embed a batch of entities.
    * @async
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {Object[]} entities - Array of entity instances to embed.
    * @returns {Promise<void>}
    */
@@ -107,6 +121,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * Paused queues fail closed and do not restart until resume explicitly clears
    * the paused state.
    * @async
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
@@ -254,6 +269,10 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     }
   }
 
+  /**
+   * @this {DefaultEntitiesVectorAdapterThis}
+   * @returns {boolean}
+   */
   get should_show_embed_progress_notice() {
     if ((Date.now() - (this.last_notice_time ?? 0)) > 20000) {
       return true;
@@ -262,6 +281,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   }
 
   /**
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @returns {object|null}
    */
   get_progress_state() {
@@ -271,6 +291,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Displays embed progress via env events and internal state.
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number} embed_queue_length
    * @returns {void}
    */
@@ -291,6 +312,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Displays the embedding completion notice.
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number} embed_queue_length
    * @returns {void}
    */
@@ -321,6 +343,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * half-finished batch from corrupting queue state.
    * Duplicate pause requests fail closed and do not emit extra paused events.
    *
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {string|null} msg - Optional message.
    * @returns {void}
    */
@@ -358,6 +381,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Returns whether the adapter is currently paused.
    * Paused state remains sticky until resume explicitly clears it.
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @returns {boolean}
    */
   is_embed_queue_paused() {
@@ -368,6 +392,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * Resumes the embed queue processing after a delay.
    * If the active batch has not yet latched the pause request, resume is deferred
    * until the current run exits cleanly.
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number} [delay=0] - The delay in milliseconds before resuming.
    * @returns {void}
    */
@@ -401,6 +426,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Calculates the number of tokens processed per second.
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @returns {number} Tokens per second.
    */
   _calculate_embed_tokens_per_second() {
@@ -411,6 +437,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   /**
    * Resets the statistics related to embed queue processing.
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @returns {void}
    */
   _reset_embed_queue_stats() {
@@ -435,6 +462,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
   /**
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {object|null} next_state
    * @returns {void}
    */
@@ -450,6 +478,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
   /**
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number} total
    * @returns {void}
    */
@@ -472,6 +501,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
   /**
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number} total
    * @returns {void}
    */
@@ -488,6 +518,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
   /**
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {number} total
    * @param {string} reason
    * @returns {void}
@@ -506,6 +537,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
 
   /**
    * @private
+   * @this {DefaultEntitiesVectorAdapterThis}
    * @param {object} [params={}]
    * @param {string} [params.message]
    * @param {string} [params.details]
@@ -528,6 +560,10 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     });
   }
 
+  /**
+   * @this {DefaultEntitiesVectorAdapterThis}
+   * @returns {*}
+   */
   get notices() {
     return this.collection.env.notices;
   }
@@ -540,6 +576,10 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
  * In-memory adapter for a single entity. Stores and retrieves vectors from item.data.
  */
 export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
+  /**
+   * @this {DefaultEntityVectorAdapterThis}
+   * @returns {*}
+   */
   get data() {
     return this.item.data;
   }
@@ -547,6 +587,7 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
   /**
    * Retrieve the current vector embedding for this entity.
    * @async
+   * @this {DefaultEntityVectorAdapterThis}
    * @returns {Promise<number[]|undefined>} The entity's vector or undefined if not set.
    */
   async get_vec() {
@@ -556,7 +597,8 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
   /**
    * Store/update the vector embedding for this entity.
    * @async
-   * @param {number[]} vec - The vector to set.
+   * @this {DefaultEntityVectorAdapterThis}
+   * @param {number[]|null} vec - The vector to set.
    * @returns {Promise<void>}
    */
   async set_vec(vec) {
@@ -566,6 +608,7 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
   /**
    * Delete/remove the vector embedding for this entity.
    * @async
+   * @this {DefaultEntityVectorAdapterThis}
    * @returns {Promise<void>}
    */
   async delete_vec() {
@@ -574,10 +617,18 @@ export class DefaultEntityVectorAdapter extends EntityVectorAdapter {
     }
   }
 
+  /**
+   * @this {DefaultEntityVectorAdapterThis}
+   * @returns {number[]|undefined}
+   */
   get vec() {
     return this.item.data?.embeddings?.[this.item.embed_model_key]?.vec;
   }
 
+  /**
+   * @this {DefaultEntityVectorAdapterThis}
+   * @param {number[]|null} vec
+   */
   set vec(vec) {
     if (!this.item.data.embeddings) {
       this.item.data.embeddings = {};

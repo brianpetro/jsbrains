@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @file smart_entities.js
  * @description Manages a collection of smart entities with embedding capabilities.
@@ -8,6 +10,17 @@ import { Collection } from "smart-collections";
 import { sort_by_score } from "smart-utils/sort_by_score.js";
 import { DefaultEntitiesVectorAdapter } from "./adapters/default.js";
 
+/** @typedef {import('./smart_entity.js').SmartEntity} SmartEntity */
+/** @typedef {import('smart-types').SmartEntitiesEnv} SmartEntitiesEnv */
+/** @typedef {import('smart-types').SmartEntitiesOptions} SmartEntitiesOptions */
+/** @typedef {import('smart-types').EntityLookupParams} EntityLookupParams */
+/** @typedef {import('smart-types').EntityLookupResult} EntityLookupResult */
+/** @typedef {import('smart-types').EmbedModel} EmbedModel */
+/** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
+/** @typedef {SmartEntity & Object.<string, *> & {path: string, key: string, vec?: Array<number>, should_embed: boolean, is_unembedded: boolean}} SmartEntityRuntime */
+/** @typedef {DefaultEntitiesVectorAdapter & Object.<string, *>} DefaultEntitiesVectorAdapterRuntime */
+/** @typedef {SmartEntities & Object.<string, *> & {env: SmartEntitiesEnv, opts: SmartEntitiesOptions, items: Object.<string, SmartEntityRuntime>, entities_vector_adapter: DefaultEntitiesVectorAdapterRuntime, embed_model: EmbedModel, embed_model_key: string, collection_key: string}} SmartEntitiesThis */
+
 /**
  * @class SmartEntities
  * @extends Collection
@@ -17,8 +30,9 @@ export class SmartEntities extends Collection {
   /**
    * Creates an instance of SmartEntities.
    * @constructor
-   * @param {Object} env - The environment instance.
-   * @param {Object} opts - Configuration options.
+   * @this {SmartEntitiesThis}
+   * @param {SmartEntitiesEnv} env - The environment instance.
+   * @param {SmartEntitiesOptions} opts - Configuration options.
    */
   constructor(env, opts) {
     super(env, opts);
@@ -37,6 +51,7 @@ export class SmartEntities extends Collection {
   /**
    * Unloads the smart embedding model.
    * @async
+   * @this {SmartEntitiesThis}
    * @returns {Promise<void>}
    */
   async unload() {
@@ -50,6 +65,7 @@ export class SmartEntities extends Collection {
   /**
    * Gets the key of the embedding model.
    * @readonly
+   * @this {SmartEntitiesThis}
    * @returns {string} The embedding model key.
    */
   get embed_model_key() {
@@ -59,7 +75,8 @@ export class SmartEntities extends Collection {
   /**
    * Gets the embedding model instance.
    * @readonly
-   * @returns {Object|null} The embedding model instance or null if none.
+   * @this {SmartEntitiesThis}
+   * @returns {EmbedModel|null} The embedding model instance or null if none.
    */
   get embed_model() {
     if (this.env.embedding_models.default) {
@@ -67,12 +84,17 @@ export class SmartEntities extends Collection {
     }
     throw new Error("DEPRECATED SMART ENVIRONMENT LOADED: UPDATE SMART PLUGINS.");
   }
+  /**
+   * @this {SmartEntitiesThis}
+   * @param {EmbedModel} embed_model
+   */
   set embed_model(embed_model) { this.env._embed_model = embed_model; }
 
   /**
    * Gets the file name based on collection key and embedding model key.
    * @readonly
    * @deprecated likely unused (2025-09-29)
+   * @this {SmartEntitiesThis}
    * @returns {string} The constructed file name.
    */
   get file_name() { return this.collection_key + '-' + this.embed_model_key.split("/").pop(); }
@@ -82,11 +104,9 @@ export class SmartEntities extends Collection {
    * Looks up entities based on hypothetical content.
    * @deprecated moved to action (type=score) and retrieve using get_results() (pre-process generates hypothetical vecs) (2026-02-11)
    * @async
-   * @param {Object} [params={}] - The parameters for the lookup.
-   * @param {Array<string>} [params.hypotheticals=[]] - The hypothetical content to lookup.
-   * @param {Object} [params.filter] - The filter to use for the lookup.
-   * @param {number} [params.k] - Deprecated: Use `filter.limit` instead.
-   * @returns {Promise<Array<Result>|Object>} The lookup results or an error object.
+   * @this {SmartEntitiesThis}
+   * @param {EntityLookupParams} [params={}] - The parameters for the lookup.
+   * @returns {Promise<Array<EntityLookupResult>|{error: string}>} The lookup results or an error object.
    */
   async lookup(params = {}) {
     const { hypotheticals = [] } = params;
@@ -139,7 +159,7 @@ export class SmartEntities extends Collection {
   /**
    * Gets the configuration for settings.
    * @readonly
-   * @returns {Object} The settings configuration.
+   * @returns {SettingsConfig} The settings configuration.
    */
   get settings_config() {
     return settings_config;
@@ -149,6 +169,7 @@ export class SmartEntities extends Collection {
    * Gets the notices from the environment.
    * @deprecated use event system with levels instead of notices (2026-03-17)
    * @readonly
+   * @this {SmartEntitiesThis}
    * @returns {Object} The notices object.
    */
   get notices() { return this.env.smart_connections_plugin?.notices || this.env.main?.notices; }
@@ -156,7 +177,8 @@ export class SmartEntities extends Collection {
   /**
    * Gets the embed queue containing items to be embedded.
    * @readonly
-   * @returns {Array<Object>} The embed queue.
+   * @this {SmartEntitiesThis}
+   * @returns {Array<SmartEntityRuntime>} The embed queue.
    */
   get embed_queue() {
     if(!this._embed_queue?.length){
@@ -170,6 +192,7 @@ export class SmartEntities extends Collection {
   /**
    * Processes the embed queue by delegating to the default vector adapter.
    * @async
+   * @this {SmartEntitiesThis}
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
@@ -178,6 +201,7 @@ export class SmartEntities extends Collection {
 
   /**
    * @deprecated since v4 2025-11-28
+   * @returns {SettingsConfig}
    */
   get connections_filter_config() { return connections_filter_config; }
 
@@ -185,7 +209,7 @@ export class SmartEntities extends Collection {
 
 /**
  * @constant
- * @type {Object}
+ * @type {SettingsConfig}
  * @description Configuration for settings.
  */
 export const settings_config = {
@@ -198,6 +222,10 @@ export const settings_config = {
   },
 };
 
+/**
+ * @constant
+ * @type {SettingsConfig}
+ */
 export const connections_filter_config = {
   "smart_view_filter.show_full_path": {
     "name": "Show full path",

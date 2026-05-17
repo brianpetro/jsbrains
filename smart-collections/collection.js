@@ -44,7 +44,7 @@ export class Collection {
   /**
    * Constructs a new Collection instance.
    *
-   * @this {CollectionThis}
+   * @this {*}
    * @param {CollectionEnv} env - The environment context containing configurations and adapters.
    * @param {CollectionOptions} [opts={}] - Optional configuration.
    */
@@ -487,7 +487,8 @@ export class Collection {
 
   /**
    * Unloads collection data from memory.
-   * @this {CollectionThis}
+   * @this {*}
+   * @returns {*}
    */
   unload() {
     this.clear();

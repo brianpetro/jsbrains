@@ -1,8 +1,18 @@
+// @ts-check
+
 import { sort_by_score } from "smart-utils/sort_by_score.js";
 import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 
+/** @typedef {import('smart-types').FindConnectionsParams} FindConnectionsParams */
+/** @typedef {import('smart-types').EntityConnectionResult} EntityConnectionResult */
+/** @typedef {Object.<string, *> & {env: Object.<string, *>, collection: Object.<string, *>, key: string, actions?: Object.<string, *>}} FindConnectionsEntity */
+
 const FRONTMATTER_SUFFIX = '---frontmatter---';
 
+/**
+ * @param {*} value
+ * @returns {string[]}
+ */
 const to_array = (value) => {
   if (Array.isArray(value)) {
     return value
@@ -18,12 +28,21 @@ const to_array = (value) => {
   return [];
 };
 
+/**
+ * @param {FindConnectionsEntity} entity
+ * @param {FindConnectionsParams & Object.<string, *>} [params={}]
+ * @returns {Object.<string, *>}
+ */
 const merge_settings_with_params = (entity, params = {}) => ({
   ...(entity.env.settings.smart_view_filter || {}),
   ...params,
   entity,
 });
 
+/**
+ * @param {Object.<string, *>} filter_opts
+ * @returns {Object.<string, *>}
+ */
 const remove_limit_fields = (filter_opts) => {
   const next = { ...filter_opts };
   if (typeof next.limit !== 'undefined') delete next.limit;
@@ -34,6 +53,10 @@ const remove_limit_fields = (filter_opts) => {
   return next;
 };
 
+/**
+ * @param {Object.<string, *>} filter_opts
+ * @returns {Object.<string, *>}
+ */
 const apply_frontmatter_exclusion = (filter_opts) => {
   if (!filter_opts.exclude_frontmatter_blocks) return filter_opts;
   const next = { ...filter_opts };
@@ -45,6 +68,11 @@ const apply_frontmatter_exclusion = (filter_opts) => {
   return next;
 };
 
+/**
+ * @param {Object.<string, *>} filter_opts
+ * @param {*} entity
+ * @returns {Object.<string, *>}
+ */
 const append_entity_filters = (filter_opts, entity) => {
   if (!entity) return filter_opts;
   const next = { ...filter_opts };
@@ -87,9 +115,9 @@ const append_entity_filters = (filter_opts, entity) => {
 /**
  * Normalizes filter options for the find_connections action.
  * Combines smart view settings with params and derives include/exclude filters based on the entity.
- * @param {import('smart-entities').SmartEntity} entity - The SmartEntity instance invoking the action.
- * @param {Object} [params={}] - Parameters passed to find_connections.
- * @returns {Object} Normalized filter options ready for nearest lookups.
+ * @param {FindConnectionsEntity} entity - The SmartEntity instance invoking the action.
+ * @param {FindConnectionsParams & Object.<string, *>} [params={}] - Parameters passed to find_connections.
+ * @returns {Object.<string, *>} Normalized filter options ready for nearest lookups.
  */
 const create_find_connections_filter_opts = (entity, params = {}) => {
   const merged = merge_settings_with_params(entity, params);
@@ -99,9 +127,18 @@ const create_find_connections_filter_opts = (entity, params = {}) => {
 };
 
 const ENTITIES_CONNECTIONS_CACHE = {};
+/**
+ * @param {string} cache_key
+ * @returns {*}
+ */
 function connections_from_cache(cache_key) {
   return ENTITIES_CONNECTIONS_CACHE[cache_key];
 }
+/**
+ * @param {string} cache_key
+ * @param {Array<EntityConnectionResult>} connections
+ * @returns {void}
+ */
 function connections_to_cache(cache_key, connections) {
   ENTITIES_CONNECTIONS_CACHE[cache_key] = connections;
 }
@@ -109,8 +146,9 @@ function connections_to_cache(cache_key, connections) {
 /**
  * Finds connections relevant to this entity based on provided parameters.
  * @async
- * @param {Object} [params={}] - Parameters for finding connections.
- * @returns {Array<{item: import('smart-entities').SmartEntity, score:number}>} An array of result objects with score and item.
+ * @this {FindConnectionsEntity}
+ * @param {FindConnectionsParams & Object.<string, *>} [params={}] - Parameters for finding connections.
+ * @returns {Promise<Array<EntityConnectionResult>>} An array of result objects with score and item.
  */
 async function find_connections(params = {}) {
   const limit = params.filter?.limit

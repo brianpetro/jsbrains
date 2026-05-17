@@ -1,7 +1,24 @@
+// @ts-check
+
+/** @typedef {import('smart-types').FrontmatterFilterEntry} FrontmatterFilterEntry */
+/** @typedef {import('smart-types').FrontmatterFilter} FrontmatterFilter */
+
+/**
+ * @param {*} value
+ * @returns {string}
+ */
 const to_string = (value) => `${value ?? ''}`.trim();
 
+/**
+ * @param {*} value
+ * @returns {string}
+ */
 const to_lower = (value) => to_string(value).toLowerCase();
 
+/**
+ * @param {string|string[]} [value='']
+ * @returns {string[]}
+ */
 const to_lines = (value = '') => {
   if (Array.isArray(value)) return value;
   return to_string(value).split('\n');
@@ -15,7 +32,7 @@ const to_lines = (value = '') => {
  * - `key:value`
  *
  * @param {string|string[]} value
- * @returns {Array<{key:string,value:string|null}>}
+ * @returns {Array<FrontmatterFilterEntry>}
  */
 export function parse_frontmatter_filter_lines(value = '') {
   return to_lines(value)
@@ -33,6 +50,11 @@ export function parse_frontmatter_filter_lines(value = '') {
     .filter((entry) => entry.key.length);
 }
 
+/**
+ * @param {Object.<string, *>} [metadata={}]
+ * @param {string} [key='']
+ * @returns {*}
+ */
 const get_frontmatter_value = (metadata = {}, key = '') => {
   const metadata_key = Object.keys(metadata || {})
     .find((candidate_key) => to_lower(candidate_key) === key);
@@ -40,6 +62,11 @@ const get_frontmatter_value = (metadata = {}, key = '') => {
   return metadata[metadata_key];
 };
 
+/**
+ * @param {Object.<string, *>} [metadata={}]
+ * @param {*} [entry]
+ * @returns {boolean}
+ */
 const matches_entry = (metadata = {}, entry) => {
   const metadata_value = get_frontmatter_value(metadata, entry.key);
   if (metadata_value == null) return false;
@@ -53,10 +80,8 @@ const matches_entry = (metadata = {}, entry) => {
 /**
  * Apply include/exclude frontmatter filters.
  *
- * @param {object} metadata
- * @param {object} [frontmatter_filter]
- * @param {Array<{key:string,value:string|null}>} [frontmatter_filter.include]
- * @param {Array<{key:string,value:string|null}>} [frontmatter_filter.exclude]
+ * @param {Object.<string, *>} metadata
+ * @param {FrontmatterFilter} [frontmatter_filter]
  * @returns {boolean}
  */
 export function filter_by_frontmatter(metadata = {}, frontmatter_filter = {}) {

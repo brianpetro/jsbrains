@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @file EntitiesVectorAdapter and EntityVectorAdapter base classes
  * @description
@@ -9,6 +11,10 @@
  *
  * All methods throw by default, serving as an interface until implemented by concrete adapters.
  */
+
+/** @typedef {import('../smart_entities.js').SmartEntities} SmartEntities */
+/** @typedef {import('../smart_entity.js').SmartEntity} SmartEntity */
+/** @typedef {import('smart-types').EntityConnectionResult} EntityConnectionResult */
 
 /**
  * @class EntitiesVectorAdapter
@@ -29,11 +35,11 @@
 export class EntitiesVectorAdapter {
   /**
    * @constructor
-   * @param {import('smart-entities').SmartEntities} collection - The collection (SmartEntities or derived class) instance.
+   * @param {*} collection - The collection (SmartEntities or derived class) instance.
    */
   constructor(collection) {
     /**
-     * @type {import('smart-entities').SmartEntities}
+     * @type {*}
      * @description Reference to the SmartEntities collection instance.
      */
     this.collection = collection;
@@ -44,7 +50,7 @@ export class EntitiesVectorAdapter {
    * @async
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
-   * @returns {Promise<Array<{item: import('smart-entities').SmartEntity, score:number}>>} Array of results sorted by score descending.
+   * @returns {Promise<Array<EntityConnectionResult>>} Array of results sorted by score descending.
    * @abstract
    * @throws {Error} Not implemented by default.
    */
@@ -57,7 +63,7 @@ export class EntitiesVectorAdapter {
    * @async
    * @param {number[]} vec - The reference vector.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
-   * @returns {Promise<Array<{item: import('smart-entities').SmartEntity, score:number}>>} Array of results sorted by score ascending (furthest).
+   * @returns {Promise<Array<EntityConnectionResult>>} Array of results sorted by score ascending (furthest).
    * @abstract
    * @throws {Error} Not implemented by default.
    */
@@ -68,7 +74,7 @@ export class EntitiesVectorAdapter {
   /**
    * Embed a batch of entities.
    * @async
-   * @param {Object[]} entities - Array of entity instances to embed.
+   * @param {Array<*>} entities - Array of entity instances to embed.
    * @returns {Promise<void>}
    * @abstract
    * @throws {Error} Not implemented by default.
@@ -81,7 +87,7 @@ export class EntitiesVectorAdapter {
    * Process a queue of entities waiting to be embedded.
    * Typically, this will call embed_batch in batches and update entities.
    * @async
-   * @param {Object[]} embed_queue - Array of entities to embed.
+   * @param {Array<*>} [embed_queue] - Array of entities to embed.
    * @returns {Promise<void>}
    * @abstract
    * @throws {Error} Not implemented by default.
@@ -110,11 +116,11 @@ export class EntitiesVectorAdapter {
 export class EntityVectorAdapter {
   /**
    * @constructor
-   * @param {import('smart-entities').SmartEntity} item - The SmartEntity instance that this adapter is associated with.
+   * @param {*} item - The SmartEntity instance that this adapter is associated with.
    */
   constructor(item) {
     /**
-     * @type {import('smart-entities').SmartEntity}
+     * @type {*}
      * @description The SmartEntity instance this adapter manages.
      */
     this.item = item;
@@ -134,7 +140,7 @@ export class EntityVectorAdapter {
   /**
    * Store/update the vector embedding for this entity.
    * @async
-   * @param {number[]} vec - The vector to set.
+   * @param {number[]|null} vec - The vector to set.
    * @returns {Promise<void>}
    * @abstract
    * @throws {Error} Not implemented by default.

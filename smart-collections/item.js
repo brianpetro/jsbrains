@@ -43,7 +43,7 @@ export class CollectionItem {
   }
 
   /**
-   * @this {CollectionItemThis}
+   * @this {*}
    * @param {CollectionEnv} env - The environment/context.
    * @param {Partial<CollectionItemData>|null} [data=null] - Initial data for the item.
    */

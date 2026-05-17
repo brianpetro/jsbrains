@@ -1,3 +1,9 @@
+// @ts-check
+
+/**
+ * @typedef {{score: number, [key: string]: *}} ScoredResult
+ */
+
 // // IN DEVELOPMENT (Collection.retrieve(strategy, opts))
 // get retrieve_nearest_strategy() {
 //   return [
@@ -12,6 +18,10 @@
 //   ];
 // }
 // get nearest until next deviation exceeds std dev
+/**
+ * @param {ScoredResult[]} nearest
+ * @returns {ScoredResult[]}
+ */
 function get_nearest_until_next_dev_exceeds_std_dev(nearest) {
   if (nearest.length === 0) return []; // return empty array if no items
 
@@ -19,7 +29,7 @@ function get_nearest_until_next_dev_exceeds_std_dev(nearest) {
   const sims = nearest.map((n) => n.score);
   const mean = sims.reduce((a, b) => a + b) / sims.length;
   let std_dev = Math.sqrt(sims.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / sims.length);
-  // slice where next item deviation is greater than std_dev
+  // slice where next item deviation is greater than std dev
   let slice_i = 0;
   while (slice_i < nearest.length) {
     const next = nearest[slice_i + 1];
