@@ -196,7 +196,6 @@ export class SmartSources extends SmartEntities {
    */
   queue_source_re_import(source, event_meta = {}) {
     if (!source?.key) return;
-    if (this.sources_re_import_queue[source.key]) return;
     source.data.last_import = { at: 0, hash: null, mtime: 0, size: 0 };
     this.sources_re_import_queue[source.key] = { source, event_meta };
     this.debounce_re_import_queue();
@@ -861,3 +860,4 @@ export class SmartSources extends SmartEntities {
 
 export const settings_config = {
 };
+
