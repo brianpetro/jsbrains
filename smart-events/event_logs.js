@@ -211,10 +211,6 @@ export class EventLogs extends Collection {
    * Cleanly detach listeners and cancel pending save.
    */
   unload() {
-    if (this._save_timer) {
-      clearTimeout(this._save_timer);
-      this._save_timer = null;
-    }
     if (typeof this._unsub_wildcard === 'function') {
       this._unsub_wildcard();
       this._unsub_wildcard = null;
