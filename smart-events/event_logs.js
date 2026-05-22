@@ -35,6 +35,8 @@ export class EventLogs extends Collection {
     this.notification_status = null;
   }
 
+  queue_save_debounce_ms = 7500;
+
   /**
    * Factory that attaches the collection to env and registers the wildcard listener.
    * @param {Object} env

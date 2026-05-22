@@ -23,6 +23,8 @@ import { create_actions_proxy } from './utils/create_actions_proxy.js';
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
+const QUEUE_SAVE_DEBOUNCE_MS = 750;
+
 /**
  * @class Collection
  *
@@ -588,7 +590,7 @@ export class Collection {
     if(this._debounce_queue_save) clearTimeout(this._debounce_queue_save);
     this._debounce_queue_save = setTimeout(() => {
       this.process_save_queue();
-    }, 750);
+    }, this.queue_save_debounce_ms || QUEUE_SAVE_DEBOUNCE_MS);
   }
 
   // BEGIN DEPRECATED
