@@ -28,7 +28,7 @@ const EXCLUDED_EVENT_KEYS = {
  * - Queue item saves and debounce collection save
  */
 export class EventLogs extends Collection {
-  static version = 0.004;
+  static version = '0.1.0';
   constructor(env, opts = {}) {
     super(env, opts);
     this.session_events = [];

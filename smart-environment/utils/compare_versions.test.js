@@ -55,6 +55,10 @@ test('compare_versions: handles null/undefined', t => {
   // 'number' (1) vs 'none' (null) -> number wins
   t.is(compare_versions(1, null), 1);
   t.is(compare_versions(null, 1), -1);
+
+  // 0.004 vs 0.1.0 -> semver wins due to type priority, even though numeric value is lower
+  t.is(compare_versions(0.004, '0.1.0'), -1);
+  t.is(compare_versions('0.1.0', 0.004), 1);
 });
 
 test('normalize_version_value: handles various inputs', t => {
