@@ -513,7 +513,7 @@ export class SmartSource extends SmartEntity {
         const link_path = this.fs.get_link_target_path(link_ref, this.file_path);
         return {
           ...link,
-          key: link_path,
+          key: link_path || link_ref, // if path resolver fails, return original ref
           embedded: link.embedded || false,
           source_key: this.key,
         };
