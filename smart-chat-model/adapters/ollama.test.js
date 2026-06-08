@@ -62,6 +62,44 @@ test('SmartChatModelOllamaResponseAdapter converts Ollama response to OpenAI sch
   });
 });
 
+test('SmartChatModelOllamaResponseAdapter handles tool call JSON in message content', t => {
+  const action_args = {
+    hypothetical_1: 'Folder > Note: First hypothetical',
+    hypothetical_2: 'Folder > Note: Second hypothetical'
+  };
+  const ollama_response = {
+    model: 'phi:latest',
+    created_at: '2024-11-20T22:40:42.149254Z',
+    message: {
+      role: 'assistant',
+      content: JSON.stringify({
+        name: 'lookup_context',
+        arguments: action_args
+      })
+    },
+    done_reason: 'stop',
+    done: true,
+    prompt_eval_count: 33,
+    eval_count: 12
+  };
+
+  const response_adapter = new SmartChatModelOllamaResponseAdapter(smart_chat_model_ollama.adapter, ollama_response);
+  const openai_response = response_adapter.to_openai();
+
+  t.deepEqual(openai_response.choices[0].message, {
+    role: 'assistant',
+    content: '',
+    tool_calls: [{
+      id: '',
+      type: 'function',
+      function: {
+        name: 'lookup_context',
+        arguments: JSON.stringify(action_args)
+      }
+    }]
+  });
+});
+
 test('SmartChatModelOllamaRequestAdapter converts OpenAI-style request to Ollama format', t => {
   const openai_request = {
     model: 'phi:latest',
@@ -127,7 +165,7 @@ test('SmartChatModelOllamaRequestAdapter handles multimodal messages correctly',
   t.deepEqual(body.messages, [{
     role: 'user',
     content: "What's in this image?",
-    images: ['data:image/jpeg;base64,/9j/4AAQSkZJRg...']
+    images: ['/9j/4AAQSkZJRg...']
   }]);
 });
 

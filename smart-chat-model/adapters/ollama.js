@@ -295,11 +295,36 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
    * @private
    */
   _transform_message_to_openai() {
-    return {
+    const message = {
       role: this._res.message.role,
       content: this._res.message.content,
       tool_calls: this._res.message.tool_calls
     };
+
+    // handle if tool call erroneously returned in content field instead of tool_calls
+    if (!message.tool_calls?.length && typeof message.content === 'string') {
+      try {
+        const parsed = JSON.parse(message.content);
+        if (parsed?.name && parsed?.arguments !== undefined) {
+          message.content = '';
+          message.tool_calls = [{
+            id: '',
+            type: 'function',
+            function: {
+              name: parsed.name,
+              arguments: typeof parsed.arguments === 'string'
+                ? parsed.arguments
+                : JSON.stringify(parsed.arguments)
+            }
+          }];
+          console.warn('Parsed tool call from content field. This means the model called the tool but the response was not formatted correctly.');
+        }
+      } catch {}
+    }
+
+    if (!message.tool_calls?.length) delete message.tool_calls;
+
+    return message;
   }
 
   /**
@@ -363,3 +388,4 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
     return raw;
   }
 }
+
