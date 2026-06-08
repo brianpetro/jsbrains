@@ -48,6 +48,7 @@ export class SmartChatModelOllamaAdapter extends SmartChatModelApiAdapter {
    * @returns {Promise<Object>} Map of model objects
    */
   async get_models(refresh=false) {
+    const time_now = Date.now();
     if(!refresh
       && typeof this.model_data === 'object'
       && Object.keys(this.model_data || {}).length > 0
