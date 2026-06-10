@@ -241,6 +241,14 @@ class SmartFs {
    */
   async append(rel_path, content) { return await this.use_adapter('append', [rel_path], content); }
 
+  async append_binary(rel_path, data) {
+    try {
+      await this.adapter.append_binary(rel_path, data);
+    } catch (error) {
+      console.error('Error during binary append:', error);
+      throw error;
+    }
+   }
   /**
    * Create a new directory
    * 
@@ -365,6 +373,16 @@ class SmartFs {
       throw error;
     }
   }
+
+  async write_binary(rel_path, data) {
+    try {
+      await this.adapter.write_binary(rel_path, data);
+    } catch (error) {
+      console.error('Error during binary write:', error);
+      throw error;
+    }
+  }
+
   // // aliases
   // async create(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
   // async update(rel_path, content) { return await this.use_adapter('write', [rel_path], content); }
