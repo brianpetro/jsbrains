@@ -293,6 +293,25 @@ class SmartFs {
   }
 
   /**
+   * Read a file as binary data without relying on ambiguous string encodings.
+   *
+   * @param {string} rel_path - The relative path of the file to read
+   * @returns {Promise<ArrayBuffer|Uint8Array|Buffer|null|{error:string}>}
+   */
+  async read_binary(rel_path) {
+    try {
+      if (typeof this.adapter.read_binary === 'function') {
+        return await this.adapter.read_binary(rel_path);
+      }
+      return await this.adapter.read(rel_path, 'binary');
+    } catch (error) {
+      console.warn('Error during binary read: ' + error.message, rel_path);
+      if(error.code === 'ENOENT') return null;
+      return { error: error.message };
+    }
+  }
+
+  /**
    * Remove a file
    * 
    * @param {string} rel_path - The relative path of the file to remove

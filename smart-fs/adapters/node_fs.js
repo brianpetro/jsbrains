@@ -257,6 +257,13 @@ export class NodeFsSmartFsAdapter {
   async read(rel_path, encoding='utf-8') { return await this.readFile(rel_path, encoding); }
 
   /**
+   * Read file bytes without specifying an encoding.
+   * @param {string} rel_path - Relative path of the file to read
+   * @returns {Promise<Buffer>}
+   */
+  async read_binary(rel_path) { return await this.readFile(rel_path); }
+
+  /**
    * Remove a file
    * @param {string} rel_path - Relative path of the file to remove
    * @returns {Promise<void>}
