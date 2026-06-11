@@ -32,13 +32,6 @@ export class SmartBlocks extends SmartEntities {
   get embed_model_key() { return this.source_collection?.embed_model_key; }
 
   /**
-   * Calculates the expected number of blocks based on the SmartSources collection.
-   * @readonly
-   * @returns {number} The expected count of blocks.
-   */
-  get expected_blocks_ct() { return Object.values(this.source_collection.items).reduce((acc, item) => acc += Object.keys(item.data.blocks || {}).length, 0); }
-
-  /**
    * Retrieves the notices system from the environment.
    * @readonly
    * @returns {Object} The notices object.
