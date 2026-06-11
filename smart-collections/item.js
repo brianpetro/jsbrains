@@ -50,11 +50,15 @@ export class CollectionItem {
   constructor(env, data = null) {
     // this.env = env;
     env.create_env_getter(this);
-    this.config = this.env?.config;
+    // this.config = this.env?.config;
     this.merge_defaults();
 
     if (data) deep_merge(this.data, data);
     if (!this.data.class_name) this.data.class_name = this.collection.item_class_name;
+  }
+
+  get config() {
+    return this.env?.config;
   }
 
   /**
