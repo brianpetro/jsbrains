@@ -34,11 +34,21 @@ export class SmartEntity extends CollectionItem {
    */
   constructor(env, opts = {}) {
     super(env, opts);
-    /** 
-     * @type {DefaultEntityVectorAdapter} 
-     * @description Adapter for this entity's vector operations.
-     */
-    this.entity_adapter = new DefaultEntityVectorAdapter(this);
+  }
+
+  /**
+   * Adapter for this entity's vector operations.
+   * @type {DefaultEntityVectorAdapter}
+   */
+  get entity_adapter() {
+    if (!this._entity_adapter) {
+      this._entity_adapter = new DefaultEntityVectorAdapter(this);
+    }
+    return this._entity_adapter;
+  }
+
+  set entity_adapter(entity_adapter) {
+    this._entity_adapter = entity_adapter;
   }
 
   /**
@@ -294,3 +304,4 @@ export default {
     find_connections: find_connections,
   },
 }
+
