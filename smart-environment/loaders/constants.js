@@ -16,6 +16,6 @@ export const ACTION_EXPORT_PROPS = [
   'display_description',
   'pre_process',
   'cli',
+  'menus',
   'version'
 ];
-
