@@ -353,11 +353,7 @@ export class SmartSources extends SmartEntities {
    */
   init_file_path(file_path) {
     const ext = this.get_extension_for_path(file_path);
-    if (!ext) {
-      // skip if extension not recognized
-      // console.warn(`No recognized extension for ${file_path}`);
-      return;
-    }
+    if (!ext) return; // skip if no extension
     if (this.fs.is_excluded(file_path)) {
       console.warn(`File ${file_path} is excluded from processing.`);
       return;
@@ -370,6 +366,9 @@ export class SmartSources extends SmartEntities {
 
     // create new item
     const item = new this.item_type(this.env, { path: file_path });
+    // if no adapter for this source type, skip adding it to collection
+    if (!item.source_adapter) return;
+
     this.items[file_path] = item;
     item.queue_import();
     item.queue_load();
@@ -395,7 +394,7 @@ export class SmartSources extends SmartEntities {
     while (pcs.length) {
       const supported_ext = pcs.join('.').toLowerCase();
       if (this.source_adapters[supported_ext]) {
-        return supported_ext;
+        return supported_ext; // handle multi-part extensions known by source adapters
       }
       last_ext = pcs.shift();
     }
