@@ -105,3 +105,100 @@ test('SmartFs.load_files builds files and file_paths correctly', async t => {
     'folder/subfolder'
   ].sort());
 });
+
+class GitignoreTestAdapter {
+  constructor(smart_fs) {
+    this.smart_fs = smart_fs;
+    this.gitignore_exists = true;
+    this.gitignore_content = '';
+    this.gitignore_mtime = 0;
+    this.read_count = 0;
+  }
+
+  async exists(path) {
+    return path === '.gitignore' && this.gitignore_exists;
+  }
+
+  async stat() {
+    return { mtime: this.gitignore_mtime };
+  }
+
+  async read() {
+    this.read_count += 1;
+    return this.gitignore_content;
+  }
+}
+
+function create_env(settings = {}) {
+  const env = {
+    settings: {
+      gitignore_exclusions: [],
+      gitignore_exclusions_updated_at: 0,
+      ...settings,
+    },
+    smart_settings: {
+      async save() {
+        env.settings_save_count += 1;
+      },
+    },
+    settings_save_count: 0,
+  };
+  return env;
+}
+
+test('load_exclusions imports .gitignore into settings when cache timestamp is missing', async (t) => {
+  const env = create_env();
+  const smart_fs = new SmartFs(env, { adapter: GitignoreTestAdapter });
+  smart_fs.adapter.gitignore_content = 'node_modules/**\n# comment\n\n*.log\n';
+  smart_fs.adapter.gitignore_mtime = 100;
+  const imported_after = Date.now();
+
+  await smart_fs.load_exclusions();
+
+  t.deepEqual(env.settings.gitignore_exclusions, [
+    'node_modules/**',
+    '*.log',
+  ]);
+  t.true(env.settings.gitignore_exclusions_updated_at >= imported_after);
+  t.is(env.settings_save_count, 1);
+  t.true(smart_fs.is_excluded('node_modules/package/readme.md'));
+  t.true(smart_fs.is_excluded('debug.log'));
+});
+
+test('load_exclusions reuses current cached settings without reading .gitignore', async (t) => {
+  const env = create_env({
+    gitignore_exclusions: ['cached/**'],
+    gitignore_exclusions_updated_at: 200,
+  });
+  const smart_fs = new SmartFs(env, { adapter: GitignoreTestAdapter });
+  smart_fs.adapter.gitignore_content = 'new/**\n';
+  smart_fs.adapter.gitignore_mtime = 100;
+
+  await smart_fs.load_exclusions();
+  const excluded_pattern_count = smart_fs.excluded_patterns.length;
+  await smart_fs.load_exclusions();
+
+  t.is(smart_fs.adapter.read_count, 0);
+  t.is(env.settings_save_count, 0);
+  t.is(smart_fs.excluded_patterns.length, excluded_pattern_count);
+  t.true(smart_fs.is_excluded('cached/file.md'));
+  t.false(smart_fs.is_excluded('new/file.md'));
+});
+
+test('load_exclusions refreshes cached settings when .gitignore is newer', async (t) => {
+  const env = create_env({
+    gitignore_exclusions: ['old/**'],
+    gitignore_exclusions_updated_at: 100,
+  });
+  const smart_fs = new SmartFs(env, { adapter: GitignoreTestAdapter });
+  smart_fs.adapter.gitignore_content = 'new/**\n';
+  smart_fs.adapter.gitignore_mtime = 200;
+
+  await smart_fs.load_exclusions();
+
+  t.deepEqual(env.settings.gitignore_exclusions, ['new/**']);
+  t.is(smart_fs.adapter.read_count, 1);
+  t.is(env.settings_save_count, 1);
+  t.true(smart_fs.is_excluded('new/file.md'));
+  t.false(smart_fs.is_excluded('old/file.md'));
+});

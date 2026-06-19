@@ -75,6 +75,7 @@ class SmartFs {
     if(!opts.adapter) throw new Error('SmartFs requires an adapter');
     this.adapter = new opts.adapter(this);
     this.excluded_patterns = [];
+    this._exclusions_loaded = false;
     if(Array.isArray(opts.exclude_patterns)) {
       opts.exclude_patterns.forEach(pattern => this.add_ignore_pattern(pattern));
     }
@@ -123,15 +124,29 @@ class SmartFs {
    * @returns {Promise<RegExp[]>} Array of RegExp patterns
    */
   async load_exclusions() {
+    if (this._exclusions_loaded) return;
+
     const gitignore_path = '.gitignore';
-    // use adapter method directly to skip exclusion checks
-    const gitignore_exists = await this.adapter.exists(gitignore_path);
-    if (gitignore_exists && !this.env.settings.skip_excluding_gitignore) {
-      const gitignore_content = await this.adapter.read(gitignore_path, 'utf-8');
-      gitignore_content
-        .split('\n')
-        .filter(line => !line.startsWith('#')) // ignore comments
-        .filter(Boolean)
+    if (!this.env.settings.skip_excluding_gitignore) {
+      const gitignore_exists = await this.adapter.exists(gitignore_path);
+      if (gitignore_exists) {
+        const gitignore_stat = await this.adapter.stat(gitignore_path);
+        const gitignore_mtime = Number(gitignore_stat?.mtime || 0);
+        const gitignore_exclusions_updated_at = this.env.settings.gitignore_exclusions_updated_at || 0;
+
+        if (!gitignore_exclusions_updated_at || gitignore_exclusions_updated_at < gitignore_mtime) {
+          const gitignore_content = await this.adapter.read(gitignore_path, 'utf-8');
+          this.env.settings.gitignore_exclusions = gitignore_content
+            .split('\n')
+            .filter(line => !line.startsWith('#')) // ignore comments
+            .filter(Boolean)
+          ;
+          this.env.settings.gitignore_exclusions_updated_at = Date.now();
+          await this.env.smart_settings?.save?.();
+        }
+      }
+
+      (this.env.settings.gitignore_exclusions || [])
         .forEach(pattern => this.add_ignore_pattern(pattern))
       ;
     }
@@ -140,6 +155,7 @@ class SmartFs {
     this.add_ignore_pattern('**/.**'); // ignore hidden files and folders in subdirectories
     this.add_ignore_pattern('**/.*/**'); // ignore hidden directories and their contents
     this.add_ignore_pattern('**/*.ajson'); // ignore .ajson files
+    this._exclusions_loaded = true;
   }
 
   /**

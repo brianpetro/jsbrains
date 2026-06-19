@@ -769,7 +769,16 @@ export class SmartSources extends SmartEntities {
   get excluded_patterns() {
     return [
       ...(this.file_exclusions?.map((file) => `${file}**`) || []),
-      ...(this.folder_exclusions || []).map((folder) => `${folder}**`),
+      ...(this.folder_exclusions || []).flatMap((folder) => {
+        // DEPRECATED: exlusion builder should handle adding glob patterns (2026-06-18 including here for backward compatibility)
+        const pattern = folder.endsWith('/**')
+          ? folder
+          : folder.endsWith('/')
+            ? `${folder}**`
+            : `${folder}/**`
+        ;
+        return [pattern];
+      }),
       this.env.env_data_dir + "/**",
     ];
   }
@@ -795,6 +804,7 @@ export class SmartSources extends SmartEntities {
       folder = folder.trim();
       if (folder === "") return false;
       if (folder === "/") return false;
+      if (folder.includes('*')) return folder;
       if (!folder.endsWith("/")) return folder + "/";
       return folder;
     }).filter(Boolean) : [];
