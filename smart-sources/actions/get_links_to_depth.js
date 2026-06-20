@@ -91,13 +91,14 @@ export function get_links_to_depth(
    * Enqueue neighbour if unseen.
    * @param {SmartSource|undefined|null} src
    * @param {number} d - depth of neighbour
+   * @param {string|undefined} section - optional section context from the link
    */
-  const enqueue = (src, d) => {
+  const enqueue = (src, d, section) => {
     if (!src) return;
     if (visited.has(src.key)) return;
     visited.add(src.key);
-    queue.push({ src, depth: d });
-    results.push({ depth: d, item: src });
+    queue.push({ src, depth: d, section });
+    results.push({ depth: d, item: src, section });
   };
 
   /** @type {Array<{ src:SmartSource, depth:number }>} */
@@ -124,7 +125,7 @@ export function get_links_to_depth(
         if (should_exclude_bases_embed_outlink(link, current_depth)) {
           continue;
         }
-        enqueue(collection.get(link.key), next_depth);
+        enqueue(collection.get(link.key), next_depth, link.section);
       }
     }
 

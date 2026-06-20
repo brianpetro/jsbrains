@@ -80,3 +80,11 @@ test('embedded detection is based on immediately preceding character only', t =>
   t.is(normal.embedded, undefined);
   t.true(embedded.embedded);
 });
+
+test('handles sections in wiki-links', t => {
+  const md = '[[Some File#Section|Alias Title]]';
+  const [link] = get_markdown_links(md);
+  t.is(link.title, 'Alias Title');
+  t.is(link.target, 'Some File#Section');
+  t.is(link.section, 'Section');
+});

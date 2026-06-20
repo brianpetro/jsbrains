@@ -78,9 +78,11 @@ export function get_markdown_links(content) {
     const target     = normalise_target(target_raw);
     const line_no    = content.slice(0, m.index).split('\n').length;
     const embedded   = is_embedded(m.index);
+    const section = target.includes('#') ? target.split('#').slice(1).join('#') : undefined; // Extract section if present; example: "file.md#Section" -> "Section"
 
     const record = { title, target, line: line_no };
     if (embedded) record.embedded = true;
+    if (section) record.section = section;
 
     result.push(record);
   }
