@@ -508,7 +508,7 @@ export class SmartSource extends SmartEntity {
     return (this.data.outlinks || [])
       .map(link => {
         const link_target = link?.target || link;
-        const link_ref = link_target.includes("#") ? link_target.split("#")[0] : link_target; // Remove section for path resolution
+        const link_ref = link_target?.includes?.("#") ? link_target.split("#")[0] : link_target; // Remove section for path resolution
         if(typeof link_ref !== 'string') return null;
         if(link_ref.startsWith("http")) return null;
         const link_path = this.fs.get_link_target_path(link_ref, this.file_path);
