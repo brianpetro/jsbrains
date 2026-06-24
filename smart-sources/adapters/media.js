@@ -60,7 +60,9 @@ export class MediaSourceContentAdapter extends FileSourceContentAdapter {
       content,
     };
   }
+  get should_embed() { return false; } // no embedding for now
 
+  // NOT USED????
   get should_import() { return false; } // no import for now
 }
 

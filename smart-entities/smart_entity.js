@@ -214,6 +214,7 @@ export class SmartEntity extends CollectionItem {
    * @this {SmartEntityThis}
    * @returns {boolean} True if no vector is set, false otherwise.
    */
+  // TODO: move handling to source adapter (this remains, override in SmartSource, defer to adapter for prevents embedding of non-embeddable source types like images)
   get should_embed() { return this.size > (this.settings?.min_chars || 300); }
 
   /**

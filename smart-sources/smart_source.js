@@ -105,7 +105,7 @@ export class SmartSource extends SmartEntity {
   async get_embed_input(content=null) {
     if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // Return cached (temporary) input
     if(!content) content = await this.read(); // Get content from file
-    if(!content) {
+    if(!content || typeof content !== 'string') {
       console.warn("SmartSource.get_embed_input: No content available for embedding: " + this.path);
       return ''; // No content to embed
     }
@@ -520,6 +520,11 @@ export class SmartSource extends SmartEntity {
         };
       })
       .filter(link => link);
+  }
+
+  get should_embed() {
+    if (typeof this.source_adapter?.should_embed !== 'undefined') return this.source_adapter.should_embed;
+    return this.size > (this.settings?.min_chars || 300);
   }
 
   /**
