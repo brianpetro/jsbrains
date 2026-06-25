@@ -42,6 +42,10 @@ export class MediaSourceContentAdapter extends FileSourceContentAdapter {
     return is_media_key(source.key);
   }
 
+  async import() {
+    return; // no import for now
+  }
+
   /**
    * Read media file and return base64 encoded content.
    * @async
