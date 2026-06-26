@@ -20,6 +20,7 @@ const settings_config = {
   api_key: {
     name: 'API Key',
     type: "password",
+    secret: true,
     description: "Enter your Google Gemini API key.",
   },
   "gemini_note": {
@@ -33,3 +34,4 @@ export default {
   class: GoogleGeminiEmbeddingModelAdapter,
   settings_config
 };
+

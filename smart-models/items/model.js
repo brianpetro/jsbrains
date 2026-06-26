@@ -8,7 +8,6 @@ export class Model extends CollectionItem {
   static get defaults() {
     return {
       data: {
-        api_key: '',
         provider_key: '',
         model_key: '',
       }
@@ -66,7 +65,24 @@ export class Model extends CollectionItem {
   }
 
   get api_key() {
-    return this.data.api_key;
+    const secret_api_key = this.secrets?.api_key;
+    if (typeof secret_api_key === 'string') {
+      if (secret_api_key.length && this.data.api_key) {
+        console.warn(`[smart-models] Model ${this.key} has api_key in data, but secrets are enabled. Please migrate the api_key to secrets.`);
+      }
+      return secret_api_key;
+    }
+    return this.data.api_key || '';
+  }
+
+  set api_key(api_key) {
+    const value = String(api_key || '');
+    if (this.secrets) {
+      this.secrets.api_key = value;
+      delete this.data.api_key;
+      return;
+    }
+    this.data.api_key = value;
   }
 
   /**
@@ -213,7 +229,14 @@ export class Model extends CollectionItem {
             const callback = setting_config.callback || ((value, setting) => {
               return model.model_changed(setting_key, value, setting);
             });
-            return [setting_key, { ...setting_config, callback }];
+            return [
+              setting_key,
+              {
+                ...setting_config,
+                ...(setting_key === 'api_key' ? { secret: true } : {}), // TEMP: should add property direct in settings_config
+                callback,
+              }
+            ];
           }
         )
       )
@@ -236,6 +259,18 @@ export class Model extends CollectionItem {
     return this.create_settings_proxy(this.data);
   }
 
+  /**
+   * Secure storage for sensitive information (like API keys) for this model.
+   * @returns {Object} Proxied view of this.collection.secrets[this.key].
+   */
+  get secrets() {
+    if (!this.collection.secrets) return;
+    if (!this.collection.secrets[this.key]) {
+      this.collection.secrets[this.key] = {};
+    }
+    return this.collection.secrets[this.key];
+  }
+
   get model_key() {
     return this.data.model_key;
   }
@@ -247,3 +282,4 @@ export class Model extends CollectionItem {
     return this.settings;
   }
 }
+

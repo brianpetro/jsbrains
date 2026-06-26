@@ -11,15 +11,14 @@ export class Models extends Collection {
       // sort by created_at to get the most recently created
       .sort((a, b) => b.data.created_at - a.data.created_at)[0]
     ;
-    if(existing_from_provider) {
-      if(!data.api_key && existing_from_provider.data.api_key) {
-        data.api_key = existing_from_provider.data.api_key;
-      }
-    }
+    const api_key = data.api_key || existing_from_provider?.api_key || '';
+    delete data.api_key;
+
     const item = new this.item_type(this.env, {
       ...data,
     });
     this.set(item);
+    if (api_key) item.api_key = api_key;
     this.settings.default_model_key = item.key;
     this.emit_event('model:changed');
     item.queue_save();
@@ -99,3 +98,4 @@ export const models_collection = {
 };
 
 export default models_collection;
+

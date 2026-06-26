@@ -70,6 +70,7 @@ export const settings_config = {
   "api_key": {
     name: 'API Key',
     type: "password",
+    secret: true,
     description: "Enter your OpenAI API key.",
   },
   "dimensions": {
@@ -92,3 +93,4 @@ export default {
   class: OpenAIEmbeddingModelAdapter,
   settings_config,
 };
+

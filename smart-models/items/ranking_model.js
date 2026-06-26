@@ -8,7 +8,6 @@ export class RankingModel extends Model {
   static get defaults() {
     return {
       data: {
-        api_key: '',
         provider_key: 'cohere',
         model_key: 'rerank-v3.5',
       }

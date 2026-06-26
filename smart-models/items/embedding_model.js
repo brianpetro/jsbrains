@@ -8,7 +8,6 @@ export class EmbeddingModel extends Model {
   static get defaults() {
     return {
       data: {
-        api_key: '',
         provider_key: 'transformers',
         model_key: 'TaylorAI/bge-micro-v2',
         dims: 384, // ???
