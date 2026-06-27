@@ -38,12 +38,17 @@ export const infer_mime_type = name => {
 export const is_media_key = key => media_extension_regex.test(key);
 
 export class MediaSourceContentAdapter extends FileSourceContentAdapter {
+  constructor(item) {
+    super(item);
+    freeze_queue_flags_false(item);
+  }
+
   static detect_type(source) {
     return is_media_key(source.key);
   }
 
   async import() {
-    return; // no import for now
+    freeze_queue_flags_false(this.item);
   }
 
   /**
@@ -65,9 +70,22 @@ export class MediaSourceContentAdapter extends FileSourceContentAdapter {
     };
   }
   get should_embed() { return false; } // no embedding for now
+  get should_persist() { return false; } // no AJSON persistence for media sources
 
   // NOT USED????
   get should_import() { return false; } // no import for now
+}
+
+function freeze_queue_flags_false(item) {
+  if (!item) return;
+  ['_queue_load', '_queue_save', '_queue_embed', '_queue_import'].forEach((key) => {
+    Object.defineProperty(item, key, {
+      configurable: true,
+      enumerable: false,
+      get() { return false; },
+      set() {},
+    });
+  });
 }
 
 export default {

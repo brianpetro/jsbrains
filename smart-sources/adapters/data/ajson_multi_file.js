@@ -25,6 +25,13 @@ export class AjsonMultiFileSourcesDataAdapter extends AjsonMultiFileCollectionDa
  * On save, it now appends lines for the source (if needed) and all blocks that `_queue_save` at once.
  */
 export class AjsonMultiFileSourceDataAdapter extends AjsonMultiFileItemDataAdapter {
+  async save(retries = 0) {
+    if (!this.item?.deleted && this.item?.source_adapter?.should_persist === false) {
+      this.item._queue_save = false;
+      return;
+    }
+    return await super.save(retries);
+  }
 }
 
 export default {
