@@ -292,7 +292,7 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
   /**
    * Transform message to OpenAI format
    * @returns {Object} Message in OpenAI format
-   * @private
+   * @protected
    */
   _transform_message_to_openai() {
     const message = {
@@ -330,7 +330,7 @@ export class SmartChatModelOllamaResponseAdapter extends SmartChatModelResponseA
   /**
    * Transform usage statistics to OpenAI format
    * @returns {Object} Usage statistics in OpenAI format
-   * @private
+   * @protected
    */
   _transform_usage_to_openai() {
     return {

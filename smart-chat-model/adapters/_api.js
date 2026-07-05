@@ -15,8 +15,8 @@ const MODELS_DEV_CACHE = { data: null, fetched_at: 0 };
  * @extends SmartChatModelAdapter
  * 
  * @property {SmartHttpRequest} _http_adapter - The HTTP adapter instance
- * @property {SmartChatModelRequestAdapter} req_adapter - The request adapter class
- * @property {SmartChatModelResponseAdapter} res_adapter - The response adapter class
+ * @property {import('smart-types').ChatModelRequestAdapterClass} req_adapter - The request adapter class
+ * @property {import('smart-types').ChatModelResponseAdapterClass} res_adapter - The response adapter class
  */
 export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   constructor(model){
@@ -26,13 +26,13 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   
   /**
    * Get the request adapter class.
-   * @returns {SmartChatModelRequestAdapter} The request adapter class
+   * @returns {import('smart-types').ChatModelRequestAdapterClass} The request adapter class
    */
   get req_adapter() { return SmartChatModelRequestAdapter; }
 
   /**
    * Get the response adapter class.
-   * @returns {SmartChatModelResponseAdapter} The response adapter class
+   * @returns {import('smart-types').ChatModelResponseAdapterClass} The response adapter class
    */
   get res_adapter() { return SmartChatModelResponseAdapter; }
 
@@ -520,7 +520,7 @@ export class SmartChatModelRequestAdapter {
   /**
    * Transform messages to OpenAI format
    * @returns {Array<Object>} Transformed messages array
-   * @private
+   * @protected
    */
   _transform_messages_to_openai() {
     return this.messages.map(message => this._transform_single_message_to_openai(message));
@@ -530,7 +530,7 @@ export class SmartChatModelRequestAdapter {
    * Transform a single message to OpenAI format
    * @param {Object} message - Message object to transform
    * @returns {Object} Transformed message object
-   * @private
+   * @protected
    */
   _transform_single_message_to_openai(message) {
     const transformed = {
@@ -550,7 +550,7 @@ export class SmartChatModelRequestAdapter {
    * Get the OpenAI role for a given role.
    * @param {string} role - The role to transform.
    * @returns {string} The transformed role.
-   * @private
+   * @protected
    */
   _get_openai_role(role) {
     // Override in subclasses if needed
@@ -561,7 +561,7 @@ export class SmartChatModelRequestAdapter {
    * Get the OpenAI content for a given content.
    * @param {string} content - The content to transform.
    * @returns {string} The transformed content.
-   * @private
+   * @protected
    */
   _get_openai_content(message) {
     // Override in subclasses if needed
@@ -572,7 +572,7 @@ export class SmartChatModelRequestAdapter {
    * Transform tool calls to OpenAI format.
    * @param {Array} tool_calls - Array of tool call objects.
    * @returns {Array} Transformed tool calls array.
-   * @private
+   * @protected
    */
   _transform_tool_calls_to_openai(tool_calls) {
     return tool_calls.map(tool_call => ({
@@ -588,7 +588,7 @@ export class SmartChatModelRequestAdapter {
   /**
    * Transform tools to OpenAI format.
    * @returns {Array} Transformed tools array.
-   * @private
+   * @protected
    */
   _transform_tools_to_openai() {
     return this.tools.map(tool => ({
@@ -769,7 +769,7 @@ export class SmartChatModelResponseAdapter {
   /**
    * Transform choices to OpenAI format.
    * @returns {Array} Transformed choices array.
-   * @private
+   * @protected
    */
   _transform_choices_to_openai() {
     return this.choices.map(choice => ({
@@ -783,7 +783,7 @@ export class SmartChatModelResponseAdapter {
    * Transform a single message to OpenAI format.
    * @param {Object} message - The message object to transform.
    * @returns {Object} Transformed message object.
-   * @private
+   * @protected
    */
   _transform_message_to_openai(message={}) {
     const transformed = {
@@ -802,7 +802,7 @@ export class SmartChatModelResponseAdapter {
    * Get the OpenAI role for a given role.
    * @param {string} role - The role to transform.
    * @returns {string} The transformed role.
-   * @private
+   * @protected
    */
   _get_openai_role(role) {
     // Override in subclasses if needed
@@ -813,7 +813,7 @@ export class SmartChatModelResponseAdapter {
    * Get the OpenAI content for a given content.
    * @param {string} content - The content to transform.
    * @returns {string} The transformed content.
-   * @private
+   * @protected
    */
   _get_openai_content(message) {
     // Override in subclasses if needed
@@ -824,7 +824,7 @@ export class SmartChatModelResponseAdapter {
    * Get the OpenAI finish reason for a given finish reason.
    * @param {string} finish_reason - The finish reason to transform.
    * @returns {string} The transformed finish reason.
-   * @private
+   * @protected
    */
   _get_openai_finish_reason(finish_reason) {
     // Override in subclasses if needed
@@ -834,7 +834,7 @@ export class SmartChatModelResponseAdapter {
   /**
    * Transform usage to OpenAI format.
    * @returns {Object} Transformed usage object.
-   * @private
+   * @protected
    */
   _transform_usage_to_openai() {
     // Override in subclasses if needed
@@ -845,7 +845,7 @@ export class SmartChatModelResponseAdapter {
    * Transform tool calls to OpenAI format.
    * @param {Array} tool_calls - Array of tool call objects.
    * @returns {Array} Transformed tool calls array.
-   * @private
+   * @protected
    */
   _transform_tool_calls_to_openai(tool_calls) {
     return tool_calls.map(tool_call => ({

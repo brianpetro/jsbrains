@@ -109,6 +109,19 @@ export const ChatModelUsage = {};
  */
 export const ChatModelResponse = {};
 
+
+/**
+ * @typedef {new (adapter: *, req?: import('./smart-chat-model.js').ChatModelRequest) => *} ChatModelRequestAdapterClass
+ * @description Constructor returned by SmartChatModelApiAdapter.req_adapter.
+ */
+export const ChatModelRequestAdapterClass = function () {};
+
+/**
+ * @typedef {new (adapter: *, res?: Object.<string, *>, status?: *) => *} ChatModelResponseAdapterClass
+ * @description Constructor returned by SmartChatModelApiAdapter.res_adapter.
+ */
+export const ChatModelResponseAdapterClass = function () {};
+
 /**
  * @typedef {Object} ChatModelStreamHandlers
  * @property {function(import('./smart-chat-model.js').ChatModelResponse): Promise<void>|void} [chunk] - Called for partial streaming updates.

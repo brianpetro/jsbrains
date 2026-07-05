@@ -78,7 +78,7 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Get the request adapter class.
-   * @returns {SmartEmbedOpenAIRequestAdapter} The request adapter class
+   * @returns {typeof SmartEmbedOpenAIRequestAdapter} The request adapter class
    */
   get req_adapter() {
     return SmartEmbedOpenAIRequestAdapter;
@@ -86,7 +86,7 @@ export class SmartEmbedOpenAIAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Get the response adapter class.
-   * @returns {SmartEmbedOpenAIResponseAdapter} The response adapter class
+   * @returns {typeof SmartEmbedOpenAIResponseAdapter} The response adapter class
    */
   get res_adapter() {
     return SmartEmbedOpenAIResponseAdapter;

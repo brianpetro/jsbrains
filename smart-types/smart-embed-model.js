@@ -35,3 +35,15 @@ export const EmbeddingModelInfo = {};
  * @description Available embed models keyed by provider model id.
  */
 export const EmbeddingModelsMap = {};
+
+/**
+ * @typedef {new (adapter: *, embed_inputs: Array<string>) => *} EmbedModelRequestAdapterClass
+ * @description Constructor returned by SmartEmbedModelApiAdapter.req_adapter.
+ */
+export const EmbedModelRequestAdapterClass = function () {};
+
+/**
+ * @typedef {new (adapter: *, response: Object.<string, *>) => *} EmbedModelResponseAdapterClass
+ * @description Constructor returned by SmartEmbedModelApiAdapter.res_adapter.
+ */
+export const EmbedModelResponseAdapterClass = function () {};

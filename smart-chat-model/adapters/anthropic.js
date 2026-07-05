@@ -445,7 +445,7 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
   /**
    * Transform message to OpenAI format
    * @returns {Object} Message in OpenAI format
-   * @private
+   * @protected
    */
   _transform_message_to_openai() {
     const message = {
@@ -484,7 +484,7 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
    * Transform finish reason to OpenAI format
    * @param {string} stop_reason - Original finish reason
    * @returns {string} Finish reason in OpenAI format
-   * @private
+   * @protected
    */
   _get_openai_finish_reason(stop_reason) {
     const reason_map = {
@@ -498,7 +498,7 @@ export class SmartChatModelAnthropicResponseAdapter extends SmartChatModelRespon
   /**
    * Transform usage statistics to OpenAI format
    * @returns {Object} Usage statistics in OpenAI format
-   * @private
+   * @protected
    */
   _transform_usage_to_openai() {
     if (!this._res.usage) {

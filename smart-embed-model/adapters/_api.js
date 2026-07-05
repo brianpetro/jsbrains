@@ -15,7 +15,7 @@ const CL100K_URL = 'https://raw.githubusercontent.com/brianpetro/jsbrains/refs/h
 export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
   /**
    * Get the request adapter class.
-   * @returns {SmartEmbedModelRequestAdapter} The request adapter class
+   * @returns {import('smart-types').EmbedModelRequestAdapterClass} The request adapter class
    */
   get req_adapter() {
     return SmartEmbedModelRequestAdapter;
@@ -23,7 +23,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
 
   /**
    * Get the response adapter class.
-   * @returns {SmartEmbedModelResponseAdapter} The response adapter class
+   * @returns {import('smart-types').EmbedModelResponseAdapterClass} The response adapter class
    */
   get res_adapter() {
     return SmartEmbedModelResponseAdapter;

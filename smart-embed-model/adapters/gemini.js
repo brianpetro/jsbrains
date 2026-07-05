@@ -81,7 +81,7 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Get the request adapter class.
-   * @returns {SmartEmbedGeminiRequestAdapter} The request adapter class
+   * @returns {typeof SmartEmbedGeminiRequestAdapter} The request adapter class
    */
   get req_adapter() {
     return SmartEmbedGeminiRequestAdapter;
@@ -89,7 +89,7 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Get the response adapter class.
-   * @returns {SmartEmbedGeminiResponseAdapter} The response adapter class
+   * @returns {typeof SmartEmbedGeminiResponseAdapter} The response adapter class
    */
   get res_adapter() {
     return SmartEmbedGeminiResponseAdapter;

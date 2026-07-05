@@ -1,4 +1,7 @@
 {
   "name": "smart-types",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared JSDoc typedef exports for jsbrains packages.",
   "main": "index.js"
 }

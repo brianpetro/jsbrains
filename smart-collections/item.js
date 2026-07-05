@@ -48,7 +48,8 @@ export class CollectionItem {
    * @param {Partial<CollectionItemData>|null} [data=null] - Initial data for the item.
    */
   constructor(env, data = null) {
-    // this.env = env;
+    /** @type {CollectionEnv} */
+    this.env = env;
     env.create_env_getter(this);
     // this.config = this.env?.config;
     this.merge_defaults();

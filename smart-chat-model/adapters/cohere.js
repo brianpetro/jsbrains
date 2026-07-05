@@ -245,7 +245,7 @@ export class SmartChatModelCohereResponseAdapter extends SmartChatModelResponseA
   /**
    * Transform message to OpenAI format
    * @returns {Object} Message in OpenAI format
-   * @private
+   * @protected
    */
   _transform_message_to_openai() {
     const message = {
@@ -276,7 +276,7 @@ export class SmartChatModelCohereResponseAdapter extends SmartChatModelResponseA
    * Transform finish reason to OpenAI format
    * @param {string} finish_reason - Original finish reason
    * @returns {string} Finish reason in OpenAI format
-   * @private
+   * @protected
    */
   _get_openai_finish_reason(finish_reason) {
     const reason_map = {
@@ -291,7 +291,7 @@ export class SmartChatModelCohereResponseAdapter extends SmartChatModelResponseA
   /**
    * Transform usage statistics to OpenAI format
    * @returns {Object} Usage statistics in OpenAI format
-   * @private
+   * @protected
    */
   _transform_usage_to_openai() {
     if (!this._res.meta || !this._res.meta.billed_units) {

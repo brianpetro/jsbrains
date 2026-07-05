@@ -174,7 +174,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Get the request adapter class.
-   * @returns {SmartEmbedModelOllamaRequestAdapter} The request adapter class
+   * @returns {typeof SmartEmbedModelOllamaRequestAdapter} The request adapter class
    */
   get req_adapter() {
     return SmartEmbedModelOllamaRequestAdapter;
@@ -182,7 +182,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
 
   /**
    * Get the response adapter class.
-   * @returns {SmartEmbedModelOllamaResponseAdapter} The response adapter class
+   * @returns {typeof SmartEmbedModelOllamaResponseAdapter} The response adapter class
    */
   get res_adapter() {
     return SmartEmbedModelOllamaResponseAdapter;
