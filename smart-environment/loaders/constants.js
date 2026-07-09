@@ -17,5 +17,8 @@ export const ACTION_EXPORT_PROPS = [
   'pre_process',
   'cli',
   'menus',
-  'version'
+  'version',
+  'webview_methods',
+  'input_schema',
+  'output_schema',
 ];
