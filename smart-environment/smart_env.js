@@ -23,6 +23,7 @@ import { SmartEvents } from 'smart-events';
 import { SmartSettings } from 'smart-settings/smart_settings.js';
 import { deep_merge } from 'smart-utils/deep_merge.js';
 import { camel_case_to_snake_case } from 'smart-utils/camel_case_to_snake_case.js';
+import { normalize_exclusion_list } from 'smart-sources/utils/exclusions.js';
 import { normalize_opts } from './utils/normalize_opts.js';
 import { deep_clone_config } from './utils/deep_clone_config.js';
 import { merge_env_config } from './utils/merge_env_config.js';
@@ -578,7 +579,8 @@ export class SmartEnv {
   }
 
   /**
-   * Loads settings from the file system, merging with any `default_settings`
+   * Loads settings from the file system, merging with any `default_settings`.
+   * Legacy exclusion strings are normalized without persisting scan diagnostics.
    * @returns {Promise<Object>} the loaded settings
    */
   async load_settings() {
@@ -587,13 +589,17 @@ export class SmartEnv {
     let settings = JSON.parse(JSON.stringify(this.config.default_settings || {})); // set defaults if provided
     deep_merge(settings, JSON.parse(await this.data_fs.read('smart_env.json'))); // load saved settings
     this._saved = true;
-    if (this.fs.auto_excluded_files) {
-      const existing_file_exclusions = settings.smart_sources.file_exclusions.split(',').map((s) => s.trim()).filter(Boolean);
-      settings.smart_sources.file_exclusions = [...existing_file_exclusions, ...this.fs.auto_excluded_files]
-        .filter((value, index, self) => self.indexOf(value) === index)
-        .join(',')
-      ;
+
+    const smart_sources_settings = settings.smart_sources;
+    if (smart_sources_settings) {
+      smart_sources_settings.file_exclusions = normalize_exclusion_list(
+        smart_sources_settings.file_exclusions,
+      );
+      smart_sources_settings.folder_exclusions = normalize_exclusion_list(
+        smart_sources_settings.folder_exclusions,
+      );
     }
+
     return settings;
   }
 
@@ -684,4 +690,3 @@ function get_version_number(subject) {
 function is_global_env_locked(global_ref) {
   return Object.getOwnPropertyDescriptor(global_ref, 'smart_env')?.configurable === false;
 }
-

@@ -83,7 +83,7 @@ class SmartFs {
     this.files = {};
     this.file_paths = [];
     this.folder_paths = [];
-    this.auto_excluded_files = [];
+    this.auto_excluded_files = []; // runtime diagnostics; never persisted into user exclusions
   }
   async refresh() {
     this.files = {};
@@ -97,6 +97,8 @@ class SmartFs {
     await this.load_files();
   }
   async load_files() {
+    // Rebuild adapter-generated exclusions for each scan.
+    this.auto_excluded_files = [];
     const all = await this.list_recursive();
     this.file_paths = [];
     this.folder_paths = [];
@@ -167,16 +169,23 @@ class SmartFs {
     this.excluded_patterns.push(glob_to_regex(pattern.trim(), opts));
   }
   /**
-   * Check if a path is ignored based on gitignore patterns
-   * 
+   * Check whether a path is excluded by configured patterns or an adapter
+   * compatibility policy. Adapter-generated exclusions stay runtime-only and
+   * are rebuilt during each complete filesystem scan.
+   *
    * @param {string} _path - The path to check
-   * @returns {boolean} True if the path is ignored, false otherwise
+   * @returns {boolean} True if the path is excluded, false otherwise
    */
   is_excluded(_path) {
     try {
       if(_path.includes('#')) return true; // ignore paths with # as it is incompatible with block keys
-      if (!this.excluded_patterns.length) return false;
-      return this.excluded_patterns.some(pattern => pattern.test(_path));
+      if (this.excluded_patterns.some(pattern => pattern.test(_path))) return true;
+      if (!this.adapter.should_exclude_path_for_length?.(_path)) return false;
+
+      if (!this.auto_excluded_files.includes(_path)) {
+        this.auto_excluded_files.push(_path);
+      }
+      return true;
     } catch(e) {
       console.error(`Error checking if path is excluded: ${e.message}`);
       console.error(`Path: `, _path);
@@ -367,7 +376,7 @@ class SmartFs {
    * Get file or directory statistics
    * 
    * @param {string} rel_path - The relative path to get statistics for
-   * @returns {Promise<Object>} An object containing file or directory statistics
+   * @returns {Promise<Object>} An object containing file/directory statistics
    */
   async stat(rel_path) { return await this.use_adapter('stat', [rel_path]); }
 

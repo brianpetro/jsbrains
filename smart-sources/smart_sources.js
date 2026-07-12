@@ -1,5 +1,6 @@
 import { SmartEntities } from "smart-entities";
 import { sort_by_score } from "smart-utils/sort_by_score.js";
+import { normalize_exclusion_list } from './utils/exclusions.js';
 
 /**
  * @class SmartSources
@@ -107,6 +108,7 @@ export class SmartSources extends SmartEntities {
     if (!key) return;
     const source = this.init_file_path(key) || this.get(key);
     if (!source) {
+      // TODO: should emit env.events instead of console warning 
       console.warn('SmartSources: Unable to initialize source on create event', event);
       return;
     }
@@ -789,8 +791,9 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<string>} An array of file exclusion patterns.
    */
   get file_exclusions() {
-    const csv = this.env.settings?.smart_sources?.file_exclusions;
-    return csv?.length ? csv.split(",").map((file) => file.trim()) : [];
+    return normalize_exclusion_list(
+      this.env.settings?.smart_sources?.file_exclusions,
+    );
   }
 
   /**
@@ -799,15 +802,13 @@ export class SmartSources extends SmartEntities {
    * @returns {Array<string>} An array of folder exclusion patterns.
    */
   get folder_exclusions() {
-    const csv = this.env.settings?.smart_sources?.folder_exclusions;
-    return csv?.length ? csv.split(",").map((folder) => {
-      folder = folder.trim();
-      if (folder === "") return false;
-      if (folder === "/") return false;
+    return normalize_exclusion_list(
+      this.env.settings?.smart_sources?.folder_exclusions,
+    ).map((folder) => {
       if (folder.includes('*')) return folder;
       if (!folder.endsWith("/")) return folder + "/";
       return folder;
-    }).filter(Boolean) : [];
+    });
   }
 
   /**
@@ -869,4 +870,3 @@ export class SmartSources extends SmartEntities {
 
 export const settings_config = {
 };
-
