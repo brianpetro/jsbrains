@@ -580,7 +580,7 @@ export class SmartEnv {
 
   /**
    * Loads settings from the file system, merging with any `default_settings`.
-   * Legacy exclusion strings are normalized without persisting scan diagnostics.
+   * Legacy exclusion strings stay intact for older clients; array settings use separate list keys.
    * @returns {Promise<Object>} the loaded settings
    */
   async load_settings() {
@@ -592,12 +592,33 @@ export class SmartEnv {
 
     const smart_sources_settings = settings.smart_sources;
     if (smart_sources_settings) {
-      smart_sources_settings.file_exclusions = normalize_exclusion_list(
-        smart_sources_settings.file_exclusions,
-      );
-      smart_sources_settings.folder_exclusions = normalize_exclusion_list(
-        smart_sources_settings.folder_exclusions,
-      );
+      // Repair the short-lived build that wrote arrays to the legacy CSV keys.
+      // New code uses the list keys while older clients retain parseable strings.
+      if (Array.isArray(smart_sources_settings.file_exclusions)) {
+        const file_exclusions = normalize_exclusion_list(
+          smart_sources_settings.file_exclusions_list
+            ?? smart_sources_settings.file_exclusions,
+        );
+        smart_sources_settings.file_exclusions_list = file_exclusions;
+        // CSV cannot safely represent paths containing commas.
+        smart_sources_settings.file_exclusions = file_exclusions
+          .filter((value) => !value.includes(','))
+          .join(',')
+        ;
+      }
+
+      if (Array.isArray(smart_sources_settings.folder_exclusions)) {
+        const folder_exclusions = normalize_exclusion_list(
+          smart_sources_settings.folder_exclusions_list
+            ?? smart_sources_settings.folder_exclusions,
+        );
+        smart_sources_settings.folder_exclusions_list = folder_exclusions;
+        // CSV cannot safely represent paths containing commas.
+        smart_sources_settings.folder_exclusions = folder_exclusions
+          .filter((value) => !value.includes(','))
+          .join(',')
+        ;
+      }
     }
 
     return settings;

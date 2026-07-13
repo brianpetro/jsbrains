@@ -10,8 +10,8 @@ function create_env_with_saved_settings(saved_settings, auto_excluded_files = []
     value: {
       default_settings: {
         smart_sources: {
-          file_exclusions: ['Untitled'],
-          folder_exclusions: [],
+          file_exclusions: 'Untitled',
+          folder_exclusions: '',
         },
       },
     },
@@ -33,23 +33,28 @@ function create_env_with_saved_settings(saved_settings, auto_excluded_files = []
   return env;
 }
 
-test('load_settings preserves comma paths and ignores runtime exclusions', async (t) => {
+test('load_settings repairs short-lived array values without persisting runtime exclusions', async (t) => {
   const auto_excluded_path = 'Generated, overlong source.md';
   const env = create_env_with_saved_settings({
     smart_sources: {
-      file_exclusions: [comma_file_path, '/', '**'],
-      folder_exclusions: ['Cases/Lastname, Firstname/**', '/**'],
+      file_exclusions: [comma_file_path, 'safe.md', '/', '**'],
+      folder_exclusions: ['Cases/Lastname, Firstname/**', 'SafeFolder/**', '/**'],
     },
   }, [auto_excluded_path]);
 
   const settings = await env.load_settings();
 
-  t.deepEqual(settings.smart_sources.file_exclusions, [comma_file_path]);
-  t.deepEqual(settings.smart_sources.folder_exclusions, ['Cases/Lastname, Firstname/**']);
-  t.false(settings.smart_sources.file_exclusions.includes(auto_excluded_path));
+  t.is(settings.smart_sources.file_exclusions, 'safe.md');
+  t.deepEqual(settings.smart_sources.file_exclusions_list, [comma_file_path, 'safe.md']);
+  t.is(settings.smart_sources.folder_exclusions, 'SafeFolder/**');
+  t.deepEqual(settings.smart_sources.folder_exclusions_list, [
+    'Cases/Lastname, Firstname/**',
+    'SafeFolder/**',
+  ]);
+  t.false(settings.smart_sources.file_exclusions_list.includes(auto_excluded_path));
 });
 
-test('load_settings migrates safe legacy CSV exclusions to arrays', async (t) => {
+test('load_settings leaves legacy CSV exclusions parseable for older clients', async (t) => {
   const env = create_env_with_saved_settings({
     smart_sources: {
       file_exclusions: 'alpha, beta, /, **',
@@ -59,6 +64,8 @@ test('load_settings migrates safe legacy CSV exclusions to arrays', async (t) =>
 
   const settings = await env.load_settings();
 
-  t.deepEqual(settings.smart_sources.file_exclusions, ['alpha', 'beta']);
-  t.deepEqual(settings.smart_sources.folder_exclusions, ['Folder', 'Archive/**']);
+  t.is(settings.smart_sources.file_exclusions, 'alpha, beta, /, **');
+  t.is(settings.smart_sources.folder_exclusions, 'Folder, Archive/**, /**');
+  t.false('file_exclusions_list' in settings.smart_sources);
+  t.false('folder_exclusions_list' in settings.smart_sources);
 });

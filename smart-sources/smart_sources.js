@@ -786,24 +786,28 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
-   * Retrieves the file exclusion patterns from settings.
+   * Retrieves file exclusions from the array-backed list when present,
+   * falling back to the legacy CSV setting.
    * @readonly
    * @returns {Array<string>} An array of file exclusion patterns.
    */
   get file_exclusions() {
+    const settings = this.env.settings?.smart_sources || {};
     return normalize_exclusion_list(
-      this.env.settings?.smart_sources?.file_exclusions,
+      settings.file_exclusions_list ?? settings.file_exclusions,
     );
   }
 
   /**
-   * Retrieves the folder exclusion patterns from settings.
+   * Retrieves folder exclusions from the array-backed list when present,
+   * falling back to the legacy CSV setting.
    * @readonly
    * @returns {Array<string>} An array of folder exclusion patterns.
    */
   get folder_exclusions() {
+    const settings = this.env.settings?.smart_sources || {};
     return normalize_exclusion_list(
-      this.env.settings?.smart_sources?.folder_exclusions,
+      settings.folder_exclusions_list ?? settings.folder_exclusions,
     ).map((folder) => {
       if (folder.includes('*')) return folder;
       if (!folder.endsWith("/")) return folder + "/";
