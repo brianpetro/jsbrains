@@ -1,8 +1,10 @@
 import { FileSourceContentAdapter } from "./_file.js";
 import { get_markdown_links } from "../utils/get_markdown_links.js";
-import { get_bases_cache_links } from "../utils/get_bases_cache_links.js";
 import { parse_frontmatter } from "../utils/parse_frontmatter.js";
 import { get_markdown_tags } from "../utils/get_markdown_tags.js";
+
+const MARKDOWN_OUTLINKS_VERSION = 2;
+
 /**
  * @class MarkdownSourceContentAdapter
  * @extends FileSourceContentAdapter
@@ -12,19 +14,41 @@ import { get_markdown_tags } from "../utils/get_markdown_tags.js";
  */
 export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   static extensions = ['md', 'txt'];
+
+  /**
+   * Queue the one-time outlink migration for Markdown sources.
+   *
+   * @param {object} collection
+   * @returns {Promise<void>}
+   */
+  static async init_items(collection) {
+    await super.init_items(collection);
+
+    Object.values(collection.items || {}).forEach(source => {
+      if (!this.extensions.includes(source.file_type)) return;
+      if (source.data?.outlinks_version !== MARKDOWN_OUTLINKS_VERSION) {
+        source.queue_import?.();
+      }
+    });
+  }
   /**
    * Import the source file content, parse blocks and links, and update `item.data`.
    * @async
+   * @param {object} [params={}]
+   * @param {boolean} [params.refresh=false]
    * @returns {Promise<void>}
    */
-  async import() {
+  async import(params = {}) {
     if(!this.can_import) return;
 
+    const refresh = params.refresh === true
+      || this.data.outlinks_version !== MARKDOWN_OUTLINKS_VERSION
+    ;
     const is_outdated = this.outdated;
     const has_incomplete_block_coverage = this.has_incomplete_block_coverage();
     const repairing_block_coverage = !is_outdated && has_incomplete_block_coverage;
 
-    if(!is_outdated && !has_incomplete_block_coverage){
+    if(!refresh && !is_outdated && !has_incomplete_block_coverage){
       this.item.blocks.forEach(block => {
         if(!block.vec) block.queue_embed();
       });
@@ -40,12 +64,13 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
       this.item.data.last_import = null;
     }
     // TODO: should be dynamic: ex. content_parsers files export a should_parse function
-    if(!has_incomplete_block_coverage && this.data.last_import?.hash === this.data.last_read?.hash){
+    if(!refresh && !has_incomplete_block_coverage && this.data.last_import?.hash === this.data.last_read?.hash){
       if(this.data.blocks) return; // if blocks already exist, skip re-import
     }
     this.data.blocks = null;
     await this.parse_content(content);
     await this.item.parse_content(content);
+    this.data.outlinks_version = MARKDOWN_OUTLINKS_VERSION;
 
     // Mark last_import
     const { mtime, size } = this.item.file.stat;
@@ -85,15 +110,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   async get_links(content=null) {
     if(!content) content = await this.read();
     if(!content) return;
-    const markdown_links = get_markdown_links(content);
-    const bases_links = get_bases_cache_links({
-      source: this.item,
-      links: markdown_links,
-    });
-    return [
-      ...markdown_links,
-      ...bases_links,
-    ];
+    return get_markdown_links(content);
   }
 
   async get_metadata(content=null) {

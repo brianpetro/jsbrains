@@ -28,6 +28,7 @@ export class SmartBlock extends SmartEntity {
       _embed_input: '', // Stored temporarily
     };
   }
+
   get block_adapter() {
     if(!this._block_adapter){
       // this._block_adapter = new this.collection.opts.block_adapters[this.file_type](this);
@@ -80,11 +81,12 @@ export class SmartBlock extends SmartEntity {
    * @method read
    * @description Reads the block content by delegating to the block adapter.
    * @async
+   * @param {Object} [params={}]
    * @returns {Promise<string>} The block content.
    */
-  async read() {
+  async read(params = {}) {
     try{
-      return await this.block_adapter.read();
+      return await this.block_adapter.read(params);
     } catch (e) {
       if(e.message.includes('BLOCK NOT FOUND')){
         return "BLOCK NOT FOUND (run \"Prune\" to remove)";
@@ -159,7 +161,6 @@ export class SmartBlock extends SmartEntity {
   }
 
   // Getters
-
   /**
    * Retrieves the breadcrumbs representing the block's path within the source.
    * @readonly
@@ -243,7 +244,7 @@ export class SmartBlock extends SmartEntity {
   }
 
   get last_read() { return this.data.last_read; }
-  
+
   /**
    * Retrieves the sub-key of the block.
    * @readonly
@@ -297,11 +298,14 @@ export class SmartBlock extends SmartEntity {
   }
 
   /**
-   * Retrieves the paths of outlinks from the block.
+   * Retrieves source outlinks within this block's persisted line range.
    * @readonly
-   * @returns {Array<string>} An array of outlink paths.
+   * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
    */
-  get outlinks() { return this.source.outlinks; }
+  get outlinks() {
+    if (!this.has_lines) return [];
+    return this.source.get_outlinks(this.data.lines);
+  }
 
   /**
    * Retrieves the path of the SmartBlock.
@@ -319,14 +323,11 @@ export class SmartBlock extends SmartEntity {
     try{
       const source_hash = this.source?.data?.last_read?.hash;
       const cached_should_embed = this._should_embed_cache;
-
       if(source_hash != null && cached_should_embed?.hash === source_hash){
         return cached_should_embed.value;
       }
-
       const min_chars = this.settings?.min_chars;
       let should_embed = true;
-
       if(min_chars && this.size < min_chars){
         should_embed = false;
       }else{
@@ -334,23 +335,18 @@ export class SmartBlock extends SmartEntity {
         const match_line_end = this.line_end;
         const blocks = this.source?.data?.blocks;
         const prefix = this.sub_key + "#";
-
         let has_line_start = null;
         let has_line_end = null;
-
         if(blocks){
           for(const key in blocks){
             if(!Object.prototype.hasOwnProperty.call(blocks, key)) continue;
             if(!key.startsWith(prefix)) continue;
-
             const range = blocks[key];
             if(range[0] === match_line_start) has_line_start = key;
             if(range[1] === match_line_end) has_line_end = key;
-
             if(has_line_start && has_line_end) break;
           }
         }
-
         if(has_line_start && has_line_end){
           const start_block = this.collection.get(this.source_key + has_line_start);
           if(start_block?.should_embed){
@@ -359,14 +355,12 @@ export class SmartBlock extends SmartEntity {
           }
         }
       }
-
       if(source_hash != null){
         this._should_embed_cache = {
           hash: source_hash,
           value: should_embed
         };
       }
-
       return should_embed;
     }catch(e){
       console.error(e, e.stack);
@@ -394,7 +388,9 @@ export class SmartBlock extends SmartEntity {
    * @returns {import("smart-sources").SmartSources} The SmartSources collection.
    */
   get source_collection() { return this.env.smart_sources; }
+
   get source_key() { return this.key.split("#")[0]; }
+
   get sub_blocks() {
     return this.source?.blocks?.filter(block => block.key.startsWith(this.key+"#") && block.line_start > this.line_start && block.line_end <= this.line_end) || [];
   }
@@ -404,7 +400,6 @@ export class SmartBlock extends SmartEntity {
   get file() { return this.source.file; }
   get is_media() { return this.source.is_media; }
   get mtime() { return this.source.mtime; }
-  
 
   // DEPRECATED
   /**
@@ -419,6 +414,7 @@ export class SmartBlock extends SmartEntity {
       this.env.settings.smart_view_filter?.show_full_path // This probably does nothing (2026-03-27): see updated settings
     );
   }
+
   /**
    * @deprecated Use `source` instead. Removing after 2025-09-01.
    * @readonly

@@ -10,12 +10,15 @@ class StubBlock {
     this.size = data.size;
     this.vec = data.vec;
   }
+  queue_save() {
+    this._queue_save = true;
+  }
   queue_embed() {
     this._queue_embed = true;
   }
 }
 
-const create_source = (cache_items = {}) => {
+const create_source = () => {
   const block_collection = {
     items: {},
     item_type: StubBlock,
@@ -26,7 +29,7 @@ const create_source = (cache_items = {}) => {
   const source = {
     key: 'Path/Note.md',
     data: {},
-    env: { bases_caches: { items: cache_items } },
+    env: {},
     block_collection,
     queue_save() { this.saved = true; },
     get blocks() { return Object.values(this.block_collection.items); },
@@ -34,11 +37,8 @@ const create_source = (cache_items = {}) => {
   return { source, block_collection };
 };
 
-test('uses bases cache links for blocks containing embedded bases', t => {
-  const cache_items = {
-    'Path/Note.md#table.base#view': { markdown_table: '[[FromBase]]' },
-  };
-  const { source, block_collection } = create_source(cache_items);
+test('keeps the literal Bases link without cached rendered-row links', t => {
+  const { source, block_collection } = create_source();
   const content = [
     'Intro',
     '![[table.base#view]]',
@@ -54,6 +54,25 @@ test('uses bases cache links for blocks containing embedded bases', t => {
 
   t.truthy(base_block);
   t.truthy(second_block);
-  t.true(base_block.data.outlinks.some(l => l.target === 'FromBase'));
-  t.false((second_block.data.outlinks || []).some(l => l.target === 'FromBase'));
+  t.true(base_block.data.outlinks.some(link => link.target === 'table.base#view'));
+  t.false((base_block.data.outlinks || []).some(link => link.target === 'FromBase'));
+  t.false((second_block.data.outlinks || []).some(link => link.target === 'FromBase'));
+});
+
+test('rebuilds unchanged block outlinks from content during the outlink migration', t => {
+  const { source, block_collection } = create_source();
+  const content = '[[Current.md]]';
+
+  parse_blocks(source, content);
+
+  const block = block_collection.items['Path/Note.md#'];
+  block.data.outlinks = [{ target: 'STALE-CACHED-ROW.md' }];
+  delete block.data.outlinks_version;
+  block._queue_save = false;
+
+  parse_blocks(source, content);
+
+  t.deepEqual(block.data.outlinks.map(link => link.target), ['Current.md']);
+  t.is(block.data.outlinks_version, 2);
+  t.true(block._queue_save);
 });

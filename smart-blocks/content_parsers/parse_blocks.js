@@ -1,8 +1,10 @@
 import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
-import { get_bases_cache_links } from "smart-sources/utils/get_bases_cache_links.js";
 import { get_line_range } from "smart-sources/utils/get_line_range.js";
 import { parse_markdown_blocks } from "../parsers/markdown.js";
 import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
+
+const MARKDOWN_OUTLINKS_VERSION = 2;
+
 /**
  * @method parse_blocks
  * @description Imports blocks for a given source by parsing the content. Delegates parsing to a parser
@@ -20,28 +22,24 @@ export function parse_blocks(source, content) {
     const existing_block = source.block_collection.get(block_key);
     const block_content = get_line_range(content, line_range[0], line_range[1]);
     const next_hash = murmur_hash_32_alphanumeric(block_content);
+    const block_outlinks = get_markdown_links(block_content);
     if (
       existing_block
       && existing_block.lines?.[0] === line_range[0]
       && existing_block.lines?.[1] === line_range[1]
       && existing_block.size === block_content.length
       && existing_block.data?.last_read?.hash === next_hash
+      && existing_block.data?.outlinks_version === MARKDOWN_OUTLINKS_VERSION
+      && JSON.stringify(existing_block.data?.outlinks || []) === JSON.stringify(block_outlinks)
     ) {
       continue;
     }
-    const block_outlinks = get_markdown_links(block_content);
-    const bases_links = get_bases_cache_links({
-      source,
-      links: block_outlinks,
-    });
     const block_data = {
       key: block_key,
       lines: line_range,
       size: block_content.length,
-      outlinks: [
-        ...block_outlinks,
-        ...bases_links,
-      ],
+      outlinks: block_outlinks,
+      outlinks_version: MARKDOWN_OUTLINKS_VERSION,
       last_read: {
         at: last_read_at,
         hash: next_hash,
@@ -91,6 +89,10 @@ function has_block_data_changes(existing_block, block_data) {
   }
 
   if (existing_block?.data?.last_read?.hash !== block_data.last_read.hash) {
+    return true;
+  }
+
+  if (existing_block?.data?.outlinks_version !== block_data.outlinks_version) {
     return true;
   }
 

@@ -3,7 +3,6 @@ import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.j
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 import { find_connections } from "./actions/find_connections.js";
 
-
 /**
  * @class SmartSource
  * @extends SmartEntity
@@ -48,13 +47,14 @@ export class SmartSource extends SmartEntity {
   /**
    * Imports the SmartSource by checking for updates and parsing content.
    * @async
+   * @param {Object} [params={}]
    * @returns {Promise<void>}
    */
-  async import(){
+  async import(params = {}){
     this._queue_import = false;
     try{
       // await this.data_adapter.load_item_if_updated(this);
-      await this.source_adapter?.import();
+      await this.source_adapter?.import(params);
       this.emit_event('sources:imported');
     }catch(err){
       if(err.code === "ENOENT"){
@@ -66,13 +66,14 @@ export class SmartSource extends SmartEntity {
       }
     }
   }
+
   /**
    * @deprecated likely extraneous
    */
   async parse_content(content=null){
     // // 1) parse blocks (DEPRECATED handling: should be moved to content_parsers)
     // if(this.block_collection && typeof this.block_collection.import_source === 'function') {
-    //   await this.block_collection.import_source(this, content);
+    // await this.block_collection.import_source(this, content);
     // }
     // 3) call each function in env.opts.collections.smart.sources.content_parsers
     const parse_fns = this.env?.opts?.collections?.smart_sources?.content_parsers || [];
@@ -120,7 +121,8 @@ export class SmartSource extends SmartEntity {
       content = content_lines.filter(line => line.length).join("\n");
     }
     const breadcrumbs = this.path.split("/").join(" > ").replace(".md", "");
-    const max_tokens = this.collection.embed_model.model.data.max_tokens || 500; // Prevent loading too much content
+    const max_tokens = this.collection.embed_model.model.data.max_tokens || 500;
+    // Prevent loading too much content
     const max_chars = Math.floor(max_tokens * 3.7); // more conservative estimate for characters
     this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_chars);
     return this._embed_input;
@@ -130,7 +132,9 @@ export class SmartSource extends SmartEntity {
    * Opens the SmartSource note in the SmartConnections plugin.
    * @returns {void}
    */
-  open() { this.env.smart_connections_plugin.open_note(this.path); }
+  open() {
+    this.env.smart_connections_plugin.open_note(this.path);
+  }
 
   /**
    * Retrieves the block associated with a specific line number.
@@ -158,10 +162,10 @@ export class SmartSource extends SmartEntity {
   async has_source_file() { return await this.fs.exists(this.path); }
 
   // CRUD
-
   /**
    * FILTER/SEARCH METHODS
    */
+
   /**
    * Searches for keywords within the entity's data and content.
    * @async
@@ -189,11 +193,9 @@ export class SmartSource extends SmartEntity {
     }
     const lowercased_content = content.toLowerCase();
     const lowercased_path = this.path.toLowerCase();
-
     const matching_keywords = lowercased_keywords.filter(keyword =>
       lowercased_path.includes(keyword) || lowercased_content.includes(keyword)
     );
-
     if (type === 'all') {
       return matching_keywords.length === lowercased_keywords.length ? matching_keywords.length : 0;
     } else {
@@ -227,6 +229,7 @@ export class SmartSource extends SmartEntity {
     }
     return this.source_adapter[method](...args);
   }
+
   /**
    * Appends content to the end of the source file.
    * @async
@@ -310,7 +313,8 @@ export class SmartSource extends SmartEntity {
 
   /**
    * Merges the given content into the current source.
-   * Parses the content into blocks and either appends to existing blocks, replaces blocks, or replaces all content.
+   * Parses the content into blocks and either appends to existing blocks,
+   * replaces blocks, or replaces all content.
    *
    * @async
    * @param {string} content - The content to merge into the current source.
@@ -343,7 +347,6 @@ export class SmartSource extends SmartEntity {
   }
 
   // GETTERS
-
   /**
    * Retrieves the block collection associated with SmartSources.
    * @readonly
@@ -422,7 +425,7 @@ export class SmartSource extends SmartEntity {
    */
   get file_type() {
     if (!this._ext) {
-      this._ext = this.collection.get_extension_for_path(this.path) || 'md'; 
+      this._ext = this.collection.get_extension_for_path(this.path) || 'md';
     }
     return this._ext;
   }
@@ -479,7 +482,6 @@ export class SmartSource extends SmartEntity {
     ;
   }
 
-
   get is_media() { return this.source_adapter.is_media || false; }
 
   /**
@@ -497,29 +499,52 @@ export class SmartSource extends SmartEntity {
   get last_read() { return this.data.last_read; }
 
   get metadata() { return this.data.metadata; }
-
   get outdated() { return this.source_adapter.outdated; }
+
   /**
-   * Retrieves the outlink paths from the SmartSource.
-   * @readonly
+   * Resolve persisted outlinks, optionally limited to a source line range.
+   *
+   * @param {number[]|null} [lines=null]
    * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
    */
-  get outlinks() {
-    return (this.data.outlinks || [])
+  get_outlinks(lines = null) {
+    let outlinks = this.data.outlinks || [];
+    if (Array.isArray(lines) && lines.length === 2) {
+      const [line_start, line_end] = lines;
+      outlinks = outlinks.filter(link => {
+        return (
+          typeof link?.line === 'number'
+          && link.line >= line_start
+          && link.line <= line_end
+        );
+      });
+    }
+
+    return outlinks
       .map(link => {
-        const link_target = link?.target || link;
+        const link_data = link && typeof link === 'object' ? link : { target: link };
+        const link_target = link_data.target;
         const link_ref = link_target?.includes?.("#") ? link_target.split("#")[0] : link_target; // Remove section for path resolution
         if(typeof link_ref !== 'string') return null;
         if(link_ref.startsWith("http")) return null;
         const link_path = this.fs.get_link_target_path(link_ref, this.file_path);
         return {
-          ...link,
+          ...link_data,
           key: link_path || link_ref, // if path resolver fails, return original ref
-          embedded: link.embedded || false,
+          embedded: link_data.embedded || false,
           source_key: this.key,
         };
       })
       .filter(link => link);
+  }
+
+  /**
+   * Retrieves all outlinks from the SmartSource.
+   * @readonly
+   * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
+   */
+  get outlinks() {
+    return this.get_outlinks();
   }
 
   get should_embed() {
@@ -531,7 +556,9 @@ export class SmartSource extends SmartEntity {
    * @deprecated path should be derived from key (stable key principle)
    */
   get path() { return this.data.path || this.data.key; }
+
   get source_adapters() { return this.collection.source_adapters; }
+
   get source_adapter() {
     if(this._source_adapter) return this._source_adapter;
     if(this.source_adapters[this.file_type]) this._source_adapter = new this.source_adapters[this.file_type](this);
@@ -548,7 +575,6 @@ export class SmartSource extends SmartEntity {
     return this._source_adapter;
   }
 
-
   // COMPONENTS
   /**
    * Calculates the mean vector of all blocks within the SmartSource.
@@ -562,7 +588,6 @@ export class SmartSource extends SmartEntity {
     return this._mean_block_vec;
   }
 
-
   /**
    * Calculates the median vector of all blocks within the SmartSource.
    * @readonly
@@ -574,7 +599,6 @@ export class SmartSource extends SmartEntity {
     }
     return this._median_block_vec;
   }
-
 
   // DEPRECATED methods
   /**
@@ -611,7 +635,6 @@ export class SmartSource extends SmartEntity {
   get t_file() {
     return this.fs.files[this.path];
   }
-
 }
 
 export default {
