@@ -1,9 +1,7 @@
-import { get_markdown_links } from "smart-sources/utils/get_markdown_links.js";
 import { get_line_range } from "smart-sources/utils/get_line_range.js";
 import { parse_markdown_blocks } from "../parsers/markdown.js";
 import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 
-const MARKDOWN_OUTLINKS_VERSION = 2;
 
 /**
  * @method parse_blocks
@@ -22,15 +20,13 @@ export function parse_blocks(source, content) {
     const existing_block = source.block_collection.get(block_key);
     const block_content = get_line_range(content, line_range[0], line_range[1]);
     const next_hash = murmur_hash_32_alphanumeric(block_content);
-    const block_outlinks = get_markdown_links(block_content);
     if (
       existing_block
       && existing_block.lines?.[0] === line_range[0]
       && existing_block.lines?.[1] === line_range[1]
       && existing_block.size === block_content.length
       && existing_block.data?.last_read?.hash === next_hash
-      && existing_block.data?.outlinks_version === MARKDOWN_OUTLINKS_VERSION
-      && JSON.stringify(existing_block.data?.outlinks || []) === JSON.stringify(block_outlinks)
+      && !has_deprecated_block_outlinks(existing_block)
     ) {
       continue;
     }
@@ -38,8 +34,6 @@ export function parse_blocks(source, content) {
       key: block_key,
       lines: line_range,
       size: block_content.length,
-      outlinks: block_outlinks,
-      outlinks_version: MARKDOWN_OUTLINKS_VERSION,
       last_read: {
         at: last_read_at,
         hash: next_hash,
@@ -61,6 +55,8 @@ export function parse_blocks(source, content) {
         ...existing_block.data,
         ...block_data, // overwrites lines, last_read
       };
+      delete existing_block.data.outlinks;
+      delete existing_block.data.outlinks_version;
       existing_block.queue_save();
     }
   }
@@ -92,16 +88,15 @@ function has_block_data_changes(existing_block, block_data) {
     return true;
   }
 
-  if (existing_block?.data?.outlinks_version !== block_data.outlinks_version) {
-    return true;
-  }
+  return has_deprecated_block_outlinks(existing_block);
+}
 
-  const existing_outlinks = existing_block?.data?.outlinks || [];
-  if (JSON.stringify(existing_outlinks) !== JSON.stringify(block_data.outlinks)) {
-    return true;
-  }
-
-  return false;
+function has_deprecated_block_outlinks(block) {
+  const data = block?.data || {};
+  return (
+    Object.prototype.hasOwnProperty.call(data, 'outlinks')
+    || Object.prototype.hasOwnProperty.call(data, 'outlinks_version')
+  );
 }
 
 /**

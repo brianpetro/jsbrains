@@ -37,14 +37,14 @@ const create_source = () => {
   return { source, block_collection };
 };
 
-test('keeps the literal Bases link without cached rendered-row links', t => {
+test('does not persist duplicate outlinks on Markdown blocks', t => {
   const { source, block_collection } = create_source();
   const content = [
     'Intro',
     '![[table.base#view]]',
     '',
     '# Second',
-    'Plain text',
+    '[[Current.md]]',
   ].join('\n');
 
   parse_blocks(source, content);
@@ -54,12 +54,13 @@ test('keeps the literal Bases link without cached rendered-row links', t => {
 
   t.truthy(base_block);
   t.truthy(second_block);
-  t.true(base_block.data.outlinks.some(link => link.target === 'table.base#view'));
-  t.false((base_block.data.outlinks || []).some(link => link.target === 'FromBase'));
-  t.false((second_block.data.outlinks || []).some(link => link.target === 'FromBase'));
+  t.false(Object.prototype.hasOwnProperty.call(base_block.data, 'outlinks'));
+  t.false(Object.prototype.hasOwnProperty.call(base_block.data, 'outlinks_version'));
+  t.false(Object.prototype.hasOwnProperty.call(second_block.data, 'outlinks'));
+  t.false(Object.prototype.hasOwnProperty.call(second_block.data, 'outlinks_version'));
 });
 
-test('rebuilds unchanged block outlinks from content during the outlink migration', t => {
+test('removes deprecated block outlink data without replacing unchanged blocks', t => {
   const { source, block_collection } = create_source();
   const content = '[[Current.md]]';
 
@@ -67,12 +68,13 @@ test('rebuilds unchanged block outlinks from content during the outlink migratio
 
   const block = block_collection.items['Path/Note.md#'];
   block.data.outlinks = [{ target: 'STALE-CACHED-ROW.md' }];
-  delete block.data.outlinks_version;
+  block.data.outlinks_version = 2;
   block._queue_save = false;
 
   parse_blocks(source, content);
 
-  t.deepEqual(block.data.outlinks.map(link => link.target), ['Current.md']);
-  t.is(block.data.outlinks_version, 2);
+  t.is(block_collection.items['Path/Note.md#'], block);
+  t.false(Object.prototype.hasOwnProperty.call(block.data, 'outlinks'));
+  t.false(Object.prototype.hasOwnProperty.call(block.data, 'outlinks_version'));
   t.true(block._queue_save);
 });

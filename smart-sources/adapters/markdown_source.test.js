@@ -85,3 +85,65 @@ test('import rebuilds unchanged source outlinks when the migration version is mi
   t.true(item.block_parse_called);
   t.true(item.save_queued);
 });
+
+test('empty Markdown completes the outlink migration and removes stale blocks', async t => {
+  const stale_block = {
+    key: 'Path/Empty.md#',
+    data: {
+      lines: [1, 1],
+      outlinks: [{ target: 'STALE-CACHED-ROW.md' }],
+    },
+    get lines() { return this.data.lines; },
+    queue_save() { this.save_queued = true; },
+  };
+  const item = {
+    data: {
+      blocks: { '#': [1, 1] },
+      outlinks: [{ target: 'STALE-CACHED-ROW.md' }],
+      last_read: { hash: 'old', at: 1 },
+      last_import: {
+        hash: 'old',
+        at: 2,
+        mtime: 10,
+        size: 1,
+      },
+    },
+    env: { settings: { smart_sources: {} } },
+    collection: {
+      fs: { read: async () => '' },
+    },
+    file_path: 'Path/Empty.md',
+    file: { stat: { mtime: 10, size: 0 } },
+    mtime: 10,
+    size: 0,
+    vec: [1],
+    block_collection: {
+      get: () => stale_block,
+    },
+    get blocks() {
+      return this.data.blocks ? [stale_block] : [];
+    },
+    async parse_content(content) {
+      t.is(content, '');
+      this.blocks.forEach(block => {
+        block.deleted = true;
+        block.queue_save();
+      });
+      this.data.blocks = {};
+    },
+    queue_save() { this.save_queued = true; },
+    queue_embed() { this.embed_queued = true; },
+    should_embed: false,
+  };
+  const adapter = new MarkdownSourceContentAdapter(item);
+
+  await adapter.import();
+
+  t.deepEqual(item.data.outlinks, []);
+  t.deepEqual(item.data.metadata, {});
+  t.deepEqual(item.data.blocks, {});
+  t.is(item.data.outlinks_version, 2);
+  t.true(stale_block.deleted);
+  t.true(stale_block.save_queued);
+  t.true(item.save_queued);
+});

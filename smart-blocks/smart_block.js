@@ -298,13 +298,12 @@ export class SmartBlock extends SmartEntity {
   }
 
   /**
-   * Retrieves source outlinks within this block's persisted line range.
+   * Retrieves outlinks through the active block adapter.
    * @readonly
    * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
    */
   get outlinks() {
-    if (!this.has_lines) return [];
-    return this.source.get_outlinks(this.data.lines);
+    return this.block_adapter?.get_outlinks() || [];
   }
 
   /**

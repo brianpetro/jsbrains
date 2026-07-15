@@ -56,7 +56,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     }
 
     const content = await this.read();
-    if (!content) {
+    if (typeof content !== 'string') {
       // console.warn(`No content to import for ${this.file_path}`);
       return;
     }
@@ -67,7 +67,6 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     if(!refresh && !has_incomplete_block_coverage && this.data.last_import?.hash === this.data.last_read?.hash){
       if(this.data.blocks) return; // if blocks already exist, skip re-import
     }
-    this.data.blocks = null;
     await this.parse_content(content);
     await this.item.parse_content(content);
     this.data.outlinks_version = MARKDOWN_OUTLINKS_VERSION;
@@ -108,14 +107,14 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   }
 
   async get_links(content=null) {
-    if(!content) content = await this.read();
-    if(!content) return;
+    if(content === null) content = await this.read();
+    if(typeof content !== 'string') return;
     return get_markdown_links(content);
   }
 
   async get_metadata(content=null) {
-    if(!content) content = await this.read();
-    if(!content) return;
+    if(content === null) content = await this.read();
+    if(typeof content !== 'string') return;
     const { frontmatter, body } = parse_frontmatter(content);
     const tag_set = new Set();
 

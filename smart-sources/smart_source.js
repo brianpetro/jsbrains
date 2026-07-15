@@ -502,49 +502,12 @@ export class SmartSource extends SmartEntity {
   get outdated() { return this.source_adapter.outdated; }
 
   /**
-   * Resolve persisted outlinks, optionally limited to a source line range.
-   *
-   * @param {number[]|null} [lines=null]
-   * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
-   */
-  get_outlinks(lines = null) {
-    let outlinks = this.data.outlinks || [];
-    if (Array.isArray(lines) && lines.length === 2) {
-      const [line_start, line_end] = lines;
-      outlinks = outlinks.filter(link => {
-        return (
-          typeof link?.line === 'number'
-          && link.line >= line_start
-          && link.line <= line_end
-        );
-      });
-    }
-
-    return outlinks
-      .map(link => {
-        const link_data = link && typeof link === 'object' ? link : { target: link };
-        const link_target = link_data.target;
-        const link_ref = link_target?.includes?.("#") ? link_target.split("#")[0] : link_target; // Remove section for path resolution
-        if(typeof link_ref !== 'string') return null;
-        if(link_ref.startsWith("http")) return null;
-        const link_path = this.fs.get_link_target_path(link_ref, this.file_path);
-        return {
-          ...link_data,
-          key: link_path || link_ref, // if path resolver fails, return original ref
-          embedded: link_data.embedded || false,
-          source_key: this.key,
-        };
-      })
-      .filter(link => link);
-  }
-
-  /**
    * Retrieves all outlinks from the SmartSource.
    * @readonly
    * @returns {Array<import('smart-types').LinkObject>} An array of outlink objects.
    */
   get outlinks() {
-    return this.get_outlinks();
+    return this.source_adapter?.get_outlinks() || [];
   }
 
   get should_embed() {

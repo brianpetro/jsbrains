@@ -311,6 +311,10 @@ export class SmartSources extends SmartEntities {
 
     this.set_import_progress_state(null);
 
+    this.build_links_map();
+    await this.process_save_queue();
+    await this.block_collection?.process_save_queue();
+
     if (this._embed_queue?.length) {
       const embed_start_at = Date.now();
       await this.process_embed_queue();

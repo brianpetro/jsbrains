@@ -98,6 +98,17 @@ export class BlockContentAdapter {
   }
 
   /**
+   * Retrieve source outlinks within this block's persisted line range.
+   *
+   * @returns {Array<import('smart-types').LinkObject>}
+   */
+  get_outlinks() {
+    const lines = this.data.lines;
+    if (!Array.isArray(lines) || lines.length !== 2) return [];
+    return this.item.source?.source_adapter?.get_outlinks(lines) || [];
+  }
+
+  /**
    * @async
    * @method update_last_read
    * @param {string} content The current content of the block.

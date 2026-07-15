@@ -1,4 +1,5 @@
 import test from 'ava';
+import { BlockContentAdapter } from './adapters/_adapter.js';
 import { SmartBlock } from './smart_block.js';
 
 test('read forwards params to the block adapter', async t => {
@@ -19,30 +20,41 @@ test('read forwards params to the block adapter', async t => {
   t.is(received_params, params);
 });
 
-test('outlinks resolves only links in the block line range', t => {
-  const get_outlinks = Object.getOwnPropertyDescriptor(SmartBlock.prototype, 'outlinks').get;
+test('block adapter requests source outlinks for the persisted line range', t => {
   let received_lines;
-  const block = {
+  const item = {
     data: { lines: [2, 4] },
-    has_lines: true,
     source: {
-      get_outlinks(lines) {
-        received_lines = lines;
-        return [{ target: 'Scoped.md', line: 3 }];
+      source_adapter: {
+        get_outlinks(lines) {
+          received_lines = lines;
+          return [{ target: 'Scoped.md', line: 3 }];
+        },
       },
     },
   };
+  const adapter = new BlockContentAdapter(item);
 
-  t.deepEqual(get_outlinks.call(block), [{ target: 'Scoped.md', line: 3 }]);
+  t.deepEqual(adapter.get_outlinks(), [{ target: 'Scoped.md', line: 3 }]);
   t.deepEqual(received_lines, [2, 4]);
 });
 
-test('outlinks returns empty when block lines are missing', t => {
-  const get_outlinks = Object.getOwnPropertyDescriptor(SmartBlock.prototype, 'outlinks').get;
-  const block = {
-    data: {},
-    has_lines: false,
-  };
+test('block adapter returns empty when block lines are missing', t => {
+  const adapter = new BlockContentAdapter({ data: {} });
 
-  t.deepEqual(get_outlinks.call(block), []);
+  t.deepEqual(adapter.get_outlinks(), []);
+});
+
+test('block outlinks delegate to the active block adapter', t => {
+  const expected = [{ target: 'Delegated.md' }];
+  const block = {
+    block_adapter: {
+      get_outlinks() {
+        return expected;
+      },
+    },
+  };
+  const get_outlinks = Object.getOwnPropertyDescriptor(SmartBlock.prototype, 'outlinks').get;
+
+  t.is(get_outlinks.call(block), expected);
 });
