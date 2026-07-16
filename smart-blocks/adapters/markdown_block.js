@@ -15,6 +15,12 @@ import { get_line_range } from "smart-sources/utils/get_line_range.js";
  * This adapter uses line references (start/end) stored in the block's data to locate and manipulate the block within the source file.
  */
 export class MarkdownBlockContentAdapter extends BlockContentAdapter {
+  static embed_input_action_key = 'block_get_embed_input_markdown';
+
+  get embed_input_action_key() {
+    return this.constructor.embed_input_action_key;
+  }
+
   /**
    * Read the content of the block.
    * @async
