@@ -319,10 +319,10 @@ export class CollectionItem {
    */
   get actions() {
     if (!this._actions) {
-      this._actions = create_actions_proxy(this, {
-        ...(this.env.config.actions || {}), // main actions scope for actions/ exports
-        ...(this.env.opts.items?.[this.item_type_key]?.actions || {}), // DEPRECATED OR KEEP?
-      });
+      this._actions = create_actions_proxy(this, [
+        this.env.config.actions, // main actions scope for actions/ exports
+        this.env.opts.items?.[this.item_type_key]?.actions, // DEPRECATED OR KEEP?
+      ]);
     }
     return this._actions;
   }

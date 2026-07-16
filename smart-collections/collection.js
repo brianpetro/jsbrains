@@ -574,13 +574,12 @@ export class Collection {
     if (!this.constructor.key) this.constructor.key = this.collection_key;
     if (!this._actions) {
       // TODO: clarified scope of action modules that should be included
-      const actions_modules = {
-        ...(this.env?.config?.actions || {}),
-        ...(this.env?.config?.collections?.[this.collection_key]?.actions || {}),
-        ...(this.env?.opts?.collections?.[this.collection_key]?.actions || {}),
-        ...(this.opts?.actions || {}),
-      };
-      this._actions = create_actions_proxy(this, actions_modules);
+      this._actions = create_actions_proxy(this, [
+        this.env?.config?.actions,
+        this.env?.config?.collections?.[this.collection_key]?.actions,
+        this.env?.opts?.collections?.[this.collection_key]?.actions,
+        this.opts?.actions,
+      ]);
     }
     return this._actions;
   }

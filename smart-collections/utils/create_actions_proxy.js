@@ -3,252 +3,287 @@
 
 /** @typedef {Object.<string, any> & {constructor: Function & {key?: string}}} ActionsProxyContext */
 
+const empty_actions = Object.freeze(Object.create(null));
+const missing_action = Symbol("missing_action");
+const registry_cache = new WeakMap();
+const proxy_state = new WeakMap();
+/** @type {Set<string | symbol>} */
+const ignored_meta_keys = new Set(["length", "name", "prototype"]);
+
 /**
- * Create a lazy-binding, reflective Proxy over an actions object.
- * Functions are bound to ctx on first access and cached. Non-functions are passed through.
- * Snapshot semantics: the available keys and their base values are captured at creation.
+ * Create a lazy-binding, reflective Proxy over ordered action sources.
+ * Functions are bound to ctx on first access and cached on that proxy.
+ * Registries are shared by proxies using the same ordered source objects.
  *
  * @param {ActionsProxyContext} ctx collection/item instance used as `this` for action functions
- * @param {Record<string | symbol, any>} actions_source object containing available actions
- * @returns {Record<string | symbol, any>} proxy that lazily binds and preserves reflection
+ * @param {Record<string | symbol, any> | Array<Record<string | symbol, any>>} actions_source one source or ordered sources, lowest precedence first
+ * @returns {Record<string | symbol, any>} proxy that lazily resolves, binds, and preserves reflection
  */
 export function create_actions_proxy(ctx, actions_source) {
-  const input = actions_source || {};
+  const actions_sources = Array.isArray(actions_source) && actions_source.length
+    ? actions_source
+    : [actions_source || empty_actions];
+  const target = Object.create(null);
+  proxy_state.set(target, {
+    ctx,
+    registry: get_actions_registry(actions_sources),
+  });
+  return new Proxy(target, actions_proxy_handler);
+}
 
-  const is_plain_object = (val) => typeof val === "object" && val !== null && !Array.isArray(val);
-  const is_function = (val) => typeof val === "function";
-  const is_class_export = (val) => is_function(val) && /^class\s/.test(Function.prototype.toString.call(val));
-  const is_action_object = (val) => is_plain_object(val) && is_function(val.action);
-  const is_action_candidate = (val) => is_function(val) || is_action_object(val) || is_class_export(val);
-  const ignored_meta_keys = new Set(["length", "name", "prototype"]);
+const actions_proxy_handler = {
+  get(target, prop) {
+    if (prop === Symbol.toStringTag) return "ActionsProxy";
+    if (has_own(target, prop)) return target[prop];
 
-  const clone_with_descriptors = (obj) => {
-    if (!is_plain_object(obj)) return obj;
-    const out = Object.create(Object.getPrototypeOf(obj) || null);
-    for (const key of Reflect.ownKeys(obj)) {
-      const descriptor = Object.getOwnPropertyDescriptor(obj, key);
-      if (!descriptor) continue;
-      const next = { ...descriptor };
-      if ("value" in next && is_plain_object(next.value)) {
-        next.value = clone_with_descriptors(next.value);
-      }
-      try {
-        Object.defineProperty(out, key, next);
-      } catch {
-        out[key] = next.value;
-      }
+    const state = proxy_state.get(target);
+    const action_entry = state.registry.get(state.ctx?.constructor?.key, prop);
+    const action = materialize_action(state.ctx, action_entry);
+    target[prop] = action;
+    return action;
+  },
+
+  has(target, prop) {
+    if (has_own(target, prop)) return true;
+    const state = proxy_state.get(target);
+    return state.registry.get(state.ctx?.constructor?.key, prop) !== missing_action;
+  },
+
+  ownKeys(target) {
+    const state = proxy_state.get(target);
+    return Array.from(new Set([
+      ...Reflect.ownKeys(target),
+      ...state.registry.keys(state.ctx?.constructor?.key),
+    ]));
+  },
+
+  getOwnPropertyDescriptor(target, prop) {
+    if (!has_own(target, prop)) {
+      const state = proxy_state.get(target);
+      const action_entry = state.registry.get(state.ctx?.constructor?.key, prop);
+      if (action_entry === missing_action) return undefined;
+      target[prop] = materialize_action(state.ctx, action_entry);
     }
-    return out;
+    return {
+      configurable: true,
+      enumerable: true,
+      value: target[prop],
+    };
+  },
+
+  defineProperty(target, prop, descriptor) {
+    if (!("value" in descriptor)) return false;
+    target[prop] = descriptor.value;
+    return true;
+  },
+
+  set(target, prop, value) {
+    target[prop] = value;
+    return true;
+  },
+
+  deleteProperty(target, prop) {
+    if (has_own(target, prop)) delete target[prop];
+    return true;
+  },
+};
+
+function get_actions_registry(actions_sources) {
+  let cache = registry_cache;
+  let cache_entry;
+
+  for (const actions_source of actions_sources) {
+    const source = actions_source || empty_actions;
+    cache_entry = cache.get(source);
+    if (!cache_entry) {
+      cache_entry = {
+        children: new WeakMap(),
+        registry: null,
+      };
+      cache.set(source, cache_entry);
+    }
+    cache = cache_entry.children;
+  }
+
+  if (!cache_entry.registry) {
+    cache_entry.registry = create_actions_registry(
+      actions_sources.map(source => source || empty_actions),
+    );
+  }
+  return cache_entry.registry;
+}
+
+function create_actions_registry(actions_sources) {
+  const actions_bucket_cache = new WeakMap();
+  const get_is_actions_bucket = value => {
+    if (!is_plain_object(value)) return false;
+    if (!actions_bucket_cache.has(value)) {
+      actions_bucket_cache.set(value, is_actions_bucket(value));
+    }
+    return actions_bucket_cache.get(value);
   };
 
-  const should_bucket_actions = (val) => {
-    if (!is_plain_object(val)) return false;
-    if (is_action_object(val)) return false;
-    const keys = Reflect.ownKeys(val);
-    if (keys.length === 0) return false;
-    let found_candidate = false;
-    for (const key of keys) {
-      const descriptor = Object.getOwnPropertyDescriptor(val, key);
-      if (!descriptor) continue;
-      if ("value" in descriptor) {
-        const entry = descriptor.value;
-        if (is_action_candidate(entry)) {
-          found_candidate = true;
-          continue;
+  return {
+    get(scope_key, action_key) {
+      if (scope_key !== undefined && scope_key !== null) {
+        const scoped_actions = get_source_entry(actions_sources, scope_key);
+        if (get_is_actions_bucket(scoped_actions) && has_own(scoped_actions, action_key)) {
+          return scoped_actions[action_key];
         }
-        if (is_plain_object(entry)) {
-          if (should_bucket_actions(entry)) {
-            found_candidate = true;
-            continue;
+      }
+
+      const action_entry = get_source_entry(actions_sources, action_key);
+      return get_is_actions_bucket(action_entry) ? missing_action : action_entry;
+    },
+
+    keys(scope_key) {
+      const merged_keys = new Set();
+      for (const source of actions_sources) {
+        for (const key of Reflect.ownKeys(source)) {
+          if (Object.prototype.propertyIsEnumerable.call(source, key)) {
+            merged_keys.add(key);
           }
-          return false;
         }
-        if (typeof entry === "undefined") continue;
-        return false;
       }
-      return false;
+
+      const action_keys = new Set();
+      for (const key of merged_keys) {
+        const action_entry = get_source_entry(actions_sources, key);
+        if (!get_is_actions_bucket(action_entry)) action_keys.add(key);
+      }
+
+      if (scope_key !== undefined && scope_key !== null) {
+        const scoped_actions = get_source_entry(actions_sources, scope_key);
+        if (get_is_actions_bucket(scoped_actions)) {
+          for (const key of Reflect.ownKeys(scoped_actions)) {
+            action_keys.add(key);
+          }
+        }
+      }
+      return Array.from(action_keys);
+    },
+  };
+}
+
+function get_source_entry(actions_sources, key) {
+  for (let i = actions_sources.length - 1; i >= 0; i -= 1) {
+    const source = actions_sources[i];
+    if (Object.prototype.propertyIsEnumerable.call(source, key)) {
+      return source[key];
     }
-    return found_candidate;
-  };
+  }
+  return missing_action;
+}
 
-  const clone_descriptor = (descriptor) => {
-    if (!descriptor) return descriptor;
-    if (!("value" in descriptor)) return { ...descriptor };
-    const cloned = is_plain_object(descriptor.value)
-      ? clone_with_descriptors(descriptor.value)
-      : descriptor.value;
-    return { ...descriptor, value: cloned };
-  };
+function materialize_action(ctx, action_entry) {
+  if (action_entry === missing_action) return undefined;
 
-  const build_sources = (src) => {
-    const global_source = Object.create(null);
-    const scoped_sources = new Map();
-    for (const key of Reflect.ownKeys(src)) {
-      const descriptor = Object.getOwnPropertyDescriptor(src, key);
-      if (!descriptor) continue;
-      if ("value" in descriptor && should_bucket_actions(descriptor.value)) {
-        scoped_sources.set(key, clone_with_descriptors(descriptor.value));
-        continue;
-      }
-      try {
-        Object.defineProperty(global_source, key, clone_descriptor(descriptor));
-      } catch {
-        global_source[key] = descriptor.value;
-      }
-    }
-    return { global_source, scoped_sources };
-  };
-
-  const { global_source, scoped_sources } = build_sources(input);
-  const has_own = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
-  const cache = Object.create(null);
-
-  const copy_metadata = (source, target, omit = []) => {
-    if (!source || !target) return;
-    const skips = new Set([...ignored_meta_keys, ...omit]);
-    for (const key of Reflect.ownKeys(source)) {
-      if (skips.has(key)) continue;
-      const descriptor = Object.getOwnPropertyDescriptor(source, key);
-      if (!descriptor) continue;
-      try {
-        Object.defineProperty(target, key, descriptor);
-      } catch {
-        target[key] = descriptor.value;
-      }
-    }
-  };
-
-  const instantiate_class = (Ctor) => {
-    const instance = new Ctor(ctx);
-    const candidate = instance.action || instance.run || instance.execute || instance.call;
-    if (is_function(candidate)) {
-      const bound = candidate.bind(instance);
-      copy_metadata(Ctor, bound);
+  if (is_class_export(action_entry)) {
+    const instance = new action_entry(ctx);
+    const action = instance.action || instance.run || instance.execute || instance.call;
+    if (typeof action === "function") {
+      const bound = action.bind(instance);
+      copy_metadata(action_entry, bound);
       copy_metadata(instance, bound);
       bound.instance = instance;
       return bound;
     }
-    copy_metadata(Ctor, instance);
+    copy_metadata(action_entry, instance);
     return instance;
-  };
+  }
 
-  const bind_or_clone = (val) => {
-    if (is_class_export(val)) {
-      return instantiate_class(val);
+  if (is_action_object(action_entry)) {
+    const action_object = clone_with_descriptors(action_entry);
+    const bound = action_object.action.bind(ctx);
+    copy_metadata(action_object, bound, "action");
+    return bound;
+  }
+
+  if (typeof action_entry === "function") {
+    const bound = action_entry.bind(ctx);
+    copy_metadata(action_entry, bound);
+    return bound;
+  }
+
+  if (is_plain_object(action_entry)) {
+    return clone_with_descriptors(action_entry);
+  }
+  return action_entry;
+}
+
+function copy_metadata(source, target, omitted_key = null) {
+  if (!source || !target) return;
+  for (const key of Reflect.ownKeys(source)) {
+    if (ignored_meta_keys.has(key) || key === omitted_key) continue;
+    const descriptor = Object.getOwnPropertyDescriptor(source, key);
+    if (!descriptor) continue;
+    try {
+      Object.defineProperty(target, key, descriptor);
+    } catch {
+      target[key] = descriptor.value;
     }
-    if (is_action_object(val)) {
-      const bound = val.action.bind(ctx);
-      copy_metadata(val, bound, ["action"]);
-      return bound;
+  }
+}
+
+function clone_with_descriptors(object) {
+  if (!is_plain_object(object)) return object;
+  const clone = Object.create(Object.getPrototypeOf(object) || null);
+  for (const key of Reflect.ownKeys(object)) {
+    const descriptor = Object.getOwnPropertyDescriptor(object, key);
+    if (!descriptor) continue;
+    const next = { ...descriptor };
+    if ("value" in next && is_plain_object(next.value)) {
+      next.value = clone_with_descriptors(next.value);
     }
-    if (is_function(val)) {
-      const bound = val.bind(ctx);
-      copy_metadata(val, bound);
-      return bound;
+    try {
+      Object.defineProperty(clone, key, next);
+    } catch {
+      clone[key] = next.value;
     }
-    if (is_plain_object(val)) {
-      return clone_with_descriptors(val);
+  }
+  return clone;
+}
+
+function is_actions_bucket(value) {
+  if (!is_plain_object(value) || is_action_object(value)) return false;
+  const keys = Reflect.ownKeys(value);
+  if (!keys.length) return false;
+
+  let found_action = false;
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !("value" in descriptor)) return false;
+    const entry = descriptor.value;
+
+    if (typeof entry === "undefined") continue;
+    if (typeof entry === "function" || is_action_object(entry)) {
+      found_action = true;
+      continue;
     }
-    return val;
-  };
-
-  const scope_actions_for = () => {
-    const scope_key = ctx?.constructor?.key;
-    if (typeof scope_key === "undefined" || scope_key === null) return null;
-    const bucket = scoped_sources.get(scope_key);
-    return bucket && is_plain_object(bucket) ? bucket : null;
-  };
-
-  const cache_result = (target, prop, value) => {
-    target[prop] = value;
-    return value;
-  };
-
-  const compute_and_cache = (target, prop) => {
-    const scoped = scope_actions_for();
-    if (scoped && has_own(scoped, prop)) {
-      return cache_result(target, prop, bind_or_clone(scoped[prop]));
+    if (is_actions_bucket(entry)) {
+      found_action = true;
+      continue;
     }
-    if (has_own(global_source, prop)) {
-      return cache_result(target, prop, bind_or_clone(global_source[prop]));
-    }
-    return cache_result(target, prop, undefined);
-  };
+    return false;
+  }
+  return found_action;
+}
 
-  const union_keys = () => {
-    const scoped = scope_actions_for();
-    const keys = new Set(Reflect.ownKeys(cache));
-    for (const key of Reflect.ownKeys(global_source)) {
-      keys.add(key);
-    }
-    if (scoped) {
-      for (const key of Reflect.ownKeys(scoped)) {
-        keys.add(key);
-      }
-    }
-    return Array.from(keys);
-  };
+function is_action_object(value) {
+  return is_plain_object(value) && typeof value.action === "function";
+}
 
-  const descriptor_for = (target, prop) => ({
-    configurable: true,
-    enumerable: true,
-    value: target[prop]
-  });
+function is_class_export(value) {
+  return (
+    typeof value === "function"
+    && /^class\s/.test(Function.prototype.toString.call(value))
+  );
+}
 
-  return new Proxy(cache, {
-    get: (target, prop) => {
-      if (prop === Symbol.toStringTag) return "ActionsProxy";
-      if (prop in target) return target[prop];
-      return compute_and_cache(target, prop);
-    },
+function is_plain_object(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-    has: (target, prop) => {
-      if (prop in target) return true;
-      const scoped = scope_actions_for();
-      if (scoped && has_own(scoped, prop)) return true;
-      return has_own(global_source, prop);
-    },
-
-    ownKeys: () => union_keys(),
-
-    getOwnPropertyDescriptor: (target, prop) => {
-      if (has_own(target, prop)) {
-        return descriptor_for(target, prop);
-      }
-      const scoped = scope_actions_for();
-      if (scoped && has_own(scoped, prop)) {
-        if (!has_own(target, prop)) {
-          compute_and_cache(target, prop);
-        }
-        return descriptor_for(target, prop);
-      }
-      if (has_own(global_source, prop)) {
-        if (!has_own(target, prop)) {
-          compute_and_cache(target, prop);
-        }
-        return descriptor_for(target, prop);
-      }
-      return undefined;
-    },
-
-    defineProperty: (target, prop, descriptor) => {
-      if ("value" in descriptor) {
-        target[prop] = descriptor.value;
-        return true;
-      }
-      return false;
-    },
-
-    set: (target, prop, value) => {
-      target[prop] = value;
-      return true;
-    },
-
-    deleteProperty: (target, prop) => {
-      if (has_own(target, prop)) {
-        delete target[prop];
-      }
-      return true;
-    }
-  });
+function has_own(object, key) {
+  return Object.prototype.hasOwnProperty.call(object, key);
 }
