@@ -2,6 +2,9 @@ import { SmartEntity } from "smart-entities";
 import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.js";
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 import { find_connections } from "./actions/find_connections.js";
+import { source_get_embed_input_data } from "./actions/get_embed_input/data.js";
+import { source_get_embed_input_markdown } from "./actions/get_embed_input/markdown.js";
+import { source_get_embed_input_text } from "./actions/get_embed_input/text.js";
 
 /**
  * @class SmartSource
@@ -99,33 +102,24 @@ export class SmartSource extends SmartEntity {
   }
 
   /**
-   * Prepares the embed input for the SmartSource by reading content and applying exclusions.
+   * Resolves and runs the source adapter's canonical embed-input action.
    * @async
-   * @returns {Promise<string|false>} The embed input string or `false` if already embedded.
+   * @param {string|null} [content=null]
+   * @returns {Promise<string>} The embed input string.
    */
   async get_embed_input(content=null) {
-    if (typeof this._embed_input === 'string' && this._embed_input.length) return this._embed_input; // Return cached (temporary) input
-    if(!content) content = await this.read(); // Get content from file
-    if(!content || typeof content !== 'string') {
-      console.warn("SmartSource.get_embed_input: No content available for embedding: " + this.path);
-      return ''; // No content to embed
+    const source_adapter = this.source_adapter;
+    const action_key = source_adapter?.embed_input_action_key;
+    if(!action_key) {
+      throw new Error(`SmartSource.get_embed_input: missing embed_input_action_key for ${this.key}`);
     }
-    if(this.excluded_lines.length){
-      const content_lines = content.split("\n");
-      this.excluded_lines.forEach(lines => {
-        const {start, end} = lines;
-        for(let i = start; i <= end; i++){
-          content_lines[i] = "";
-        }
-      });
-      content = content_lines.filter(line => line.length).join("\n");
+
+    const action = this.actions[action_key];
+    if(typeof action !== 'function') {
+      throw new Error(`SmartSource.get_embed_input: missing action "${action_key}" for ${this.key}`);
     }
-    const breadcrumbs = this.path.split("/").join(" > ").replace(".md", "");
-    const max_tokens = this.collection.embed_model.model.data.max_tokens || 500;
-    // Prevent loading too much content
-    const max_chars = Math.floor(max_tokens * 3.7); // more conservative estimate for characters
-    this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_chars);
-    return this._embed_input;
+
+    return await action({ content });
   }
 
   /**
@@ -604,5 +598,8 @@ export default {
   class: SmartSource,
   actions: {
     find_connections: find_connections,
+    source_get_embed_input_data: source_get_embed_input_data,
+    source_get_embed_input_markdown: source_get_embed_input_markdown,
+    source_get_embed_input_text: source_get_embed_input_text,
   },
 }

@@ -1,6 +1,7 @@
 import { SmartEntity } from "smart-entities";
 import { find_connections } from "smart-entities/actions/find_connections.js";
 import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.js";
+import { block_get_embed_input_markdown } from "./actions/get_embed_input/markdown.js";
 import { get_block_display_name } from "./utils/get_block_display_name.js";
 
 /**
@@ -64,16 +65,24 @@ export class SmartBlock extends SmartEntity {
   }
 
   /**
-   * Prepares the embed input for the SmartBlock by reading content and generating a hash.
+   * Resolves and runs the block adapter's canonical embed-input action.
    * @async
-   * @returns {Promise<string|false>} The embed input string or `false` if already embedded.
+   * @param {string|null} [content=null]
+   * @returns {Promise<string>} The embed input string.
    */
   async get_embed_input(content=null) {
-    if(typeof this._embed_input !== "string" || !this._embed_input.length){
-      if(!content) content = await this.read();
-      this._embed_input = this.breadcrumbs + "\n" + content;
+    const block_adapter = this.block_adapter;
+    const action_key = block_adapter?.embed_input_action_key;
+    if(!action_key) {
+      throw new Error(`SmartBlock.get_embed_input: missing embed_input_action_key for ${this.key}`);
     }
-    return this._embed_input;
+
+    const action = this.actions[action_key];
+    if(typeof action !== 'function') {
+      throw new Error(`SmartBlock.get_embed_input: missing action "${action_key}" for ${this.key}`);
+    }
+
+    return await action({ content });
   }
 
   // CRUD
@@ -432,6 +441,7 @@ export class SmartBlock extends SmartEntity {
 export default {
   class: SmartBlock,
   actions: {
+    block_get_embed_input_markdown: block_get_embed_input_markdown,
     find_connections: find_connections,
   },
 }
