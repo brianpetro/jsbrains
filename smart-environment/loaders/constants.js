@@ -16,6 +16,8 @@ export const ACTION_EXPORT_PROPS = [
   'display_description',
   'pre_process',
   'cli',
+  'commands',
+  'ribbon_icons',
   'menus',
   'version',
   'webview_methods',
