@@ -1,5 +1,6 @@
 import { compare_versions } from './compare_versions.js';
 import { deep_merge_no_overwrite } from './deep_merge_no_overwrite.js';
+import { is_plain_object } from './is_plain_object.js';
 
 const CONFIG_RECORD_ENV_VERSION_KEY = '__smart_env_version';
 
@@ -25,7 +26,12 @@ const CONFIG_RECORD_ENV_VERSION_KEY = '__smart_env_version';
  *     SmartEnv version -> additive merge (`deep_merge_no_overwrite`) without
  *     overwriting existing keys.
  *
- * Arrays are concatenated. Primitive arrays are deduplicated.
+ * Rules for `actions`:
+ *   - A newer action wins conflicting values but retains metadata it omits.
+ *   - Same or older actions merge additively without overwriting existing keys.
+ *   - Existing arrays and non-object values are conflicts, not merge targets.
+ *
+ * Outside action records, arrays are concatenated. Primitive arrays are deduplicated.
  * Objects are merged via `deep_merge_no_overwrite`. Primitive keys overwrite.
  *
  * @param {object} target   The destination object (mutated in-place).
@@ -113,22 +119,22 @@ export function merge_env_config (target, incoming) {
         // console.log(`Merging ${key} "${comp_key}": target version "${target_ver}" vs incoming "${incoming_ver}" -> cmp=${cmp}`);
 
         if (cmp > 0) {
-          target[key][comp_key] = comp_def;
+          if (key === 'actions') {
+            const replaced = { ...comp_def };
+            merge_action_record_no_overwrite(replaced, target_comp);
+            target[key][comp_key] = replaced;
+          } else {
+            target[key][comp_key] = comp_def;
+          }
           set_config_record_version(target[key][comp_key], incoming_ver);
           set_config_record_env_version(target[key][comp_key], NEW_VER);
-          // // Newer definition wins but keep keys the newer record omits
-          // const replaced = { ...comp_def };
-          // deep_merge_no_overwrite(replaced, target_comp);
-          // target[key][comp_key] = replaced;
         } else {
-          // DO NOT MERGE IF OLDER? MOVES RESPONSIBILITY TO OVERRIDES?
-          // Object.entries(comp_def).forEach(([k, v]) => {
-          //   if (typeof v === 'function') return; // skip functions
-          //   if(!target_comp[k]) target_comp[k] = v;
-          //   else deep_merge_no_overwrite(target_comp[k], v);
-          // });
           // Same or older version - additive merge (don't overwrite)
-          deep_merge_no_overwrite(target_comp, comp_def);
+          if (key === 'actions') {
+            merge_action_record_no_overwrite(target_comp, comp_def);
+          } else {
+            deep_merge_no_overwrite(target_comp, comp_def);
+          }
         }
       }
       continue; // done with this top-level key
@@ -168,6 +174,25 @@ export function merge_env_config (target, incoming) {
       deep_merge_no_overwrite(target[key], value);
     } else {
       target[key] = value;
+    }
+  }
+
+  return target;
+}
+
+function merge_action_record_no_overwrite(target, source) {
+  if (!is_plain_object(target) || !is_plain_object(source)) {
+    return target;
+  }
+
+  for (const [key, value] of Object.entries(source)) {
+    if (!Object.prototype.hasOwnProperty.call(target, key)) {
+      target[key] = value;
+      continue;
+    }
+
+    if (is_plain_object(target[key]) && is_plain_object(value)) {
+      merge_action_record_no_overwrite(target[key], value);
     }
   }
 

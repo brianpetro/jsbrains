@@ -110,18 +110,186 @@ test('newer collection version replaces older one', t => {
   );
 });
 
-test('should replace action with incoming if version is newer', t => {
-  const old_action = { version: 1, action: () => { return 'old' } };
-  const new_action = { version: 2, action: () => { return 'new' } };
-  const target = { actions: { test: old_action } };
-  const incoming = { actions: { test: new_action } };
-  merge_env_config(target, incoming);
+test('newer action retains omitted metadata and all placements', t => {
+  const old_action_fn = () => 'old';
+  const new_action_fn = () => 'new';
+  const placements = {
+    commands: {
+      open_action: { name: 'Open action' },
+    },
+    ribbon_icons: {
+      open_action: { icon_name: 'open' },
+    },
+    menus: {
+      'source:menu': { title: 'Open action' },
+    },
+    webview_methods: {
+      chatgpt: {
+        append_input: {
+          method_name: 'append_input',
+          source: 'async function append_input() {}',
+        },
+      },
+    },
+  };
+  const target = {
+    actions: {
+      test: {
+        version: 1,
+        action: old_action_fn,
+        display_description: 'Existing description',
+        ...placements,
+      },
+    },
+  };
 
-  t.is(
-    target.actions.test,
-    new_action,
-    'incoming action replaces the older version'
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 2,
+        action: new_action_fn,
+        display_name: 'New action',
+      },
+    },
+  });
+
+  const merged_action = target.actions.test;
+  t.is(merged_action.action, new_action_fn);
+  t.is(merged_action.version, 2);
+  t.is(merged_action.display_name, 'New action');
+  t.is(merged_action.display_description, 'Existing description');
+  t.deepEqual(
+    {
+      commands: merged_action.commands,
+      ribbon_icons: merged_action.ribbon_icons,
+      menus: merged_action.menus,
+      webview_methods: merged_action.webview_methods,
+    },
+    placements,
   );
+});
+
+test('action placement convergence retains missing metadata without merging conflicts', t => {
+  const new_action_fn = () => 'new';
+  const target = {
+    actions: {
+      test: {
+        version: 1,
+        action() {},
+        commands: {
+          shared: {
+            name: 'Old name',
+            description: 'Retained description',
+            hotkeys: [{ modifiers: ['Mod'], key: 'O' }],
+          },
+          old_only: { name: 'Old only' },
+        },
+        menus: {
+          'source:menu': {
+            title: 'Old title',
+            icon: 'retained-icon',
+          },
+          'source:disabled_menu': {
+            title: 'Old disabled title',
+          },
+        },
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 2,
+        action: new_action_fn,
+        commands: {
+          shared: {
+            name: 'New name',
+            hotkeys: [{ modifiers: ['Mod'], key: 'N' }],
+          },
+          new_only: { name: 'New only' },
+        },
+        menus: {
+          'source:menu': { title: 'New title' },
+          'source:disabled_menu': false,
+        },
+      },
+    },
+  });
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 1,
+        commands: {
+          shared: {
+            name: 'Older name',
+            hotkeys: [{ modifiers: ['Mod'], key: 'L' }],
+          },
+          late_only: { name: 'Late only' },
+        },
+        menus: {
+          'source:menu': {
+            title: 'Older title',
+            icon: 'older-icon',
+          },
+          'source:disabled_menu': {
+            title: 'Older disabled title',
+          },
+        },
+        ribbon_icons: {
+          stable: { icon_name: 'star' },
+        },
+      },
+    },
+  });
+
+  const merged_action = target.actions.test;
+  t.is(merged_action.action, new_action_fn);
+  t.deepEqual(merged_action.commands.shared, {
+    name: 'New name',
+    hotkeys: [{ modifiers: ['Mod'], key: 'N' }],
+    description: 'Retained description',
+  });
+  t.is(merged_action.commands.old_only.name, 'Old only');
+  t.is(merged_action.commands.new_only.name, 'New only');
+  t.is(merged_action.commands.late_only.name, 'Late only');
+  t.deepEqual(merged_action.menus['source:menu'], {
+    title: 'New title',
+    icon: 'retained-icon',
+  });
+  t.false(merged_action.menus['source:disabled_menu']);
+  t.is(merged_action.ribbon_icons.stable.icon_name, 'star');
+});
+
+test('same action version from newer SmartEnv retains omitted metadata', t => {
+  const old_action_fn = () => 'old';
+  const new_action_fn = () => 'new';
+  const target = {
+    version: '2.4.2',
+    actions: {
+      test: {
+        version: '1.0.0',
+        action: old_action_fn,
+        commands: {
+          stable: { name: 'Stable command' },
+        },
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    version: '2.4.3',
+    actions: {
+      test: {
+        version: '1.0.0',
+        action: new_action_fn,
+      },
+    },
+  });
+
+  t.is(target.actions.test.action, new_action_fn);
+  t.is(target.actions.test.commands.stable.name, 'Stable command');
 });
 
 /* ------------------------------------------------------------------
