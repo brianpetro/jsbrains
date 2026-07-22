@@ -20,7 +20,6 @@ export const ACTION_EXPORT_PROPS = [
   'ribbon_icons',
   'menus',
   'version',
-  'webview_methods',
   'input_schema',
   'output_schema',
 ];
