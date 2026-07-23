@@ -64,18 +64,18 @@ test('get_scope_env rejects invalid scopes without falling back', (t) => {
   );
 });
 
-test('run_action_entry rejects an invalid action key', async (t) => {
+test('run_action_entry rejects an invalid action key', (t) => {
   const env = create_env();
 
-  await t.throwsAsync(
-    run_action_entry(env, null),
+  t.throws(
+    () => run_action_entry(env, null),
     {
       instanceOf: TypeError,
       message: 'Action key must be a non-empty string.',
     },
   );
-  await t.throwsAsync(
-    run_action_entry(env, '   '),
+  t.throws(
+    () => run_action_entry(env, '   '),
     {
       instanceOf: TypeError,
       message: 'Action key must be a non-empty string.',
@@ -83,15 +83,15 @@ test('run_action_entry rejects an invalid action key', async (t) => {
   );
 });
 
-test('run_action_entry rejects invalid params', async (t) => {
+test('run_action_entry rejects invalid params', (t) => {
   const env = create_env({
     test: {
       action() {},
     },
   });
 
-  await t.throwsAsync(
-    run_action_entry(env, 'test', []),
+  t.throws(
+    () => run_action_entry(env, 'test', []),
     {
       instanceOf: TypeError,
       message: 'Action params must be an object.',
@@ -139,6 +139,38 @@ test('run_action_entry binds the configured action to the exact scope', async (t
   t.is(actual_result, result);
 });
 
+test('run_action_entry preserves synchronous return values', (t) => {
+  const expected = { ok: true };
+  const env = create_env({
+    test: {
+      action() {
+        return expected;
+      },
+    },
+  });
+
+  const actual = run_action_entry(env, 'test');
+
+  t.is(actual, expected);
+  t.false(actual instanceof Promise);
+});
+
+test('run_action_entry preserves action promises without awaiting them', async (t) => {
+  const expected = { ok: true };
+  const env = create_env({
+    test: {
+      action() {
+        return Promise.resolve(expected);
+      },
+    },
+  });
+
+  const actual = run_action_entry(env, 'test');
+
+  t.true(actual instanceof Promise);
+  t.is(await actual, expected);
+});
+
 test('run_action_entry prefers the scoped action proxy', async (t) => {
   let fallback_call_count = 0;
   let scoped_action_this;
@@ -165,28 +197,28 @@ test('run_action_entry prefers the scoped action proxy', async (t) => {
   t.is(actual_result, scoped_result);
 });
 
-test('run_action_entry reports missing and non-callable actions', async (t) => {
+test('run_action_entry reports missing and non-callable actions', (t) => {
   const env = create_env({
     invalid: {
       action: null,
     },
   });
 
-  await t.throwsAsync(
-    run_action_entry(env, 'missing'),
+  t.throws(
+    () => run_action_entry(env, 'missing'),
     {
       message: 'Action not found: missing',
     },
   );
-  await t.throwsAsync(
-    run_action_entry(env, 'invalid'),
+  t.throws(
+    () => run_action_entry(env, 'invalid'),
     {
       message: 'Action is not callable: invalid',
     },
   );
 });
 
-test('run_action_entry preserves the original action error', async (t) => {
+test('run_action_entry preserves the original action error', (t) => {
   const expected_error = new Error('Action failed');
   const env = create_env({
     test: {
@@ -196,8 +228,8 @@ test('run_action_entry preserves the original action error', async (t) => {
     },
   });
 
-  const actual_error = await t.throwsAsync(
-    run_action_entry(env, 'test'),
+  const actual_error = t.throws(
+    () => run_action_entry(env, 'test'),
   );
 
   t.is(actual_error, expected_error);

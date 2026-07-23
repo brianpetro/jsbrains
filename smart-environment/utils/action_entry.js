@@ -21,9 +21,9 @@ export function get_scope_env(scope) {
  * @param {string} action_key
  * @param {object} [params]
  * @param {{event_source?: string}} [options]
- * @returns {Promise<*>}
+ * @returns {*}
  */
-export async function run_action_entry(
+export function run_action_entry(
   scope,
   action_key,
   params = {},
