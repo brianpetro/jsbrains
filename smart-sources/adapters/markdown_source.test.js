@@ -8,6 +8,21 @@ const create_adapter = () => new MarkdownSourceContentAdapter({
   file: { stat: {} },
 });
 
+function add_block_interface(item) {
+  Object.defineProperties(item, {
+    blocks_initialized: {
+      get() { return Boolean(this.data.blocks); },
+    },
+    block_keys: {
+      get() { return Object.keys(this.data.blocks || {}); },
+    },
+  });
+  item.get_block_lines = function get_block_lines(sub_key) {
+    return this.data.blocks?.[sub_key];
+  };
+  return item;
+}
+
 test('get_metadata merges frontmatter and inline tags', async t => {
   const adapter = create_adapter();
   const content = `---\ntags: [front]\n---\nbody with #inline`;
@@ -48,7 +63,7 @@ test('init queues Markdown sources missing the current outlink version', async t
 
 test('import rebuilds unchanged source outlinks when the migration version is missing', async t => {
   const content = '[[Current.md]]';
-  const item = {
+  const item = add_block_interface({
     data: {
       blocks: { '#': [1, 1] },
       outlinks: [{ target: 'STALE-CACHED-ROW.md' }],
@@ -75,7 +90,7 @@ test('import rebuilds unchanged source outlinks when the migration version is mi
     queue_save() { this.save_queued = true; },
     queue_embed() { this.embed_queued = true; },
     should_embed: false,
-  };
+  });
   const adapter = new MarkdownSourceContentAdapter(item);
 
   await adapter.import();
@@ -96,7 +111,7 @@ test('empty Markdown completes the outlink migration and removes stale blocks', 
     get lines() { return this.data.lines; },
     queue_save() { this.save_queued = true; },
   };
-  const item = {
+  const item = add_block_interface({
     data: {
       blocks: { '#': [1, 1] },
       outlinks: [{ target: 'STALE-CACHED-ROW.md' }],
@@ -134,7 +149,7 @@ test('empty Markdown completes the outlink migration and removes stale blocks', 
     queue_save() { this.save_queued = true; },
     queue_embed() { this.embed_queued = true; },
     should_embed: false,
-  };
+  });
   const adapter = new MarkdownSourceContentAdapter(item);
 
   await adapter.import();

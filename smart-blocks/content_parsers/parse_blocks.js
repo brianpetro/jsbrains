@@ -118,7 +118,7 @@ function clean_and_update_source_blocks(source, blocks_obj, task_lines=[], tasks
     }
   }
   // Update source data with new blocks
-  source.data.blocks = blocks_obj;
+  source.replace_blocks(blocks_obj);
   source.data.task_lines = task_lines;
   source.data.tasks = tasks;
   source.data.codeblock_ranges = codeblock_ranges;

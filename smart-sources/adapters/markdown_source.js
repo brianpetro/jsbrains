@@ -10,7 +10,7 @@ const MARKDOWN_OUTLINKS_VERSION = 2;
  * @extends FileSourceContentAdapter
  * @description
  * Adapter for handling a SmartSource that is backed by a Markdown file.
- * Responsible for importing file content into `item.data.blocks`, computing hashes, and identifying outlinks.
+ * Responsible for importing file content into source block state, computing hashes, and identifying outlinks.
  */
 export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   static extensions = ['md', 'txt'];
@@ -70,7 +70,7 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
     }
     // TODO: should be dynamic: ex. content_parsers files export a should_parse function
     if(!refresh && !has_incomplete_block_coverage && this.data.last_import?.hash === this.data.last_read?.hash){
-      if(this.data.blocks) return; // if blocks already exist, skip re-import
+      if(this.item.blocks_initialized) return; // if blocks already exist, skip re-import
     }
     await this.parse_content(content);
     await this.item.parse_content(content);
@@ -137,8 +137,9 @@ export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   }
 
   has_incomplete_block_coverage() {
-    if(!this.data.blocks || !this.item.block_collection) return false;
-    return Object.entries(this.data.blocks).some(([sub_key, line_range]) => {
+    if(!this.item.blocks_initialized || !this.item.block_collection) return false;
+    return this.item.block_keys.some(sub_key => {
+      const line_range = this.item.get_block_lines(sub_key);
       const block = this.item.block_collection.get(this.item.key + sub_key);
       if(!block) return true;
       const block_lines = block.lines || [];

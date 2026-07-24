@@ -38,7 +38,7 @@ export class SmartSource extends SmartEntity {
    */
   init() {
     super.init();
-    if(!this.data.blocks) this.queue_import();
+    if(!this.blocks_initialized) this.queue_import();
   }
 
   /**
@@ -46,6 +46,20 @@ export class SmartSource extends SmartEntity {
    * @returns {void}
    */
   queue_import() { this._queue_import = true; }
+
+  get blocks_initialized() { return Boolean(this.data.blocks); }
+
+  get block_keys() { return Object.keys(this.data.blocks || {}); }
+
+  has_block(sub_key) {
+    return Object.prototype.hasOwnProperty.call(this.data.blocks || {}, sub_key);
+  }
+
+  get_block_lines(sub_key) { return this.data.blocks?.[sub_key]; }
+
+  replace_blocks(blocks_by_sub_key = {}) {
+    this.data.blocks = blocks_by_sub_key;
+  }
 
   /**
    * Imports the SmartSource by checking for updates and parsing content.
@@ -84,7 +98,7 @@ export class SmartSource extends SmartEntity {
       await fn(this, content);
     }
     if(this.data.last_import?.hash === this.data.last_read?.hash){
-      if(this.data.blocks) return; // if blocks already exist, skip re-import
+      if(this.blocks_initialized) return; // if blocks already exist, skip re-import
     }
   }
 
@@ -345,7 +359,7 @@ export class SmartSource extends SmartEntity {
    * Uses block refs (Fastest) to get blocks without iterating over all blocks
    */
   get blocks() {
-    if(this.data.blocks) return this.block_collection.get_many(Object.keys(this.data.blocks).map(key => this.key + key));
+    if(this.blocks_initialized) return this.block_collection.get_many(this.block_keys.map(key => this.key + key));
     return [];
   }
 

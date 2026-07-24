@@ -177,7 +177,6 @@ flowchart LR
 - `SmartSource.import()` delegates to `source_adapter.import()` and gracefully handles missing files (deleting stale items) or transient errors (re-queueing import).
 - `SmartSource.parse_content()` is intentionally lightweight; custom logic should live in adapter `parse_content` or `content_parsers`.
 - `SmartSource.get_embed_input()` trims excluded lines, prepends breadcrumbs (`folder > file`), and enforces token/char limits from the embed model.
-- `SmartSource.get_block_by_line(line)` resolves a block by line range when block vectors exist.
 - `SmartSources.create(key, content)` writes content via Smart FS, refreshes the FS cache, creates the entity, and immediately imports it.
 - `SmartSources.search()` iterates items in batches (10 at a time) and composes lexical matches before sorting by frequency.
 - `SmartSources.lookup(params)` merges source + block lookup results and respects `filter.limit` or `env.settings.lookup_k`.

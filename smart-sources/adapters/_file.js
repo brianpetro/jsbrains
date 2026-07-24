@@ -171,9 +171,8 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
     const new_with_parent_blocks = [];
     const changed_blocks = [];
     const same_blocks = [];
-    const existing_blocks = this.source.data.blocks || {};
     for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
-      const has_existing = !!existing_blocks[sub_key];
+      const has_existing = this.source.has_block(sub_key);
       const block_key = `${this.source.key}${sub_key}`;
       const block_content = get_line_range(content, line_range[0], line_range[1]);
       if(!has_existing){
@@ -190,7 +189,7 @@ export class FileSourceContentAdapter extends SourceContentAdapter {
       while(!has_parent && headings.length > 0){
         headings.pop(); // remove the last heading
         parent_key = headings.join("#");
-        has_parent = !!existing_blocks[parent_key];
+        has_parent = this.source.has_block(parent_key);
       }
       if(has_parent){
         new_with_parent_blocks.push({

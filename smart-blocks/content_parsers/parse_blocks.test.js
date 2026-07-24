@@ -33,6 +33,7 @@ const create_source = () => {
     block_collection,
     queue_save() { this.saved = true; },
     get blocks() { return Object.values(this.block_collection.items); },
+    replace_blocks(blocks) { this.data.blocks = blocks; },
   };
   return { source, block_collection };
 };

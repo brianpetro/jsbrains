@@ -248,7 +248,7 @@ export class SmartBlock extends SmartEntity {
    */
   get is_gone() {
     if (!this.source?.file) return true; // Gone if missing entity or file
-    if (!this.source?.data?.blocks?.[this.sub_key]) return true;
+    if (!this.source.has_block(this.sub_key)) return true;
     return false;
   }
 
