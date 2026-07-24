@@ -131,24 +131,6 @@ export class SmartSource extends SmartEntity {
   }
 
   /**
-   * Retrieves the block associated with a specific line number.
-   * @param {number} line - The line number to search for.
-   * @returns {SmartBlock|null} The corresponding SmartBlock or `null` if not found.
-   */
-  get_block_by_line(line) {
-    return Object.entries(this.data.blocks || {})
-      .reduce((acc, [sub_key, range]) => {
-        if(acc) return acc; // Skip check if block already found
-        if(range[0] <= line && range[1] >= line){
-          const block = this.block_collection.get(this.key + sub_key);
-          if(block?.vec) return block; // Return if block has vec
-        }
-        return acc;
-      }, null)
-    ;
-  }
-
-  /**
    * Checks if the source file exists in the file system.
    * @async
    * @returns {Promise<boolean>} A promise that resolves to `true` if the file exists, `false` otherwise.
