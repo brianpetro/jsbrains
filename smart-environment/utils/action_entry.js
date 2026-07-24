@@ -17,6 +17,85 @@ export function get_scope_env(scope) {
 }
 
 /**
+ * Resolve the natural scope declared by an action entry.
+ *
+ * @param {object} env
+ * @param {string} action_key
+ * @param {object} action_entry
+ * @param {object} [params]
+ * @returns {object|null|undefined}
+ */
+export function resolve_action_scope(
+  env,
+  action_key,
+  action_entry,
+  params = {},
+) {
+  const action_scope = action_entry.action_scope;
+  if (is_disabled(action_scope)) return env;
+
+  validate_action_scope(action_scope, action_key);
+
+  if (typeof action_scope.resolve === 'function') {
+    return action_scope.resolve({
+      env,
+      params,
+      action_key,
+      action_entry,
+    });
+  }
+  if (action_scope.type === 'env') return env;
+
+  const collection = env[action_scope.collection_key];
+  if (action_scope.type === 'collection') {
+    return collection ?? null;
+  }
+
+  return collection?.get?.(params[action_scope.item_arg]) ?? null;
+}
+
+/**
+ * Return whether a resolved scope belongs to the expected environment and is
+ * compatible with the declared action scope.
+ *
+ * Invalid or foreign resolved scopes return false. Invalid action metadata
+ * throws so the owning connector can report a configuration error.
+ *
+ * @param {object} env
+ * @param {object|false|null|undefined} action_scope
+ * @param {object|null|undefined} scope
+ * @returns {boolean}
+ */
+export function is_action_scope_compatible(
+  env,
+  action_scope,
+  scope,
+) {
+  if (!is_disabled(action_scope)) {
+    validate_action_scope(action_scope);
+  }
+  if (!scope) return false;
+
+  try {
+    if (get_scope_env(scope) !== env) return false;
+  } catch {
+    return false;
+  }
+
+  if (is_disabled(action_scope)) return true;
+  if (action_scope.type === 'env') return scope === env;
+
+  const collection = env[action_scope.collection_key];
+  if (!collection) return false;
+
+  if (action_scope.type === 'collection') {
+    return scope === collection;
+  }
+
+  return scope.collection === collection;
+}
+
+/**
  * @param {object} scope
  * @param {string} action_key
  * @param {object} [params]
@@ -64,4 +143,49 @@ export function run_action_entry(
   };
 
   return action(action_params);
+}
+
+function validate_action_scope(action_scope, action_key = '') {
+  const suffix = action_key
+    ? ` for action: ${action_key}`
+    : ''
+  ;
+
+  if (!action_scope || typeof action_scope !== 'object' || Array.isArray(action_scope)) {
+    throw new TypeError(`Invalid action_scope${suffix}`);
+  }
+  if (!['env', 'collection', 'item'].includes(action_scope.type)) {
+    throw new TypeError(`Invalid action_scope type${suffix}`);
+  }
+  if (
+    action_scope.type !== 'env'
+    && (
+      typeof action_scope.collection_key !== 'string'
+      || !action_scope.collection_key.trim()
+    )
+  ) {
+    throw new TypeError(`Invalid action_scope collection_key${suffix}`);
+  }
+  if (
+    action_scope.type === 'item'
+    && (
+      typeof action_scope.item_arg !== 'string'
+      || !action_scope.item_arg.trim()
+    )
+  ) {
+    throw new TypeError(`Invalid action_scope item_arg${suffix}`);
+  }
+  if (
+    typeof action_scope.resolve !== 'undefined'
+    && typeof action_scope.resolve !== 'function'
+  ) {
+    throw new TypeError(`Invalid action_scope resolve${suffix}`);
+  }
+}
+
+function is_disabled(value) {
+  return value === false
+    || value === null
+    || typeof value === 'undefined'
+  ;
 }

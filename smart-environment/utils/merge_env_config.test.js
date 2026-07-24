@@ -262,6 +262,172 @@ test('action placement convergence retains missing metadata without merging conf
   t.is(merged_action.ribbon_icons.stable.icon_name, 'star');
 });
 
+
+test('action public-contract fields converge atomically', t => {
+  const old_fields = {
+    tool: {
+      name: 'old_tool',
+      effects: {
+        read_only: true,
+      },
+    },
+    action_scope: {
+      type: 'item',
+      collection_key: 'old_items',
+      item_arg: 'old_key',
+    },
+    input_schema: {
+      type: 'object',
+      properties: {
+        old_key: {
+          type: 'string',
+        },
+      },
+    },
+    output_schema: {
+      type: 'object',
+      properties: {
+        old_result: {
+          type: 'string',
+        },
+      },
+    },
+  };
+  const new_fields = {
+    tool: {
+      name: 'new_tool',
+    },
+    action_scope: {
+      type: 'env',
+    },
+    input_schema: {
+      type: 'object',
+      properties: {
+        new_key: {
+          type: 'number',
+        },
+      },
+    },
+    output_schema: {
+      type: 'number',
+    },
+  };
+  const target = {
+    actions: {
+      test: {
+        version: 1,
+        ...old_fields,
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 2,
+        ...new_fields,
+      },
+    },
+  });
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 1,
+        tool: {
+          effects: {
+            destructive: true,
+          },
+        },
+        action_scope: {
+          collection_key: 'late_items',
+        },
+        input_schema: {
+          required: ['old_key'],
+        },
+        output_schema: {
+          minimum: 0,
+        },
+      },
+    },
+  });
+
+  t.deepEqual(target.actions.test.tool, new_fields.tool);
+  t.deepEqual(target.actions.test.action_scope, new_fields.action_scope);
+  t.deepEqual(target.actions.test.input_schema, new_fields.input_schema);
+  t.deepEqual(target.actions.test.output_schema, new_fields.output_schema);
+});
+
+test('atomic field names remain additive inside placement metadata', t => {
+  const target = {
+    actions: {
+      test: {
+        version: 1,
+        commands: {
+          run: {
+            params: {
+              tool: {
+                effects: {
+                  read_only: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 2,
+        commands: {
+          run: {
+            params: {
+              tool: {
+                name: 'nested_tool',
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  t.deepEqual(target.actions.test.commands.run.params.tool, {
+    name: 'nested_tool',
+    effects: {
+      read_only: true,
+    },
+  });
+});
+
+test('newer actions retain omitted atomic fields as complete values', t => {
+  const input_schema = {
+    type: 'object',
+    required: ['source_key'],
+  };
+  const target = {
+    actions: {
+      test: {
+        version: 1,
+        input_schema,
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 2,
+        display_name: 'New action',
+      },
+    },
+  });
+
+  t.is(target.actions.test.input_schema, input_schema);
+});
+
 test('same action version from newer SmartEnv retains omitted metadata', t => {
   const old_action_fn = () => 'old';
   const new_action_fn = () => 'new';

@@ -4,6 +4,13 @@ import { is_plain_object } from './is_plain_object.js';
 
 const CONFIG_RECORD_ENV_VERSION_KEY = '__smart_env_version';
 
+const ATOMIC_ACTION_FIELDS = new Set([
+  'tool',
+  'action_scope',
+  'input_schema',
+  'output_schema',
+]);
+
 /**
  * Deep-merge `incoming` into `target` without losing data, honouring
  * version semantics
@@ -180,7 +187,11 @@ export function merge_env_config (target, incoming) {
   return target;
 }
 
-function merge_action_record_no_overwrite(target, source) {
+function merge_action_record_no_overwrite(
+  target,
+  source,
+  is_action_entry = true,
+) {
   if (!is_plain_object(target) || !is_plain_object(source)) {
     return target;
   }
@@ -191,8 +202,10 @@ function merge_action_record_no_overwrite(target, source) {
       continue;
     }
 
+    if (is_action_entry && ATOMIC_ACTION_FIELDS.has(key)) continue;
+
     if (is_plain_object(target[key]) && is_plain_object(value)) {
-      merge_action_record_no_overwrite(target[key], value);
+      merge_action_record_no_overwrite(target[key], value, false);
     }
   }
 
