@@ -16,6 +16,20 @@ class StubBlock {
   queue_embed() {
     this._queue_embed = true;
   }
+  stage_embed_content(content, hash) {
+    this._staged_embed_content = content;
+    this._staged_embed_content_hash = hash;
+  }
+  clear_staged_embed_content() {
+    this._staged_embed_content = null;
+    this._staged_embed_content_hash = null;
+  }
+  get read_hash() {
+    return this.data.last_read?.hash;
+  }
+  get embed_hash() {
+    return this.data.last_embed?.hash;
+  }
 }
 
 const create_source = () => {
@@ -78,4 +92,22 @@ test('removes deprecated block outlink data without replacing unchanged blocks',
   t.false(Object.prototype.hasOwnProperty.call(block.data, 'outlinks'));
   t.false(Object.prototype.hasOwnProperty.call(block.data, 'outlinks_version'));
   t.true(block._queue_save);
+});
+
+test('stages parsed block content for queued embedding', t => {
+  const { source, block_collection } = create_source();
+  const content = [
+    'Intro',
+    '',
+    '# Heading',
+    'Block content',
+  ].join('\n');
+
+  parse_blocks(source, content);
+
+  const heading_block = block_collection.items['Path/Note.md#Heading'];
+  t.truthy(heading_block);
+  t.true(heading_block._queue_embed);
+  t.is(heading_block._staged_embed_content, '# Heading\nBlock content');
+  t.is(heading_block._staged_embed_content_hash, heading_block.read_hash);
 });

@@ -162,3 +162,46 @@ test('empty Markdown completes the outlink migration and removes stale blocks', 
   t.true(stale_block.save_queued);
   t.true(item.save_queued);
 });
+
+test('import prepares source embed input from content already read', async t => {
+  const content = '# Heading\nSource content';
+  let read_count = 0;
+  let received_embed_content;
+  const item = add_block_interface({
+    data: {},
+    env: { settings: { smart_sources: {} } },
+    collection: {
+      fs: {
+        async read() {
+          read_count += 1;
+          return content;
+        },
+      },
+    },
+    file_path: 'Path/Note.md',
+    path: 'Path/Note.md',
+    file: { stat: { mtime: 10, size: content.length } },
+    mtime: 10,
+    size: content.length,
+    vec: null,
+    blocks: [],
+    block_collection: { get: () => null },
+    async parse_content() {},
+    queue_save() { this.save_queued = true; },
+    queue_embed() { this._queue_embed = true; },
+    async get_embed_input(next_content) {
+      received_embed_content = next_content;
+      this._embed_input = `Path > Note:\n${next_content}`;
+      return this._embed_input;
+    },
+    should_embed: true,
+  });
+  const adapter = new MarkdownSourceContentAdapter(item);
+
+  await adapter.import({ refresh: true });
+
+  t.is(read_count, 1);
+  t.is(received_embed_content, content);
+  t.is(item._embed_input, `Path > Note:\n${content}`);
+  t.true(item._queue_embed);
+});

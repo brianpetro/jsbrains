@@ -146,7 +146,9 @@ export const FrontmatterFilter = {};
  * @property {boolean} [paused] - Whether queue processing is paused.
  * @property {number} progress - Completed item count.
  * @property {number} total - Total item count in the current queue.
- * @property {number} [tokens_per_second] - Aggregate throughput for the current run.
+ * @property {number} [tokens_per_second] - Aggregate throughput using model tokens or a four-characters-per-token estimate.
+ * @property {number} [characters_embedded] - Input characters successfully embedded in the current run.
+ * @property {number} [elapsed_ms] - Elapsed embedding processing time in milliseconds.
  * @property {string} [model_name] - Embed model label for the current run.
  * @property {string} [reason] - Pause reason when applicable.
  * @property {number} [updated_at] - Epoch milliseconds for the last state update.

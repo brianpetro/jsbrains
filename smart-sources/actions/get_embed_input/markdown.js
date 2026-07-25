@@ -9,12 +9,14 @@ export const display_name = 'Get markdown source embed input';
  * @returns {Promise<string>}
  */
 export async function source_get_embed_input_markdown(params = {}) {
-  if (typeof this._embed_input === 'string' && this._embed_input.length) {
+  const has_content = typeof params.content === 'string';
+  if (has_content) {
+    this._embed_input = null;
+  } else if (typeof this._embed_input === 'string' && this._embed_input.length) {
     return this._embed_input; // Return cached (temporary) input
   }
 
-  let content = params.content;
-  if(!content) content = await this.read(); // Get content from file
+  let content = has_content ? params.content : await this.read(); // Get content from file
   if(!content || typeof content !== 'string') {
     console.warn('SmartSource.get_embed_input: No content available for embedding: ' + this.path);
     return ''; // No content to embed

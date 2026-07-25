@@ -165,3 +165,26 @@ test('Markdown block adapter key resolves to the registered core action', t => {
     block_get_embed_input_markdown,
   );
 });
+
+test('staged block content is consumed only for the matching read hash', t => {
+  const block = {
+    _embed_input: 'old input',
+    read_hash: 'hash-1',
+    clear_staged_embed_content: SmartBlock.prototype.clear_staged_embed_content,
+  };
+
+  SmartBlock.prototype.stage_embed_content.call(block, 'Block content', 'hash-1');
+
+  t.is(block._embed_input, '');
+  t.is(
+    SmartBlock.prototype.consume_staged_embed_content.call(block),
+    'Block content',
+  );
+  t.is(block._staged_embed_content, null);
+
+  SmartBlock.prototype.stage_embed_content.call(block, 'Stale content', 'hash-1');
+  block.read_hash = 'hash-2';
+
+  t.is(SmartBlock.prototype.consume_staged_embed_content.call(block), null);
+  t.is(block._staged_embed_content, null);
+});

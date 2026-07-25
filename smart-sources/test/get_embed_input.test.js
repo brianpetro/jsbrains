@@ -149,3 +149,30 @@ test('source adapter keys resolve to registered type-specific actions', t => {
     source_get_embed_input_data,
   );
 });
+
+test('markdown source action refreshes cached input from supplied content', async t => {
+  let read_count = 0;
+  const source = {
+    _embed_input: 'Folder > Note:\nOld content',
+    path: 'Folder/Note.md',
+    excluded_lines: [],
+    collection: {
+      embed_model: {
+        model: {
+          data: { max_tokens: 100 },
+        },
+      },
+    },
+    async read() {
+      read_count += 1;
+      return 'Read content';
+    },
+  };
+
+  const result = await source_get_embed_input_markdown.call(source, {
+    content: 'New content',
+  });
+
+  t.is(result, 'Folder > Note:\nNew content');
+  t.is(read_count, 0);
+});

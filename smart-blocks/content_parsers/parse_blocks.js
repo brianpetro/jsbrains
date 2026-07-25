@@ -14,11 +14,13 @@ import { murmur_hash_32_alphanumeric } from "smart-utils/create_hash.js";
 export function parse_blocks(source, content) {
   let {blocks: blocks_obj, task_lines, tasks, codeblock_ranges} = parse_markdown_blocks(content);
   const last_read_at =  source.data.last_read?.at || Date.now();
+  const block_content_by_key = new Map();
   for (const [sub_key, line_range] of Object.entries(blocks_obj)) {
     // if (sub_key === '#' || sub_key.startsWith('#---frontmatter')) continue;
     const block_key = source.key + sub_key;
     const existing_block = source.block_collection.get(block_key);
     const block_content = get_line_range(content, line_range[0], line_range[1]);
+    block_content_by_key.set(block_key, block_content);
     const next_hash = murmur_hash_32_alphanumeric(block_content);
     if (
       existing_block
@@ -68,6 +70,18 @@ export function parse_blocks(source, content) {
   for (const block of source.blocks) {
     if (!block.vec || block.embed_hash !== block.read_hash) {
       block.queue_embed();
+      if (block._queue_embed) {
+        const block_content = block_content_by_key.get(block.key);
+        if (typeof block_content === 'string') {
+          block.stage_embed_content?.(block_content, block.read_hash);
+        } else {
+          block.clear_staged_embed_content?.();
+        }
+      } else {
+        block.clear_staged_embed_content?.();
+      }
+    } else {
+      block.clear_staged_embed_content?.();
     }
   }
 }

@@ -436,6 +436,45 @@ export class SmartBlock extends SmartEntity {
    * @returns {string} The source key.
    */
   get note_key() { return this.key.split("#")[0]; }
+
+  /**
+   * Stage raw block content until the embedding input is prepared.
+   *
+   * @param {string} content
+   * @param {string} [hash=this.read_hash]
+   * @returns {void}
+   */
+  stage_embed_content(content, hash = this.read_hash) {
+    this._embed_input = '';
+    this._staged_embed_content = content;
+    this._staged_embed_content_hash = hash;
+  }
+
+  /**
+   * Consume staged content when it still matches the block hash.
+   *
+   * @returns {string|null}
+   */
+  consume_staged_embed_content() {
+    if (typeof this._staged_embed_content !== 'string') return null;
+    if (this._staged_embed_content_hash !== this.read_hash) {
+      this.clear_staged_embed_content();
+      return null;
+    }
+    const content = this._staged_embed_content;
+    this.clear_staged_embed_content();
+    return content;
+  }
+
+  /**
+   * Clear staged block content.
+   *
+   * @returns {void}
+   */
+  clear_staged_embed_content() {
+    this._staged_embed_content = null;
+    this._staged_embed_content_hash = null;
+  }
 }
 
 export default {

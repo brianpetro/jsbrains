@@ -99,7 +99,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @async
    * @this {DefaultEntitiesVectorAdapterThis}
    * @param {Object[]} entities - Array of entity instances to embed.
-   * @returns {Promise<void>}
+   * @returns {Promise<Object[]>}
    */
   async embed_batch(entities) {
     if (!this.collection.embed_model) {
@@ -113,6 +113,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       entity.data.last_embed = entity.data.last_read;
       if (embedding.tokens !== undefined) entity.tokens = embedding.tokens;
     });
+    return embeddings;
   }
 
   /**
@@ -125,14 +126,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @returns {Promise<void>}
    */
   async process_embed_queue() {
-    if (this._is_processing_embed_queue) {
-      console.log('process_embed_queue is already running, skipping concurrent call.');
-      return;
-    }
-    if (this.is_embed_queue_paused() && !this._resume_after_pause) {
-      console.log('process_embed_queue is paused, skipping restart until resume.');
-      return;
-    }
+    if (this._is_processing_embed_queue) return;
+    if (this.is_embed_queue_paused() && !this._resume_after_pause) return;
     this._is_processing_embed_queue = true;
     this._embed_run_error = false;
 
@@ -148,90 +143,110 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         message: `Failed to load embedding model ${this.collection.embed_model_key}.`,
         details: error?.message || String(error || ''),
       });
+      this._is_processing_embed_queue = false;
       return;
     }
 
     try {
-      const datetime_start = Date.now();
-      console.log(`Getting embed queue for ${this.collection.collection_key}...`);
       await new Promise((resolve) => setTimeout(resolve, 1));
       const embed_queue = this.collection.embed_queue;
       this._reset_embed_queue_stats();
       const embedded_keys_by_collection = {};
 
-      if (this.collection.embed_model_key === 'None') {
-        console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
-        return;
-      }
-
-      if (!this.collection.embed_model) {
-        console.log(`Smart Connections: No active embedding model for ${this.collection.collection_key}, skipping embedding`);
-        return;
-      }
-
-      if (!embed_queue.length) {
-        console.log(`Smart Connections: No items in ${this.collection.collection_key} embed queue`);
-        return;
-      }
-
-      console.log(`Time spent getting embed queue: ${Date.now() - datetime_start}ms`);
-      console.log(`Processing ${this.collection.collection_key} embed queue: ${embed_queue.length} items`);
+      if (this.collection.embed_model_key === 'None') return;
+      if (!this.collection.embed_model) return;
+      if (!embed_queue.length) return;
 
       this.current_queue_total = embed_queue.length;
+      this.embedding_started_at = Date.now();
       this._start_embed_progress_state(embed_queue.length);
 
-      for (let index = 0; index < embed_queue.length; index += this.collection.embed_model.batch_size) {
-        if (this.is_queue_halted) {
-          break;
-        }
+      const embed_model = this.collection.embed_model;
+      const embed_adapter = embed_model.adapter || embed_model;
+      const batch_size = Math.max(1, Math.floor(Number(embed_model.batch_size) || 1));
+      const batch_window_size = Math.max(
+        batch_size,
+        Math.floor(Number(embed_adapter.batch_window_size) || batch_size),
+      );
+      const sort_by_input_length = embed_adapter.batch_sort_by_input_length === true;
 
-        const batch = embed_queue.slice(index, index + this.collection.embed_model.batch_size);
-        await Promise.all(batch.map((item) => item.get_embed_input()));
+      for (let window_start = 0; window_start < embed_queue.length; window_start += batch_window_size) {
+        if (this.is_queue_halted) break;
 
-        try {
-          const start_time = Date.now();
-          await this.embed_batch(batch);
-          this.total_time += Date.now() - start_time;
-        } catch (error) {
-          console.error(error);
-          console.error(`Error processing ${this.collection.collection_key} embed queue: ` + JSON.stringify((error || {}), null, 2));
-          this._emit_embedding_error({
-            message: `Embedding failed while processing ${this.collection.collection_key}.`,
-            details: error?.message || JSON.stringify((error || {}), null, 2),
+        const window_items = embed_queue.slice(window_start, window_start + batch_window_size);
+        const prepared_window = await Promise.all(window_items.map(async (item, window_item_i) => {
+          const embed_input = await item.get_embed_input();
+          const input_value = typeof embed_input === 'string' ? embed_input : '';
+          return {
+            item,
+            input_length: input_value.length,
+            window_item_i,
+          };
+        }));
+
+        if (sort_by_input_length) {
+          prepared_window.sort((a, b) => {
+            if (a.input_length !== b.input_length) return a.input_length - b.input_length;
+            return a.window_item_i - b.window_item_i;
           });
-          break;
         }
 
-        batch.forEach((item) => {
-          item.embed_hash = item.read_hash;
-          item._queue_save = true;
-          embedded_keys_by_collection[item.collection_key] ||= [];
-          embedded_keys_by_collection[item.collection_key].push(item.key);
-        });
-        this.embedded_total += batch.length;
-        this.total_tokens += batch.reduce((acc, item) => acc + (item.tokens || 0), 0);
+        for (let batch_start = 0; batch_start < prepared_window.length; batch_start += batch_size) {
+          if (this.is_queue_halted) break;
 
-        const processed_all = this.embedded_total >= embed_queue.length;
-        if (this.is_queue_halted && !processed_all) {
-          this._update_paused_progress_state(embed_queue.length, this.progress_state?.reason || '');
-        } else {
-          this._update_embed_progress_state(embed_queue.length);
-        }
+          const batch_entries = prepared_window.slice(batch_start, batch_start + batch_size);
+          const batch = batch_entries.map((entry) => entry.item);
+          let batch_results;
 
-        if (this.is_queue_halted && processed_all) {
-          this.is_queue_halted = false;
-        }
+          try {
+            const start_time = Date.now();
+            batch_results = await this.embed_batch(batch);
+            this.total_time += Date.now() - start_time;
+          } catch (error) {
+            console.error(`Error processing ${this.collection.collection_key} embed queue:`, error);
+            this._emit_embedding_error({
+              message: `Embedding failed while processing ${this.collection.collection_key}.`,
+              details: error?.message || JSON.stringify((error || {}), null, 2),
+            });
+            break;
+          }
 
-        if (this.should_show_embed_progress_notice || processed_all) {
-          this._show_embed_progress_notice(embed_queue.length);
-        }
+          batch.forEach((item) => {
+            item.embed_hash = item.read_hash;
+            item._queue_save = true;
+            embedded_keys_by_collection[item.collection_key] ||= [];
+            embedded_keys_by_collection[item.collection_key].push(item.key);
+          });
+          this.embedded_total += batch.length;
+          batch_entries.forEach((entry, entry_i) => {
+            const result = batch_results?.[entry_i];
+            if (result?.skipped) return;
+            this.total_characters += entry.input_length;
+            this.total_tokens += result?.tokens ?? entry.input_length / 4;
+          });
 
-        if (this.embedded_total - this.last_save_total > 99) {
-          this.last_save_total = this.embedded_total;
-          await this.collection.process_save_queue();
-          if (this.collection.block_collection) {
-            console.log(`Saving ${this.collection.block_collection.collection_key} block collection`);
-            await this.collection.block_collection.process_save_queue();
+          const processed_all = this.embedded_total >= embed_queue.length;
+          const is_paused = this.is_queue_halted && !processed_all;
+          if (is_paused) {
+            this._update_paused_progress_state(embed_queue.length, this.progress_state?.reason || '');
+          } else {
+            this._update_embed_progress_state(embed_queue.length);
+          }
+
+          if (this.is_queue_halted && processed_all) {
+            this.is_queue_halted = false;
+          }
+
+          if (is_paused || this.should_show_embed_progress_notice || processed_all) {
+            this._show_embed_progress_notice(embed_queue.length);
+          }
+
+          if (this.embedded_total - this.last_save_total > 99) {
+            this.last_save_total = this.embedded_total;
+            await this.collection.process_save_queue();
+            if (this.collection.block_collection) {
+              await this.collection.block_collection.process_save_queue();
+            }
           }
         }
       }
@@ -254,6 +269,11 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       await this.collection.process_save_queue();
       if (this.collection.block_collection) {
         await this.collection.block_collection.process_save_queue();
+      }
+
+      if (!this._embed_run_error) {
+        const elapsed_ms = Date.now() - this.embedding_started_at;
+        console.log(`${this.total_characters} characters embedded in ${elapsed_ms}ms`);
       }
     } finally {
       this._is_processing_embed_queue = false;
@@ -298,12 +318,22 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
   _show_embed_progress_notice(embed_queue_length) {
     this.last_notice_time = Date.now();
     this.last_notice_embedded_total = this.embedded_total;
-    this._update_embed_progress_state(embed_queue_length);
+    const is_paused = Boolean(this.progress_state?.paused);
+    const reason = this.progress_state?.reason || '';
+    if (is_paused) {
+      this._update_paused_progress_state(embed_queue_length, reason);
+    } else {
+      this._update_embed_progress_state(embed_queue_length);
+    }
     this.collection.emit_event('embedding:progress', {
       progress: this.embedded_total,
       total: embed_queue_length,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
+      characters_embedded: this.total_characters,
+      elapsed_ms: Date.now() - this.embedding_started_at,
       model_name: this.collection.embed_model_key,
+      paused: is_paused,
+      reason,
       event_source: 'process_embed_queue',
       skip_save_log_collection: true,
     });
@@ -321,6 +351,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       total_embeddings: this.embedded_total,
       total: embed_queue_length,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
+      characters_embedded: this.total_characters,
+      elapsed_ms: Date.now() - this.embedding_started_at,
       model_name: this.collection.embed_model_key,
       event_source: 'process_embed_queue',
     };
@@ -363,6 +395,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       progress: this.embedded_total,
       total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
+      characters_embedded: this.total_characters,
+      elapsed_ms: this.embedding_started_at ? Date.now() - this.embedding_started_at : 0,
       model_name: this.collection.embed_model_key,
       reason: next_reason,
     });
@@ -373,6 +407,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       progress: this.embedded_total,
       total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
+      characters_embedded: this.total_characters,
+      elapsed_ms: this.embedding_started_at ? Date.now() - this.embedding_started_at : 0,
       model_name: this.collection.embed_model_key,
       event_source: 'halt_embed_queue_processing',
     });
@@ -397,8 +433,6 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @returns {void}
    */
   resume_embed_queue_processing(delay = 0) {
-    console.log('resume_embed_queue_processing');
-
     if (this._resume_embed_timeout) {
       clearTimeout(this._resume_embed_timeout);
       this._resume_embed_timeout = null;
@@ -449,6 +483,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     this.last_notice_time = 0;
     this.total_tokens = 0;
     this.total_time = 0;
+    this.total_characters = 0;
+    this.embedding_started_at = 0;
     this.current_queue_total = 0;
     this.progress_state = null;
     this._embed_run_error = false;
@@ -489,11 +525,15 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       progress: 0,
       total,
       tokens_per_second: 0,
+      characters_embedded: 0,
+      elapsed_ms: 0,
       model_name: this.collection.embed_model_key,
     });
     this.collection.emit_event('embedding:started', {
       progress: 0,
       total,
+      characters_embedded: 0,
+      elapsed_ms: 0,
       model_name: this.collection.embed_model_key,
       event_source: 'process_embed_queue',
     });
@@ -512,6 +552,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       progress: this.embedded_total,
       total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
+      characters_embedded: this.total_characters,
+      elapsed_ms: Date.now() - this.embedding_started_at,
       model_name: this.collection.embed_model_key,
     });
   }
@@ -530,6 +572,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       progress: this.embedded_total,
       total,
       tokens_per_second: this._calculate_embed_tokens_per_second(),
+      characters_embedded: this.total_characters,
+      elapsed_ms: Date.now() - this.embedding_started_at,
       model_name: this.collection.embed_model_key,
       reason,
     });
