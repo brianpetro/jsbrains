@@ -48,12 +48,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * Find the nearest entities to the given vector.
    * @async
    * @this {DefaultEntitiesVectorAdapterThis}
-   * @param {number[]} vec - The reference vector.
+   * @param {number[]|ArrayBufferView|Object} vec - The reference vector or an item whose `vec` resolves one.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
    * @returns {Promise<Array<EntityConnectionResult>>} Array of results sorted by score descending.
    */
   async nearest(vec, filter = {}) {
-    if (!vec || !Array.isArray(vec)) {
+    vec = vec?.vec || vec;
+    if (!vec || (!Array.isArray(vec) && !ArrayBuffer.isView(vec))) {
       throw new Error('Invalid vector input to nearest()');
     }
     const {
@@ -61,8 +62,9 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     } = filter;
     const nearest = this.collection.filter(filter)
       .reduce((acc, item) => {
-        if (!item.vec) return acc;
-        const result = { item, score: cos_sim(vec, item.vec) };
+        const item_vec = item.vec;
+        if (!item_vec) return acc;
+        const result = { item, score: cos_sim(vec, item_vec) };
         results_acc(acc, result, limit);
         return acc;
       }, { min: 0, results: new Set() });
@@ -73,12 +75,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * Find the furthest entities from the given vector.
    * @async
    * @this {DefaultEntitiesVectorAdapterThis}
-   * @param {number[]} vec - The reference vector.
+   * @param {number[]|ArrayBufferView|Object} vec - The reference vector or an item whose `vec` resolves one.
    * @param {Object} [filter={}] - Optional filters (limit, exclude, etc.)
    * @returns {Promise<Array<EntityConnectionResult>>} Array of results sorted by score ascending (furthest).
    */
   async furthest(vec, filter = {}) {
-    if (!vec || !Array.isArray(vec)) {
+    vec = vec?.vec || vec;
+    if (!vec || (!Array.isArray(vec) && !ArrayBuffer.isView(vec))) {
       throw new Error('Invalid vector input to furthest()');
     }
     const {
@@ -86,8 +89,9 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
     } = filter;
     const furthest = this.collection.filter(filter)
       .reduce((acc, item) => {
-        if (!item.vec) return acc;
-        const result = { item, score: cos_sim(vec, item.vec) };
+        const item_vec = item.vec;
+        if (!item_vec) return acc;
+        const result = { item, score: cos_sim(vec, item_vec) };
         furthest_acc(acc, result, limit);
         return acc;
       }, { max: 0, results: new Set() });
