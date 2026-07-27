@@ -67,7 +67,11 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         const result = { item, score: cos_sim(vec, item_vec) };
         results_acc(acc, result, limit);
         return acc;
-      }, { min: 0, results: new Set() });
+      }, {
+        min: Number.POSITIVE_INFINITY,
+        minResult: null,
+        results: new Set(),
+      });
     return Array.from(nearest.results).sort(sort_by_score_descending);
   }
 
@@ -94,7 +98,11 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         const result = { item, score: cos_sim(vec, item_vec) };
         furthest_acc(acc, result, limit);
         return acc;
-      }, { max: 0, results: new Set() });
+      }, {
+        max: Number.NEGATIVE_INFINITY,
+        maxResult: null,
+        results: new Set(),
+      });
     return Array.from(furthest.results).sort(sort_by_score_ascending);
   }
 
