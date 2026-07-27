@@ -94,7 +94,7 @@ export function merge_env_config (target, incoming) {
     }
 
     // THIS LOGIC IS LIKELY CANONICAL
-    if (['actions', 'collections', 'components', 'modules', 'items'].includes(key) && value && typeof value === 'object') {
+    if (['actions', 'collections', 'components', 'modules', 'items', 'modals'].includes(key) && value && typeof value === 'object') {
       if (!target[key]) target[key] = {};
 
       for (const [comp_key, comp_def] of Object.entries(value)) {
