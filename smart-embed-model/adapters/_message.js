@@ -124,10 +124,18 @@ export class SmartEmbedMessageAdapter extends SmartEmbedAdapter {
      * @returns {Promise<Array<Object>>} Processed inputs with embeddings
      */
     async embed_batch(inputs) {
-        inputs = inputs.filter(item => item.embed_input?.length > 0);
         if (!inputs.length) return [];
-        const embed_inputs = inputs.map(item => ({ embed_input: item.embed_input }));
+        const embed_inputs = inputs.map(item => ({
+            embed_input: item.embed_input,
+            purpose: item.purpose,
+        }));
         const result = await this._send_message('embed_batch', { inputs: embed_inputs });
+        if (!Array.isArray(result) || result.length !== inputs.length) {
+            const result_count = Array.isArray(result) ? result.length : 0;
+            throw new Error(
+                `Embedding model returned ${result_count} results for ${inputs.length} inputs.`,
+            );
+        }
 
         return inputs.map((item, i) => {
             const item_result = result[i] || {};

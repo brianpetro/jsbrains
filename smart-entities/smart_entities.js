@@ -112,7 +112,10 @@ export class SmartEntities extends Collection {
     const { hypotheticals = [] } = params;
     if (!hypotheticals?.length) return { error: "hypotheticals is required" };
     if (!this.embed_model) return { error: "Embedding search is not enabled." };
-    const hyp_vecs = await this.embed_model.embed_batch(hypotheticals.map(h => ({ embed_input: h })));
+    const hyp_vecs = await this.embed_model.embed_batch(hypotheticals.map(h => ({
+      embed_input: h,
+      purpose: 'query',
+    })));
     const limit = params.filter?.limit
       || params.k // DEPRECATED: for backwards compatibility
       || this.env.settings.lookup_k
