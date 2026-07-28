@@ -17,7 +17,6 @@ export const ACTION_EXPORT_PROPS = [
   'pre_process',
   'action_scope',
   'tool',
-  'cli',
   'commands',
   'ribbon_icons',
   'menus',
