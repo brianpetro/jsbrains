@@ -14,7 +14,7 @@ class StubBlock {
     this._queue_save = true;
   }
   queue_embed() {
-    this._queue_embed = true;
+    this._queue_embed = this.data.should_embed !== false;
   }
   stage_embed_content(content, hash) {
     this._staged_embed_content = content;
@@ -110,4 +110,28 @@ test('stages parsed block content for queued embedding', t => {
   t.true(heading_block._queue_embed);
   t.is(heading_block._staged_embed_content, '# Heading\nBlock content');
   t.is(heading_block._staged_embed_content_hash, heading_block.read_hash);
+});
+
+test('applies source-level block selection before queueing embedding', t => {
+  const { source, block_collection } = create_source();
+  const content = [
+    '# Heading',
+    '',
+    'Block content',
+  ].join('\n');
+
+  source.ensure_block_embedding_selection = (params) => {
+    t.deepEqual(params, { force: true });
+    block_collection.items['Path/Note.md#Heading'].data.should_embed = false;
+    block_collection.items['Path/Note.md#Heading#{1}'].data.should_embed = true;
+  };
+
+  parse_blocks(source, content);
+
+  const parent = block_collection.items['Path/Note.md#Heading'];
+  const child = block_collection.items['Path/Note.md#Heading#{1}'];
+  t.false(parent._queue_embed);
+  t.is(parent._staged_embed_content, null);
+  t.true(child._queue_embed);
+  t.is(child._staged_embed_content, 'Block content');
 });

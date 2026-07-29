@@ -64,9 +64,10 @@ export function parse_blocks(source, content) {
   }
   
   clean_and_update_source_blocks(source, blocks_obj, task_lines, tasks, codeblock_ranges);
+  source.ensure_block_embedding_selection?.({ force: true });
   
   // Queue embedding for blocks that should be embedded but are not yet embedded
-  // MUST LOOP AFTER creating all blocks because should_embed logic checks adjecent blocks
+  // MUST LOOP AFTER creating all blocks so source-level selection is available
   for (const block of source.blocks) {
     if (!block.vec || block.embed_hash !== block.read_hash) {
       block.queue_embed();
