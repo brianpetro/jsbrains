@@ -271,14 +271,14 @@ export class SmartSources extends SmartEntities {
       event_source: 'run_re_import',
     });
 
+    const re_import_embed_queue = [];
     let completed_count = 0;
     for (let index = 0; index < queue_entries.length; index += 100) {
       const batch = queue_entries.slice(index, index + 100);
       await Promise.all(batch.map(([, { source }]) => source.import()));
 
       for (const [key, { source }] of batch) {
-        if (!this._embed_queue) this._embed_queue = [];
-        if (source.should_embed) this._embed_queue.push(source);
+        if (source.should_embed) re_import_embed_queue.push(source);
         if (this.block_collection?.settings?.embed_blocks) {
           for (const block of source.blocks || []) {
             if (!block.should_embed) {
@@ -287,7 +287,7 @@ export class SmartSources extends SmartEntities {
             }
 
             if (block._queue_embed || block.is_unembedded) {
-              this._embed_queue.push(block);
+              re_import_embed_queue.push(block);
               block._queue_embed = true;
             }
           }
@@ -320,9 +320,12 @@ export class SmartSources extends SmartEntities {
     await this.process_save_queue();
     await this.block_collection?.process_save_queue();
 
-    if (this._embed_queue?.length) {
+    if (re_import_embed_queue.length) {
+      this._embed_queue = re_import_embed_queue;
+      this._embed_queue_ready = true;
       const embed_start_at = Date.now();
       await this.process_embed_queue();
+      this.mark_embed_queue_dirty?.();
       console.log(`Processed embed queue in ${Date.now() - embed_start_at}ms`);
     }
 
