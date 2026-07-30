@@ -1,6 +1,88 @@
 import test from 'ava';
 import { SmartSources } from '../smart_sources.js';
 
+test('update_links_map replaces only one source contribution', t => {
+  const source = {
+    key: 'Bases/Projects.base',
+    outlinks: [
+      {
+        key: 'Projects/Current.md',
+        section: 'Current section',
+      },
+    ],
+  };
+  const previous_outlinks = [
+    {
+      key: 'Projects/Missing.md',
+    },
+    {
+      key: 'Projects/Removed.md',
+    },
+  ];
+  const links = {
+    'Projects/Missing.md': {
+      [source.key]: {
+        key: 'Projects/Missing.md',
+      },
+      'Projects/Other.md': {
+        key: 'Projects/Missing.md',
+      },
+    },
+    'Projects/Removed.md': {
+      [source.key]: {
+        key: 'Projects/Removed.md',
+      },
+    },
+    'Projects/Current.md': {
+      'Projects/Other.md': {
+        key: 'Projects/Current.md',
+      },
+    },
+    'Projects/Unrelated.md': {
+      'Projects/Other.md': {
+        key: 'Projects/Unrelated.md',
+      },
+    },
+  };
+  const collection = {
+    links,
+    build_links_map_calls: 0,
+    build_links_map() {
+      this.build_links_map_calls += 1;
+    },
+  };
+
+  const result = SmartSources.prototype.update_links_map.call(
+    collection,
+    source,
+    previous_outlinks,
+  );
+
+  t.is(result, links);
+  t.is(collection.links, links);
+  t.is(collection.build_links_map_calls, 0);
+  t.deepEqual(collection.links['Projects/Missing.md'], {
+    'Projects/Other.md': {
+      key: 'Projects/Missing.md',
+    },
+  });
+  t.false('Projects/Removed.md' in collection.links);
+  t.deepEqual(collection.links['Projects/Current.md'], {
+    'Projects/Other.md': {
+      key: 'Projects/Current.md',
+    },
+    [source.key]: {
+      key: 'Projects/Current.md',
+      section: 'Current section',
+    },
+  });
+  t.deepEqual(collection.links['Projects/Unrelated.md'], {
+    'Projects/Other.md': {
+      key: 'Projects/Unrelated.md',
+    },
+  });
+});
+
 test('run_re_import rebuilds links and flushes source and block saves without embeddings', async t => {
   const calls = [];
   const source = {

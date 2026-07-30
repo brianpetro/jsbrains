@@ -434,6 +434,27 @@ export class SmartSources extends SmartEntities {
   }
 
   /**
+   * Updates one source's contribution to the links map.
+   * @param {import('./smart_source.js').SmartSource} source
+   * @param {Array<import('smart-types').LinkObject>} previous_outlinks
+   * @returns {Object} The updated links map.
+   */
+  update_links_map(source, previous_outlinks) {
+    if (!this.links) this.links = {};
+    for (const link of previous_outlinks) {
+      const inlinks = this.links[link.key];
+      if (!inlinks) continue;
+      delete inlinks[source.key];
+      if (!Object.keys(inlinks).length) delete this.links[link.key];
+    }
+    for (const link of source.outlinks) {
+      if (!this.links[link.key]) this.links[link.key] = {};
+      this.links[link.key][source.key] = { ...link };
+    }
+    return this.links;
+  }
+
+  /**
    * Creates a new source with the given key and content.
    * @async
    * @param {string} key - The key (path) of the new source.
