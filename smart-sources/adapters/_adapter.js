@@ -15,15 +15,16 @@ export class SourceContentAdapter {
   create_hash(content) { return murmur_hash_32_alphanumeric(content); }
 
   /**
-   * Resolve persisted source outlinks, optionally limited to a source line range.
+   * Resolve source outlinks, optionally limited to a source line range.
    *
    * @param {number[]|null} [lines=null]
+   * @param {Array|Object} [source_outlinks=this.data.outlinks]
    * @returns {Array<import('smart-types').LinkObject>}
    */
-  get_outlinks(lines = null) {
-    let outlinks = Array.isArray(this.data.outlinks)
-      ? this.data.outlinks
-      : Object.values(this.data.outlinks || {})
+  get_outlinks(lines = null, source_outlinks = this.data.outlinks) {
+    let outlinks = Array.isArray(source_outlinks)
+      ? source_outlinks
+      : Object.values(source_outlinks || {})
     ;
 
     if (Array.isArray(lines) && lines.length === 2) {

@@ -64,6 +64,7 @@ function should_exclude_bases_embed_outlink(link, source_depth) {
  * @param {Object}      [opts={}]                     - Extra options.
  * @param {"out"|"in"|"both"} [opts.direction="out"]  - Which link direction(s).
  * @param {boolean}     [opts.include_self=false]     - Include root in results.
+ * @param {Record<string, Array<object>>|null} [opts.outlinks_by_source=null] - Transient outlinks keyed by source key.
  * @returns {Promise<Array<{ depth:number, item:SmartSource }>>}
  */
 export function get_links_to_depth(
@@ -72,6 +73,7 @@ export function get_links_to_depth(
   {
     direction = LINK_DIRECTIONS.OUT,
     include_self = false,
+    outlinks_by_source = null,
   } = {},
 ) {
   if (!target_source || typeof target_source !== "object" || !target_source.collection) {
@@ -120,7 +122,17 @@ export function get_links_to_depth(
 
     // ------ OUTLINKS ------
     if (direction === LINK_DIRECTIONS.OUT || direction === LINK_DIRECTIONS.BOTH) {
-      const outlinks = Array.isArray(current.src.outlinks) ? current.src.outlinks : [];
+      const source_outlinks = (
+        outlinks_by_source
+        && Object.prototype.hasOwnProperty.call(
+          outlinks_by_source,
+          current.src.key,
+        )
+      )
+        ? outlinks_by_source[current.src.key]
+        : current.src.outlinks
+      ;
+      const outlinks = Array.isArray(source_outlinks) ? source_outlinks : [];
       for (const link of outlinks) {
         if (should_exclude_bases_embed_outlink(link, current_depth)) {
           continue;
