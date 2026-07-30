@@ -117,6 +117,41 @@ test('process_embed_queue reports successful characters once and on progress', a
   t.true(progress_event.event.elapsed_ms >= 0);
 });
 
+test('process_embed_queue preserves processed keys and reports changed vectors separately', async (t) => {
+  const items = [
+    create_item('changed', 'one'),
+    create_item('skipped', 'two'),
+    create_item('restored', 'three'),
+  ];
+  const { collection, emitted_events } = create_collection(items, {
+    batch_size: 3,
+    batch_window_size: 3,
+  });
+  const adapter = new DefaultEntitiesVectorAdapter(collection);
+  const original_log = console.log;
+  console.log = () => {};
+
+  adapter.embed_batch = async () => [
+    {},
+    { skipped: true },
+    { skipped: true, vector_changed: true },
+  ];
+
+  try {
+    await adapter.process_embed_queue();
+  } finally {
+    console.log = original_log;
+  }
+
+  const embedded_event = emitted_events.find(({ event_key }) => {
+    return event_key === 'items:embedded';
+  });
+
+  t.truthy(embedded_event);
+  t.deepEqual(embedded_event.event.keys, ['changed', 'skipped', 'restored']);
+  t.deepEqual(embedded_event.event.changed_keys, ['changed', 'restored']);
+});
+
 test('process_embed_queue reports partial characters once and on progress when paused', async (t) => {
   const items = [
     create_item('first', 'one'),

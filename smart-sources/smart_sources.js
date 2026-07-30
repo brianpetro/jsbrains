@@ -200,6 +200,10 @@ export class SmartSources extends SmartEntities {
     if (!source?.key) return;
     source.data.last_import = { at: 0, hash: null, mtime: 0, size: 0 };
     this.sources_re_import_queue[source.key] = { source, event_meta };
+    if (this._run_re_import_promise) {
+      this._run_re_import_pending = true;
+      return;
+    }
     this.debounce_re_import_queue();
   }
 
@@ -250,6 +254,31 @@ export class SmartSources extends SmartEntities {
    * @returns {Promise<void>}
    */
   async run_re_import() {
+    if (this._run_re_import_promise) {
+      this._run_re_import_pending = true;
+      return this._run_re_import_promise;
+    }
+
+    this._run_re_import_promise = Promise.resolve().then(async () => {
+      try {
+        do {
+          this._run_re_import_pending = false;
+          await SmartSources.prototype.run_re_import_once.call(this);
+        } while (this._run_re_import_pending);
+      } finally {
+        this._run_re_import_promise = null;
+        this._run_re_import_pending = false;
+      }
+    });
+
+    return this._run_re_import_promise;
+  }
+
+  /**
+   * Processes one targeted re-import queue snapshot.
+   * @returns {Promise<void>}
+   */
+  async run_re_import_once() {
     this.sources_re_import_halted = false;
     const queue_entries = Object.entries(this.sources_re_import_queue || {});
     if (!queue_entries.length) {
@@ -277,7 +306,8 @@ export class SmartSources extends SmartEntities {
       const batch = queue_entries.slice(index, index + 100);
       await Promise.all(batch.map(([, { source }]) => source.import()));
 
-      for (const [key, { source }] of batch) {
+      for (const [key, queue_entry] of batch) {
+        const { source } = queue_entry;
         if (source.should_embed) re_import_embed_queue.push(source);
         if (this.block_collection?.settings?.embed_blocks) {
           for (const block of source.blocks || []) {
@@ -292,7 +322,9 @@ export class SmartSources extends SmartEntities {
             }
           }
         }
-        delete this.sources_re_import_queue[key];
+        if (this.sources_re_import_queue[key] === queue_entry) {
+          delete this.sources_re_import_queue[key];
+        }
       }
 
       completed_count += batch.length;
@@ -324,8 +356,11 @@ export class SmartSources extends SmartEntities {
       this._embed_queue = re_import_embed_queue;
       this._embed_queue_ready = true;
       const embed_start_at = Date.now();
-      await this.process_embed_queue();
-      this.mark_embed_queue_dirty?.();
+      try {
+        await this.process_embed_queue();
+      } finally {
+        this.mark_embed_queue_dirty?.();
+      }
       console.log(`Processed embed queue in ${Date.now() - embed_start_at}ms`);
     }
 
