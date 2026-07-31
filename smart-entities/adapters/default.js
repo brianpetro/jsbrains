@@ -225,13 +225,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
           }
 
           batch.forEach((item, item_i) => {
-            item.embed_hash = item.read_hash;
-            item._queue_save = true;
             processed_keys_by_collection[item.collection_key] ||= [];
             processed_keys_by_collection[item.collection_key].push(item.key);
 
             const result = batch_results?.[item_i];
             if (result?.skipped && result?.vector_changed !== true) return;
+            item.embed_hash = item.read_hash;
+            item.queue_save?.();
             changed_keys_by_collection[item.collection_key] ||= [];
             changed_keys_by_collection[item.collection_key].push(item.key);
           });
@@ -269,6 +269,8 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
         }
       }
 
+      await this.commit_embed_run();
+
       Object.entries(processed_keys_by_collection).forEach(([collection_key, keys]) => {
         this.collection.env.events?.emit('items:embedded', {
           collection_key,
@@ -283,11 +285,6 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       const is_paused = Boolean(this.progress_state?.paused) && !processed_all;
       if (!is_paused && !this._embed_run_error) {
         this._show_embed_completion_notice(embed_queue.length);
-      }
-
-      await this.collection.process_save_queue();
-      if (this.collection.block_collection) {
-        await this.collection.block_collection.process_save_queue();
       }
 
       if (!this._embed_run_error) {
@@ -305,6 +302,13 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
       if (should_resume_after_pause) {
         this.resume_embed_queue_processing(resume_delay);
       }
+    }
+  }
+
+  async commit_embed_run() {
+    await this.collection.process_save_queue();
+    if (this.collection.block_collection) {
+      await this.collection.block_collection.process_save_queue();
     }
   }
 
