@@ -67,6 +67,7 @@ export const ContextItemMediaResult = {};
  * @property {string} [name] - Optional user-facing context name.
  * @property {ContextItemsData} [context_items] - Context items keyed by item key.
  * @property {Object.<string, *>} [context_opts] - Legacy context options bag retained for compatibility.
+ * @property {Object.<string, Object.<string, *>>} [settings] - Instance settings keyed by collection; values override plugin settings.
  * @property {Object.<string, number>} [codeblock_inclusions] - Source keys that currently include the named context.
  */
 export const SmartContextData = {};
