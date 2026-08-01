@@ -38,6 +38,7 @@ export const infer_mime_type = name => {
 export const is_media_key = key => media_extension_regex.test(key);
 
 export class MediaSourceContentAdapter extends FileSourceContentAdapter {
+  is_media = true;
   constructor(item) {
     super(item);
     freeze_queue_flags_false(item);

@@ -18,6 +18,10 @@ const create_adapter = t => new MediaSourceContentAdapter({
   file_path: 'image.png'
 });
 
+test('adapter marks media sources', t => {
+  t.true(create_adapter(t).is_media);
+});
+
 test('read returns base64 media object', async t => {
   const adapter = create_adapter(t);
   const result = await adapter.read();
