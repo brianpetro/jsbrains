@@ -151,7 +151,9 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
       console.warn("Rate limit error detected in Gemini embed_batch response.", resp);
       if(retries > 3){
         console.error("Max retries reached for rate limit errors.");
-        throw new Error("Max retries reached for rate limit errors.");
+        const error = new Error("Max retries reached for rate limit errors.");
+        error.response_json = resp[0].response_json;
+        throw error;
       }
       console.warn(resp[0].error.message);
       // get prescribed wait time from resp[0].error.details.details[{retryDelay}]
@@ -172,7 +174,9 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
       }
     } else if (resp[0].error) {
       console.error("Error in Gemini embed_batch response:", resp[0].error);
-      throw new Error(`Gemini embed_batch error: ${resp[0].error.message}`);
+      const error = new Error(`Gemini embed_batch error: ${resp[0].error.message}`);
+      error.response_json = resp[0].response_json;
+      throw error;
     }
     resp.forEach((item, idx) => { item.tokens = token_cts[idx] });
     console.log("Gemini embed_batch response:", resp);

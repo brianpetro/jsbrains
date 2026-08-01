@@ -220,6 +220,7 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
             this._emit_embedding_error({
               message: `Embedding failed while processing ${this.collection.collection_key}.`,
               details: error?.message || JSON.stringify((error || {}), null, 2),
+              response_json: error?.response_json,
             });
             break;
           }
@@ -608,23 +609,27 @@ export class DefaultEntitiesVectorAdapter extends EntitiesVectorAdapter {
    * @param {object} [params={}]
    * @param {string} [params.message]
    * @param {string} [params.details]
+   * @param {*} [params.response_json]
    * @returns {void}
    */
   _emit_embedding_error(params = {}) {
     const {
       message = 'Embedding failed.',
       details = '',
+      response_json,
     } = params;
     this._embed_run_error = true;
     this.is_queue_halted = true;
     this._set_progress_state(null);
-    this.collection.emit_event('embedding:error', {
+    const event = {
       level: 'error',
       message,
       details,
       model_name: this.collection.embed_model_key,
       event_source: 'process_embed_queue',
-    });
+    };
+    if (response_json !== undefined) event.response_json = response_json;
+    this.collection.emit_event('embedding:error', event);
   }
 
   /**

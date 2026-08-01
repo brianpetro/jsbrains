@@ -164,7 +164,10 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
       });
       const resp_json = await this.get_resp_json(resp);
       if(resp_json.error) {
-        return {error: normalize_error(resp_json, resp.status())};
+        return {
+          error: normalize_error(resp_json, resp.status()),
+          response_json: resp_json,
+        };
       }
       return resp_json;
     } catch (error) {
