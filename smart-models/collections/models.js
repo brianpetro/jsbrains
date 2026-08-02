@@ -19,7 +19,6 @@ export class Models extends Collection {
     });
     this.set(item);
     if (api_key) item.api_key = api_key;
-    this.settings.default_model_key = item.key;
     this.emit_event('model:changed');
     item.queue_save();
     return item;
