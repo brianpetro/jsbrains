@@ -178,8 +178,11 @@ export class Model extends CollectionItem {
   model_changed(key, value, elm) {
     if (key === 'model_key') {
       this.data.model_key = value;
-      const model_defaults = this.data.provider_models?.[this.data.model_key] || {};
       const adapter_defaults = this.ProviderAdapterClass.defaults || {};
+      const model_defaults = this.data.provider_models?.[this.data.model_key]
+        || adapter_defaults.models?.[this.data.model_key]
+        || {}
+      ;
       delete this.data.test_passed;
       this.data = {
         ...this.data,
