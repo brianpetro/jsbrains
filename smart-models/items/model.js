@@ -14,6 +14,11 @@ export class Model extends CollectionItem {
     };
   }
 
+  constructor(env, data = null) {
+    super(env, data);
+    this.ProviderAdapterClass?.sync_model_data?.(this);
+  }
+
   get_key() {
     if (!this.data.key) {
       this.data.created_at = Date.now();
@@ -118,6 +123,7 @@ export class Model extends CollectionItem {
         const previous = target_obj[prop];
         const result = Reflect.set(target_obj, prop, value, receiver);
         if (previous !== value) {
+          self.ProviderAdapterClass?.sync_model_data?.(self);
           self.debounce_save();
         }
         return result;
@@ -126,6 +132,7 @@ export class Model extends CollectionItem {
         const had = Object.prototype.hasOwnProperty.call(target_obj, prop);
         const result = Reflect.deleteProperty(target_obj, prop);
         if (had) {
+          self.ProviderAdapterClass?.sync_model_data?.(self);
           self.debounce_save();
         }
         return result;
@@ -190,6 +197,7 @@ export class Model extends CollectionItem {
         ...model_defaults,
       };
     }
+    this.ProviderAdapterClass?.sync_model_data?.(this);
     // emit model:changed for settings that change output behavior
     if (!['api_key', 'meta.name'].includes(key)) {
       this.emit_event('model:changed');
