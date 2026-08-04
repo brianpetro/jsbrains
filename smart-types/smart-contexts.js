@@ -7,7 +7,8 @@
  * @property {boolean} [is_external] - Whether source_path resolves outside the vault.
  * @property {number} [d] - Depth or ordering hint stored by SmartContext.
  * @property {number} [at] - Epoch milliseconds when the item was added.
- * @property {boolean} [exclude] - Whether the item is currently excluded from the active context.
+ * @property {boolean} [exclude] - `true` on durable exclusion rows stored in SmartContextData.exclusions.
+ * @property {boolean} [glob] - Whether an exclusion key is interpreted as a glob pattern.
  * @property {boolean|string} [folder] - `true` for a folder group or a legacy folder-origin marker on a derived item.
  * @property {string} [from_folder] - Folder key when the item originated from folder expansion.
  * @property {string|boolean} [named_context] - Referenced named context key or marker when the item expands another context.
@@ -70,7 +71,8 @@ export const ContextItemMediaResult = {};
  * @typedef {Object} SmartContextData
  * @property {string} [key] - Stable context key.
  * @property {string} [name] - Optional user-facing context name.
- * @property {ContextItemsData} [context_items] - Context items keyed by item key.
+ * @property {ContextItemsData} [context_items] - Included context items and dynamic inclusion rules keyed by item key.
+ * @property {ContextItemsData} [exclusions] - Durable source exclusions keyed by exact source or glob identity.
  * @property {Object.<string, *>} [context_opts] - Legacy context options bag retained for compatibility.
  * @property {Object.<string, Object.<string, *>>} [settings] - Instance settings keyed by collection; values override plugin settings.
  * @property {Object.<string, number>} [codeblock_inclusions] - Source keys that currently include the named context.

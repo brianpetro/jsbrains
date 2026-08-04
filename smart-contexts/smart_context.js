@@ -26,36 +26,114 @@ import { normalize_context_item_data } from './context_items.js';
 /** @typedef {SmartContext & Object.<string, *> & {data: SmartContextData & Object.<string, *>, env: *, collection: *, context_items: ContextItemsInstance, actions: Object.<string, *>, key: string, _missing_context_item_event_timers: Map<string, *>}} SmartContextThis */
 
 /**
- * Prevents deletion from data (maintained as excluded instead of simple removal) for items that are
- * derived from folders or named contexts.
+ * Normalize deprecated `context_items[*].exclude` state without broadening
+ * legacy path identity. Truthy source, folder, and pattern rows move to
+ * `data.exclusions`; disabled named-context rules are removed; false markers
+ * are stripped from included items.
  *
- * Once a derived item is already excluded, a second remove should delete the exclusion marker so the
- * builder can expose a reversible "remove exclusion" action.
+ * Existing durable exclusions remain authoritative when both stores contain
+ * the same key.
  *
+ * @param {SmartContextData & Object.<string, *>} data
+ * @returns {string[]} Changed context-item storage keys.
+ */
+export function migrate_legacy_context_item_exclusions(data = {}) {
+  const context_items = data?.context_items;
+  if (!context_items || typeof context_items !== 'object') return [];
+
+  const migrated_keys = [];
+  Object.entries(context_items).forEach(([storage_key, item_data]) => {
+    if (
+      !item_data
+      || typeof item_data !== 'object'
+      || !Object.prototype.hasOwnProperty.call(item_data, 'exclude')
+    ) {
+      return;
+    }
+
+    if (!item_data.exclude) {
+      delete item_data.exclude;
+      migrated_keys.push(storage_key);
+      return;
+    }
+
+    delete context_items[storage_key];
+    migrated_keys.push(storage_key);
+
+    const item_key = String(item_data.key || '').trim();
+    const exclusion_key = item_key || String(storage_key || '').trim();
+    const normalized_data = normalize_context_item_data(
+      exclusion_key || storage_key,
+      item_data,
+    );
+    if (normalized_data.kind === 'named_context' || !exclusion_key) return;
+
+    if (
+      !data.exclusions
+      || typeof data.exclusions !== 'object'
+      || Array.isArray(data.exclusions)
+    ) {
+      data.exclusions = {};
+    }
+
+    const existing_exclusion = data.exclusions[exclusion_key];
+    if (existing_exclusion && typeof existing_exclusion === 'object') return;
+
+    const has_explicit_identity = exclusion_key.startsWith('external:')
+      || typeof item_data.kind === 'string'
+      || typeof item_data.source_path === 'string'
+      || Object.prototype.hasOwnProperty.call(item_data, 'is_external')
+    ;
+    const is_glob = item_data.glob === true
+      || (!has_explicit_identity && exclusion_key.includes('*'))
+    ;
+    const exclusion_data = is_glob
+      ? { ...item_data, key: exclusion_key, glob: true }
+      : normalized_data
+    ;
+    if (is_glob) {
+      delete exclusion_data.kind;
+      delete exclusion_data.source_path;
+      delete exclusion_data.subpath;
+      delete exclusion_data.is_external;
+    }
+
+    data.exclusions[exclusion_key] = {
+      ...exclusion_data,
+      key: exclusion_key,
+      exclude: true,
+    };
+  });
+
+  return migrated_keys;
+}
+
+/**
  * @param {ContextItemsData} context_items
  * @param {string} key
- * @deprecated Is this deprecated???? 2026-03-24 (see remove_by_path for latest handling)
  * @returns {boolean}
  */
 const remove_context_item_data = (context_items, key) => {
   if (!key || !context_items?.[key]) return false;
-
-  const item_data = context_items[key];
-  if (item_data.folder || item_data.from_named_context) {
-    if (item_data.exclude) {
-      delete context_items[key];
-      return true;
-    }
-    item_data.exclude = true;
-    return true;
-  }
-
   delete context_items[key];
   return true;
 };
 
 export class SmartContext extends CollectionItem {
-  static version = '2.0.2';
+  static version = '2.0.3';
+
+  constructor(env, data = null) {
+    super(env, data);
+    if (migrate_legacy_context_item_exclusions(this.data).length) {
+      this.queue_save();
+    }
+  }
+
+  init() {
+    if (migrate_legacy_context_item_exclusions(this.data).length) {
+      this.queue_save();
+    }
+  }
 
   /**
    * @returns {{data: SmartContextData}}
@@ -65,6 +143,7 @@ export class SmartContext extends CollectionItem {
       data: {
         key: '',
         context_items: {},
+        exclusions: {},
         context_opts: {}, // REMOVE?
       },
     };
@@ -105,6 +184,7 @@ export class SmartContext extends CollectionItem {
       ...(typeof item === 'object' ? item : {}),
     });
     if (!key) return console.error('SmartContext: add_item called with invalid item', item);
+    delete context_item.exclude;
     this.data.context_items[key] = context_item;
     this.queue_save();
     if (emit_updated) this.emit_event('context:updated', { add_item: key });
@@ -169,6 +249,7 @@ export class SmartContext extends CollectionItem {
    */
   clear_all() {
     this.data.context_items = {};
+    this.data.exclusions = {};
     this.queue_save();
     this.emit_event('context:updated', { cleared: true });
   }
@@ -178,10 +259,7 @@ export class SmartContext extends CollectionItem {
    * @returns {string[]}
    */
   get context_item_keys() {
-    return Object.entries(this.data?.context_items || {})
-      .filter(([, item_data]) => !item_data.exclude)
-      .map(([key]) => key)
-    ;
+    return Object.keys(this.data?.context_items || {});
   }
 
   /**
@@ -189,10 +267,7 @@ export class SmartContext extends CollectionItem {
    * @returns {string[]}
    */
   get excluded_context_item_keys() {
-    return Object.entries(this.data?.context_items || {})
-      .filter(([, item_data]) => item_data?.exclude)
-      .map(([key]) => key)
-    ;
+    return Object.keys(this.data?.exclusions || {});
   }
 
   /**
@@ -277,10 +352,7 @@ export class SmartContext extends CollectionItem {
    * @returns {number}
    */
   get item_count() {
-    return Object.entries(this.data?.context_items || {})
-      .filter(([, item_data]) => !item_data.exclude)
-      .length
-    ;
+    return Object.keys(this.data?.context_items || {}).length;
   }
 
   // v3
@@ -311,9 +383,7 @@ export class SmartContext extends CollectionItem {
   /**
    * Build a ContextItems collection on demand.
    *
-   * The builder sometimes needs excluded entries in addition to active items,
-   * so this helper accepts the same params consumed by
-   * ContextItems.load_from_data(...).
+   * Accepts the same params consumed by ContextItems.load_from_data(...).
    *
    * @this {SmartContextThis}
    * @param {Object.<string, *>} [params={}]

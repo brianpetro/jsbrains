@@ -2,7 +2,10 @@
 
 import { Collection } from 'smart-collections';
 import { AjsonSingleFileCollectionDataAdapter } from "smart-collections/adapters/ajson_single_file.js";
-import { SmartContext } from './smart_context.js';
+import {
+  SmartContext,
+  migrate_legacy_context_item_exclusions,
+} from './smart_context.js';
 
 /** @typedef {import('smart-types').SettingsConfig} SettingsConfig */
 /** @typedef {import('smart-types').SmartContextData} SmartContextData */
@@ -17,7 +20,7 @@ import { SmartContext } from './smart_context.js';
  * or data relevant to a specific use case (e.g., building a textual context for AI).
  */
 export class SmartContexts extends Collection {
-  static version = '2.0.1';
+  static version = '2.0.3';
   /**
    * new_context
    * @this {SmartContextsThis}
@@ -40,6 +43,14 @@ export class SmartContexts extends Collection {
    */
   get_named_context(name) {
     return this.filter((ctx) => ctx.data?.name === name)[0];
+  }
+  async process_load_queue() {
+    await super.process_load_queue();
+
+    Object.values(this.items || {}).forEach((item) => {
+      if (!migrate_legacy_context_item_exclusions(item?.data).length) return;
+      item.queue_save();
+    });
   }
   /**
    * Default settings for all SmartContext items in this collection.
