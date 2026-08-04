@@ -7,9 +7,11 @@ import { ContextItemAdapter } from './_adapter.js';
 export class SourceContextItemAdapter extends ContextItemAdapter {
   static order = 7; // default lowest priority
   /**
+   * @param {string} key
+   * @param {object} [data={}]
    * @returns {boolean}
    */
-  static detect(key) { return true; }
+  static detect(key, data = {}) { return data.kind === 'source'; }
 
   /**
    * @this {SourceContextItemAdapterThis}

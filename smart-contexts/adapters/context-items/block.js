@@ -8,10 +8,11 @@ export class BlockContextItemAdapter extends ContextItemAdapter {
   static order = 6;
   /**
    * @param {string} key
+   * @param {object} [data={}]
    * @returns {boolean}
    */
-  static detect(key) {
-    return key.includes('#');
+  static detect(key, data = {}) {
+    return data.kind === 'block';
   }
 
   /**

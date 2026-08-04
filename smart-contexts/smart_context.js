@@ -8,6 +8,7 @@
  */
 
 import { CollectionItem } from 'smart-collections';
+import { normalize_context_item_data } from './context_items.js';
 
 /** @typedef {import('./context_items.js').ContextItems} ContextItems */
 /** @typedef {import('./context_item.js').ContextItem} ContextItem */
@@ -97,12 +98,12 @@ export class SmartContext extends CollectionItem {
       key = item;
     }
     const existing = this.data.context_items[key];
-    const context_item = {
+    const context_item = normalize_context_item_data(key, {
       d: 0,
       at: Date.now(),
       ...(existing || {}),
       ...(typeof item === 'object' ? item : {}),
-    };
+    });
     if (!key) return console.error('SmartContext: add_item called with invalid item', item);
     this.data.context_items[key] = context_item;
     this.queue_save();

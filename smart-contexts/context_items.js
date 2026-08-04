@@ -18,6 +18,70 @@ import { PdfContextItemAdapter } from './adapters/context-items/pdf.js';
 /** @typedef {SmartContext & Object.<string, *> & {env: *, data: Object.<string, *>, key: string, collection: *, context_items: *, actions: Object.<string, *>, data_adapter: *, constructor: *, _missing_context_item_event_timers: Map<string, *>}} SmartContextInstance */
 /** @typedef {ContextItems & Object.<string, *> & {env: *, opts: Object.<string, *>, items: Object.<string, ContextItemInstance>, smart_context: SmartContextInstance, item_type: new (env: *, data?: Object.<string, *>) => ContextItemInstance, context_item_adapters: ContextItemAdapterConstructor[], constructor: typeof Collection & {key?: string}}} ContextItemsThis */
 
+/**
+ * Normalize the structural identity shared by context persistence, hydration,
+ * adapters, and tree rendering.
+ *
+ * Source and folder paths are assumed not to contain `#`, so the first `#` in
+ * a legacy path-shaped key safely separates the source path from its subpath.
+ *
+ * @param {string} key
+ * @param {Partial<ContextItemData> & Object.<string, *>} [item_data={}]
+ * @returns {ContextItemData & Object.<string, *>}
+ */
+export function normalize_context_item_data(key, item_data = {}) {
+  const data = item_data && typeof item_data === 'object'
+    ? { ...item_data }
+    : {}
+  ;
+  const item_key = String(data.key || data.path || key || '');
+  if (!item_key) return data;
+
+  data.key = item_key;
+
+  if (!data.kind) {
+    if (data.named_context) {
+      data.kind = 'named_context';
+    } else if (data.folder === true) {
+      data.kind = 'folder';
+    } else if (typeof data.subpath === 'string' || item_key.includes('#')) {
+      data.kind = 'block';
+    } else {
+      data.kind = 'source';
+    }
+  }
+
+  if (data.kind === 'named_context') {
+    if (!data.named_context) data.named_context = true;
+    return data;
+  }
+  if (data.kind === 'text') return data;
+  if (data.kind === 'folder' && data.folder !== true) data.folder = true;
+
+  const is_external = data.is_external === true || item_key.startsWith('external:');
+  const identity_key = is_external && item_key.startsWith('external:')
+    ? item_key.slice('external:'.length)
+    : item_key
+  ;
+  const block_idx = identity_key.indexOf('#');
+
+  if (typeof data.source_path !== 'string' || !data.source_path) {
+    data.source_path = data.kind !== 'block' || block_idx === -1
+      ? identity_key
+      : identity_key.slice(0, block_idx)
+    ;
+  } else if (data.source_path.startsWith('external:')) {
+    data.source_path = data.source_path.slice('external:'.length);
+  }
+
+  if (data.kind === 'block' && typeof data.subpath !== 'string' && block_idx !== -1) {
+    data.subpath = identity_key.slice(block_idx + 1);
+  }
+
+  if (is_external) data.is_external = true;
+  return data;
+}
+
 export class ContextItems extends Collection {
   /**
    * @this {*}
@@ -60,7 +124,8 @@ export class ContextItems extends Collection {
    * @returns {ContextItemInstance}
    */
   new_item(data) {
-    const item = new this.item_type(this.env, data);
+    const normalized_data = normalize_context_item_data(data?.key || data?.path || '', data);
+    const item = new this.item_type(this.env, normalized_data);
     this.set(item);
     return item;
   }
@@ -142,13 +207,14 @@ export class ContextItems extends Collection {
    * @return {ContextItemInstance|ContextItemInstance[]|null}
    */
   load_item_from_data(key, item_data, params = {}) {
-    if (item_data.named_context) {
-      return this.load_named_context_items(key, item_data, params);
+    const normalized_data = normalize_context_item_data(key, item_data);
+    if (normalized_data.kind === 'named_context') {
+      return this.load_named_context_items(key, normalized_data, params);
     } else {
       // DO NOT ADD ITEM FOR GROUP-TYPE CONTEXT ITEMS (those with "folder"/"named_context" property)
       return this.new_item({
         key,
-        ...item_data,
+        ...normalized_data,
       });
     }
   }

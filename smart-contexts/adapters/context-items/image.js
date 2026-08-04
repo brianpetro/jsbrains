@@ -9,10 +9,12 @@ import { image_extension_regex } from 'smart-contexts/utils/image_extension_rege
 export class ImageContextItemAdapter extends ContextItemAdapter {
   /**
    * @param {string} key
+   * @param {object} [data={}]
    * @returns {boolean|string}
    */
-  static detect(key) {
-    if (image_extension_regex.test(key)) return 'image';
+  static detect(key, data = {}) {
+    if (data.kind !== 'source') return false;
+    if (image_extension_regex.test(data.source_path || key)) return 'image';
     return false;
   }
   /**
@@ -20,7 +22,7 @@ export class ImageContextItemAdapter extends ContextItemAdapter {
    * @returns {boolean}
    */
   get exists() {
-    return this.item.env.smart_sources.fs.exists_sync(this.item.key);
+    return this.item.env.smart_sources.fs.exists_sync(this.item.data?.source_path || this.item.key);
   }
   /**
    * @returns {string}
@@ -40,14 +42,15 @@ export class ImageContextItemAdapter extends ContextItemAdapter {
    * @returns {Promise<ContextItemMediaResult>}
    */
   async get_base64() {
-    const ext = this.item.key.split('.').pop().toLowerCase();
+    const source_path = this.item.data?.source_path || this.item.key;
+    const ext = source_path.split('.').pop().toLowerCase();
     try {
-      const base64_data = await this.item.env.fs.read(this.item.key, 'base64');
+      const base64_data = await this.item.env.fs.read(source_path, 'base64');
       const base64_url = `data:image/${ext};base64,${base64_data}`;
       return {
         type: 'image_url',
         key: this.item.key,
-        name: this.item.key.split(/[\\/]/).pop(),
+        name: source_path.split(/[\\/]/).pop(),
         url: base64_url
       };
     } catch (err) {

@@ -1,11 +1,16 @@
 /**
  * @typedef {Object} ContextItemData
  * @property {string} [key] - Stable context item key or referenced source key.
+ * @property {'source'|'block'|'folder'|'named_context'|'text'} [kind] - Explicit structural item kind.
+ * @property {string} [source_path] - Exact source or folder path without a block/subpath suffix or synthetic external prefix.
+ * @property {string} [subpath] - Exact block, heading, view, or other source selector after the first `#`.
+ * @property {boolean} [is_external] - Whether source_path resolves outside the vault.
  * @property {number} [d] - Depth or ordering hint stored by SmartContext.
  * @property {number} [at] - Epoch milliseconds when the item was added.
  * @property {boolean} [exclude] - Whether the item is currently excluded from the active context.
- * @property {boolean|string} [folder] - Folder-derived item marker when the item was generated from a folder.
- * @property {string} [named_context] - Referenced named context key when the item expands another context.
+ * @property {boolean|string} [folder] - `true` for a folder group or a legacy folder-origin marker on a derived item.
+ * @property {string} [from_folder] - Folder key when the item originated from folder expansion.
+ * @property {string|boolean} [named_context] - Referenced named context key or marker when the item expands another context.
  * @property {string|boolean} [from_named_context] - Context name marker when the item originated from a named context expansion.
  * @property {number} [size] - Cached aggregate size for the item or group.
  * @property {number|null} [mtime] - Cached modification time for the item or group.

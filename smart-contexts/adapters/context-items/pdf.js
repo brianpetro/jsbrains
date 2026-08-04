@@ -9,10 +9,12 @@ import { ContextItemAdapter } from './_adapter.js';
 export class PdfContextItemAdapter extends ContextItemAdapter {
   /**
    * @param {*} key
+   * @param {object} [data={}]
    * @returns {boolean|string}
    */
-  static detect(key) {
-    if (String(key || '').toLowerCase().endsWith('.pdf')) return 'pdf';
+  static detect(key, data = {}) {
+    if (data.kind !== 'source') return false;
+    if (String(data.source_path || key || '').toLowerCase().endsWith('.pdf')) return 'pdf';
     return false;
   }
   /**
@@ -40,13 +42,14 @@ export class PdfContextItemAdapter extends ContextItemAdapter {
    * @returns {Promise<ContextItemMediaResult>}
    */
   async get_base64() {
+    const source_path = this.item.data?.source_path || this.item.key;
     try {
-      const base64_data = await this.item.env.fs.read(this.item.key, 'base64');
+      const base64_data = await this.item.env.fs.read(source_path, 'base64');
       const base64_url = `data:application/pdf;base64,${base64_data}`;
       return {
         type: 'pdf_url',
         key: this.item.key,
-        name: this.item.key.split(/[\\/]/).pop(),
+        name: source_path.split(/[\\/]/).pop(),
         url: base64_url
       };
     } catch (err) {
@@ -59,6 +62,6 @@ export class PdfContextItemAdapter extends ContextItemAdapter {
    * @returns {boolean}
    */
   get exists() {
-    return this.item.env.smart_sources.fs.exists_sync(this.item.key);
+    return this.item.env.smart_sources.fs.exists_sync(this.item.data?.source_path || this.item.key);
   }
 }
