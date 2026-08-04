@@ -73,7 +73,7 @@ export class SmartView {
    * @returns {DocumentFragment}
    */
   create_doc_fragment(html) {
-    return document.createRange().createContextualFragment(html);
+    return activeDocument.createRange().createContextualFragment(html);
   }
 
   /**
@@ -217,9 +217,9 @@ export class SmartView {
    * clone/attribute-related bugs on re-render.
    * 
    * @param {Object} scope - An object containing a `settings` property, where new values will be stored.
-   * @param {HTMLElement|Document} [container=document] - The DOM element to scan. Defaults to the entire document.
+   * @param {HTMLElement|Document} [container=activeDocument] - The DOM element to scan. Defaults to the entire document.
    */
-  add_settings_listeners(scope, container = document) {
+  add_settings_listeners(scope, container = activeDocument) {
     if (!container || typeof container.querySelectorAll !== 'function') return;
 
     const elements = container.querySelectorAll('[data-smart-setting]');
@@ -273,32 +273,54 @@ export class SmartView {
     });
   }
 
-  apply_style_sheet(sheet) {
+  /**
+   * @deprecated keep imports in relevant files but build_plugin.js aggregates them in dist/styles.css (prevents weird detached stylesheets bug in Obsidian)
+   */
+  apply_style_sheet(sheet, params = {}) {
     // handle both string and CSSStyleSheet
     if (typeof sheet === 'string') {
-      const style_sheet_id = get_style_sheet_id(sheet);
+      const style_sheet_id = params.id || get_style_sheet_id(sheet);
       if (!style_sheet_id) return;
-      if (document.getElementById(style_sheet_id)) {
-        // Already applied
-        return;
+
+      const stylesheet_el = activeDocument.getElementById(style_sheet_id);
+
+      if (stylesheet_el) {
+        if (
+          params.force_refresh
+          || stylesheet_el.textContent !== sheet
+        ) {
+          // Reparse the stylesheet while preserving its DOM position.
+          stylesheet_el.textContent = sheet;
+        }
+
+        return stylesheet_el;
       }
-      // Create a new CSSStyleSheet
-      const styleEl = document.createElement('style');
+
+      const styleEl = activeDocument.createElement('style');
       styleEl.id = style_sheet_id;
       styleEl.textContent = sheet;
-      document.head.appendChild(styleEl);
-      return;
+      activeDocument.head.appendChild(styleEl);
+      return styleEl;
     }
-    if ('adoptedStyleSheets' in Document.prototype) {
-      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+
+    if ('adoptedStyleSheets' in activeDocument) {
+      activeDocument.adoptedStyleSheets = [
+        ...activeDocument.adoptedStyleSheets,
+        sheet,
+      ];
     } else {
       // Fallback: Create a <style> tag and insert the CSS text.
-      const styleEl = document.createElement('style');
+      const styleEl = activeDocument.createElement('style');
+
       // If the sheet has cssRules, serialize them to text:
       if (sheet.cssRules) {
-        styleEl.textContent = Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+        styleEl.textContent = Array.from(sheet.cssRules)
+          .map((rule) => rule.cssText)
+          .join('\n');
       }
-      document.head.appendChild(styleEl);
+
+      activeDocument.head.appendChild(styleEl);
+      return styleEl;
     }
   }
 
