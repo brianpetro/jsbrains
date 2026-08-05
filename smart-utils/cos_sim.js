@@ -1,7 +1,7 @@
 /**
  * Calculate the cosine similarity between two numeric vectors.
- * @param {number[]} vector1
- * @param {number[]} vector2
+ * @param {ArrayLike<number>} vector1
+ * @param {ArrayLike<number>} vector2
  * @returns {number} similarity score between 0 and 1.
  */
 export function cos_sim(vector1 = [], vector2 = []) {

@@ -292,7 +292,7 @@ export class CollectionItem {
   /**
    * @this {CollectionItemThis}
    * @param {Object.<string, *>} [params={}]
-   * @returns {CollectionScoreResult|null}
+   * @returns {CollectionScoreResult|CollectionScoreResult[]|null}
    */
   filter_and_score(params={}) {
     if(this.filter(params.filter) === false) return null;

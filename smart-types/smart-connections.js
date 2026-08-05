@@ -47,6 +47,7 @@ export const ConnectionsComponentSettingsMap = {};
  * @property {boolean} [inline_connections]
  * @property {number} [inline_connections_score_threshold]
  * @property {boolean} [footer_connections]
+ * @property {boolean} [embed_blocks]
  * @property {ConnectionsComponentSettingsMap} [components]
  * @property {Object.<string, string>} [actions]
  */
@@ -105,7 +106,7 @@ export const ConnectionsQueryParams = {};
 /**
  * @typedef {Object} ConnectionResult
  * @property {ConnectionItem} item
- * @property {number|null} score
+ * @property {number|null} [score]
  * @property {number|string|null} [score_display]
  * @property {number|null} [og_score]
  * @property {string} [error]
@@ -123,8 +124,7 @@ export const ConnectionResult = {};
 export const ConnectionScoreFunction = function () {};
 
 /**
- * @typedef {Object} ConnectionsFile
- * @property {string} path
+ * @typedef {import('obsidian').TFile} ConnectionsFile
  */
 export const ConnectionsFile = {};
 
@@ -145,7 +145,7 @@ export const ConnectionsFs = {};
  * @property {number[]} [lines]
  * @property {number[]|Float32Array} [vec]
  * @property {ConnectionsItemData} data
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsCollection} collection
  * @property {ConnectionsListScope} [connections]
  * @property {ConnectionItem[]} [blocks]
@@ -166,10 +166,11 @@ export const ConnectionItem = {};
 /**
  * @typedef {Object} ConnectionsCollection
  * @property {Object.<string, ConnectionItem>} items
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsFs} [fs]
  * @property {ConnectionsListSettings} settings
  * @property {(key: string) => ConnectionItem|undefined} get
+ * @property {(item: ConnectionItem) => void} set
  * @property {(item: ConnectionItem) => ConnectionItem} [new_item]
  * @property {(path: string) => ConnectionItem|undefined} [init_file_path]
  * @property {() => Promise<void>|void} [save]
@@ -216,7 +217,7 @@ export const ConnectionsActions = {};
  * @property {string} key
  * @property {ConnectionsListData} data
  * @property {ConnectionItem} item
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsListsCollection} collection
  * @property {ConnectionsListSettings} settings
  * @property {ConnectionsActions} actions
@@ -233,7 +234,7 @@ export const ConnectionsActions = {};
 export const ConnectionsListScope = {};
 
 /**
- * @typedef {ConnectionsCollection & {
+ * @typedef {Omit<ConnectionsCollection, 'items'|'get'|'set'|'new_item'> & {
  *   settings: ConnectionsListSettings,
  *   results_collection_key: ConnectionsCollectionKey,
  *   score_algo_key: string,
@@ -242,7 +243,8 @@ export const ConnectionsListScope = {};
  *   new_item: (item: ConnectionItem) => ConnectionsListScope,
  *   get: (key: string) => ConnectionsListScope|undefined,
  *   items: Object.<string, ConnectionsListScope>,
- *   item_type: new (env: ConnectionsEnv, data: ConnectionsListData) => ConnectionsListScope,
+ *   item_type: new (env: import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>, data: ConnectionsListData) => ConnectionsListScope,
+ *   set: (item: ConnectionsListScope) => void,
  *   constructor: {default_settings: ConnectionsListSettings},
  *   connections_list_component_settings_config?: import('./smart-environment.js').SettingsConfig
  * }} ConnectionsListsCollection
@@ -281,7 +283,11 @@ export const ConnectionsEnvConfig = {};
  *   elapsed_ms?: number,
  *   collection_key?: ConnectionsCollectionKey,
  *   item_key?: string,
- *   event_source?: string
+ *   event_source?: string,
+ *   source_key?: string,
+ *   target_key?: string,
+ *   link?: string,
+ *   hide_mute_button?: boolean
  * }} ConnectionsEventPayload
  */
 export const ConnectionsEventPayload = {};
@@ -301,7 +307,7 @@ export const ConnectionsEvents = {};
 
 /**
  * @typedef {Object} ConnectionsComponentRenderer
- * @property {(component_key: string, scope: ConnectionsListScope|ConnectionResult|ConnectionsPlugin|ConnectionsItemViewScope|ConnectionsFooterViewScope|ConnectionsEnv|ConnectionItem, opts?: ConnectionsComponentOptions) => Promise<HTMLElement|DocumentFragment>} render_component
+ * @property {(component_key: string, scope: ConnectionsListScope|ConnectionResult|ConnectionsPlugin|ConnectionsItemViewScope|ConnectionsFooterViewScope|import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>|ConnectionItem, opts?: ConnectionsComponentOptions) => Promise<HTMLElement|DocumentFragment>} render_component
  */
 export const ConnectionsComponentRenderer = {};
 
@@ -312,19 +318,18 @@ export const ConnectionsComponentRenderer = {};
 export const ConnectionsContextCollection = {};
 
 /**
- * @typedef {Object} ConnectionsVaultAdapter
- * @property {(path: string) => Promise<boolean>} exists
- * @property {(path: string) => Promise<void>} mkdir
- * @property {(path: string, data: string) => Promise<void>} write
- * @property {(path: string) => Promise<string>} read
- * @property {(path: string, data: string) => Promise<void>} append
+ * @typedef {import('obsidian').VaultAdapter & {
+ *   write: (path: string, data: string) => Promise<void>,
+ *   mkdir: (path: string) => Promise<void>
+ * }} ConnectionsVaultAdapter
  */
 export const ConnectionsVaultAdapter = {};
 
 /**
- * @typedef {Object} ConnectionsVault
- * @property {ConnectionsVaultAdapter} adapter
- * @property {string} configDir
+ * @typedef {import('obsidian').Vault & {
+ *   adapter: ConnectionsVaultAdapter,
+ *   configDir: string
+ * }} ConnectionsVault
  */
 export const ConnectionsVault = {};
 
@@ -358,79 +363,39 @@ export const ConnectionsPluginsRegistry = {};
 export const ConnectionsSettingsManager = {};
 
 /**
- * @typedef {Object} ConnectionsEditor
- * @property {(text: string) => void} replaceSelection
- * @property {ConnectionsEditorView} [cm]
+ * @typedef {import('obsidian').Editor} ConnectionsEditor
  */
 export const ConnectionsEditor = {};
 
 /**
- * @typedef {Object} ConnectionsEditorLine
- * @property {number} from
- * @property {number} to
- */
-export const ConnectionsEditorLine = {};
-
-/**
- * @typedef {Object} ConnectionsEditorDoc
- * @property {number} lines
- * @property {(line_number: number) => ConnectionsEditorLine} line
- */
-export const ConnectionsEditorDoc = {};
-
-/**
- * @typedef {Object} ConnectionsEditorState
- * @property {ConnectionsEditorDoc} doc
- */
-export const ConnectionsEditorState = {};
-
-/**
- * @typedef {Object} ConnectionsEditorRange
- * @property {number} from
- * @property {number} to
- */
-export const ConnectionsEditorRange = {};
-
-/**
+ * @typedef {import('@codemirror/state').StateEffect<T>} ConnectionsStateEffectValue
  * @template T
- * @typedef {Object} ConnectionsStateEffectValue
- * @property {T} value
- * @property {(effect_type: ConnectionsStateEffectType<T>) => boolean} is
  */
 export const ConnectionsStateEffectValue = {};
 
 /**
+ * @typedef {import('@codemirror/state').StateEffectType<T>} ConnectionsStateEffectType
  * @template T
- * @typedef {Object} ConnectionsStateEffectType
- * @property {(value: T) => ConnectionsStateEffectValue<T>} of
  */
 export const ConnectionsStateEffectType = {};
 
 /**
- * @typedef {Object} ConnectionsEditorTransaction
- * @property {ConnectionsStateEffectValue<HTMLElement|null>[]} effects
- */
-export const ConnectionsEditorTransaction = {};
-
-/**
- * @typedef {Object} ConnectionsEditorUpdate
- * @property {ConnectionsEditorTransaction[]} transactions
+ * @typedef {import('@codemirror/view').ViewUpdate & {
+ *   transactions: readonly import('@codemirror/state').Transaction[]
+ * }} ConnectionsEditorUpdate
  */
 export const ConnectionsEditorUpdate = {};
 
 /**
- * @typedef {Object} ConnectionsEditorView
- * @property {ConnectionsEditorState} state
- * @property {ConnectionsEditorRange[]} visibleRanges
- * @property {HTMLElement} scrollDOM
- * @property {HTMLElement} dom
- * @property {(transaction: {effects: ConnectionsStateEffectValue<HTMLElement|null>[]}) => void} dispatch
+ * @typedef {import('@codemirror/view').EditorView & {
+ *   visibleRanges: readonly {from: number, to: number}[],
+ *   scrollDOM: HTMLElement
+ * }} ConnectionsEditorView
  */
 export const ConnectionsEditorView = {};
 
 /**
- * @typedef {Object} ConnectionsMarkdownView
- * @property {ConnectionsEditor} [editor]
+ * @typedef {import('obsidian').MarkdownView} ConnectionsMarkdownView
  */
 export const ConnectionsMarkdownView = {};
 
@@ -445,71 +410,63 @@ export const ConnectionsMarkdownView = {};
 export const ConnectionsWorkspaceParent = {};
 
 /**
- * @typedef {Object} ConnectionsWorkspaceLeaf
- * @property {ConnectionsWorkspaceParent|null} [parent]
- * @property {ConnectionsItemViewScope|object} view
- * @property {() => void} detach
- * @property {(state: object) => Promise<void>|void} [setViewState]
+ * @typedef {import('obsidian').WorkspaceLeaf & {
+ *   parent?: ConnectionsWorkspaceParent|null
+ * }} ConnectionsWorkspaceLeaf
  */
 export const ConnectionsWorkspaceLeaf = {};
 
 /**
- * @typedef {Object} ConnectionsWorkspace
- * @property {ConnectionsWorkspaceParent} leftSplit
- * @property {ConnectionsWorkspaceParent} rightSplit
- * @property {(callback: () => void) => void} onLayoutReady
- * @property {() => ConnectionsFile|null} getActiveFile
- * @property {() => ConnectionsMarkdownView|null} getActiveFileView
- * @property {(type: string) => ConnectionsWorkspaceLeaf[]} getLeavesOfType
- * @property {(leaf: ConnectionsWorkspaceLeaf) => Promise<void>|void} revealLeaf
- * @property {(leaf: ConnectionsWorkspaceLeaf, opts?: object) => void} [setActiveLeaf]
- * @property {(location?: boolean|string) => ConnectionsWorkspaceLeaf} [getLeaf]
- * @property {(create?: boolean) => ConnectionsWorkspaceLeaf} [getLeftLeaf]
- * @property {(create?: boolean) => ConnectionsWorkspaceLeaf} [getRightLeaf]
+ * @typedef {import('obsidian').Workspace & {
+ *   setActiveLeaf?: (leaf: ConnectionsWorkspaceLeaf, params?: {focus?: boolean}) => void
+ * }} ConnectionsWorkspace
  */
 export const ConnectionsWorkspace = {};
 
 /**
- * @typedef {Object} ConnectionsApp
- * @property {ConnectionsWorkspace} workspace
- * @property {ConnectionsVault} vault
- * @property {ConnectionsPluginsRegistry} plugins
- * @property {ConnectionsCommandsRegistry} commands
- * @property {ConnectionsSettingsManager} setting
- * @property {(key: string) => string|null} [loadLocalStorage]
- * @property {(key: string, value: string) => void} [saveLocalStorage]
+ * @typedef {Omit<import('obsidian').App, 'workspace'|'vault'|'plugins'|'commands'|'setting'> & {
+ *   workspace: ConnectionsWorkspace,
+ *   vault: ConnectionsVault,
+ *   plugins: ConnectionsPluginsRegistry,
+ *   commands: ConnectionsCommandsRegistry,
+ *   setting: ConnectionsSettingsManager,
+ *   loadLocalStorage?: (key: string) => string|null,
+ *   saveLocalStorage?: (key: string, value: string) => void
+ * }} ConnectionsApp
  */
 export const ConnectionsApp = {};
 
 /**
  * @typedef {Object} ConnectionsManifest
  * @property {string} id
+ * @property {string} name
  * @property {string} version
  */
 export const ConnectionsManifest = {};
 
 /**
- * @typedef {Object} ConnectionsPlugin
- * @property {ConnectionsApp} app
- * @property {ConnectionsEnv} env
- * @property {ConnectionsManifest} manifest
- * @property {boolean} [update_available]
- * @property {string} [latest_release_version]
- * @property {ConnectionsEventDisposer} [connections_view_location_listener]
- * @property {ConnectionsFooterViewScope} [connections_footer_view]
- * @property {(element: HTMLElement, event_name: string, callback: (event: Event) => void) => void} registerDomEvent
- * @property {(extension: unknown) => void} registerEditorExtension
- * @property {(language: string, processor: (source: string, container: ConnectionsDomElement, context: ConnectionsMarkdownCodeBlockContext) => Promise<void>|void) => void} registerMarkdownCodeBlockProcessor
- * @property {(tab: object) => void} addSettingTab
- * @property {(params?: object) => unknown} [open_connections_view]
- * @property {(params?: object) => unknown} [_open_connections_view_base]
- * @property {(target_path: string, event?: Event|null) => Promise<void>|void} [open_note]
- * @property {() => ConnectionsEditorView|null} get_editor_view
+ * @typedef {Omit<import('obsidian').Plugin, 'app'|'manifest'|'registerDomEvent'|'registerMarkdownCodeBlockProcessor'> & {
+ *   app: ConnectionsApp,
+ *   env: import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>,
+ *   manifest: ConnectionsManifest,
+ *   update_available?: boolean,
+ *   latest_release_version?: string,
+ *   connections_view_location_listener?: ConnectionsEventDisposer,
+ *   connections_footer_view?: ConnectionsFooterViewScope,
+ *   registerDomEvent: (element: HTMLElement, event_name: string, callback: (event: Event) => void) => void,
+ *   registerEditorExtension: (extension: unknown) => void,
+ *   registerMarkdownCodeBlockProcessor: (language: string, processor: (source: string, container: ConnectionsDomElement, context: ConnectionsMarkdownCodeBlockContext) => Promise<void>|void) => void,
+ *   open_connections_view?: (params?: object) => unknown,
+ *   _open_connections_view_base?: (...args: unknown[]) => unknown,
+ *   open_note?: (target_path: string, event?: Event|null) => Promise<void>|void,
+ *   get_editor_view: () => ConnectionsEditorView|null
+ * }} ConnectionsPlugin
  */
 export const ConnectionsPlugin = {};
 
 /**
- * @typedef {Object} ConnectionsEnv
+ * Connections-specific extension fields layered onto the canonical SmartEnv.
+ * @typedef {Object} ConnectionsEnvExtensions
  * @property {ConnectionsRootSettings} settings
  * @property {ConnectionsEnvConfig} config
  * @property {ConnectionsEvents} events
@@ -525,14 +482,11 @@ export const ConnectionsPlugin = {};
  * @property {ConnectionsApp} [obsidian_app]
  * @property {ConnectionsFs} [fs]
  * @property {boolean} [is_pro]
- * @property {string} [state]
  * @property {{settings?: {native_notice_attention?: boolean}}} [event_logs]
  * @property {{_loaded?: boolean}} [smart_graph_plugin]
  * @property {(menu_key: string, menu: ConnectionsMenu, scope: object, params?: ConnectionsActionParams) => void} [build_menu]
- * @property {(target: object) => void} [create_env_getter]
- * @property {(main: object) => void} [unload_main]
  */
-export const ConnectionsEnv = {};
+export const ConnectionsEnvExtensions = {};
 
 /**
  * @typedef {Object} ConnectionsPauseControls
@@ -544,7 +498,7 @@ export const ConnectionsPauseControls = {};
  * @typedef {Object} ConnectionsItemViewScope
  * @property {ConnectionsApp} app
  * @property {ConnectionsPlugin} plugin
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsWorkspaceLeaf} leaf
  * @property {ConnectionsDomElement} container
  * @property {ConnectionItem|null|undefined} current
@@ -567,7 +521,7 @@ export const ConnectionsItemViewScope = {};
  * @typedef {Object} ConnectionsFooterViewScope
  * @property {ConnectionsApp} app
  * @property {ConnectionsPlugin} plugin
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {(params?: ConnectionsComponentOptions) => Promise<void>|void} render_view
  * @property {Object.<string, ConnectionsDomElement>} container_map
  * @property {ConnectionsEventDisposer[]} [env_listeners]
@@ -586,7 +540,7 @@ export const ConnectionsFooterViewScope = {};
 /**
  * @typedef {Object} ConnectionsSettingsTabScope
  * @property {ConnectionsPlugin} plugin
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsDomElement} plugin_container
  * @property {ConnectionsEventDisposer} [turn_off_listener]
  * @property {(container: ConnectionsDomElement) => Promise<void>} render_header
@@ -606,18 +560,13 @@ export const ConnectionsViewElement = {};
 
 /**
  * @typedef {HTMLElement & {
- *   createDiv: (options?: object|string) => ConnectionsDomElement,
- *   createEl: (tag: string, options?: object|string) => ConnectionsDomElement,
- *   empty: () => void,
- *   setText: (text: string) => void,
  *   _has_listeners?: boolean
  * }} ConnectionsDomElement
  */
 export const ConnectionsDomElement = {};
 
 /**
- * @typedef {Object} ConnectionsMarkdownCodeBlockContext
- * @property {string} sourcePath
+ * @typedef {import('obsidian').MarkdownPostProcessorContext} ConnectionsMarkdownCodeBlockContext
  */
 export const ConnectionsMarkdownCodeBlockContext = {};
 
@@ -659,29 +608,26 @@ export const ConnectionsComponentOptions = {};
 export const ConnectionsMenuState = {};
 
 /**
- * @typedef {Object} ConnectionsMenuItem
- * @property {(title: string) => ConnectionsMenuItem} setTitle
- * @property {(icon: string) => ConnectionsMenuItem} setIcon
- * @property {(disabled: boolean) => ConnectionsMenuItem} setDisabled
- * @property {(callback: () => unknown|Promise<unknown>) => ConnectionsMenuItem} onClick
- * @property {() => ConnectionsMenu} setSubmenu
+ * @typedef {import('obsidian').MenuItem & {
+ *   setSubmenu: () => ConnectionsMenu
+ * }} ConnectionsMenuItem
  */
 export const ConnectionsMenuItem = {};
 
 /**
- * @typedef {Object} ConnectionsMenu
- * @property {ConnectionsMenuItem[]} [items]
- * @property {(callback: (item: ConnectionsMenuItem) => void) => ConnectionsMenu} addItem
- * @property {() => ConnectionsMenu} addSeparator
- * @property {(event: MouseEvent|Event) => void} showAtMouseEvent
- * @property {(position: {x: number, y: number}) => void} [showAtPosition]
+ * @typedef {Omit<import('obsidian').Menu, 'addItem'> & {
+ *   items?: ConnectionsMenuItem[],
+ *   addItem: (callback: (item: ConnectionsMenuItem) => unknown) => ConnectionsMenu,
+ *   addSeparator: () => ConnectionsMenu,
+ *   showAtPosition?: (position: {x: number, y: number}) => void
+ * }} ConnectionsMenu
  */
 export const ConnectionsMenu = {};
 
 /**
  * @typedef {Object} ConnectionsActionParams
  * @property {string} [to]
- * @property {ConnectionsEnv} [env]
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} [env]
  * @property {ConnectionsPlugin} [plugin]
  * @property {ConnectionsApp} [app]
  * @property {ConnectionsWorkspace} [workspace]
@@ -701,13 +647,14 @@ export const ConnectionsMenu = {};
  * @property {Event|MouseEvent} [click_event]
  * @property {Event|MouseEvent} [event]
  * @property {string} [url]
+ * @property {boolean} [force]
  */
 export const ConnectionsActionParams = {};
 
 /**
  * @typedef {Object} ConnectionsActionRegistrationContext
  * @property {ConnectionsPlugin} plugin
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsApp} app
  * @property {ConnectionsEditor} [editor]
  * @property {ConnectionsActionParams} params
@@ -736,6 +683,7 @@ export const ConnectionsCommandsConfig = {};
  * @property {string} description
  * @property {(context: ConnectionsActionRegistrationContext) => boolean} [register_when]
  * @property {(context: ConnectionsActionRegistrationContext) => object} [get_scope]
+ * @property {(context: ConnectionsActionRegistrationContext) => ConnectionsActionParams} [params]
  */
 export const ConnectionsRibbonConfig = {};
 
@@ -744,9 +692,10 @@ export const ConnectionsRibbonConfig = {};
  */
 export const ConnectionsRibbonConfigMap = {};
 
+
 /**
  * @typedef {Object} ConnectionsMenuContext
- * @property {ConnectionsEnv} env
+ * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsMenu} menu
  * @property {ConnectionsActionParams} params
  * @property {ConnectionsListScope|ConnectionsListsCollection|ConnectionsItemViewScope|ConnectionItem} scope
@@ -763,7 +712,7 @@ export const ConnectionsMenuContext = {};
  * @property {((this: ConnectionsMenuContext) => boolean)} [disabled]
  * @property {((this: ConnectionsMenuContext) => void)} [build]
  * @property {((this: ConnectionsMenuContext) => boolean)} [when]
- * @property {((this: ConnectionsMenuContext, event?: Event) => ConnectionsActionParams)} [params]
+ * @property {((this: ConnectionsMenuContext, context: ConnectionsMenuContext, event?: Event) => ConnectionsActionParams)} [params]
  */
 export const ConnectionsMenuConfig = {};
 

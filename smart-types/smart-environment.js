@@ -53,6 +53,8 @@ export const SettingPath = '';
  * @property {boolean} [secret] - Whether the setting should be stored through a secrets mechanism.
  * @property {boolean} [is_scope] - Whether the setting triggers a scope re-render when changed.
  * @property {Array<import('./smart-environment.js').DropdownOption>} [options] - Static dropdown options.
+ * @property {string} [option_1] - Deprecated pipe-delimited dropdown option.
+ * @property {string} [option_2] - Deprecated pipe-delimited dropdown option.
  * @property {import('./smart-environment.js').SmartEnvCallable|string} [callback] - Change or click callback.
  * @property {import('./smart-environment.js').SmartEnvCallable|string} [btn_callback] - Optional secondary button callback.
  * @property {import('./smart-environment.js').SmartEnvCallable|string} [options_callback] - Dropdown options callback returning DropdownOption[].
@@ -174,3 +176,25 @@ export const SmartEnvModalConfig = {};
  * @property {number} [env_start_wait_time] - Delay before Smart Environment auto-load begins.
  */
 export const SmartEnvConfig = {};
+
+/**
+ * @typedef {Object} SmartEnvCore
+ * @property {unknown} settings - Runtime settings store, narrowed by the environment extension type.
+ * @property {unknown} events - Runtime event bus, narrowed by the environment extension type.
+ * @property {import('./smart-environment.js').SmartEnvConfig} config - Merged Smart Environment configuration.
+ * @property {string} state - Current environment lifecycle state.
+ * @property {Object.<string, string|null>} collections - Collection load-state registry.
+ * @property {Object.<string, unknown>} [opts] - Normalized runtime environment options.
+ * @property {(target: object) => void} create_env_getter - Defines an environment getter on a target object.
+ * @property {(main: object) => void} [unload_main] - Unregisters a main from the shared environment.
+ */
+export const SmartEnvCore = {};
+
+/**
+ * Canonical Smart Environment instance type. Consumers extend the shared core
+ * with only their environment-specific collections, modules, and host APIs.
+ *
+ * @template [TExtensions=Object]
+ * @typedef {import('./smart-environment.js').SmartEnvCore & TExtensions} SmartEnv
+ */
+export const SmartEnv = {};
