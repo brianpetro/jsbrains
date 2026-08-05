@@ -23,3 +23,5 @@ export * from './smart-clusters.js';
 export * from './smart-cluster-groups.js';
 export * from './smart-notices.js';
 export * from './smart-view.js';
+export * from './smart-lookup.js';
+export * from './smart-connections.js';

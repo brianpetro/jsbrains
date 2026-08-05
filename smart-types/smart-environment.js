@@ -63,7 +63,7 @@ export const SettingPath = '';
 export const SettingConfig = {};
 
 /**
- * @typedef {Object.<SettingPath, SettingConfig>} SettingsConfig
+ * @typedef {Object.<string, SettingConfig>} SettingsConfig
  * @description An object mapping setting paths to their configurations.
  */
 export const SettingsConfig = {};

@@ -182,8 +182,7 @@ export class SmartEnv {
   /**
    * Waits for either a specific main to be registered in the environment,
    * or (if `opts.main` is not specified) waits for environment collections to load.
-   * @param {object} opts
-   * @param {object} [opts.main] - if set, the function waits until that main is found.
+   * @param {{main?: string, loaded?: boolean}} [opts]
    * @returns {Promise<SmartEnv>} Resolves with the environment instance
    */
   static wait_for(opts = {}) {
