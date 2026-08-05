@@ -109,7 +109,7 @@ export type EntityLookupResult = {
     /**
      * - Item instance associated with the result.
      */
-    item: any;
+    item: unknown;
     /**
      * - Hypothetical input index used during lookup aggregation.
      */
@@ -119,7 +119,7 @@ export type EntityLookupResult = {
  * @typedef {Object} EntityLookupResult
  * @property {string} key - Item key for the lookup hit.
  * @property {number} score - Similarity or relevance score.
- * @property {*} item - Item instance associated with the result.
+ * @property {unknown} item - Item instance associated with the result.
  * @property {number} [hypothetical_i] - Hypothetical input index used during lookup aggregation.
  */
 export const EntityLookupResult: {};
@@ -127,7 +127,7 @@ export type EntityConnectionResult = {
     /**
      * - Entity item associated with the result.
      */
-    item: any;
+    item: unknown;
     /**
      * - Similarity or relevance score.
      */
@@ -135,7 +135,7 @@ export type EntityConnectionResult = {
 };
 /**
  * @typedef {Object} EntityConnectionResult
- * @property {*} item - Entity item associated with the result.
+ * @property {unknown} item - Entity item associated with the result.
  * @property {number} score - Similarity or relevance score.
  */
 export const EntityConnectionResult: {};
@@ -194,7 +194,9 @@ export type EmbedModel = {
     /**
      * - Embeds a batch of inputs.
      */
-    embed_batch: (arg0: Array<EmbedInput | any>) => Promise<Array<EmbedBatchResult>>;
+    embed_batch: (arg0: Array<EmbedInput | {
+        [x: string]: unknown;
+    }>) => Promise<Array<EmbedBatchResult>>;
 };
 /**
  * @typedef {Object} EmbedModel
@@ -204,7 +206,7 @@ export type EmbedModel = {
  * @property {boolean} [is_loaded] - Whether the model is loaded.
  * @property {function(): Promise<void>|void} [load] - Loads the model.
  * @property {function(): Promise<void>|void} [unload] - Unloads the model.
- * @property {function(Array<EmbedInput|*>): Promise<Array<EmbedBatchResult>>} embed_batch - Embeds a batch of inputs.
+ * @property {function(Array<EmbedInput|Object.<string, unknown>>): Promise<Array<EmbedBatchResult>>} embed_batch - Embeds a batch of inputs.
  */
 export const EmbedModel: {};
 export type EmbedModelEntry = {
@@ -227,44 +229,44 @@ export type EmbedModelRegistry = {
  */
 export const EmbedModelRegistry: {};
 export type SmartEntitiesEnv = import("./smart-collections.js").CollectionEnv & {
-    [x: string]: any;
+    [x: string]: unknown;
 } & {
     embedding_models: EmbedModelRegistry;
     chats?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     smart_connections_plugin?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     main?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     notices?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
- * @typedef {import('./smart-collections.js').CollectionEnv & Object.<string, *> & {
+ * @typedef {import('./smart-collections.js').CollectionEnv & Object.<string, unknown> & {
  *   embedding_models: EmbedModelRegistry,
- *   chats?: Object.<string, *>,
- *   smart_connections_plugin?: Object.<string, *>,
- *   main?: Object.<string, *>,
- *   notices?: Object.<string, *>
+ *   chats?: Object.<string, unknown>,
+ *   smart_connections_plugin?: Object.<string, unknown>,
+ *   main?: Object.<string, unknown>,
+ *   notices?: Object.<string, unknown>
  * }} SmartEntitiesEnv
  */
 export const SmartEntitiesEnv: {};
 export type SmartEntitiesOptions = import("./smart-collections.js").CollectionOptions & {
-    [x: string]: any;
+    [x: string]: unknown;
 };
 /**
- * @typedef {import('./smart-collections.js').CollectionOptions & Object.<string, *>} SmartEntitiesOptions
+ * @typedef {import('./smart-collections.js').CollectionOptions & Object.<string, unknown>} SmartEntitiesOptions
  */
 export const SmartEntitiesOptions: {};
 export type SmartEntitiesFilter = import("./smart-collections.js").CollectionFilterOptions & {
-    [x: string]: any;
+    [x: string]: unknown;
 };
 /**
- * @typedef {import('./smart-collections.js').CollectionFilterOptions & Object.<string, *>} SmartEntitiesFilter
+ * @typedef {import('./smart-collections.js').CollectionFilterOptions & Object.<string, unknown>} SmartEntitiesFilter
  */
 export const SmartEntitiesFilter: {};
 export type EntityLookupParams = {

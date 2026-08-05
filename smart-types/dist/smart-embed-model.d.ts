@@ -37,14 +37,14 @@ export type EmbeddingResult = {
      * - Normalized error payload for the result.
      */
     error?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
  * @typedef {Object} EmbeddingResult
  * @property {Array<number>} vec - Generated embedding vector.
  * @property {number|null} [tokens] - Token count when the adapter provides one.
- * @property {Object.<string, *>} [error] - Normalized error payload for the result.
+ * @property {Object.<string, unknown>} [error] - Normalized error payload for the result.
  */
 export const EmbeddingResult: {};
 export type EmbeddingModelInfo = {
@@ -111,9 +111,9 @@ export type EmbeddingModelsMap = {
  * @description Available embed models keyed by provider model id.
  */
 export const EmbeddingModelsMap: {};
-export type EmbedModelRequestAdapterClass = new (adapter: any, embed_inputs: Array<string>) => any;
+export type EmbedModelRequestAdapterClass = new (adapter: unknown, embed_inputs: Array<string>) => object;
 export function EmbedModelRequestAdapterClass(): void;
-export type EmbedModelResponseAdapterClass = new (adapter: any, response: {
-    [x: string]: any;
-}) => any;
+export type EmbedModelResponseAdapterClass = new (adapter: unknown, response: {
+    [x: string]: unknown;
+}) => object;
 export function EmbedModelResponseAdapterClass(): void;

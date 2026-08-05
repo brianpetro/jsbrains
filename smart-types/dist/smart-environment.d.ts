@@ -4,9 +4,9 @@ export type SmartEnvVersion = string | number;
  * @description Semantic or numeric version used during Smart Environment config merges.
  */
 export const SmartEnvVersion: "";
-export type SmartEnvClass = Function;
+export type SmartEnvClass = new (...args: never[]) => object;
 export function SmartEnvClass(): void;
-export type SmartEnvCallable = Function;
+export type SmartEnvCallable = (...args: never[]) => unknown;
 export function SmartEnvCallable(): void;
 export type DropdownOption = {
     /**
@@ -84,7 +84,7 @@ export type SettingConfig = {
     /**
      * - Static value for html settings or renderer-specific values.
      */
-    value?: any;
+    value?: unknown;
     /**
      * - Minimum value for sliders or numeric inputs.
      */
@@ -148,7 +148,7 @@ export type SettingConfig = {
     /**
      * - Default value rendered by the settings UI.
      */
-    default?: any;
+    default?: unknown;
     /**
      * - Input placeholder text.
      */
@@ -166,7 +166,7 @@ export type SettingConfig = {
  * @property {string} [btn_text] - Optional button text override.
  * @property {string} [btn_icon] - Optional button icon id.
  * @property {string} [button] - Optional inline button text used by some renderers.
- * @property {*} [value] - Static value for html settings or renderer-specific values.
+ * @property {unknown} [value] - Static value for html settings or renderer-specific values.
  * @property {number} [min] - Minimum value for sliders or numeric inputs.
  * @property {number} [max] - Maximum value for sliders or numeric inputs.
  * @property {number} [step] - Step value for sliders or numeric inputs.
@@ -182,7 +182,7 @@ export type SettingConfig = {
  * @property {import('./smart-environment.js').SmartEnvCallable|string} [btn_callback] - Optional secondary button callback.
  * @property {import('./smart-environment.js').SmartEnvCallable|string} [options_callback] - Dropdown options callback returning DropdownOption[].
  * @property {import('./smart-environment.js').SmartEnvCallable} [conditional] - Predicate used by process_settings_config.
- * @property {*} [default] - Default value rendered by the settings UI.
+ * @property {unknown} [default] - Default value rendered by the settings UI.
  * @property {string} [placeholder] - Input placeholder text.
  */
 export const SettingConfig: {};
@@ -195,7 +195,7 @@ export type SettingsConfig = {
  */
 export const SettingsConfig: {};
 export type SmartEnvAdapterMap = {
-    [x: string]: Function;
+    [x: string]: SmartEnvClass;
 };
 /**
  * @typedef {Object.<string, SmartEnvClass>} SmartEnvAdapterMap
@@ -210,12 +210,12 @@ export type SmartEnvActionConfig = {
     /**
      * - Optional action settings schema or resolver.
      */
-    settings_config?: import("./smart-environment.js").SettingsConfig | Function;
+    settings_config?: import("./smart-environment.js").SettingsConfig | ((...args: never[]) => import("./smart-environment.js").SettingsConfig);
     /**
      * - Optional default action settings.
      */
     default_settings?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Optional display label.
@@ -237,8 +237,8 @@ export type SmartEnvActionConfig = {
 /**
  * @typedef {Object} SmartEnvActionConfig
  * @property {import('./smart-environment.js').SmartEnvCallable} action - Action handler.
- * @property {import('./smart-environment.js').SettingsConfig|Function} [settings_config] - Optional action settings schema or resolver.
- * @property {Object.<string, *>} [default_settings] - Optional default action settings.
+ * @property {import('./smart-environment.js').SettingsConfig|((...args: never[]) => import('./smart-environment.js').SettingsConfig)} [settings_config] - Optional action settings schema or resolver.
+ * @property {Object.<string, unknown>} [default_settings] - Optional default action settings.
  * @property {string} [display_name] - Optional display label.
  * @property {string} [display_description] - Optional display description.
  * @property {import('./smart-environment.js').SmartEnvCallable} [pre_process] - Optional pre-process hook.
@@ -278,13 +278,13 @@ export type SmartEnvCollectionConfig = {
      * - Source adapters keyed by extension or adapter id.
      */
     source_adapters?: {
-        [x: string]: Function;
+        [x: string]: SmartEnvClass;
     };
     /**
      * - Block adapters keyed by extension or adapter id.
      */
     block_adapters?: {
-        [x: string]: Function;
+        [x: string]: SmartEnvClass;
     };
     /**
      * - Additional named adapters.
@@ -305,12 +305,12 @@ export type SmartEnvCollectionConfig = {
     /**
      * - Collection settings schema or resolver.
      */
-    settings_config?: import("./smart-environment.js").SettingsConfig | Function;
+    settings_config?: import("./smart-environment.js").SettingsConfig | ((...args: never[]) => import("./smart-environment.js").SettingsConfig);
     /**
      * - Collection default settings values.
      */
     default_settings?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Collection config or class version.
@@ -330,8 +330,8 @@ export type SmartEnvCollectionConfig = {
  * @property {import('./smart-environment.js').SmartEnvCallable[]} [content_parsers] - Collection content parser pipeline.
  * @property {number} [load_order] - Relative collection load order.
  * @property {boolean} [process_embed_queue] - Whether to process embed queue during load.
- * @property {import('./smart-environment.js').SettingsConfig|Function} [settings_config] - Collection settings schema or resolver.
- * @property {Object.<string, *>} [default_settings] - Collection default settings values.
+ * @property {import('./smart-environment.js').SettingsConfig|((...args: never[]) => import('./smart-environment.js').SettingsConfig)} [settings_config] - Collection settings schema or resolver.
+ * @property {Object.<string, unknown>} [default_settings] - Collection default settings values.
  * @property {import('./smart-environment.js').SmartEnvVersion} [version] - Collection config or class version.
  */
 export const SmartEnvCollectionConfig: {};
@@ -361,12 +361,12 @@ export type SmartEnvModuleConfig = {
     /**
      * - Module settings schema or resolver.
      */
-    settings_config?: import("./smart-environment.js").SettingsConfig | Function;
+    settings_config?: import("./smart-environment.js").SettingsConfig | ((...args: never[]) => import("./smart-environment.js").SettingsConfig);
     /**
      * - Module default settings values.
      */
     default_settings?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Module config or class version.
@@ -379,8 +379,8 @@ export type SmartEnvModuleConfig = {
  * @property {import('./smart-environment.js').SmartEnvClass} [adapter] - Primary adapter class.
  * @property {import('./smart-environment.js').SmartEnvClass} [adapter_class] - Explicit adapter class override.
  * @property {import('./smart-environment.js').SmartEnvAdapterMap} [adapters] - Named adapter or provider map.
- * @property {import('./smart-environment.js').SettingsConfig|Function} [settings_config] - Module settings schema or resolver.
- * @property {Object.<string, *>} [default_settings] - Module default settings values.
+ * @property {import('./smart-environment.js').SettingsConfig|((...args: never[]) => import('./smart-environment.js').SettingsConfig)} [settings_config] - Module settings schema or resolver.
+ * @property {Object.<string, unknown>} [default_settings] - Module default settings values.
  * @property {import('./smart-environment.js').SmartEnvVersion} [version] - Module config or class version.
  */
 export const SmartEnvModuleConfig: {};
@@ -404,12 +404,12 @@ export type SmartEnvItemConfig = {
     /**
      * - Item settings schema or resolver.
      */
-    settings_config?: import("./smart-environment.js").SettingsConfig | Function;
+    settings_config?: import("./smart-environment.js").SettingsConfig | ((...args: never[]) => import("./smart-environment.js").SettingsConfig);
     /**
      * - Item default settings values.
      */
     default_settings?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Item config or class version.
@@ -420,8 +420,8 @@ export type SmartEnvItemConfig = {
  * @typedef {Object} SmartEnvItemConfig
  * @property {import('./smart-environment.js').SmartEnvClass} [class] - Item class.
  * @property {Object.<string, import('./smart-environment.js').SmartEnvActionConfig>} [actions] - Item-scoped action map.
- * @property {import('./smart-environment.js').SettingsConfig|Function} [settings_config] - Item settings schema or resolver.
- * @property {Object.<string, *>} [default_settings] - Item default settings values.
+ * @property {import('./smart-environment.js').SettingsConfig|((...args: never[]) => import('./smart-environment.js').SettingsConfig)} [settings_config] - Item settings schema or resolver.
+ * @property {Object.<string, unknown>} [default_settings] - Item default settings values.
  * @property {import('./smart-environment.js').SmartEnvVersion} [version] - Item config or class version.
  */
 export const SmartEnvItemConfig: {};
@@ -509,7 +509,7 @@ export type SmartEnvConfig = {
      * - Default runtime settings values.
      */
     default_settings?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Delay before Smart Environment auto-load begins.
@@ -527,7 +527,7 @@ export type SmartEnvConfig = {
  * @property {Object.<string, (import('./smart-components.js').SmartEnvComponentConfig|import('./smart-components.js').SmartEnvComponentMap)>} [components] - Flat component registry or legacy scoped component map.
  * @property {Object.<string, (import('./smart-environment.js').SmartEnvActionConfig|import('./smart-environment.js').SmartEnvActionMap)>} [actions] - Flat action registry or legacy scoped action map.
  * @property {Object.<string, import('./smart-environment.js').SmartEnvModalConfig>} [modals] - Optional modal registry.
- * @property {Object.<string, *>} [default_settings] - Default runtime settings values.
+ * @property {Object.<string, unknown>} [default_settings] - Default runtime settings values.
  * @property {number} [env_start_wait_time] - Delay before Smart Environment auto-load begins.
  */
 export const SmartEnvConfig: {};
@@ -585,12 +585,14 @@ export const SmartEnvCore: {};
  * Canonical Smart Environment instance type. Consumers extend the shared core
  * with only their environment-specific collections, modules, and host APIs.
  */
-export type SmartEnv<TExtensions = any> = import("./smart-environment.js").SmartEnvCore & TExtensions;
+export type SmartEnv<TExtensions = {
+    [x: string]: unknown;
+}> = Omit<import("./smart-environment.js").SmartEnvCore, keyof TExtensions> & TExtensions;
 /**
  * Canonical Smart Environment instance type. Consumers extend the shared core
  * with only their environment-specific collections, modules, and host APIs.
  *
- * @template [TExtensions=Object]
- * @typedef {import('./smart-environment.js').SmartEnvCore & TExtensions} SmartEnv
+ * @template [TExtensions=Object.<string, unknown>]
+ * @typedef {Omit<import('./smart-environment.js').SmartEnvCore, keyof TExtensions> & TExtensions} SmartEnv
  */
 export const SmartEnv: {};

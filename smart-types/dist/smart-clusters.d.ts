@@ -68,7 +68,7 @@ export type ClusterData = {
      * - Cluster-level filter metadata.
      */
     filters?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Optional owning cluster-group key.
@@ -81,7 +81,7 @@ export type ClusterData = {
  * @property {import('./smart-clusters.js').ClusterCenters} [center] - Center items and weights.
  * @property {Array<number>} [center_vec] - Cached centroid or center vector.
  * @property {import('./smart-clusters.js').ClusterMembers} [members] - Membership state keyed by item key.
- * @property {Object.<string, *>} [filters] - Cluster-level filter metadata.
+ * @property {Object.<string, unknown>} [filters] - Cluster-level filter metadata.
  * @property {string} [group_key] - Optional owning cluster-group key.
  */
 export const ClusterData: {};
@@ -89,7 +89,7 @@ export type ClusterMembershipSummary = {
     /**
      * - Item instance included in the summary.
      */
-    item: any;
+    item: unknown;
     /**
      * - Similarity score against the cluster vector.
      */
@@ -101,7 +101,7 @@ export type ClusterMembershipSummary = {
 };
 /**
  * @typedef {Object} ClusterMembershipSummary
- * @property {*} item - Item instance included in the summary.
+ * @property {unknown} item - Item instance included in the summary.
  * @property {number} [score] - Similarity score against the cluster vector.
  * @property {import('./smart-clusters.js').ClusterMembershipState} state - Membership state after the operation.
  */

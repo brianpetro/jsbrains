@@ -152,16 +152,18 @@ export type ContextMediaPayload = (ContextImagePayload | ContextPdfPayload);
 export const ContextMediaPayload: {};
 export type ContextErrorPayload = {
     error: string;
-    [key: string]: any;
+    [key: string]: unknown;
 };
 /**
- * @typedef {{error: string, [key: string]: *}} ContextErrorPayload
+ * @typedef {{error: string, [key: string]: unknown}} ContextErrorPayload
  * @description Error object returned by context item adapters.
  */
 export const ContextErrorPayload: {};
-export type ContextItemTextResult = (string | ContextErrorPayload | any);
+export type ContextItemTextResult = (string | ContextErrorPayload | {
+    [x: string]: unknown;
+});
 /**
- * @typedef {(string|ContextErrorPayload|*)} ContextItemTextResult
+ * @typedef {(string|ContextErrorPayload|Object.<string, unknown>)} ContextItemTextResult
  * @description Text or adapter-specific payload returned by ContextItem.get_text().
  */
 export const ContextItemTextResult: {};
@@ -192,14 +194,14 @@ export type SmartContextData = {
      * - Legacy context options bag retained for compatibility.
      */
     context_opts?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Instance settings keyed by collection; values override plugin settings.
      */
     settings?: {
         [x: string]: {
-            [x: string]: any;
+            [x: string]: unknown;
         };
     };
     /**
@@ -215,8 +217,8 @@ export type SmartContextData = {
  * @property {string} [name] - Optional user-facing context name.
  * @property {ContextItemsData} [context_items] - Included context items and dynamic inclusion rules keyed by item key.
  * @property {ContextItemsData} [exclusions] - Durable source exclusions keyed by exact source or glob identity.
- * @property {Object.<string, *>} [context_opts] - Legacy context options bag retained for compatibility.
- * @property {Object.<string, Object.<string, *>>} [settings] - Instance settings keyed by collection; values override plugin settings.
+ * @property {Object.<string, unknown>} [context_opts] - Legacy context options bag retained for compatibility.
+ * @property {Object.<string, Object.<string, unknown>>} [settings] - Instance settings keyed by collection; values override plugin settings.
  * @property {Object.<string, number>} [codeblock_inclusions] - Source keys that currently include the named context.
  */
 export const SmartContextData: {};
@@ -262,7 +264,7 @@ export type SmartContextMissingItemParams = {
     /**
      * - Debounce window before emitting missing-item warning.
      */
-    debounce_ms?: any;
+    debounce_ms?: number;
     /**
      * - Optional warning message override.
      */
@@ -274,7 +276,7 @@ export type SmartContextMissingItemParams = {
 };
 /**
  * @typedef {Object} SmartContextMissingItemParams
- * @property {*} [debounce_ms] - Debounce window before emitting missing-item warning.
+ * @property {number} [debounce_ms] - Debounce window before emitting missing-item warning.
  * @property {string} [message] - Optional warning message override.
  * @property {string} [btn_text] - Optional warning action button text override.
  */

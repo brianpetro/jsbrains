@@ -6,7 +6,7 @@ export type SmartEnvComponentConfig = {
     /**
      * - Optional component settings schema or resolver.
      */
-    settings_config?: import("./smart-environment.js").SettingsConfig | Function;
+    settings_config?: import("./smart-environment.js").SettingsConfig | ((...args: never[]) => import("./smart-environment.js").SettingsConfig);
     /**
      * - Optional display label.
      */
@@ -16,6 +16,10 @@ export type SmartEnvComponentConfig = {
      */
     description?: string;
     /**
+     * - Optional description alias.
+     */
+    display_description?: string;
+    /**
      * - Component version.
      */
     version?: import("./smart-environment.js").SmartEnvVersion;
@@ -23,9 +27,10 @@ export type SmartEnvComponentConfig = {
 /**
  * @typedef {Object} SmartEnvComponentConfig
  * @property {import('./smart-environment.js').SmartEnvCallable} render - Component render function.
- * @property {import('./smart-environment.js').SettingsConfig|Function} [settings_config] - Optional component settings schema or resolver.
+ * @property {import('./smart-environment.js').SettingsConfig|((...args: never[]) => import('./smart-environment.js').SettingsConfig)} [settings_config] - Optional component settings schema or resolver.
  * @property {string} [display_name] - Optional display label.
  * @property {string} [description] - Optional description.
+ * @property {string} [display_description] - Optional description alias.
  * @property {import('./smart-environment.js').SmartEnvVersion} [version] - Component version.
  */
 export const SmartEnvComponentConfig: {};
@@ -37,6 +42,26 @@ export type SmartEnvComponentMap = {
  * @description Flat component map keyed by snake_case component id.
  */
 export const SmartEnvComponentMap: {};
+/**
+ * Canonical SmartComponents collection surface used by render consumers.
+ */
+export type SmartComponents<TScope = unknown, TOptions = {
+    [x: string]: unknown;
+}> = {
+    /**
+     * - Renders the best matching component.
+     */
+    render_component: (component_key: string, scope: TScope, opts?: TOptions) => Promise<HTMLElement | DocumentFragment>;
+};
+/**
+ * Canonical SmartComponents collection surface used by render consumers.
+ *
+ * @template [TScope=unknown]
+ * @template [TOptions=Object.<string, unknown>]
+ * @typedef {Object} SmartComponents
+ * @property {(component_key: string, scope: TScope, opts?: TOptions) => Promise<HTMLElement|DocumentFragment>} render_component - Renders the best matching component.
+ */
+export const SmartComponents: {};
 export type SmartComponentData = {
     /**
      * - Stable component key including scope, version, and hash.

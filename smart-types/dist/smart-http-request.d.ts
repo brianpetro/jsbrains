@@ -6,12 +6,12 @@ export type SmartHttpRequestOptions = {
     /**
      * - Obsidian requestUrl-compatible adapter.
      */
-    obsidian_request_adapter?: any;
+    obsidian_request_adapter?: unknown;
 };
 /**
  * @typedef {Object} SmartHttpRequestOptions
  * @property {import('./smart-environment.js').SmartEnvClass} adapter - Request adapter constructor.
- * @property {*} [obsidian_request_adapter] - Obsidian requestUrl-compatible adapter.
+ * @property {unknown} [obsidian_request_adapter] - Obsidian requestUrl-compatible adapter.
  */
 export const SmartHttpRequestOptions: {};
 export type SmartHttpRequestParams = {
@@ -32,7 +32,7 @@ export type SmartHttpRequestParams = {
     /**
      * - Request body.
      */
-    body?: any;
+    body?: unknown;
     /**
      * - Whether the transport should throw for non-2xx responses.
      */
@@ -43,7 +43,7 @@ export type SmartHttpRequestParams = {
  * @property {string} url - Request URL.
  * @property {string} [method] - HTTP method, defaulting to GET in adapters when omitted.
  * @property {Object.<string, string>} [headers] - Request headers.
- * @property {*} [body] - Request body.
+ * @property {unknown} [body] - Request body.
  * @property {boolean} [throw] - Whether the transport should throw for non-2xx responses.
  */
 export const SmartHttpRequestParams: {};
@@ -51,11 +51,11 @@ export type SmartHttpResponseAdapterLike = {
     /**
      * - Returns response headers.
      */
-    headers: () => Promise<any> | any;
+    headers: () => Promise<Record<string, unknown>> | Record<string, unknown>;
     /**
      * - Returns parsed JSON body.
      */
-    json: () => Promise<any> | any;
+    json: () => Promise<unknown> | unknown;
     /**
      * - Returns HTTP status code.
      */
@@ -67,13 +67,16 @@ export type SmartHttpResponseAdapterLike = {
 };
 /**
  * @typedef {Object} SmartHttpResponseAdapterLike
- * @property {function(): Promise<Object>|Object} headers - Returns response headers.
- * @property {function(): Promise<*>|*} json - Returns parsed JSON body.
- * @property {function(): Promise<number>|number} status - Returns HTTP status code.
- * @property {function(): Promise<string>|string} text - Returns raw text body.
+ * @property {() => Promise<Record<string, unknown>>|Record<string, unknown>} headers - Returns response headers.
+ * @property {() => Promise<unknown>|unknown} json - Returns parsed JSON body.
+ * @property {() => Promise<number>|number} status - Returns HTTP status code.
+ * @property {() => Promise<string>|string} text - Returns raw text body.
  */
 export const SmartHttpResponseAdapterLike: {};
-export type SmartHttpFetchResponse = {
+/**
+ * Fetch-compatible HTTP response contract.
+ */
+export type SmartHttpFetchResponse<TJson = unknown> = {
     /**
      * - Response headers.
      */
@@ -87,17 +90,59 @@ export type SmartHttpFetchResponse = {
     /**
      * - JSON body parser.
      */
-    json: () => Promise<any>;
+    json: () => Promise<TJson>;
     /**
      * - Text body parser.
      */
     text: () => Promise<string>;
 };
 /**
+ * Fetch-compatible HTTP response contract.
+ *
+ * @template [TJson=unknown]
  * @typedef {Object} SmartHttpFetchResponse
  * @property {Headers|Object.<string, string>} headers - Response headers.
  * @property {number} status - HTTP status code.
- * @property {function(): Promise<*>} json - JSON body parser.
- * @property {function(): Promise<string>} text - Text body parser.
+ * @property {() => Promise<TJson>} json - JSON body parser.
+ * @property {() => Promise<string>} text - Text body parser.
  */
 export const SmartHttpFetchResponse: {};
+/**
+ * Parsed HTTP response contract used by requestUrl-style host adapters.
+ */
+export type SmartHttpRequestResponse<TJson = unknown> = {
+    /**
+     * - Parsed JSON body.
+     */
+    json: TJson;
+    /**
+     * - Raw text body.
+     */
+    text: string;
+    /**
+     * - HTTP status code.
+     */
+    status?: number;
+    /**
+     * - Response headers.
+     */
+    headers?: {
+        [x: string]: string;
+    };
+    /**
+     * - Raw response body.
+     */
+    arrayBuffer?: ArrayBuffer;
+};
+/**
+ * Parsed HTTP response contract used by requestUrl-style host adapters.
+ *
+ * @template [TJson=unknown]
+ * @typedef {Object} SmartHttpRequestResponse
+ * @property {TJson} json - Parsed JSON body.
+ * @property {string} text - Raw text body.
+ * @property {number} [status] - HTTP status code.
+ * @property {Object.<string, string>} [headers] - Response headers.
+ * @property {ArrayBuffer} [arrayBuffer] - Raw response body.
+ */
+export const SmartHttpRequestResponse: {};

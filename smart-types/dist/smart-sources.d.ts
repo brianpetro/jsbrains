@@ -127,13 +127,13 @@ export type SmartSourceData = {
      * - Raw outlink payloads collected during import.
      */
     outlinks?: Array<(import("./smart-sources.js").LinkObject | {
-        [x: string]: any;
+        [x: string]: unknown;
     })>;
     /**
      * - Parsed source metadata such as frontmatter.
      */
     metadata?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Line numbers containing markdown tasks.
@@ -159,8 +159,8 @@ export type SmartSourceData = {
  * @property {import('./smart-sources.js').SourceLastRead} [last_read] - Most recent source read metadata.
  * @property {import('./smart-sources.js').SourceLastImport} [last_import] - Most recent source import metadata.
  * @property {Object.<string, Array<number>>} [blocks] - Parsed block line ranges keyed by sub-key.
- * @property {Array<(import('./smart-sources.js').LinkObject|Object.<string, *>)>} [outlinks] - Raw outlink payloads collected during import.
- * @property {Object.<string, *>} [metadata] - Parsed source metadata such as frontmatter.
+ * @property {Array<(import('./smart-sources.js').LinkObject|Object.<string, unknown>)>} [outlinks] - Raw outlink payloads collected during import.
+ * @property {Object.<string, unknown>} [metadata] - Parsed source metadata such as frontmatter.
  * @property {Array<number>} [task_lines] - Line numbers containing markdown tasks.
  * @property {import('./smart-sources.js').SourceTaskCollections} [tasks] - Grouped task line metadata.
  * @property {Array<Array<number>>} [codeblock_ranges] - Inclusive line ranges for fenced code blocks.
@@ -171,18 +171,18 @@ export type SourceReImportQueueEntry = {
     /**
      * - SmartSource instance queued for re-import.
      */
-    source: any;
+    source: unknown;
     /**
      * - Event metadata associated with the queue entry.
      */
     event_meta?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
  * @typedef {Object} SourceReImportQueueEntry
- * @property {*} source - SmartSource instance queued for re-import.
- * @property {Object.<string, *>} [event_meta] - Event metadata associated with the queue entry.
+ * @property {unknown} source - SmartSource instance queued for re-import.
+ * @property {Object.<string, unknown>} [event_meta] - Event metadata associated with the queue entry.
  */
 export const SourceReImportQueueEntry: {};
 export type SourceLifecycleEvent = {

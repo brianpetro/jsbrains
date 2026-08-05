@@ -3,7 +3,7 @@ export type BlockLineRange = Array<number>;
  * @typedef {Array<number>} BlockLineRange
  * @description Inclusive [start_line, end_line] range for a block.
  */
-export const BlockLineRange: any[];
+export const BlockLineRange: number[];
 export type ParsedTaskCollections = {
     /**
      * - Parsed markdown task line groupings.

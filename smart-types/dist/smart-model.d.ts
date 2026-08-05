@@ -46,7 +46,7 @@ export type SmartModelAdapterDefaults = {
  */
 export const SmartModelAdapterDefaults: {};
 export type SmartModelAdapterMap = {
-    [x: string]: Function;
+    [x: string]: import("./smart-environment.js").SmartEnvClass;
 };
 /**
  * @typedef {Object.<string, import('./smart-environment.js').SmartEnvClass>} SmartModelAdapterMap
@@ -66,7 +66,7 @@ export type SmartModelOptions = {
      * - Runtime or persisted model settings.
      */
     settings: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Explicit provider model id.
@@ -83,17 +83,17 @@ export type SmartModelOptions = {
     /**
      * - Optional HTTP adapter override for API adapters.
      */
-    http_adapter?: any;
+    http_adapter?: unknown;
 };
 /**
  * @typedef {Object} SmartModelOptions
  * @property {string} [adapter] - Adapter/provider key.
  * @property {SmartModelAdapterMap} adapters - Available adapter constructors.
- * @property {Object.<string, *>} settings - Runtime or persisted model settings.
+ * @property {Object.<string, unknown>} settings - Runtime or persisted model settings.
  * @property {string} [model_key] - Explicit provider model id.
  * @property {function(): void} [reload_model] - Optional host callback used after settings changes.
  * @property {function(): void} [re_render_settings] - Optional host callback used after settings changes.
- * @property {*} [http_adapter] - Optional HTTP adapter override for API adapters.
+ * @property {unknown} [http_adapter] - Optional HTTP adapter override for API adapters.
  */
 export const SmartModelOptions: {};
 export type SmartModelDropdownOption = {

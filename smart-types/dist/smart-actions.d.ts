@@ -1,13 +1,13 @@
 export type JsonSchemaObject = {
-    [x: string]: any;
+    [x: string]: unknown;
 };
 /**
- * @typedef {Object.<string, *>} JsonSchemaObject
+ * @typedef {Object.<string, unknown>} JsonSchemaObject
  * @property {string} [type] - JSON schema value type.
- * @property {Object.<string, JsonSchemaObject|Object.<string, *>>} [properties] - Object properties keyed by parameter name.
+ * @property {Object.<string, JsonSchemaObject|Object.<string, unknown>>} [properties] - Object properties keyed by parameter name.
  * @property {string[]} [required] - Required property names.
  * @property {string} [description] - Human-readable schema description.
- * @property {*} [default] - Default value.
+ * @property {unknown} [default] - Default value.
  */
 export const JsonSchemaObject: {};
 export type OpenApiParameter = {
@@ -163,7 +163,7 @@ export type SmartActionDescriptor = {
      * - MCP or provider-specific descriptor payload.
      */
     descriptor?: {
-        [x: string]: any;
+        [x: string]: unknown;
     } | null;
     /**
      * - OpenAI-style tool definition.
@@ -178,31 +178,31 @@ export type SmartActionDescriptor = {
  * @property {JsonSchemaObject} input_schema - Input schema for action parameters.
  * @property {JsonSchemaObject|null} [output_schema] - Optional output schema.
  * @property {import('./smart-environment.js').SettingsConfig} [settings_config] - Action settings schema.
- * @property {Object.<string, *>|null} [descriptor] - MCP or provider-specific descriptor payload.
+ * @property {Object.<string, unknown>|null} [descriptor] - MCP or provider-specific descriptor payload.
  * @property {SmartActionToolDefinition} tool - OpenAI-style tool definition.
  */
 export const SmartActionDescriptor: {};
 export type SmartActionHandler = (params: {
-    [x: string]: any;
-}) => Promise<any> | any;
+    [x: string]: unknown;
+}) => Promise<unknown> | unknown;
 export function SmartActionHandler(): void;
 export type SmartActionPreProcess = (params: {
-    [x: string]: any;
+    [x: string]: unknown;
 }) => Promise<{
-    [x: string]: any;
+    [x: string]: unknown;
 }> | {
-    [x: string]: any;
+    [x: string]: unknown;
 };
 export function SmartActionPreProcess(): void;
 export type SmartActionPostProcess = (params: {
-    [x: string]: any;
-}, result: any) => Promise<any> | any;
+    [x: string]: unknown;
+}, result: unknown) => Promise<unknown> | unknown;
 export function SmartActionPostProcess(): void;
 export type SmartActionModule = {
-    [x: string]: any;
+    [x: string]: unknown;
 };
 /**
- * @typedef {Object.<string, *>} SmartActionModule
+ * @typedef {Object.<string, unknown>} SmartActionModule
  * @property {SmartActionHandler} [default] - Default callable export for the action.
  * @property {string} [description] - Human-readable action description.
  * @property {string} [instruction] - Instruction text used when presenting the action to a model.
@@ -283,7 +283,7 @@ export type SmartActionsOptions = {
      */
     default_actions?: {
         [x: string]: {
-            [x: string]: any;
+            [x: string]: unknown;
         };
     };
     /**

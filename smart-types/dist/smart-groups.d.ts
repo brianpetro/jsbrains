@@ -153,7 +153,7 @@ export type SmartGroupMemberResult = {
     /**
      * - Member item instance.
      */
-    item: any;
+    item: unknown;
     /**
      * - Similarity or ranking score.
      */
@@ -161,7 +161,7 @@ export type SmartGroupMemberResult = {
 };
 /**
  * @typedef {Object} SmartGroupMemberResult
- * @property {*} item - Member item instance.
+ * @property {unknown} item - Member item instance.
  * @property {number} score - Similarity or ranking score.
  */
 export const SmartGroupMemberResult: {};

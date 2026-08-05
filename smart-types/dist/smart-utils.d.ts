@@ -3,12 +3,12 @@ export type NumericVector = number[];
  * @typedef {number[]} NumericVector
  * @description Dense numeric vector used for similarity and geometry helpers.
  */
-export const NumericVector: any[];
+export const NumericVector: number[];
 export type ScoredResult = {
     /**
      * - Item associated with the score.
      */
-    item: any;
+    item: unknown;
     /**
      * - Sortable score.
      */
@@ -16,7 +16,7 @@ export type ScoredResult = {
 };
 /**
  * @typedef {Object} ScoredResult
- * @property {*} item - Item associated with the score.
+ * @property {unknown} item - Item associated with the score.
  * @property {number} score - Sortable score.
  */
 export const ScoredResult: {};
@@ -85,19 +85,19 @@ export type NormalizedError = {
     /**
      * - Provider-specific details.
      */
-    details?: any;
+    details?: unknown;
     /**
      * - Raw error payload.
      */
-    raw?: any;
+    raw?: unknown;
 };
 /**
  * @typedef {Object} NormalizedError
  * @property {string} [message] - Human-readable error message.
  * @property {string|number} [code] - Provider or system error code.
  * @property {number|null} [status] - HTTP status when available.
- * @property {*} [details] - Provider-specific details.
- * @property {*} [raw] - Raw error payload.
+ * @property {unknown} [details] - Provider-specific details.
+ * @property {unknown} [raw] - Raw error payload.
  */
 export const NormalizedError: {};
 export type XmlFragmentNode = {

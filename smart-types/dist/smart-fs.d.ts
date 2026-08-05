@@ -4,6 +4,32 @@ export type SmartFsPath = string;
  * @description Relative path handled by SmartFs.
  */
 export const SmartFsPath: "";
+/**
+ * Canonical SmartFs runtime surface used by Smart Environment consumers.
+ */
+export type SmartFs = {
+    /**
+     * - Known file paths.
+     */
+    file_paths: string[];
+    /**
+     * - Known folder paths.
+     */
+    folder_paths: string[];
+    /**
+     * - Adapter-provided filesystem base path.
+     */
+    base_path: string;
+};
+/**
+ * Canonical SmartFs runtime surface used by Smart Environment consumers.
+ *
+ * @typedef {Object} SmartFs
+ * @property {string[]} file_paths - Known file paths.
+ * @property {string[]} folder_paths - Known folder paths.
+ * @property {string} base_path - Adapter-provided filesystem base path.
+ */
+export const SmartFs: {};
 export type SmartFsStat = {
     /**
      * - Creation time in epoch milliseconds.
@@ -21,7 +47,7 @@ export type SmartFsStat = {
      * - Deferred stat lookup error when present.
      */
     error?: Error | {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
@@ -29,7 +55,7 @@ export type SmartFsStat = {
  * @property {number} ctime - Creation time in epoch milliseconds.
  * @property {number} mtime - Modification time in epoch milliseconds.
  * @property {number} size - Size in bytes.
- * @property {Error|Object.<string, *>} [error] - Deferred stat lookup error when present.
+ * @property {Error|Object.<string, unknown>} [error] - Deferred stat lookup error when present.
  */
 export const SmartFsStat: {};
 export type SmartFsFileEntry = {

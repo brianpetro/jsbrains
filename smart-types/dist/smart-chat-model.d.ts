@@ -69,7 +69,7 @@ export type ChatModelToolDefinition = {
         name: string;
         description?: string;
         parameters?: {
-            [x: string]: any;
+            [x: string]: unknown;
         };
     };
 };
@@ -79,7 +79,7 @@ export type ChatModelToolDefinition = {
  * @property {Object} function - Tool function metadata.
  * @property {string} function.name - Tool name.
  * @property {string} [function.description] - Tool description.
- * @property {Object.<string, *>} [function.parameters] - JSON schema-like parameter object.
+ * @property {Object.<string, unknown>} [function.parameters] - JSON schema-like parameter object.
  */
 export const ChatModelToolDefinition: {};
 export type ChatModelToolCall = {
@@ -185,7 +185,7 @@ export type ChatModelRequest = {
      * - Tool-choice strategy or provider-specific override.
      */
     tool_choice?: "auto" | "none" | {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
@@ -199,7 +199,7 @@ export type ChatModelRequest = {
  * @property {number} [presence_penalty] - Presence penalty.
  * @property {number} [frequency_penalty] - Frequency penalty.
  * @property {Array<import('./smart-chat-model.js').ChatModelToolDefinition>} [tools] - Tool definitions available to the model.
- * @property {'auto'|'none'|Object.<string, *>} [tool_choice] - Tool-choice strategy or provider-specific override.
+ * @property {'auto'|'none'|Object.<string, unknown>} [tool_choice] - Tool-choice strategy or provider-specific override.
  */
 export const ChatModelRequest: {};
 export type ChatModelResponseMessage = {
@@ -299,13 +299,13 @@ export type ChatModelResponse = {
      * - Raw provider response or accumulated streaming payload.
      */
     raw?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Normalized error payload when completion fails.
      */
     error?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
@@ -316,15 +316,15 @@ export type ChatModelResponse = {
  * @property {string} [model] - Provider model identifier.
  * @property {Array<import('./smart-chat-model.js').ChatModelChoice>} choices - Normalized completion choices.
  * @property {import('./smart-chat-model.js').ChatModelUsage} [usage] - Provider usage data.
- * @property {Object.<string, *>} [raw] - Raw provider response or accumulated streaming payload.
- * @property {Object.<string, *>} [error] - Normalized error payload when completion fails.
+ * @property {Object.<string, unknown>} [raw] - Raw provider response or accumulated streaming payload.
+ * @property {Object.<string, unknown>} [error] - Normalized error payload when completion fails.
  */
 export const ChatModelResponse: {};
-export type ChatModelRequestAdapterClass = new (adapter: any, req?: import("./smart-chat-model.js").ChatModelRequest) => any;
+export type ChatModelRequestAdapterClass = new (adapter: unknown, req?: import("./smart-chat-model.js").ChatModelRequest) => object;
 export function ChatModelRequestAdapterClass(): void;
-export type ChatModelResponseAdapterClass = new (adapter: any, res?: {
-    [x: string]: any;
-}, status?: any) => any;
+export type ChatModelResponseAdapterClass = new (adapter: unknown, res?: {
+    [x: string]: unknown;
+}, status?: unknown) => object;
 export function ChatModelResponseAdapterClass(): void;
 export type ChatModelStreamHandlers = {
     /**
@@ -339,13 +339,13 @@ export type ChatModelStreamHandlers = {
      * - Called when streaming fails.
      */
     error?: (arg0: {
-        [x: string]: any;
+        [x: string]: unknown;
     }) => Promise<void> | void;
 };
 /**
  * @typedef {Object} ChatModelStreamHandlers
  * @property {function(import('./smart-chat-model.js').ChatModelResponse): Promise<void>|void} [chunk] - Called for partial streaming updates.
  * @property {function(import('./smart-chat-model.js').ChatModelResponse): Promise<void>|void} [done] - Called when streaming completes.
- * @property {function(Object.<string, *>): Promise<void>|void} [error] - Called when streaming fails.
+ * @property {function(Object.<string, unknown>): Promise<void>|void} [error] - Called when streaming fails.
  */
 export const ChatModelStreamHandlers: {};

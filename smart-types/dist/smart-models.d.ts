@@ -58,13 +58,13 @@ export type ProviderModelConfig = {
      * - models.dev enrichment payload.
      */
     models_dev?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     /**
      * - Provider cost metadata when available.
      */
     cost?: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
 };
 /**
@@ -80,8 +80,8 @@ export type ProviderModelConfig = {
  * @property {number} [max_output_tokens] - Maximum output token limit for chat models.
  * @property {boolean} [multimodal] - Whether the model accepts multimodal input.
  * @property {string} [adapter] - Provider adapter key.
- * @property {Object.<string, *>} [models_dev] - models.dev enrichment payload.
- * @property {Object.<string, *>} [cost] - Provider cost metadata when available.
+ * @property {Object.<string, unknown>} [models_dev] - models.dev enrichment payload.
+ * @property {Object.<string, unknown>} [cost] - Provider cost metadata when available.
  */
 export const ProviderModelConfig: {};
 export type ProviderModelsMap = {

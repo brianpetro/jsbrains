@@ -9,7 +9,7 @@ export type EventSeverity = "attention" | "warning" | "error" | null;
  * @typedef {'attention'|'warning'|'error'|null} EventSeverity
  * @description Escalation-only severity used for notification aggregation.
  */
-export const EventSeverity: any;
+export const EventSeverity: null;
 export type SmartEventPayload = {
     /**
      * - Epoch milliseconds when the event occurred.
@@ -58,6 +58,25 @@ export type SmartEventPayload = {
 export const SmartEventPayload: {};
 export type SmartEventHandler = (arg0: import("./smart-events.js").SmartEventPayload, arg1: string) => void;
 export function SmartEventHandler(): void;
+export type SmartEventDisposer = () => void;
+export function SmartEventDisposer(): void;
+export type SmartEvents<TPayload = SmartEventPayload> = {
+    /**
+     * - Emits an event payload.
+     */
+    emit: (event_key: string, payload?: TPayload) => void;
+    /**
+     * - Registers a listener and returns its disposer.
+     */
+    on: (event_key: string, callback: (payload: TPayload) => void) => import("./smart-events.js").SmartEventDisposer;
+};
+/**
+ * @template [TPayload=import('./smart-events.js').SmartEventPayload]
+ * @typedef {Object} SmartEvents
+ * @property {(event_key: string, payload?: TPayload) => void} emit - Emits an event payload.
+ * @property {(event_key: string, callback: (payload: TPayload) => void) => import('./smart-events.js').SmartEventDisposer} on - Registers a listener and returns its disposer.
+ */
+export const SmartEvents: {};
 export type EventSessionEntry = {
     /**
      * - Emitted event key.
