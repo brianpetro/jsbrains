@@ -3,5 +3,17 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Shared JSDoc typedef exports for jsbrains packages.",
-  "main": "index.js"
+  "main": "./index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "*.js",
+    "dist"
+  ]
 }

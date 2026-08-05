@@ -19,9 +19,21 @@
     "url": "https://github.com/brianpetro/jsbrains/issues"
   },
   "homepage": "https://jsbrains.org",
+  "scripts": {
+    "build:smart-types-declarations": "tsc -p smart-types/tsconfig.json",
+    "prepare": "npm run build:smart-types-declarations"
+  },
+  "exports": {
+    "./smart-types": {
+      "types": "./smart-types/dist/index.d.ts",
+      "import": "./smart-types/index.js",
+      "default": "./smart-types/index.js"
+    }
+  },
   "devDependencies": {
     "jsdoc": "^4.0.2",
-    "smart-types": "*"
+    "smart-types": "*",
+    "typescript": "^5.9.0"
   },
   "private": true,
   "workspaces": [
