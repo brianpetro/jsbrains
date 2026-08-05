@@ -246,7 +246,9 @@ export const ConnectionsListScope = {};
  *   item_type: new (env: import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>, data: ConnectionsListData) => ConnectionsListScope,
  *   set: (item: ConnectionsListScope) => void,
  *   constructor: {default_settings: ConnectionsListSettings},
- *   connections_list_component_settings_config?: import('./smart-environment.js').SettingsConfig
+ *   connections_list_component_settings_config?: import('./smart-environment.js').SettingsConfig,
+ *   get_connections_list_component_options: () => Array<{value: string, name: string, description?: string}>,
+ *   get_connections_list_item_options: () => Array<{value: string, name: string, description?: string}>
  * }} ConnectionsListsCollection
  */
 export const ConnectionsListsCollection = {};
