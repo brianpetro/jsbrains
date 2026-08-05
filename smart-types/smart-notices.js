@@ -1,9 +1,9 @@
 /**
  * @typedef {Object} SmartNoticeAction
  * @property {string} [text] - Button text.
- * @property {function(*): Promise<void>|void} [callback] - Action callback.
+ * @property {function(unknown): Promise<void>|void} [callback] - Action callback.
  * @property {string} [callback_key] - Host callback/action key.
- * @property {*} [payload] - Callback payload.
+ * @property {unknown} [payload] - Callback payload.
  */
 export const SmartNoticeAction = {};
 
@@ -15,7 +15,7 @@ export const SmartNoticeAction = {};
  * @property {string} [description] - Notice description template.
  * @property {number} [timeout] - Display timeout in milliseconds.
  * @property {SmartNoticeAction[]} [actions] - Optional action buttons.
- * @property {function(Object.<string, *>): *} [create] - Factory used to create a rendered notice.
+ * @property {function(Object.<string, unknown>): unknown} [create] - Factory used to create a rendered notice.
  */
 export const SmartNoticeConfig = {};
 

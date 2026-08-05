@@ -15,7 +15,7 @@ export const SmartCompletionChatModelRef = {};
  * @property {string} [model] - Provider model identifier.
  * @property {Array<import('./smart-chat-model.js').ChatModelChoice>} choices - Normalized response choices.
  * @property {import('./smart-chat-model.js').ChatModelUsage} [usage] - Token usage metadata.
- * @property {Object.<string, *>} [raw] - Raw provider payload or accumulated stream payload.
+ * @property {Object.<string, unknown>} [raw] - Raw provider payload or accumulated stream payload.
  */
 export const SmartCompletionResponseRecord = {};
 
@@ -24,7 +24,7 @@ export const SmartCompletionResponseRecord = {};
  * @property {import('./smart-chat-model.js').ChatModelRequest} request - Normalized chat-model request payload.
  * @property {Array<import('./smart-completions.js').SmartCompletionResponseRecord>} responses - Stored completion responses.
  * @property {import('./smart-completions.js').SmartCompletionChatModelRef} [chat_model] - Captured model reference for the stored response.
- * @property {Object.<string, *>} [error] - Normalized completion error payload.
+ * @property {Object.<string, unknown>} [error] - Normalized completion error payload.
  */
 export const SmartCompletionState = {};
 
@@ -37,10 +37,10 @@ export const SmartCompletionState = {};
  * @property {string} [context_key] - SmartContext key used by ContextCompletionAdapter.
  * @property {string} [chat_completion_model_key] - chat_completion_models item key override.
  * @property {string} [action_key] - Smart action key used by ActionCompletionAdapter.
- * @property {Object.<string, *>} [action_opts] - Smart action argument defaults.
+ * @property {Object.<string, unknown>} [action_opts] - Smart action argument defaults.
  * @property {string} [action_xml_key] - Smart action key used by ActionXmlCompletionAdapter.
- * @property {Object.<string, *>} [smart_actions] - Smart action toggles stored on the completion.
- * @property {Object.<string, *>} [actions] - Executed action results keyed by action name.
+ * @property {Object.<string, unknown>} [smart_actions] - Smart action toggles stored on the completion.
+ * @property {Object.<string, unknown>} [actions] - Executed action results keyed by action name.
  * @property {import('./smart-completions.js').SmartCompletionState} completion - Request and response state.
  */
 export const SmartCompletionData = {};

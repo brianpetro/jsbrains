@@ -11,7 +11,7 @@ export const EmbedInputItem = {};
  * @typedef {Object} EmbeddingResult
  * @property {Array<number>} vec - Generated embedding vector.
  * @property {number|null} [tokens] - Token count when the adapter provides one.
- * @property {Object.<string, *>} [error] - Normalized error payload for the result.
+ * @property {Object.<string, unknown>} [error] - Normalized error payload for the result.
  */
 export const EmbeddingResult = {};
 
@@ -37,13 +37,13 @@ export const EmbeddingModelInfo = {};
 export const EmbeddingModelsMap = {};
 
 /**
- * @typedef {new (adapter: *, embed_inputs: Array<string>) => *} EmbedModelRequestAdapterClass
+ * @typedef {new (adapter: unknown, embed_inputs: Array<string>) => object} EmbedModelRequestAdapterClass
  * @description Constructor returned by SmartEmbedModelApiAdapter.req_adapter.
  */
 export const EmbedModelRequestAdapterClass = function () {};
 
 /**
- * @typedef {new (adapter: *, response: Object.<string, *>) => *} EmbedModelResponseAdapterClass
+ * @typedef {new (adapter: unknown, response: Object.<string, unknown>) => object} EmbedModelResponseAdapterClass
  * @description Constructor returned by SmartEmbedModelApiAdapter.res_adapter.
  */
 export const EmbedModelResponseAdapterClass = function () {};

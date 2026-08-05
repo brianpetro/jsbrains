@@ -3,7 +3,7 @@
  * @property {number} index - Index of the ranked document in the input array.
  * @property {number} score - Relevance score, higher is typically more relevant.
  * @property {string} [text] - Original document text when requested.
- * @property {*} [document] - Provider-specific original document payload.
+ * @property {unknown} [document] - Provider-specific original document payload.
  */
 export const RankingResult = {};
 
@@ -59,7 +59,7 @@ export const SmartRankModelRequest = {};
 /**
  * @typedef {Object} SmartRankModelApiResponse
  * @property {RankingResult[]} [results] - Ranking results returned by providers that use a results wrapper.
- * @property {Object.<string, *>} [meta] - Provider-specific metadata.
- * @property {Object.<string, *>} [error] - Provider error payload.
+ * @property {Object.<string, unknown>} [meta] - Provider-specific metadata.
+ * @property {Object.<string, unknown>} [error] - Provider error payload.
  */
 export const SmartRankModelApiResponse = {};

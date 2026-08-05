@@ -1,7 +1,7 @@
 /**
  * @typedef {Object} SmartHttpRequestOptions
  * @property {import('./smart-environment.js').SmartEnvClass} adapter - Request adapter constructor.
- * @property {*} [obsidian_request_adapter] - Obsidian requestUrl-compatible adapter.
+ * @property {unknown} [obsidian_request_adapter] - Obsidian requestUrl-compatible adapter.
  */
 export const SmartHttpRequestOptions = {};
 
@@ -10,25 +10,41 @@ export const SmartHttpRequestOptions = {};
  * @property {string} url - Request URL.
  * @property {string} [method] - HTTP method, defaulting to GET in adapters when omitted.
  * @property {Object.<string, string>} [headers] - Request headers.
- * @property {*} [body] - Request body.
+ * @property {unknown} [body] - Request body.
  * @property {boolean} [throw] - Whether the transport should throw for non-2xx responses.
  */
 export const SmartHttpRequestParams = {};
 
 /**
  * @typedef {Object} SmartHttpResponseAdapterLike
- * @property {function(): Promise<Object>|Object} headers - Returns response headers.
- * @property {function(): Promise<*>|*} json - Returns parsed JSON body.
- * @property {function(): Promise<number>|number} status - Returns HTTP status code.
- * @property {function(): Promise<string>|string} text - Returns raw text body.
+ * @property {() => Promise<Record<string, unknown>>|Record<string, unknown>} headers - Returns response headers.
+ * @property {() => Promise<unknown>|unknown} json - Returns parsed JSON body.
+ * @property {() => Promise<number>|number} status - Returns HTTP status code.
+ * @property {() => Promise<string>|string} text - Returns raw text body.
  */
 export const SmartHttpResponseAdapterLike = {};
 
 /**
+ * Fetch-compatible HTTP response contract.
+ *
+ * @template [TJson=unknown]
  * @typedef {Object} SmartHttpFetchResponse
  * @property {Headers|Object.<string, string>} headers - Response headers.
  * @property {number} status - HTTP status code.
- * @property {function(): Promise<*>} json - JSON body parser.
- * @property {function(): Promise<string>} text - Text body parser.
+ * @property {() => Promise<TJson>} json - JSON body parser.
+ * @property {() => Promise<string>} text - Text body parser.
  */
 export const SmartHttpFetchResponse = {};
+
+/**
+ * Parsed HTTP response contract used by requestUrl-style host adapters.
+ *
+ * @template [TJson=unknown]
+ * @typedef {Object} SmartHttpRequestResponse
+ * @property {TJson} json - Parsed JSON body.
+ * @property {string} text - Raw text body.
+ * @property {number} [status] - HTTP status code.
+ * @property {Object.<string, string>} [headers] - Response headers.
+ * @property {ArrayBuffer} [arrayBuffer] - Raw response body.
+ */
+export const SmartHttpRequestResponse = {};

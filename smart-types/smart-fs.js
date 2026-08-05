@@ -5,11 +5,21 @@
 export const SmartFsPath = '';
 
 /**
+ * Canonical SmartFs runtime surface used by Smart Environment consumers.
+ *
+ * @typedef {Object} SmartFs
+ * @property {string[]} file_paths - Known file paths.
+ * @property {string[]} folder_paths - Known folder paths.
+ * @property {string} base_path - Adapter-provided filesystem base path.
+ */
+export const SmartFs = {};
+
+/**
  * @typedef {Object} SmartFsStat
  * @property {number} ctime - Creation time in epoch milliseconds.
  * @property {number} mtime - Modification time in epoch milliseconds.
  * @property {number} size - Size in bytes.
- * @property {Error|Object.<string, *>} [error] - Deferred stat lookup error when present.
+ * @property {Error|Object.<string, unknown>} [error] - Deferred stat lookup error when present.
  */
 export const SmartFsStat = {};
 

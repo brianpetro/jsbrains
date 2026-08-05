@@ -8,7 +8,7 @@ export const NotificationLevel = '';
  * @typedef {'attention'|'warning'|'error'|null} EventSeverity
  * @description Escalation-only severity used for notification aggregation.
  */
-export const EventSeverity = null;
+export const EventSeverity = /** @type {null} */ (null);
 
 /**
  * @typedef {Object} SmartEventPayload
@@ -28,6 +28,20 @@ export const SmartEventPayload = {};
  * @description Event handler signature used by SmartEvents adapters.
  */
 export const SmartEventHandler = function () {};
+
+/**
+ * @callback SmartEventDisposer
+ * @returns {void}
+ */
+export const SmartEventDisposer = function () {};
+
+/**
+ * @template [TPayload=import('./smart-events.js').SmartEventPayload]
+ * @typedef {Object} SmartEvents
+ * @property {(event_key: string, payload?: TPayload) => void} emit - Emits an event payload.
+ * @property {(event_key: string, callback: (payload: TPayload) => void) => import('./smart-events.js').SmartEventDisposer} on - Registers a listener and returns its disposer.
+ */
+export const SmartEvents = {};
 
 /**
  * @typedef {Object} EventSessionEntry

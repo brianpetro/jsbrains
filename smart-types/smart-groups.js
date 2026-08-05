@@ -56,7 +56,7 @@ export const SmartGroupsOptions = {};
 
 /**
  * @typedef {Object} SmartGroupMemberResult
- * @property {*} item - Member item instance.
+ * @property {unknown} item - Member item instance.
  * @property {number} score - Similarity or ranking score.
  */
 export const SmartGroupMemberResult = {};

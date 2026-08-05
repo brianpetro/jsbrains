@@ -1,10 +1,10 @@
 /**
- * @typedef {Object.<string, *>} JsonSchemaObject
+ * @typedef {Object.<string, unknown>} JsonSchemaObject
  * @property {string} [type] - JSON schema value type.
- * @property {Object.<string, JsonSchemaObject|Object.<string, *>>} [properties] - Object properties keyed by parameter name.
+ * @property {Object.<string, JsonSchemaObject|Object.<string, unknown>>} [properties] - Object properties keyed by parameter name.
  * @property {string[]} [required] - Required property names.
  * @property {string} [description] - Human-readable schema description.
- * @property {*} [default] - Default value.
+ * @property {unknown} [default] - Default value.
  */
 export const JsonSchemaObject = {};
 
@@ -62,35 +62,35 @@ export const SmartActionToolDefinition = {};
  * @property {JsonSchemaObject} input_schema - Input schema for action parameters.
  * @property {JsonSchemaObject|null} [output_schema] - Optional output schema.
  * @property {import('./smart-environment.js').SettingsConfig} [settings_config] - Action settings schema.
- * @property {Object.<string, *>|null} [descriptor] - MCP or provider-specific descriptor payload.
+ * @property {Object.<string, unknown>|null} [descriptor] - MCP or provider-specific descriptor payload.
  * @property {SmartActionToolDefinition} tool - OpenAI-style tool definition.
  */
 export const SmartActionDescriptor = {};
 
 /**
  * @callback SmartActionHandler
- * @param {Object.<string, *>} params - Action parameters.
- * @returns {Promise<*>|*} Action result.
+ * @param {Object.<string, unknown>} params - Action parameters.
+ * @returns {Promise<unknown>|unknown} Action result.
  */
 export const SmartActionHandler = function () {};
 
 /**
  * @callback SmartActionPreProcess
- * @param {Object.<string, *>} params - Incoming action parameters.
- * @returns {Promise<Object.<string, *>>|Object.<string, *>} Processed parameters.
+ * @param {Object.<string, unknown>} params - Incoming action parameters.
+ * @returns {Promise<Object.<string, unknown>>|Object.<string, unknown>} Processed parameters.
  */
 export const SmartActionPreProcess = function () {};
 
 /**
  * @callback SmartActionPostProcess
- * @param {Object.<string, *>} params - Parameters used to run the action.
- * @param {*} result - Raw action result.
- * @returns {Promise<*>|*} Processed action result.
+ * @param {Object.<string, unknown>} params - Parameters used to run the action.
+ * @param {unknown} result - Raw action result.
+ * @returns {Promise<unknown>|unknown} Processed action result.
  */
 export const SmartActionPostProcess = function () {};
 
 /**
- * @typedef {Object.<string, *>} SmartActionModule
+ * @typedef {Object.<string, unknown>} SmartActionModule
  * @property {SmartActionHandler} [default] - Default callable export for the action.
  * @property {string} [description] - Human-readable action description.
  * @property {string} [instruction] - Instruction text used when presenting the action to a model.

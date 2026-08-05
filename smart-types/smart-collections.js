@@ -1,5 +1,5 @@
 /**
- * @typedef {Object.<string, *>} CollectionItemData
+ * @typedef {Object.<string, unknown>} CollectionItemData
  * @property {string} [key] - Stable item key within its collection.
  * @property {string} [class_name] - Runtime item class name used for persistence compatibility.
  */
@@ -25,14 +25,16 @@ export const CollectionItemData = {};
 export const CollectionFilterOptions = {};
 
 /**
+ * @template [TItem=unknown]
  * @callback CollectionFilterPredicate
- * @param {*} item - Collection item instance.
+ * @param {TItem} item - Collection item instance.
  * @returns {boolean} Whether the item should be included.
  */
 export const CollectionFilterPredicate = function () {};
 
 /**
- * @typedef {(CollectionFilterOptions|CollectionFilterPredicate)} CollectionFilterInput
+ * @template [TItem=unknown]
+ * @typedef {(CollectionFilterOptions|CollectionFilterPredicate<TItem>)} CollectionFilterInput
  */
 export const CollectionFilterInput = {};
 
@@ -49,7 +51,7 @@ export const CollectionItemRef = {};
  * @property {string} [data_dir] - Explicit data directory override.
  * @property {import('./smart-environment.js').SmartEnvClass} [item_type] - Explicit item constructor override.
  * @property {CollectionDataAdapterConfig} [data_adapter] - Explicit data adapter override.
- * @property {Object.<string, *>} [actions] - Collection-scoped actions.
+ * @property {Object.<string, unknown>} [actions] - Collection-scoped actions.
  */
 export const CollectionOptions = {};
 
@@ -60,34 +62,90 @@ export const CollectionOptions = {};
 export const CollectionQueueOptions = {};
 
 /**
- * @typedef {Object} CollectionEventPayload
- * @property {string} [collection_key] - Collection key associated with the event.
- * @property {string} [item_key] - Item key associated with the event.
+ * @typedef {Object} CollectionEventPayloadOverrides
  * @property {'info'|'warning'|'error'} [level] - Optional event severity.
+ */
+export const CollectionEventPayloadOverrides = {};
+
+/**
+ * @typedef {Omit<
+ *   import('./smart-events.js').SmartEventPayload,
+ *   keyof CollectionEventPayloadOverrides
+ * > & CollectionEventPayloadOverrides} CollectionEventPayload
  */
 export const CollectionEventPayload = {};
 
 /**
  * @callback CollectionEventCallback
- * @param {CollectionEventPayload & Object.<string, *>} payload - Event payload.
+ * @param {CollectionEventPayload & Object.<string, unknown>} payload - Event payload.
  * @returns {void}
  */
 export const CollectionEventCallback = function () {};
 
 /**
+ * @template [TFilter=CollectionFilterOptions]
  * @typedef {Object} CollectionScoreParams
- * @property {CollectionFilterOptions} [filter] - Filter options applied before scoring.
+ * @property {TFilter} [filter] - Filter options applied before scoring.
  * @property {string} [score_algo_key] - Action key used to compute the score.
  */
 export const CollectionScoreParams = {};
 
 /**
+ * @template [TItem=unknown]
+ * @template [TData=Object.<string, unknown>]
+ * @template [TScore=number]
  * @typedef {Object} CollectionScoreResult
- * @property {*} item - Matched item instance.
- * @property {number} [score] - Optional score returned by a scoring action.
- * @property {Object.<string, *>} [data] - Additional algorithm-specific score metadata.
+ * @property {TItem} item - Matched item instance.
+ * @property {TScore} [score] - Optional score returned by a scoring action.
+ * @property {TData} [data] - Additional algorithm-specific score metadata.
  */
 export const CollectionScoreResult = {};
+
+/**
+ * Canonical structural contract for a Smart Collections item instance.
+ * Domain packages should add only their collection relationship and domain fields.
+ *
+ * @template [TData=CollectionItemData]
+ * @template [TEnv=CollectionEnv]
+ * @template [TActions=Object.<string, unknown>]
+ * @template [TFilter=CollectionFilterOptions]
+ * @template [TScoreParams=CollectionScoreParams]
+ * @template [TScoreOutput=unknown]
+ * @template [TEventPayload=CollectionEventPayload]
+ * @typedef {Object} CollectionItem
+ * @property {string} key - Stable item key within its collection.
+ * @property {string} collection_key - Parent collection key.
+ * @property {TData} data - Persisted item data.
+ * @property {TEnv} env - Shared Smart Environment instance.
+ * @property {TActions} actions - Resolved item action map.
+ * @property {(filter_opts?: TFilter) => boolean} filter - Tests collection filters.
+ * @property {(params?: TScoreParams) => TScoreOutput} filter_and_score - Filters and scores the item.
+ * @property {() => void} queue_save - Queues the item for persistence.
+ * @property {() => void} queue_load - Queues the item for loading.
+ * @property {() => Promise<void>} save - Persists the item immediately.
+ * @property {() => Promise<void>} load - Loads the item immediately.
+ * @property {(event_key: string, payload?: TEventPayload) => void} emit_event - Emits an item-scoped event.
+ */
+export const CollectionItem = {};
+
+/**
+ * Canonical structural contract for a Smart Collections collection instance.
+ *
+ * @template [TItem=unknown]
+ * @template [TEnv=CollectionEnv]
+ * @template [TSettings=Object.<string, unknown>]
+ * @typedef {Object} Collection
+ * @property {string} collection_key - Stable collection key.
+ * @property {TEnv} env - Shared Smart Environment instance.
+ * @property {Object.<string, TItem>} items - Items keyed by item key.
+ * @property {TSettings} settings - Merged collection settings.
+ * @property {(key: string) => TItem|undefined} get - Retrieves one item by key.
+ * @property {(item: TItem) => void} set - Adds or replaces an item.
+ * @property {(filter_opts?: CollectionFilterInput<TItem>) => TItem[]} filter - Filters collection items.
+ * @property {(filter_opts?: CollectionFilterInput<TItem>) => TItem[]} list - Alias for filter.
+ * @property {() => Promise<void>|void} save - Persists queued collection changes.
+ */
+export const Collection = {};
 
 /**
  * @typedef {Object} FileStat
@@ -97,7 +155,7 @@ export const FileStat = {};
 
 /**
  * @typedef {Object} FileSystemAdapter
- * @property {(path: string, encoding?: string, opts?: Object.<string, *>) => Promise<string>} [read] - Read file contents.
+ * @property {(path: string, encoding?: string, opts?: Object.<string, unknown>) => Promise<string>} [read] - Read file contents.
  */
 export const FileSystemAdapter = {};
 
@@ -111,22 +169,22 @@ export const FileSystemAdapter = {};
  * @property {(path: string, recursive?: boolean) => Promise<void>} remove_dir - Remove a directory.
  * @property {(path: string, data: string) => Promise<void>} write - Write file contents.
  * @property {(path: string, data: string) => Promise<void>} append - Append file contents.
- * @property {(path: string, encoding?: string, opts?: Object.<string, *>) => Promise<string>} read - Read file contents.
+ * @property {(path: string, encoding?: string, opts?: Object.<string, unknown>) => Promise<string>} read - Read file contents.
  * @property {(path: string) => Promise<FileStat>} stat - Read file metadata.
  */
 export const FileSystem = {};
 
 /**
- * @typedef {Object.<string, *>} CollectionEnv
+ * @typedef {Object.<string, unknown>} CollectionEnv
  * @property {(target: Object) => void} create_env_getter - Defines an env getter on the target object.
  * @property {import('./smart-environment.js').SmartEnvConfig} [config] - Merged Smart Environment config.
- * @property {Object.<string, *>} [opts] - Runtime environment options.
- * @property {Object.<string, *>} [settings] - Runtime settings store.
- * @property {Object.<string, *>} [collections] - Collection load-state registry.
- * @property {{emit?: Function, on?: Function, once?: Function}} [events] - Event bus.
+ * @property {Object.<string, unknown>} [opts] - Runtime environment options.
+ * @property {Object.<string, unknown>} [settings] - Runtime settings store.
+ * @property {Object.<string, unknown>} [collections] - Collection load-state registry.
+ * @property {import('./smart-events.js').SmartEvents<CollectionEventPayload & Object.<string, unknown>>} [events] - Event bus.
  * @property {FileSystem} [data_fs] - Data filesystem adapter.
- * @property {(module_key: string) => *} [init_module] - Lazy module initializer.
- * @property {{save?: Function}} [smart_settings] - Settings persistence module.
+ * @property {(module_key: string) => unknown} [init_module] - Lazy module initializer.
+ * @property {{save?: () => Promise<void>|void}} [smart_settings] - Settings persistence module.
  */
 export const CollectionEnv = {};
 

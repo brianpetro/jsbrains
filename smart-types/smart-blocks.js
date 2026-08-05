@@ -2,7 +2,7 @@
  * @typedef {Array<number>} BlockLineRange
  * @description Inclusive [start_line, end_line] range for a block.
  */
-export const BlockLineRange = [];
+export const BlockLineRange = /** @type {number[]} */ ([]);
 
 /**
  * @typedef {Object} ParsedTaskCollections

@@ -26,11 +26,11 @@ export const SmartModelAdapterMap = {};
  * @typedef {Object} SmartModelOptions
  * @property {string} [adapter] - Adapter/provider key.
  * @property {SmartModelAdapterMap} adapters - Available adapter constructors.
- * @property {Object.<string, *>} settings - Runtime or persisted model settings.
+ * @property {Object.<string, unknown>} settings - Runtime or persisted model settings.
  * @property {string} [model_key] - Explicit provider model id.
  * @property {function(): void} [reload_model] - Optional host callback used after settings changes.
  * @property {function(): void} [re_render_settings] - Optional host callback used after settings changes.
- * @property {*} [http_adapter] - Optional HTTP adapter override for API adapters.
+ * @property {unknown} [http_adapter] - Optional HTTP adapter override for API adapters.
  */
 export const SmartModelOptions = {};
 
