@@ -4,6 +4,15 @@ import { EmbeddingModel } from '../items/embedding_model.js';
 
 export class EmbeddingModels extends Models {
   model_type = 'Embedding';
+
+  new_model(data = {}) {
+    if (data.model_key === undefined) {
+      const provider_adapter_class = this.env_config.providers?.[data.provider_key]?.class;
+      data.model_key = provider_adapter_class?.defaults?.default_model || '';
+    }
+    return super.new_model(data);
+  }
+
   get default_provider_key() {
     return 'transformers';
   }

@@ -7,7 +7,7 @@ import {
 /**
  * Normalize LM Studio model
  * Pure and reusable.
- * @param {Object} list - Response from LM Studio `/v1/models` endpoint
+ * @param {Object} list - Response from LM Studio `/api/v0/models` endpoint
  * @param {string} [adapter_key='lm_studio'] - Adapter identifier
  * @returns {Object} Parsed models map
  */
@@ -22,7 +22,7 @@ export function parse_lm_studio_models(list, adapter_key = 'lm_studio') {
       acc[m.id] = {
         id: m.id,
         model_name: m.id,
-        max_tokens: m.loaded_context_length || 512,
+        max_tokens: m.loaded_context_length || m.max_context_length || 512,
         description: `LM Studio model: ${m.id}`,
         adapter: adapter_key,
       };
@@ -43,10 +43,17 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     models_endpoint: "/api/v0/models",
     default_model: "",               // user picks from dropdown
     streaming: false,
-    api_key: "na",                   // not used
     batch_size: 10,
     max_tokens: 512,
   };
+
+  static sync_model_data(model_item) {
+    if (!model_item.data.api_key && !model_item.secrets?.api_key) return false;
+
+    model_item.api_key = "";
+    model_item.queue_save?.();
+    return true;
+  }
 
   get req_adapter() {
     return LmStudioEmbedModelRequestAdapter;
@@ -65,6 +72,63 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
 
   get models_endpoint() {
     return `${this.host}${this.constructor.defaults.models_endpoint}`;
+  }
+
+  get api_key() {
+    return "local";
+  }
+
+  prepare_request_headers() {
+    return {
+      "Content-Type": "application/json",
+    };
+  }
+
+  async load() {
+    if (this.is_loaded) return;
+    if (this._load_promise) return await this._load_promise;
+
+    this._load_promise = (async () => {
+      if (!this.model_key) {
+        await super.load();
+        return;
+      }
+
+      const cached_model = this.model.data.provider_models?.[this.model_key];
+      const models = cached_model
+        ? this.model.data.provider_models
+        : await this.get_models(true)
+      ;
+      if (!models[this.model_key]) {
+        await super.load();
+        return;
+      }
+
+      // LM Studio model metadata does not expose embedding dimensions.
+      const [result] = await this.embed_batch([{ embed_input: "test" }]);
+      const dims = result?.vec?.length;
+      if (!dims) {
+        throw new Error(
+          `Unable to determine embedding dimensions for ${this.model_key || "LM Studio model"}.`,
+        );
+      }
+
+      const selected_model = this.model.data.provider_models?.[this.model_key];
+      const dims_changed = this.model.data.dims !== dims;
+      const selected_model_changed = selected_model && selected_model.dims !== dims;
+
+      if (dims_changed) this.model.data.dims = dims;
+      if (selected_model) selected_model.dims = dims;
+      if (dims_changed || selected_model_changed) this.model.queue_save?.();
+
+      await super.load();
+    })();
+
+    try {
+      return await this._load_promise;
+    } finally {
+      this._load_promise = null;
+    }
   }
 
   get settings_config() {
@@ -101,17 +165,26 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
   }
 
   async get_models(refresh = false) {
+    if (this._get_models_promise) return await this._get_models_promise;
     if (!refresh && this.model.data.provider_models) return this.model.data.provider_models;
 
-    const resp = await this.http_adapter.request({
-      url: this.models_endpoint,
-      method: "GET",
-    });
-    const raw = await resp.json();
-    const parsed = this.parse_model_data(raw);
-    this.model.data.provider_models = parsed;
-    this.model.re_render_settings();
-    return parsed;
+    this._get_models_promise = (async () => {
+      const resp = await this.http_adapter.request({
+        url: this.models_endpoint,
+        method: "GET",
+      });
+      const raw = await resp.json();
+      const parsed = this.parse_model_data(raw);
+      this.model.data.provider_models = parsed;
+      this.model.re_render_settings?.();
+      return parsed;
+    })();
+
+    try {
+      return await this._get_models_promise;
+    } finally {
+      this._get_models_promise = null;
+    }
   }
 
   parse_model_data(list) {

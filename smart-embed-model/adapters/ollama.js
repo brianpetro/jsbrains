@@ -86,24 +86,24 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
     host: "http://localhost:11434",
     endpoint: "/api/embed",
     models_endpoint: "/api/tags",
-    api_key: 'na', // Not required for local instance
     streaming: false, // Ollama's embed API does not support streaming
     max_tokens: 512, // Example default, adjust based on model capabilities
     signup_url: null, // Not applicable for local instance
     batch_size: 30,
     models: {},
   };
-  
-  /**
-   * @override
-   * always return 'something' to allow this adapter to be used without an API key since it's connecting to a local instance that doesn't require authentication
-   * Problem/Reason( 2026-04-20): embed_batch method on parent class throws if this is falsy
-   * should be better handed in future
-   */
-  get api_key() {
-    return this.model.data.api_key || 'something';
+
+  static sync_model_data(model_item) {
+    if (!model_item.data.api_key && !model_item.secrets?.api_key) return false;
+
+    model_item.api_key = "";
+    model_item.queue_save?.();
+    return true;
   }
 
+  get api_key() {
+    return "local";
+  }
   get host() {
     return this.model.data.host || this.constructor.defaults.host;
   }
@@ -119,9 +119,37 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
   }
 
   async load() {
-    await this.get_models();
-    this.sync_selected_model_data();
-    await super.load();
+    if (this.is_loaded) return;
+    if (this._load_promise) return await this._load_promise;
+
+    this._load_promise = (async () => {
+      await this.get_models();
+
+      const selected_model = this.model_data?.[this.model_key];
+      if (!selected_model) {
+        await super.load();
+        return;
+      }
+
+      if (!selected_model.dims) {
+        // Some Ollama models omit embedding_length from /api/show.
+        const [result] = await super.embed_batch([{ embed_input: "test" }]);
+        const dims = result?.vec?.length;
+        if (!dims) {
+          throw new Error(`Unable to determine embedding dimensions for ${this.model_key}.`);
+        }
+        selected_model.dims = dims;
+      }
+
+      this.sync_selected_model_data();
+      await super.load();
+    })();
+
+    try {
+      return await this._load_promise;
+    } finally {
+      this._load_promise = null;
+    }
   }
 
   /**
@@ -303,11 +331,7 @@ export class SmartEmbedOllamaAdapter extends SmartEmbedModelApiAdapter {
 
     if (!changed) return false;
 
-    if (typeof this.model.debounce_save === 'function') {
-      this.model.debounce_save();
-    } else if (typeof this.model.queue_save === 'function') {
-      this.model.queue_save();
-    }
+    this.model.queue_save?.();
 
     return true;
   }

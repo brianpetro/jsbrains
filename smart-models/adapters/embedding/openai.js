@@ -46,11 +46,13 @@ export class OpenAIEmbeddingModelAdapter extends SmartEmbedOpenAIAdapter {
     ;
     const changed = model_item.data.dims !== dims
       || model_item.data.max_tokens !== model_profile.max_tokens
+      || model_item.data.endpoint !== model_profile.endpoint
     ;
     if (!changed) return false;
 
     model_item.data.dims = dims;
     model_item.data.max_tokens = model_profile.max_tokens;
+    model_item.data.endpoint = model_profile.endpoint;
     model_item.queue_save?.();
     return true;
   }
