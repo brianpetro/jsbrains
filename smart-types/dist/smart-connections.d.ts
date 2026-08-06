@@ -227,7 +227,7 @@ export type ConnectionItemOverrides = {
     connections?: ConnectionsListScope;
     blocks?: ConnectionItem[];
     source?: ConnectionItem;
-    file?: import("obsidian").TFile;
+    file?: ConnectionsFile;
     embed_link?: string;
     is_media?: boolean;
     should_embed?: boolean;
@@ -249,7 +249,7 @@ export type ConnectionItemOverrides = {
  * @property {ConnectionsListScope} [connections]
  * @property {ConnectionItem[]} [blocks]
  * @property {ConnectionItem} [source]
- * @property {import('obsidian').TFile} [file]
+ * @property {ConnectionsFile} [file]
  * @property {string} [embed_link]
  * @property {boolean} [is_media]
  * @property {boolean} [should_embed]
@@ -595,25 +595,27 @@ export type ConnectionsContextCollection = {
 export const ConnectionsContextCollection: {};
 export type ConnectionsCommandsRegistry = {
     commands: {
-        [x: string]: import("obsidian").Command;
+        [x: string]: {
+            name?: string;
+        };
     };
     executeCommandById: (command_id: string) => boolean;
 };
 /**
  * @typedef {Object} ConnectionsCommandsRegistry
- * @property {Object.<string, import('obsidian').Command>} commands
+ * @property {Object.<string, {name?: string}>} commands
  * @property {(command_id: string) => boolean} executeCommandById
  */
 export const ConnectionsCommandsRegistry: {};
 export type ConnectionsPluginsRegistry = {
     enabledPlugins: Set<string>;
-    getPlugin: (plugin_id: string) => import("obsidian").Plugin | undefined;
+    getPlugin: (plugin_id: string) => ConnectionsPlugin | undefined;
     loadManifests: () => Promise<void> | void;
 };
 /**
  * @typedef {Object} ConnectionsPluginsRegistry
  * @property {Set<string>} enabledPlugins
- * @property {(plugin_id: string) => import('obsidian').Plugin|undefined} getPlugin
+ * @property {(plugin_id: string) => ConnectionsPlugin|undefined} getPlugin
  * @property {() => Promise<void>|void} loadManifests
  */
 export const ConnectionsPluginsRegistry: {};
@@ -627,24 +629,72 @@ export type ConnectionsSettingsManager = {
  * @property {(plugin_id: string) => Promise<void>|void} openTabById
  */
 export const ConnectionsSettingsManager: {};
-export type ConnectionsMarkdownViewOverrides = {
-    editor: import("obsidian").Editor & {
-        cm?: import("@codemirror/view").EditorView;
-    };
+export type ConnectionsEditorLine = {
+    from: number;
+    to: number;
 };
 /**
- * @typedef {Object} ConnectionsMarkdownViewOverrides
- * @property {import('obsidian').Editor & {cm?: import('@codemirror/view').EditorView}} editor
+ * @typedef {Object} ConnectionsEditorLine
+ * @property {number} from
+ * @property {number} to
  */
-export const ConnectionsMarkdownViewOverrides: {};
-export type ConnectionsMarkdownView = Omit<import("obsidian").MarkdownView, keyof ConnectionsMarkdownViewOverrides> & ConnectionsMarkdownViewOverrides;
+export const ConnectionsEditorLine: {};
+export type ConnectionsEditorDoc = {
+    lines: number;
+    line: (line_number: number) => ConnectionsEditorLine;
+};
 /**
- * @typedef {Omit<
- *   import('obsidian').MarkdownView,
- *   keyof ConnectionsMarkdownViewOverrides
- * > & ConnectionsMarkdownViewOverrides} ConnectionsMarkdownView
+ * @typedef {Object} ConnectionsEditorDoc
+ * @property {number} lines
+ * @property {(line_number: number) => ConnectionsEditorLine} line
+ */
+export const ConnectionsEditorDoc: {};
+export type ConnectionsEditorView = {
+    state: {
+        doc: ConnectionsEditorDoc;
+    };
+    visibleRanges: ConnectionsEditorLine[];
+    scrollDOM: HTMLElement;
+    dom: HTMLElement;
+    dispatch: (transaction: {
+        effects: unknown[];
+    }) => void;
+};
+/**
+ * @typedef {Object} ConnectionsEditorView
+ * @property {{doc: ConnectionsEditorDoc}} state
+ * @property {ConnectionsEditorLine[]} visibleRanges
+ * @property {HTMLElement} scrollDOM
+ * @property {HTMLElement} dom
+ * @property {(transaction: {effects: unknown[]}) => void} dispatch
+ */
+export const ConnectionsEditorView: {};
+export type ConnectionsEditor = {
+    replaceSelection: (text: string) => void;
+    cm?: ConnectionsEditorView;
+};
+/**
+ * @typedef {Object} ConnectionsEditor
+ * @property {(text: string) => void} replaceSelection
+ * @property {ConnectionsEditorView} [cm]
+ */
+export const ConnectionsEditor: {};
+export type ConnectionsMarkdownView = {
+    editor: ConnectionsEditor;
+};
+/**
+ * @typedef {Object} ConnectionsMarkdownView
+ * @property {ConnectionsEditor} editor
  */
 export const ConnectionsMarkdownView: {};
+export type ConnectionsFile = {
+    path: string;
+};
+/**
+ * @typedef {Object} ConnectionsFile
+ * @property {string} path
+ */
+export const ConnectionsFile: {};
 export type ConnectionsWorkspaceParent = {
     parent?: ConnectionsWorkspaceParent | null;
     collapsed?: boolean;
@@ -663,41 +713,95 @@ export type ConnectionsWorkspaceParent = {
 export const ConnectionsWorkspaceParent: {};
 export type ConnectionsWorkspaceLeafOverrides = {
     parent?: ConnectionsWorkspaceParent | null;
+    view?: ConnectionsItemViewScope;
+    detach: () => void;
+    setViewState?: (state: {
+        [x: string]: unknown;
+    }) => Promise<void> | void;
 };
 /**
  * @typedef {Object} ConnectionsWorkspaceLeafOverrides
  * @property {ConnectionsWorkspaceParent|null} [parent]
+ * @property {ConnectionsItemViewScope} [view]
+ * @property {() => void} detach
+ * @property {(state: Object.<string, unknown>) => Promise<void>|void} [setViewState]
  */
 export const ConnectionsWorkspaceLeafOverrides: {};
-export type ConnectionsWorkspaceLeaf = Omit<import("obsidian").WorkspaceLeaf, keyof ConnectionsWorkspaceLeafOverrides> & ConnectionsWorkspaceLeafOverrides;
+export type ConnectionsWorkspaceLeaf = ConnectionsWorkspaceLeafOverrides;
 /**
- * @typedef {Omit<
- *   import('obsidian').WorkspaceLeaf,
- *   keyof ConnectionsWorkspaceLeafOverrides
- * > & ConnectionsWorkspaceLeafOverrides} ConnectionsWorkspaceLeaf
+ * @typedef {ConnectionsWorkspaceLeafOverrides} ConnectionsWorkspaceLeaf
  */
 export const ConnectionsWorkspaceLeaf: {};
 export type ConnectionsWorkspaceOverrides = {
     leftSplit?: ConnectionsWorkspaceParent | null;
     rightSplit?: ConnectionsWorkspaceParent | null;
+    onLayoutReady: (callback: () => void) => void;
+    getActiveFile: () => ConnectionsFile | null;
+    getActiveFileView: () => ConnectionsMarkdownView | null;
+    getLeavesOfType?: (view_type: string) => ConnectionsWorkspaceLeaf[];
+    getLeaf?: (new_leaf?: boolean | "tab" | "split" | "window") => ConnectionsWorkspaceLeaf;
+    getLeftLeaf?: (split: boolean) => ConnectionsWorkspaceLeaf | null;
+    getRightLeaf?: (split: boolean) => ConnectionsWorkspaceLeaf | null;
+    revealLeaf: (leaf: ConnectionsWorkspaceLeaf) => Promise<void> | void;
+    setActiveLeaf: (leaf: ConnectionsWorkspaceLeaf, params?: {
+        focus?: boolean;
+    }) => void;
+    registerHoverLinkSource?: (source_id: string, config: {
+        [x: string]: unknown;
+    }) => void;
 };
 /**
  * @typedef {Object} ConnectionsWorkspaceOverrides
  * @property {ConnectionsWorkspaceParent|null} [leftSplit]
  * @property {ConnectionsWorkspaceParent|null} [rightSplit]
+ * @property {(callback: () => void) => void} onLayoutReady
+ * @property {() => ConnectionsFile|null} getActiveFile
+ * @property {() => ConnectionsMarkdownView|null} getActiveFileView
+ * @property {(view_type: string) => ConnectionsWorkspaceLeaf[]} [getLeavesOfType]
+ * @property {(new_leaf?: boolean|'tab'|'split'|'window') => ConnectionsWorkspaceLeaf} [getLeaf]
+ * @property {(split: boolean) => ConnectionsWorkspaceLeaf|null} [getLeftLeaf]
+ * @property {(split: boolean) => ConnectionsWorkspaceLeaf|null} [getRightLeaf]
+ * @property {(leaf: ConnectionsWorkspaceLeaf) => Promise<void>|void} revealLeaf
+ * @property {(leaf: ConnectionsWorkspaceLeaf, params?: {focus?: boolean}) => void} setActiveLeaf
+ * @property {(source_id: string, config: Object.<string, unknown>) => void} [registerHoverLinkSource]
  */
 export const ConnectionsWorkspaceOverrides: {};
-export type ConnectionsWorkspace = Omit<import("obsidian").Workspace, keyof ConnectionsWorkspaceOverrides> & ConnectionsWorkspaceOverrides;
+export type ConnectionsWorkspace = ConnectionsWorkspaceOverrides;
 /**
- * @typedef {Omit<
- *   import('obsidian').Workspace,
- *   keyof ConnectionsWorkspaceOverrides
- * > & ConnectionsWorkspaceOverrides} ConnectionsWorkspace
+ * @typedef {ConnectionsWorkspaceOverrides} ConnectionsWorkspace
  */
 export const ConnectionsWorkspace: {};
+export type ConnectionsVaultAdapter = {
+    exists: (path: string) => Promise<boolean>;
+    read: (path: string) => Promise<string>;
+    append: (path: string, data: string) => Promise<void>;
+    write: (path: string, data: string) => Promise<void>;
+    mkdir: (path: string) => Promise<void>;
+};
+/**
+ * @typedef {Object} ConnectionsVaultAdapter
+ * @property {(path: string) => Promise<boolean>} exists
+ * @property {(path: string) => Promise<string>} read
+ * @property {(path: string, data: string) => Promise<void>} append
+ * @property {(path: string, data: string) => Promise<void>} write
+ * @property {(path: string) => Promise<void>} mkdir
+ */
+export const ConnectionsVaultAdapter: {};
+export type ConnectionsVault = {
+    adapter: ConnectionsVaultAdapter;
+    configDir: string;
+    getAbstractFileByPath?: (path: string) => ConnectionsFile | null;
+};
+/**
+ * @typedef {Object} ConnectionsVault
+ * @property {ConnectionsVaultAdapter} adapter
+ * @property {string} configDir
+ * @property {(path: string) => ConnectionsFile|null} [getAbstractFileByPath]
+ */
+export const ConnectionsVault: {};
 export type ConnectionsAppOverrides = {
     workspace: ConnectionsWorkspace;
-    vault: import("obsidian").Vault;
+    vault: ConnectionsVault;
     plugins: ConnectionsPluginsRegistry;
     commands: ConnectionsCommandsRegistry;
     setting: ConnectionsSettingsManager;
@@ -707,7 +811,7 @@ export type ConnectionsAppOverrides = {
 /**
  * @typedef {Object} ConnectionsAppOverrides
  * @property {ConnectionsWorkspace} workspace
- * @property {import('obsidian').Vault} vault
+ * @property {ConnectionsVault} vault
  * @property {ConnectionsPluginsRegistry} plugins
  * @property {ConnectionsCommandsRegistry} commands
  * @property {ConnectionsSettingsManager} setting
@@ -715,46 +819,79 @@ export type ConnectionsAppOverrides = {
  * @property {(key: string, value: string) => void} [saveLocalStorage]
  */
 export const ConnectionsAppOverrides: {};
-export type ConnectionsApp = Omit<import("obsidian").App, keyof ConnectionsAppOverrides> & ConnectionsAppOverrides;
+export type ConnectionsApp = ConnectionsAppOverrides;
 /**
- * @typedef {Omit<
- *   import('obsidian').App,
- *   keyof ConnectionsAppOverrides
- * > & ConnectionsAppOverrides} ConnectionsApp
+ * @typedef {ConnectionsAppOverrides} ConnectionsApp
  */
 export const ConnectionsApp: {};
+export type ConnectionsMarkdownPostProcessorContext = {
+    sourcePath: string;
+};
+/**
+ * @typedef {Object} ConnectionsMarkdownPostProcessorContext
+ * @property {string} sourcePath
+ */
+export const ConnectionsMarkdownPostProcessorContext: {};
 export type ConnectionsPluginOverrides = {
     app: ConnectionsApp;
     env: import("./smart-environment.js").SmartEnv<ConnectionsEnvExtensions>;
+    manifest: {
+        id: string;
+        version: string;
+    };
+    notices?: {
+        unload: () => void;
+    };
     update_available?: boolean;
     latest_release_version?: string;
     connections_view_location_listener?: (() => void);
     connections_footer_view?: ConnectionsFooterViewScope;
-    open_connections_view?: (params?: object) => unknown;
-    _open_connections_view_base?: (...args: unknown[]) => unknown;
+    open_connections_view?: (params?: object) => Promise<unknown> | unknown;
+    _open_connections_view_base?: (...args: unknown[]) => Promise<unknown> | unknown;
     open_note?: (target_path: string, event?: Event | null) => Promise<void> | void;
-    get_editor_view: () => import("@codemirror/view").EditorView | null;
+    get_editor_view: () => ConnectionsEditorView | null;
+    addSettingTab: (tab: object) => void;
+    registerEditorExtension: (extension: unknown) => void;
+    registerMarkdownCodeBlockProcessor: (language: string, processor: (source: string, container: ConnectionsDomElement, context: ConnectionsMarkdownPostProcessorContext) => Promise<void> | void) => void;
+    registerDomEvent: (element: HTMLElement, event_name: string, callback: (event: Event) => unknown) => void;
+    register_item_views: (params?: {
+        [x: string]: unknown;
+    }) => void;
+    register_command_actions: () => void;
+    register_ribbon_actions: () => void;
+    is_new_user: () => Promise<boolean>;
+    is_new_plugin_version: (version: string) => Promise<boolean>;
+    set_last_known_version: (version: string) => Promise<void>;
 };
 /**
  * @typedef {Object} ConnectionsPluginOverrides
  * @property {ConnectionsApp} app
  * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
+ * @property {{id: string, version: string}} manifest
+ * @property {{unload: () => void}} [notices]
  * @property {boolean} [update_available]
  * @property {string} [latest_release_version]
  * @property {(() => void)} [connections_view_location_listener]
  * @property {ConnectionsFooterViewScope} [connections_footer_view]
- * @property {(params?: object) => unknown} [open_connections_view]
- * @property {(...args: unknown[]) => unknown} [_open_connections_view_base]
+ * @property {(params?: object) => Promise<unknown>|unknown} [open_connections_view]
+ * @property {(...args: unknown[]) => Promise<unknown>|unknown} [_open_connections_view_base]
  * @property {(target_path: string, event?: Event|null) => Promise<void>|void} [open_note]
- * @property {() => import('@codemirror/view').EditorView|null} get_editor_view
+ * @property {() => ConnectionsEditorView|null} get_editor_view
+ * @property {(tab: object) => void} addSettingTab
+ * @property {(extension: unknown) => void} registerEditorExtension
+ * @property {(language: string, processor: (source: string, container: ConnectionsDomElement, context: ConnectionsMarkdownPostProcessorContext) => Promise<void>|void) => void} registerMarkdownCodeBlockProcessor
+ * @property {(element: HTMLElement, event_name: string, callback: (event: Event) => unknown) => void} registerDomEvent
+ * @property {(params?: Object.<string, unknown>) => void} register_item_views
+ * @property {() => void} register_command_actions
+ * @property {() => void} register_ribbon_actions
+ * @property {() => Promise<boolean>} is_new_user
+ * @property {(version: string) => Promise<boolean>} is_new_plugin_version
+ * @property {(version: string) => Promise<void>} set_last_known_version
  */
 export const ConnectionsPluginOverrides: {};
-export type ConnectionsPlugin = Omit<import("obsidian").Plugin, keyof ConnectionsPluginOverrides> & ConnectionsPluginOverrides;
+export type ConnectionsPlugin = ConnectionsPluginOverrides;
 /**
- * @typedef {Omit<
- *   import('obsidian').Plugin,
- *   keyof ConnectionsPluginOverrides
- * > & ConnectionsPluginOverrides} ConnectionsPlugin
+ * @typedef {ConnectionsPluginOverrides} ConnectionsPlugin
  */
 export const ConnectionsPlugin: {};
 /**
@@ -784,6 +921,7 @@ export type ConnectionsEnvExtensions = {
     smart_graph_plugin?: {
         _loaded?: boolean;
     };
+    unload_main?: (plugin: ConnectionsPlugin) => void;
     build_menu?: (menu_key: string, menu: ConnectionsMenu, scope: object, params?: ConnectionsActionParams) => void;
 };
 /**
@@ -809,6 +947,7 @@ export type ConnectionsEnvExtensions = {
  * @property {boolean} [is_pro]
  * @property {{settings?: {native_notice_attention?: boolean}}} [event_logs]
  * @property {{_loaded?: boolean}} [smart_graph_plugin]
+ * @property {(plugin: ConnectionsPlugin) => void} [unload_main]
  * @property {(menu_key: string, menu: ConnectionsMenu, scope: object, params?: ConnectionsActionParams) => void} [build_menu]
  */
 export const ConnectionsEnvExtensions: {};
@@ -874,6 +1013,28 @@ export type ConnectionsItemViewScope = Omit<import("./smart-view.js").SmartViewS
  * > & ConnectionsItemViewScopeOverrides} ConnectionsItemViewScope
  */
 export const ConnectionsItemViewScope: {};
+export type ConnectionsItemViewClass = {
+    new (leaf: ConnectionsWorkspaceLeaf, plugin: ConnectionsPlugin): ConnectionsItemViewScope;
+    default_open_location: "left" | "right" | "root" | "tab";
+    get_view: (workspace: ConnectionsWorkspace) => ConnectionsItemViewScope | null | undefined;
+    get_leaf: (workspace: ConnectionsWorkspace) => ConnectionsWorkspaceLeaf | null | undefined;
+    open: (workspace: ConnectionsWorkspace, params?: {
+        active?: boolean;
+    }) => Promise<ConnectionsItemViewScope | ConnectionsWorkspaceLeaf | null | undefined>;
+};
+export function ConnectionsItemViewClass(): void;
+export type ConnectionsSmartEnvClass = {
+    create: (plugin: ConnectionsPlugin, config: ConnectionsEnvConfig) => void;
+    wait_for: (state: {
+        [x: string]: boolean;
+    }) => Promise<void>;
+};
+/**
+ * @typedef {Object} ConnectionsSmartEnvClass
+ * @property {(plugin: ConnectionsPlugin, config: ConnectionsEnvConfig) => void} create
+ * @property {(state: Object.<string, boolean>) => Promise<void>} wait_for
+ */
+export const ConnectionsSmartEnvClass: {};
 export type ConnectionsFooterViewScopeOverrides = {
     app: ConnectionsApp;
     plugin: ConnectionsPlugin;
@@ -884,7 +1045,7 @@ export type ConnectionsFooterViewScopeOverrides = {
     };
     env_listeners?: Array<() => void>;
     _detach_visibility_guard: (() => void) | null;
-    attach_visibility_guard: (editor_view: import("@codemirror/view").EditorView) => void;
+    attach_visibility_guard: (editor_view: ConnectionsEditorView) => void;
     detach_visibility_guard: () => void;
     register_env_listener: (event_key: string, callback: (event: ConnectionsEventPayload) => void) => void;
     register_env_listeners: () => void;
@@ -901,7 +1062,7 @@ export type ConnectionsFooterViewScopeOverrides = {
  * @property {Object.<string, ConnectionsDomElement>} container_map
  * @property {Array<() => void>} [env_listeners]
  * @property {(() => void)|null} _detach_visibility_guard
- * @property {(editor_view: import('@codemirror/view').EditorView) => void} attach_visibility_guard
+ * @property {(editor_view: ConnectionsEditorView) => void} attach_visibility_guard
  * @property {() => void} detach_visibility_guard
  * @property {(event_key: string, callback: (event: ConnectionsEventPayload) => void) => void} register_env_listener
  * @property {() => void} register_env_listeners
@@ -924,8 +1085,11 @@ export type ConnectionsFooterViewScope = Omit<import("./smart-view.js").SmartVie
 export const ConnectionsFooterViewScope: {};
 export type ConnectionsSettingsTabScopeOverrides = {
     plugin: ConnectionsPlugin;
+    app: ConnectionsApp;
     env: import("./smart-environment.js").SmartEnv<ConnectionsEnvExtensions>;
+    containerEl: ConnectionsDomElement;
     plugin_container: ConnectionsDomElement;
+    hide: () => void;
     turn_off_listener?: (() => void);
     render_header: (container: ConnectionsDomElement) => Promise<void>;
     render_plugin_settings: (container: ConnectionsDomElement) => Promise<void>;
@@ -934,8 +1098,11 @@ export type ConnectionsSettingsTabScopeOverrides = {
 /**
  * @typedef {Object} ConnectionsSettingsTabScopeOverrides
  * @property {ConnectionsPlugin} plugin
+ * @property {ConnectionsApp} app
  * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
+ * @property {ConnectionsDomElement} containerEl
  * @property {ConnectionsDomElement} plugin_container
+ * @property {() => void} hide
  * @property {(() => void)} [turn_off_listener]
  * @property {(container: ConnectionsDomElement) => Promise<void>} render_header
  * @property {(container: ConnectionsDomElement) => Promise<void>} render_plugin_settings
@@ -954,26 +1121,40 @@ export type ConnectionsSettingsTabScope = Omit<import("./smart-view.js").SmartVi
  * > & ConnectionsSettingsTabScopeOverrides} ConnectionsSettingsTabScope
  */
 export const ConnectionsSettingsTabScope: {};
-export type ConnectionsViewElement = HTMLElement & {
-    _has_listeners?: boolean;
-    _connections_menu_state?: ConnectionsMenuState;
-};
-/**
- * @typedef {HTMLElement & {
- *   _has_listeners?: boolean,
- *   _connections_menu_state?: ConnectionsMenuState
- * }} ConnectionsViewElement
- */
-export const ConnectionsViewElement: {};
 export type ConnectionsDomElement = HTMLElement & {
+    empty: () => void;
+    createDiv: (options?: {
+        [x: string]: unknown;
+    }) => ConnectionsDomElement;
+    createEl: (tag_name: string, options?: {
+        [x: string]: unknown;
+    }) => ConnectionsDomElement;
+    setText: (text: string) => void;
+    addClass: (...class_names: string[]) => void;
+    toggleClass: (class_name: string, value: boolean) => void;
     _has_listeners?: boolean;
 };
 /**
  * @typedef {HTMLElement & {
+ *   empty: () => void,
+ *   createDiv: (options?: Object.<string, unknown>) => ConnectionsDomElement,
+ *   createEl: (tag_name: string, options?: Object.<string, unknown>) => ConnectionsDomElement,
+ *   setText: (text: string) => void,
+ *   addClass: (...class_names: string[]) => void,
+ *   toggleClass: (class_name: string, value: boolean) => void,
  *   _has_listeners?: boolean
  * }} ConnectionsDomElement
  */
 export const ConnectionsDomElement: {};
+export type ConnectionsViewElement = ConnectionsDomElement & {
+    _connections_menu_state?: ConnectionsMenuState;
+};
+/**
+ * @typedef {ConnectionsDomElement & {
+ *   _connections_menu_state?: ConnectionsMenuState
+ * }} ConnectionsViewElement
+ */
+export const ConnectionsViewElement: {};
 export type ConnectionsComponentOptions = {
     connections_item?: ConnectionItem;
     connections_settings?: ConnectionsListSettings;
@@ -1017,25 +1198,31 @@ export type ConnectionsMenuState = {
  */
 export const ConnectionsMenuState: {};
 export type ConnectionsMenuItemOverrides = {
+    setTitle: (title: string) => ConnectionsMenuItem;
+    setIcon: (icon: string) => ConnectionsMenuItem;
+    setDisabled: (disabled: boolean) => ConnectionsMenuItem;
+    onClick: (callback: (event?: MouseEvent) => unknown) => ConnectionsMenuItem;
     setSubmenu: () => ConnectionsMenu;
 };
 /**
  * @typedef {Object} ConnectionsMenuItemOverrides
+ * @property {(title: string) => ConnectionsMenuItem} setTitle
+ * @property {(icon: string) => ConnectionsMenuItem} setIcon
+ * @property {(disabled: boolean) => ConnectionsMenuItem} setDisabled
+ * @property {(callback: (event?: MouseEvent) => unknown) => ConnectionsMenuItem} onClick
  * @property {() => ConnectionsMenu} setSubmenu
  */
 export const ConnectionsMenuItemOverrides: {};
-export type ConnectionsMenuItem = Omit<import("obsidian").MenuItem, keyof ConnectionsMenuItemOverrides> & ConnectionsMenuItemOverrides;
+export type ConnectionsMenuItem = ConnectionsMenuItemOverrides;
 /**
- * @typedef {Omit<
- *   import('obsidian').MenuItem,
- *   keyof ConnectionsMenuItemOverrides
- * > & ConnectionsMenuItemOverrides} ConnectionsMenuItem
+ * @typedef {ConnectionsMenuItemOverrides} ConnectionsMenuItem
  */
 export const ConnectionsMenuItem: {};
 export type ConnectionsMenuOverrides = {
     items?: ConnectionsMenuItem[];
     addItem: (callback: (item: ConnectionsMenuItem) => unknown) => ConnectionsMenu;
     addSeparator: () => ConnectionsMenu;
+    showAtMouseEvent: (event: MouseEvent) => void;
     showAtPosition?: (position: {
         x: number;
         y: number;
@@ -1046,15 +1233,13 @@ export type ConnectionsMenuOverrides = {
  * @property {ConnectionsMenuItem[]} [items]
  * @property {(callback: (item: ConnectionsMenuItem) => unknown) => ConnectionsMenu} addItem
  * @property {() => ConnectionsMenu} addSeparator
+ * @property {(event: MouseEvent) => void} showAtMouseEvent
  * @property {(position: {x: number, y: number}) => void} [showAtPosition]
  */
 export const ConnectionsMenuOverrides: {};
-export type ConnectionsMenu = Omit<import("obsidian").Menu, keyof ConnectionsMenuOverrides> & ConnectionsMenuOverrides;
+export type ConnectionsMenu = ConnectionsMenuOverrides;
 /**
- * @typedef {Omit<
- *   import('obsidian').Menu,
- *   keyof ConnectionsMenuOverrides
- * > & ConnectionsMenuOverrides} ConnectionsMenu
+ * @typedef {ConnectionsMenuOverrides} ConnectionsMenu
  */
 export const ConnectionsMenu: {};
 export type ConnectionsActionParams = {
@@ -1063,7 +1248,7 @@ export type ConnectionsActionParams = {
     plugin?: ConnectionsPlugin;
     app?: ConnectionsApp;
     workspace?: ConnectionsWorkspace;
-    editor?: import("obsidian").Editor;
+    editor?: ConnectionsEditor;
     target_item?: ConnectionItem;
     source_item?: ConnectionItem;
     connections_item?: ConnectionItem;
@@ -1088,7 +1273,7 @@ export type ConnectionsActionParams = {
  * @property {ConnectionsPlugin} [plugin]
  * @property {ConnectionsApp} [app]
  * @property {ConnectionsWorkspace} [workspace]
- * @property {import('obsidian').Editor} [editor]
+ * @property {ConnectionsEditor} [editor]
  * @property {ConnectionItem} [target_item]
  * @property {ConnectionItem} [source_item]
  * @property {ConnectionItem} [connections_item]
@@ -1111,7 +1296,7 @@ export type ConnectionsActionRegistrationContext = {
     plugin: ConnectionsPlugin;
     env: import("./smart-environment.js").SmartEnv<ConnectionsEnvExtensions>;
     app: ConnectionsApp;
-    editor?: import("obsidian").Editor;
+    editor?: ConnectionsEditor;
     params: ConnectionsActionParams;
 };
 /**
@@ -1119,7 +1304,7 @@ export type ConnectionsActionRegistrationContext = {
  * @property {ConnectionsPlugin} plugin
  * @property {import('./smart-environment.js').SmartEnv<ConnectionsEnvExtensions>} env
  * @property {ConnectionsApp} app
- * @property {import('obsidian').Editor} [editor]
+ * @property {ConnectionsEditor} [editor]
  * @property {ConnectionsActionParams} params
  */
 export const ConnectionsActionRegistrationContext: {};
