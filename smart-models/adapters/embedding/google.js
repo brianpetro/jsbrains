@@ -5,6 +5,8 @@ import {
 export class GoogleGeminiEmbeddingModelAdapter extends GeminiEmbedModelAdapter {
   constructor(model_item) {
     super(model_item);
+    const model_key = model_item.data.model_key || this.constructor.defaults.default_model;
+    model_item.data.endpoint ||= `${this.constructor.defaults.models_endpoint}/${model_key}:batchEmbedContents`;
   }
 
   get http_adapter() {

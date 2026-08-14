@@ -15,6 +15,7 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     description: 'Google Gemini (API)',
     default_model: 'gemini-embedding-001',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents',
+    models_endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
     dims: 768,
     max_tokens: 2048,
     batch_size: 50,
@@ -108,15 +109,66 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     };
   }
 
+  get models_endpoint() {
+    return this.constructor.defaults.models_endpoint;
+  }
+
   /**
-   * Get available models (hardcoded list)
+   * Get available embedding models from the Gemini models endpoint.
+   * @param {boolean} [refresh=false] - Whether to refresh cached models
    * @returns {Promise<Object>} Map of model objects
    */
-  get_models() {
-    return Promise.resolve(this.models);
+  async get_models(refresh = false) {
+    if (!refresh && this.model.data.provider_models) {
+      return this.model.data.provider_models;
+    }
+    if (!this.api_key) return this.models;
+
+    try {
+      const model_data = [];
+      let page_token = "";
+      do {
+        const page_url = `${this.models_endpoint}?pageSize=1000${page_token ? `&pageToken=${encodeURIComponent(page_token)}` : ""}`;
+        const resp = await this.http_adapter.request({
+          url: page_url,
+          method: "GET",
+          headers: this.prepare_request_headers(),
+        });
+        const resp_json = await this.get_resp_json(resp);
+        if (resp_json.error) {
+          throw new Error(resp_json.error.message || "Failed to fetch Gemini models");
+        }
+        model_data.push(...(resp_json.models || []));
+        page_token = resp_json.nextPageToken || "";
+      } while (page_token);
+
+      const models = {};
+      for (const model of model_data) {
+        if (!model.supportedGenerationMethods?.includes("embedContent")) continue;
+        const model_id = model.name.replace(/^models\//, "");
+        models[model_id] = {
+          id: model_id,
+          batch_size: this.constructor.defaults.batch_size,
+          dims: this.constructor.defaults.dims,
+          max_tokens: model.inputTokenLimit || this.constructor.defaults.max_tokens,
+          name: model.displayName || model_id,
+          description: model.description || `Gemini embedding model: ${model_id}`,
+          endpoint: `${this.models_endpoint}/${model_id}:batchEmbedContents`,
+          adapter: this.constructor.defaults.adapter,
+        };
+      }
+
+      if (!Object.keys(models).length) return this.models;
+      this.model.data.provider_models = models;
+      return models;
+    } catch (error) {
+      console.error("Failed to fetch Gemini embedding models:", error);
+      return this.model.data.provider_models || this.models;
+    }
   }
 
   get models() {
+    if (this.model.data.provider_models) return this.model.data.provider_models;
     return {
       "gemini-embedding-001": {
         "id": "gemini-embedding-001",
@@ -126,6 +178,16 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
         "name": "Gemini Embedding",
         "description": "API, 2,048 tokens, 768 dim",
         "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents",
+        "adapter": "gemini"
+      },
+      "gemini-embedding-2": {
+        "id": "gemini-embedding-2",
+        "batch_size": 50,
+        "dims": 768,
+        "max_tokens": 8192,
+        "name": "Gemini Embedding 2",
+        "description": "API, 8,192 tokens, 768 dim",
+        "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:batchEmbedContents",
         "adapter": "gemini"
       },
     };
@@ -200,6 +262,15 @@ class SmartEmbedGeminiRequestAdapter extends SmartEmbedModelRequestAdapter {
    */
   prepare_request_body() {
     const requests = this.embed_inputs.map(input => {
+      if (!this.model_id.includes("gemini-embedding-001")) {
+        return {
+          model: this.model_id,
+          content: {
+            parts: [{text: input}]
+          },
+          outputDimensionality: this.model_dims,
+        };
+      }
       const [title, ...content] = input.split("\n");
       const doc_content = content.join("\n").trim() || "";
       if (doc_content.length) {
