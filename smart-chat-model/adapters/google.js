@@ -18,7 +18,7 @@ export class SmartChatModelGoogleAdapter extends SmartChatModelApiAdapter {
     streaming: true,
     adapter: "Gemini",
     models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
-    default_model: "gemini-1.5-pro",
+    default_model: "",
     signup_url: "https://ai.google.dev/",
   };
 
@@ -109,7 +109,7 @@ export class SmartChatModelGoogleAdapter extends SmartChatModelApiAdapter {
    * @returns {string} Complete models endpoint URL
    */
   get models_endpoint() {
-    return `${this.constructor.defaults.models_endpoint}?key=${this.api_key}`;
+    return `${this.constructor.defaults.models_endpoint}?key=${this.api_key}&pageSize=1000`;
   }
 
   /**
@@ -124,19 +124,45 @@ export class SmartChatModelGoogleAdapter extends SmartChatModelApiAdapter {
     };
   }
   /**
+   * Fetch all pages of model data from Gemini API.
+   * @returns {Promise<Object>} Raw model data from all pages
+   */
+  async get_model_data() {
+    const models = [];
+    let page_token = '';
+
+    do {
+      const request_params = this.models_request_params;
+      if(page_token) request_params.url += `&pageToken=${encodeURIComponent(page_token)}`;
+      const response = await this.http_adapter.request(request_params);
+      const page = await response.json();
+      models.push(...(page.models || []));
+      page_token = page.nextPageToken || '';
+    } while(page_token);
+
+    return { models };
+  }
+  /**
    * Parse model data from Gemini API response
    * @param {Object} model_data - Raw model data from API
    * @returns {Object} Map of model objects with capabilities and limits
    */
   parse_model_data(model_data) {
-    return model_data.models
-      .filter(model => model.name.startsWith('models/gemini'))
+    const incompatible_model_pattern = /(?:^gemini-[12](?:\.|-)|image|tts|live|audio|video|robotics|omni)/;
+    return (model_data.models || [])
+      .filter(model => {
+        const model_name = model.name.split('/').pop();
+        return model.name.startsWith('models/gemini')
+          && model.supportedGenerationMethods?.includes('generateContent')
+          && !incompatible_model_pattern.test(model_name)
+        ;
+      })
       .reduce((acc, model) => {
         const out = {
           model_name: model.name.split('/').pop(), 
           id: model.name.split('/').pop(),
           max_input_tokens: model.inputTokenLimit,
-          max_output_tokens: model.maxOutputTokens,
+          max_output_tokens: model.outputTokenLimit,
           description: model.description,
           multimodal: model.name.includes('vision') || model.description.includes('multimodal'),
           raw: model
@@ -434,7 +460,7 @@ export class SmartChatModelGeminiAdapter extends SmartChatModelGoogleAdapter {
     streaming: true,
     adapter: "Gemini",
     models_endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
-    default_model: "gemini-1.5-pro",
+    default_model: "",
     signup_url: "https://ai.google.dev/",
   };
 }

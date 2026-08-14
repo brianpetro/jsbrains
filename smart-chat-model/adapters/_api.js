@@ -91,8 +91,8 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
 
   async get_enriched_model_data() {
     const provider_key = this.constructor.models_dev_key || this.constructor.key;
-    await this.get_models_dev_index();
-    const provider_data = MODELS_DEV_CACHE.data[provider_key] || {};
+    const models_dev_index = await this.get_models_dev_index();
+    const provider_data = models_dev_index?.[provider_key] || {};
     const get_limit_i = (model) => model.limit?.context || 10000;
     const get_limit_o = (model) => model.limit?.output || 10000;
     const get_multimodal = (model) => model.modalities?.input?.includes('image') || false;
@@ -107,7 +107,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
         this.model_data[key].multimodal = get_multimodal(enriched);
         this.model_data[key].cost = enriched.cost;
       }
-    }else{
+    }else if(!this.models_endpoint){
       for(const [key, model] of Object.entries(provider_data?.models || {})) {
         this.model_data[key] = {
           ...model,
@@ -120,6 +120,15 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       }
     }
     return this.model_data;
+  }
+
+  /**
+   * Fetch raw model data from the provider.
+   * @returns {Promise<Object>} Raw provider model data
+   */
+  async get_model_data() {
+    const response = await this.http_adapter.request(this.models_request_params);
+    return await response.json();
   }
 
   valid_model_data(){
@@ -138,12 +147,10 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
   async get_models(refresh=false) {
     if(!refresh && this.valid_model_data()) return this.model_data; // return cached models if not refreshing
     if(this.api_key) {
-      let response;
       try {
-        response = await this.http_adapter.request(this.models_request_params);
-        this.model_data = this.parse_model_data(await response.json());
+        this.model_data = this.parse_model_data(await this.get_model_data());
       } catch (error) {
-        console.error('Failed to fetch model data:', { error, response });
+        console.error('Failed to fetch model data:', { error });
         // return {"_": {id: `Failed to fetch models from ${this.model.adapter_name}`}};
       }
     }
@@ -357,12 +364,13 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
     return [{value: '', name: 'No models currently available'}];
   }
   get model_data () {
-    if(!MODEL_ADAPTER_CACHE[this.constructor.key]) MODEL_ADAPTER_CACHE[this.constructor.key] = {};
-    return MODEL_ADAPTER_CACHE[this.constructor.key];
+    const cache_key = `${this.constructor.key}:${this.api_key || ''}`;
+    if(!MODEL_ADAPTER_CACHE[cache_key]) MODEL_ADAPTER_CACHE[cache_key] = {};
+    return MODEL_ADAPTER_CACHE[cache_key];
   }
   set model_data(data) {
-    if(!MODEL_ADAPTER_CACHE[this.constructor.key]) MODEL_ADAPTER_CACHE[this.constructor.key] = {};
-    MODEL_ADAPTER_CACHE[this.constructor.key] = data;
+    const cache_key = `${this.constructor.key}:${this.api_key || ''}`;
+    MODEL_ADAPTER_CACHE[cache_key] = data;
   }
 }
 
