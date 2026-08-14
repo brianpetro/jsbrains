@@ -221,7 +221,7 @@ export class GeminiEmbedModelAdapter extends SmartEmbedModelApiAdapter {
       // get prescribed wait time from resp[0].error.details.details[{retryDelay}]
       // convert Ns to ms
       const retry_detail = resp[0].error.details?.details?.find(d => d.retryDelay);
-      if(retry_detail.retryDelay){
+      if(retry_detail?.retryDelay){
         const wait_time_ms = parseInt(retry_detail.retryDelay) * 1000 * 2; // convert to ms and double it for buffer
         console.warn(`Using server-specified retry delay of ${wait_time_ms} ms`);
         await new Promise((resolve) => setTimeout(resolve, wait_time_ms));
@@ -261,38 +261,67 @@ class SmartEmbedGeminiRequestAdapter extends SmartEmbedModelRequestAdapter {
    * @returns {Object} Request body for API
    */
   prepare_request_body() {
-    const requests = this.embed_inputs.map(input => {
-      if (!this.model_id.includes("gemini-embedding-001")) {
+    const model_key = this.adapter.model.data.model_key;
+    const requests = this.embed_inputs.map((input, i) => {
+      const purpose = this.input_items[i]?.purpose === "query"
+        ? "query"
+        : "document";
+      const embed_content_config = {
+        outputDimensionality: this.model_dims,
+      };
+
+      if (model_key === "gemini-embedding-2") {
+        let text = `task: search result | query: ${input}`;
+        if (purpose === "document") {
+          const [title, ...content] = input.split("\n");
+          const doc_content = content.join("\n").trim();
+          text = doc_content.length
+            ? `title: ${title} | text: ${doc_content}`
+            : `title: none | text: ${title}`;
+        }
+        return {
+          model: this.model_id,
+          content: {
+            parts: [{text}]
+          },
+          embedContentConfig: embed_content_config,
+        };
+      }
+
+      if (model_key !== "gemini-embedding-001") {
         return {
           model: this.model_id,
           content: {
             parts: [{text: input}]
           },
-          outputDimensionality: this.model_dims,
+          embedContentConfig: embed_content_config,
         };
       }
-      const [title, ...content] = input.split("\n");
-      const doc_content = content.join("\n").trim() || "";
-      if (doc_content.length) {
+
+      embed_content_config.taskType = purpose === "query"
+        ? "RETRIEVAL_QUERY"
+        : "RETRIEVAL_DOCUMENT";
+
+      if (purpose === "query") {
         return {
           model: this.model_id,
           content: {
-            parts: [{text: doc_content}]
+            parts: [{text: input}]
           },
-          outputDimensionality: this.model_dims,
-          taskType: "RETRIEVAL_DOCUMENT",
-          title: title,
-        }
-      }else{
-        return {
-          model: this.model_id,
-          content: {
-            parts: [{text: title}]
-          },
-          outputDimensionality: this.model_dims,
-          taskType: "RETRIEVAL_DOCUMENT",
-        }
+          embedContentConfig: embed_content_config,
+        };
       }
+
+      const [title, ...content] = input.split("\n");
+      const doc_content = content.join("\n").trim();
+      if (doc_content.length) embed_content_config.title = title;
+      return {
+        model: this.model_id,
+        content: {
+          parts: [{text: doc_content || title}]
+        },
+        embedContentConfig: embed_content_config,
+      };
     });
 
     // console.log("Prepared Gemini embedding requests:", requests);

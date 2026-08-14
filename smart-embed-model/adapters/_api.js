@@ -100,7 +100,7 @@ export class SmartEmbedModelApiAdapter extends SmartEmbedAdapter {
     );
 
     // Create request and response adapters
-    const _req = new this.req_adapter(this, embed_inputs);
+    const _req = new this.req_adapter(this, embed_inputs, inputs);
     const request_params = _req.to_platform();
 
     const resp = await this.request(request_params);
@@ -243,10 +243,12 @@ export class SmartEmbedModelRequestAdapter {
    * @constructor
    * @param {SmartEmbedModelApiAdapter} adapter - The SmartEmbedModelApiAdapter instance
    * @param {Array<string>} embed_inputs - The array of input texts
+   * @param {Array<Object>} [input_items=[]] - The original input objects
    */
-  constructor(adapter, embed_inputs) {
+  constructor(adapter, embed_inputs, input_items = []) {
     this.adapter = adapter;
     this.embed_inputs = embed_inputs;
+    this.input_items = input_items;
   }
 
   get model_id() {
