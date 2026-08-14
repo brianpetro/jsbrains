@@ -224,7 +224,7 @@ export class LiteLllmChatCompletionAdapter extends SmartChatModelApiAdapter {
 export const settings_config = {
   api_key: {
     name: 'API Key',
-    type: 'password',
+    type: 'secret',
     description: 'Enter your API key (if your proxy requires auth).',
     placeholder: 'Enter LiteLLM key'
   },

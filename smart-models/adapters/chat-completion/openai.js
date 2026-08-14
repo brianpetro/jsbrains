@@ -20,7 +20,7 @@ export class OpenAIChatCompletionModelAdapter extends SmartChatModelOpenaiAdapte
 const settings_config = {
   "api_key": {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your OpenAI API key.",
   },
   // "max_completion_tokens": {

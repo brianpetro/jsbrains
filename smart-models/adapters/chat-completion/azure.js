@@ -20,7 +20,7 @@ export class AzureChatCompletionModelAdapter extends SmartChatModelAzureAdapter 
 const settings_config = {
   "api_key": {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your Anthropic API key.",
   },
   "azure_resource_name": {

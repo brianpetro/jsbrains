@@ -27,7 +27,7 @@ export class CohereRankingModelAdapter extends SmartRankCohereAdapter {
 export const settings_config = {
   api_key: {
     name: 'Cohere API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your Cohere API key for ranking.",
     placeholder: "Enter Cohere API Key",
   },

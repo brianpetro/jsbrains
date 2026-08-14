@@ -6,19 +6,39 @@ export class Models extends Collection {
   model_type = 'Model type'; // replace in subclass
   new_model(data = {}) {
     if(!data.provider_key) throw new Error('provider_key is required to create a new model');
-    // bring along api_key (and potentially future properties) from existing model from same provider, if any
-    const existing_from_provider = this.filter(m => m.provider_key === data.provider_key)
-      // sort by created_at to get the most recently created
-      .sort((a, b) => b.data.created_at - a.data.created_at)[0]
-    ;
-    const api_key = data.api_key || existing_from_provider?.api_key || '';
-    delete data.api_key;
+    const model_data = { ...data };
+    const provider_config = this.env_config.providers?.[model_data.provider_key] || {};
+    const uses_api_key = Boolean(provider_config.settings_config?.api_key);
+    const uses_credential_id = Boolean(
+      this.env_config.api_key_is_credential_id && uses_api_key
+    );
+    const existing_from_provider = this.filter((model) => {
+      if (model.provider_key !== model_data.provider_key) return false;
+      if (!uses_credential_id) return true;
+      return model.data.api_key_is_credential_id && model.data.api_key;
+    }).sort((a, b) => b.data.created_at - a.data.created_at)[0];
+    let legacy_api_key = '';
 
-    const item = new this.item_type(this.env, {
-      ...data,
-    });
+    if (uses_credential_id) {
+      model_data.api_key_is_credential_id = true;
+      model_data.api_key = model_data.api_key
+        || existing_from_provider?.data.api_key
+        || ''
+      ;
+    } else if (uses_api_key) {
+      // LEGACY: non-credential model platforms still store raw API keys in
+      // model data. Remove after every supported platform uses credential IDs.
+      legacy_api_key = model_data.api_key || existing_from_provider?.api_key || '';
+      delete model_data.api_key;
+    } else {
+      delete model_data.api_key;
+      delete model_data.api_key_is_credential_id;
+      delete model_data.secret_source_key;
+    }
+
+    const item = new this.item_type(this.env, model_data);
     this.set(item);
-    if (api_key) item.api_key = api_key;
+    if (legacy_api_key) item.api_key = legacy_api_key;
     this.emit_event('model:changed');
     item.queue_save();
     return item;

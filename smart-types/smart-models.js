@@ -32,7 +32,8 @@ export const ProviderModelsMap = {};
  * @typedef {Object} ModelData
  * @property {string} [key] - Stable model configuration key.
  * @property {number} [created_at] - Epoch milliseconds when the model config was created.
- * @property {string} [api_key] - Provider API key stored with the model config.
+ * @property {string} [api_key] - Provider API key, or native credential ID when api_key_is_credential_id is true.
+ * @property {boolean} [api_key_is_credential_id] - Whether api_key stores a native credential ID instead of the secret value.
  * @property {string} [provider_key] - Provider adapter key.
  * @property {string} [model_key] - Selected provider model id.
  * @property {boolean} [test_passed] - Result of the most recent model test.
@@ -45,7 +46,8 @@ export const ModelData = {};
  * @typedef {Object} ChatCompletionModelData
  * @property {string} [key] - Stable model configuration key.
  * @property {number} [created_at] - Epoch milliseconds when the model config was created.
- * @property {string} [api_key] - Provider API key stored with the model config.
+ * @property {string} [api_key] - Provider API key, or native credential ID when api_key_is_credential_id is true.
+ * @property {boolean} [api_key_is_credential_id] - Whether api_key stores a native credential ID instead of the secret value.
  * @property {string} [provider_key] - Provider adapter key.
  * @property {string} [model_key] - Selected provider model id.
  * @property {boolean} [test_passed] - Result of the most recent model test.
@@ -58,7 +60,8 @@ export const ChatCompletionModelData = {};
  * @typedef {Object} EmbeddingModelData
  * @property {string} [key] - Stable model configuration key.
  * @property {number} [created_at] - Epoch milliseconds when the model config was created.
- * @property {string} [api_key] - Provider API key stored with the model config.
+ * @property {string} [api_key] - Provider API key, or native credential ID when api_key_is_credential_id is true.
+ * @property {boolean} [api_key_is_credential_id] - Whether api_key stores a native credential ID instead of the secret value.
  * @property {string} [provider_key] - Provider adapter key.
  * @property {string} [model_key] - Selected provider model id.
  * @property {boolean} [test_passed] - Result of the most recent model test.
@@ -73,7 +76,8 @@ export const EmbeddingModelData = {};
  * @typedef {Object} RankingModelData
  * @property {string} [key] - Stable model configuration key.
  * @property {number} [created_at] - Epoch milliseconds when the model config was created.
- * @property {string} [api_key] - Provider API key stored with the model config.
+ * @property {string} [api_key] - Provider API key, or native credential ID when api_key_is_credential_id is true.
+ * @property {boolean} [api_key_is_credential_id] - Whether api_key stores a native credential ID instead of the secret value.
  * @property {string} [provider_key] - Provider adapter key.
  * @property {string} [model_key] - Selected provider model id.
  * @property {boolean} [test_passed] - Result of the most recent model test.

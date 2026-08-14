@@ -488,21 +488,6 @@ export class Collection {
   }
 
   /**
-   * Current secrets for the collection.
-   * Initializes with empty object if none exist.
-   * @this {CollectionThis}
-   * @returns {Object|undefined}
-   */
-  get secrets() {
-    if (!this.env.smart_secrets) return;
-    if (!this.env.smart_secrets.secrets[this.collection_key]) {
-      this.env.smart_secrets.secrets[this.collection_key] = {};
-    }
-    return this.env.smart_secrets.secrets[this.collection_key];
-  }
-
-
-  /**
    * Unloads collection data from memory.
    * @this {*}
    * @returns {*}

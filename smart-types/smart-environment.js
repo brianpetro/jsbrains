@@ -35,7 +35,7 @@ export const SettingPath = '';
  * @typedef {Object} SettingConfig
  * @property {string} [name] - Display name for the setting.
  * @property {string} [description] - Description shown below the name.
- * @property {'button'|'button_with_confirm'|'toggle'|'text'|'string'|'password'|'number'|'dropdown'|'textarea'|'textarea_array'|'slider'|'heading'|'html'|'folder'|'file'|'text-file'|'remove'|'json'|'array'|string} type - Supported setting control type.
+ * @property {'button'|'button_with_confirm'|'toggle'|'text'|'string'|'password'|'secret'|'number'|'dropdown'|'textarea'|'textarea_array'|'slider'|'heading'|'html'|'folder'|'file'|'text-file'|'remove'|'json'|'array'|string} type - Supported setting control type.
  * @property {string} [group] - Optional settings group heading.
  * @property {string} [label] - Optional control label override.
  * @property {string} [tooltip] - Optional tooltip text.
@@ -50,7 +50,6 @@ export const SettingPath = '';
  * @property {boolean} [required] - Whether the control is required.
  * @property {boolean} [disabled] - Whether the control should be disabled.
  * @property {boolean} [hidden] - Whether the control should be hidden.
- * @property {boolean} [secret] - Whether the setting should be stored through a secrets mechanism.
  * @property {boolean} [is_scope] - Whether the setting triggers a scope re-render when changed.
  * @property {Array<import('./smart-environment.js').DropdownOption>} [options] - Static dropdown options.
  * @property {string} [option_1] - Deprecated pipe-delimited dropdown option.

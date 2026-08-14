@@ -19,8 +19,7 @@ export class GoogleGeminiEmbeddingModelAdapter extends GeminiEmbedModelAdapter {
 const settings_config = {
   api_key: {
     name: 'API Key',
-    type: "password",
-    secret: true,
+    type: "secret",
     description: "Enter your Google Gemini API key.",
   },
   "gemini_note": {

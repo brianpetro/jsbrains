@@ -20,7 +20,7 @@ export class GoogleChatCompletionModelAdapter extends SmartChatModelGoogleAdapte
 const settings_config = {
   api_key: {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your Google Gemini API key.",
   },
 };

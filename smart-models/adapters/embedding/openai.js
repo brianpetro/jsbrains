@@ -93,8 +93,7 @@ export class OpenAIEmbeddingModelAdapter extends SmartEmbedOpenAIAdapter {
 export const settings_config = {
   "api_key": {
     name: 'API Key',
-    type: "password",
-    secret: true,
+    type: "secret",
     description: "Enter your OpenAI API key.",
   },
   "dimensions": {

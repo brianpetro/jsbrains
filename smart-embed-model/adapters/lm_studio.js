@@ -47,14 +47,6 @@ export class LmStudioEmbedModelAdapter extends SmartEmbedModelApiAdapter {
     max_tokens: 512,
   };
 
-  static sync_model_data(model_item) {
-    if (!model_item.data.api_key && !model_item.secrets?.api_key) return false;
-
-    model_item.api_key = "";
-    model_item.queue_save?.();
-    return true;
-  }
-
   get req_adapter() {
     return LmStudioEmbedModelRequestAdapter;
   }

@@ -20,7 +20,7 @@ export class AnthropicChatCompletionModelAdapter extends SmartChatModelAnthropic
 const settings_config = {
   "api_key": {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your Anthropic API key.",
   },
 };

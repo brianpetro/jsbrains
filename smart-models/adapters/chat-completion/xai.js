@@ -20,7 +20,7 @@ export class XaiChatCompletionModelAdapter extends SmartChatModelXaiAdapter {
 const settings_config = {
   "api_key": {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your xAI API key.",
   },
 };

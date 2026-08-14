@@ -20,7 +20,7 @@ export class DeepseekChatCompletionModelAdapter extends SmartChatModelDeepseekAd
 const settings_config = {
   api_key: {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your Deepseek API key.",
   },
 };

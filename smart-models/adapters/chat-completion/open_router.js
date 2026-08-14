@@ -19,7 +19,7 @@ export class OpenRouterChatCompletionModelAdapter extends SmartChatModelOpenRout
 const settings_config = {
   "api_key": {
     name: 'API Key',
-    type: "password",
+    type: "secret",
     description: "Enter your API key for the chat model provider.",
   },
 };

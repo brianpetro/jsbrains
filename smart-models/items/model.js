@@ -70,24 +70,24 @@ export class Model extends CollectionItem {
   }
 
   get api_key() {
-    const secret_api_key = this.secrets?.api_key;
-    if (typeof secret_api_key === 'string') {
-      if (secret_api_key.length && this.data.api_key) {
-        console.warn(`[smart-models] Model ${this.key} has api_key in data, but secrets are enabled. Please migrate the api_key to secrets.`);
-      }
-      return secret_api_key;
+    if (this.data.api_key_is_credential_id) {
+      if (!this.data.api_key) return '';
+      return this.env.get_secret_by_id(this.data.api_key) || '';
     }
+
+    // LEGACY: non-credential model platforms may still store raw API keys in
+    // model data. Remove after every supported platform uses credential IDs.
     return this.data.api_key || '';
   }
 
   set api_key(api_key) {
-    const value = String(api_key || '');
-    if (this.secrets) {
-      this.secrets.api_key = value;
-      delete this.data.api_key;
-      return;
+    if (this.data.api_key_is_credential_id) {
+      throw new Error('Set the model credential ID through model settings.');
     }
-    this.data.api_key = value;
+
+    // LEGACY: retained only for non-credential model platforms. Remove with
+    // the raw model-data API-key compatibility path.
+    this.data.api_key = String(api_key || '');
   }
 
   /**
@@ -197,6 +197,9 @@ export class Model extends CollectionItem {
         ...model_defaults,
       };
     }
+    if (key === 'api_key') {
+      delete this.data.provider_models;
+    }
     this.ProviderAdapterClass?.sync_model_data?.(this);
     // emit model:changed for settings that change output behavior
     if (!['api_key', 'meta.name'].includes(key)) {
@@ -240,14 +243,12 @@ export class Model extends CollectionItem {
             const callback = setting_config.callback || ((value, setting) => {
               return model.model_changed(setting_key, value, setting);
             });
-            return [
-              setting_key,
-              {
-                ...setting_config,
-                ...(setting_key === 'api_key' ? { secret: true } : {}), // TEMP: should add property direct in settings_config
-                callback,
-              }
-            ];
+            const config = {
+              ...setting_config,
+              callback,
+            };
+
+            return [setting_key, config];
           }
         )
       )
@@ -268,18 +269,6 @@ export class Model extends CollectionItem {
    */
   get settings() {
     return this.create_settings_proxy(this.data);
-  }
-
-  /**
-   * Secure storage for sensitive information (like API keys) for this model.
-   * @returns {Object} Proxied view of this.collection.secrets[this.key].
-   */
-  get secrets() {
-    if (!this.collection.secrets) return;
-    if (!this.collection.secrets[this.key]) {
-      this.collection.secrets[this.key] = {};
-    }
-    return this.collection.secrets[this.key];
   }
 
   get model_key() {

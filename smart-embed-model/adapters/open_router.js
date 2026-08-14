@@ -7,7 +7,7 @@ import {
 /**
  * Adapter for OpenRouter's embedding API.
  * Uses OpenRouter's OpenAI-compatible /v1/embeddings endpoint and
- * dynamically discovers embedding models from /v1/models.
+ * dynamically discovers embedding models from /v1/embeddings/models.
  *
  * @class SmartEmbedOpenRouterAdapter
  * @extends SmartEmbedModelApiAdapter
@@ -20,12 +20,11 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
     type: "API",
     adapter: "OpenRouterEmbeddings",
     endpoint: "https://openrouter.ai/api/v1/embeddings",
-    models_endpoint: "https://openrouter.ai/api/v1/models",
-    default_model: "text-embedding-3-small",
+    models_endpoint: "https://openrouter.ai/api/v1/embeddings/models",
+    default_model: "openai/text-embedding-3-small",
     signup_url:
       "https://accounts.openrouter.ai/sign-up?redirect_url=https%3A%2F%2Fopenrouter.ai%2Fkeys",
     streaming: false,
-    api_key: null,
     batch_size: 50,
     max_tokens: 8191,
   };
@@ -63,6 +62,70 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
   }
 
   /**
+   * Load metadata for the selected model and discover its embedding dimensions.
+   * The model list provides max_tokens, while the embedding response provides dims.
+   * @returns {Promise<void>}
+   */
+  async load() {
+    if (this.is_loaded) return;
+    if (this._load_promise) return await this._load_promise;
+
+    this._load_promise = (async () => {
+      await this.sync_selected_model_data();
+      await super.load();
+    })();
+
+    try {
+      return await this._load_promise;
+    } finally {
+      this._load_promise = null;
+    }
+  }
+
+  /**
+   * Apply the selected model's token limit and discover its vector dimensions.
+   * @returns {Promise<boolean>} true when persisted model data changed
+   */
+  async sync_selected_model_data() {
+    const selected_model = this.model.data.provider_models?.[this.model_key];
+    if (!selected_model) return false;
+
+    const max_tokens = Number(selected_model.max_tokens);
+    let changed = false;
+
+    if (max_tokens > 0 && this.model.data.max_tokens !== max_tokens) {
+      this.model.data.max_tokens = max_tokens;
+      changed = true;
+    }
+
+    if (!this.api_key) {
+      if (changed) this.model.queue_save?.();
+      return changed;
+    }
+
+    let dims = Number(selected_model.dims);
+    if (!dims) {
+      const [result] = await this.embed_batch([{ embed_input: "test" }]);
+      dims = result?.vec?.length;
+      if (!dims) {
+        throw new Error(
+          `Unable to determine embedding dimensions for ${this.model_key}.`
+        );
+      }
+      selected_model.dims = dims;
+      changed = true;
+    }
+
+    if (this.model.data.dims !== dims) {
+      this.model.data.dims = dims;
+      changed = true;
+    }
+
+    if (changed) this.model.queue_save?.();
+    return changed;
+  }
+
+  /**
    * Estimate token count for input text.
    * OpenRouter does not expose a tokenizer, so we use a character-based heuristic.
    * @param {string|Object} input
@@ -90,6 +153,13 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
   }
 
   /**
+   * Get the OpenRouter embeddings endpoint.
+   * @returns {string} Embeddings endpoint URL
+   */
+  get endpoint() {
+    return this.constructor.defaults.endpoint;
+  }
+  /**
    * Get the OpenRouter models endpoint.
    * @returns {string} Models endpoint URL
    */
@@ -105,27 +175,34 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
    * @returns {Promise<Object>} Map of model objects keyed by model id
    */
   async get_models(refresh = false) {
-    if (!refresh && this.model.data.provider_models) {
-      return this.model.data.provider_models;
-    }
+    const fallback_id = this.constructor.defaults.default_model;
+    const fallback_models = {
+      [fallback_id]: {
+        id: fallback_id,
+        model_name: fallback_id,
+        name: fallback_id,
+        description: "OpenRouter embedding model",
+        max_tokens: this.max_tokens,
+        adapter: this.constructor.key,
+      },
+    };
 
     if (!this.api_key) {
       console.warn(
         "[SmartEmbedOpenRouterAdapter] API key missing; cannot fetch models from OpenRouter."
       );
-      // Fallback: minimal single default model so the dropdown is not empty
-      const fallback_id = this.constructor.defaults.default_model;
-      const fallback_models = {
-        [fallback_id]: {
-          id: fallback_id,
-          model_name: fallback_id,
-          description: "OpenRouter embedding model",
-          max_tokens: this.max_tokens,
-          adapter: this.constructor.key,
-        },
-      };
-      this.model.data.provider_models = fallback_models;
       return fallback_models;
+    }
+
+    // LEGACY: older versions persisted "_" as a no-models placeholder.
+    // Remove after the minimum supported version no longer stores it.
+    if (this.model.data.provider_models?._) {
+      delete this.model.data.provider_models;
+      this.model.queue_save?.();
+    }
+
+    if (!refresh && this.model.data.provider_models) {
+      return this.model.data.provider_models;
     }
 
     try {
@@ -136,67 +213,51 @@ export class SmartEmbedOpenRouterAdapter extends SmartEmbedModelApiAdapter {
           Authorization: `Bearer ${this.api_key}`,
         },
       });
-      const raw = await resp.json();
-      const parsed = this.parse_model_data(raw);
+      if (resp.ok === false) {
+        throw new Error(`OpenRouter models request failed (${resp.status})`);
+      }
+      const parsed = this.parse_model_data(await resp.json());
+      if (!Object.keys(parsed).length) return fallback_models;
       this.model.data.provider_models = parsed;
-      this.model.re_render_settings();
+      await this.sync_selected_model_data();
       return parsed;
     } catch (error) {
       console.error("[SmartEmbedOpenRouterAdapter] Failed to fetch models:", error);
-      // Keep any previously loaded models or a minimal fallback
-      if (this.model.data.provider_models) return this.model.data.provider_models;
-
-      const fallback_id = this.constructor.defaults.default_model;
-      const fallback_models = {
-        [fallback_id]: {
-          id: fallback_id,
-          model_name: fallback_id,
-          description: "OpenRouter embedding model",
-          max_tokens: this.max_tokens,
-          adapter: this.constructor.key,
-        },
-      };
-      this.model.data.provider_models = fallback_models;
-      return fallback_models;
+      return this.model.data.provider_models || fallback_models;
     }
   }
 
   /**
-   * Parse OpenRouter /v1/models response into standard format,
-   * but only keep models that look like embeddings.
+   * Parse OpenRouter /v1/embeddings/models response into standard format.
    *
    * @param {Object|Array} model_data - Raw models payload from OpenRouter
    * @returns {Object} Map of model objects keyed by id
    */
   parse_model_data(model_data) {
-    let list = [];
-    if (Array.isArray(model_data?.data)) list = model_data.data;
-    else if (Array.isArray(model_data)) list = model_data;
-    else {
+    const list = Array.isArray(model_data?.data)
+      ? model_data.data
+      : Array.isArray(model_data) ? model_data : null
+    ;
+    if (!list) {
       console.error(
         "[SmartEmbedOpenRouterAdapter] Invalid model data format from OpenRouter:",
         model_data
       );
-      return { _: { id: "No models found." } };
+      return {};
     }
 
     const out = {};
     for (const model of list) {
-      const model_id = model.id || model.name;
+      const model_id = model.id || model.canonical_slug;
       if (!model_id) continue;
-      if (!is_embedding_model(model_id)) continue;
 
       out[model_id] = {
         id: model_id,
         model_name: model_id,
-        max_tokens: model.context_length || this.max_tokens,
-        description: model.name || model.description || `Model: ${model_id}`,
+        max_tokens: Number(model.context_length) || this.constructor.defaults.max_tokens,
+        description: model.description || model.name || `Model: ${model_id}`,
         adapter: this.constructor.key,
       };
-    }
-
-    if (!Object.keys(out).length) {
-      return { _: { id: "No embedding models found." } };
     }
     return out;
   }
@@ -270,18 +331,3 @@ class SmartEmbedOpenRouterResponseAdapter extends SmartEmbedModelResponseAdapter
     });
   }
 }
-
-/**
- * Heuristic filter: true when an id looks like an embedding model.
- * Checks for common embedding-related substrings and segments.
- *
- * @param {string} id
- * @returns {boolean}
- */
-const is_embedding_model = (id) => {
-  const lower = String(id || "").toLowerCase();
-  const segments = lower.split(/[-:/_]/);
-  if (segments.some((seg) => ["embed", "embedding", "bge"].includes(seg))) return true;
-  if (lower.includes("text-embedding")) return true;
-  return false;
-};
