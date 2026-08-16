@@ -357,6 +357,58 @@ test('action public-contract fields converge atomically', t => {
   t.deepEqual(target.actions.test.output_schema, new_fields.output_schema);
 });
 
+test('newer output_schema null clears an inherited action schema', t => {
+  const output_schema = {
+    type: 'object',
+    required: ['key'],
+  };
+  const target = {
+    actions: {
+      test: {
+        version: 1,
+        output_schema,
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 2,
+        output_schema: null,
+      },
+    },
+  });
+
+  t.is(target.actions.test.output_schema, null);
+});
+
+test('older output_schema null does not clear a newer action schema', t => {
+  const output_schema = {
+    type: 'object',
+    required: ['key'],
+  };
+  const target = {
+    actions: {
+      test: {
+        version: 2,
+        output_schema,
+      },
+    },
+  };
+
+  merge_env_config(target, {
+    actions: {
+      test: {
+        version: 1,
+        output_schema: null,
+      },
+    },
+  });
+
+  t.is(target.actions.test.output_schema, output_schema);
+});
+
 test('atomic field names remain additive inside placement metadata', t => {
   const target = {
     actions: {
