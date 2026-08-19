@@ -80,10 +80,31 @@ export const SmartActionToolWhenContext = {};
 export const SmartActionToolWhen = function () {};
 
 /**
+ * @typedef {Object} SmartActionToolRequestProjectionContext
+ * @property {import('./smart-environment.js').SmartEnv} env - Active Smart Environment.
+ */
+export const SmartActionToolRequestProjectionContext = {};
+
+/**
+ * @typedef {Object} SmartActionToolProjectedRequest
+ * @property {object} scope - Exact natural action scope.
+ * @property {Object.<string, unknown>} params - Natural parameters passed to the action.
+ */
+export const SmartActionToolProjectedRequest = {};
+
+/**
+ * @callback SmartActionToolProjectRequest
+ * @param {Object.<string, unknown>} request - Validated public tool request.
+ * @param {SmartActionToolRequestProjectionContext} context - Tool request projection context.
+ * @returns {Promise<SmartActionToolProjectedRequest>|SmartActionToolProjectedRequest} Natural invocation inputs.
+ */
+export const SmartActionToolProjectRequest = function () {};
+
+/**
  * @typedef {Object} SmartActionToolProjectionContext
  * @property {import('./smart-environment.js').SmartEnv} env - Active Smart Environment.
  * @property {object} scope - Resolved natural action scope.
- * @property {Object.<string, unknown>} params - Validated public tool params.
+ * @property {Object.<string, unknown>} params - Validated natural action params.
  */
 export const SmartActionToolProjectionContext = {};
 
@@ -100,6 +121,8 @@ export const SmartActionToolProjectResult = function () {};
  * @property {string} name - Stable public tool name.
  * @property {SmartActionToolWhen} [when] - Optional capability predicate.
  * @property {SmartActionToolEffects} [effects] - Optional public effect hints.
+ * @property {SmartActionToolProjectRequest} [project_request] - Optional public-to-natural request projection.
+ * @property {JsonSchemaObject} [input_schema] - Optional public-request schema; valid only when project_request is present.
  * @property {SmartActionToolProjectResult} [project_result] - Optional natural-to-public result projection.
  * @property {JsonSchemaObject} [output_schema] - Optional projected-result schema; valid only when project_result is present.
  */
@@ -110,7 +133,7 @@ export const SmartActionToolDescriptor = {};
  * @property {string} key - Action key.
  * @property {string} [description] - Human-readable action description.
  * @property {string} [instruction] - Instruction text used when presenting the action to a model.
- * @property {JsonSchemaObject} input_schema - Input schema for action parameters.
+ * @property {JsonSchemaObject} input_schema - Input schema for natural action parameters.
  * @property {JsonSchemaObject|null} [output_schema] - Optional direct action-result schema; null clears an inherited schema.
  * @property {import('./smart-environment.js').SettingsConfig} [settings_config] - Action settings schema.
  * @property {Object.<string, unknown>|null} [descriptor] - MCP or provider-specific descriptor payload.
@@ -145,7 +168,7 @@ export const SmartActionPostProcess = function () {};
  * @property {SmartActionHandler} [default] - Default callable export for the action.
  * @property {string} [description] - Human-readable action description.
  * @property {string} [instruction] - Instruction text used when presenting the action to a model.
- * @property {JsonSchemaObject} [input_schema] - Input schema for action parameters.
+ * @property {JsonSchemaObject} [input_schema] - Input schema for natural action parameters.
  * @property {JsonSchemaObject|null} [output_schema] - Optional direct action-result schema; null clears an inherited schema.
  * @property {import('./smart-environment.js').SettingsConfig} [settings_config] - Action settings schema.
  * @property {OpenApiSpec} [openapi] - OpenAPI spec used to derive tool parameters.

@@ -126,43 +126,6 @@ test('resolve_action_scope resolves canonical environment, collection, and item 
   );
 });
 
-test('resolve_action_scope uses a synchronous custom resolver without changing params', (t) => {
-  const env = create_env();
-  const params = {
-    item_key: 'alias',
-  };
-  const expected = {
-    env,
-  };
-  const action_entry = {
-    action_scope: {
-      type: 'item',
-      collection_key: 'smart_items',
-      item_arg: 'item_key',
-      resolve(ctx) {
-        t.is(ctx.env, env);
-        t.is(ctx.params, params);
-        t.is(ctx.action_key, 'custom_action');
-        t.is(ctx.action_entry, action_entry);
-        return expected;
-      },
-    },
-  };
-
-  t.is(
-    resolve_action_scope(
-      env,
-      'custom_action',
-      action_entry,
-      params,
-    ),
-    expected,
-  );
-  t.deepEqual(params, {
-    item_key: 'alias',
-  });
-});
-
 test('resolve_action_scope defaults an undeclared scope to the environment', (t) => {
   const env = create_env();
 

@@ -36,14 +36,6 @@ export function resolve_action_scope(
 
   validate_action_scope(action_scope, action_key);
 
-  if (typeof action_scope.resolve === 'function') {
-    return action_scope.resolve({
-      env,
-      params,
-      action_key,
-      action_entry,
-    });
-  }
   if (action_scope.type === 'env') return env;
 
   const collection = env[action_scope.collection_key];
@@ -174,12 +166,6 @@ function validate_action_scope(action_scope, action_key = '') {
     )
   ) {
     throw new TypeError(`Invalid action_scope item_arg${suffix}`);
-  }
-  if (
-    typeof action_scope.resolve !== 'undefined'
-    && typeof action_scope.resolve !== 'function'
-  ) {
-    throw new TypeError(`Invalid action_scope resolve${suffix}`);
   }
 }
 
