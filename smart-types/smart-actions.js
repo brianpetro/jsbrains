@@ -104,6 +104,7 @@ export const SmartActionToolProjectRequest = function () {};
  * @typedef {Object} SmartActionToolProjectionContext
  * @property {import('./smart-environment.js').SmartEnv} env - Active Smart Environment.
  * @property {object} scope - Resolved natural action scope.
+ * @property {Object.<string, unknown>} request - Validated public tool request.
  * @property {Object.<string, unknown>} params - Validated natural action params.
  */
 export const SmartActionToolProjectionContext = {};
