@@ -118,9 +118,18 @@ export const SmartActionToolProjectionContext = {};
 export const SmartActionToolProjectResult = function () {};
 
 /**
+ * @typedef {Object} SmartActionCliDescriptor
+ * @property {string} [command] - Optional CLI command override.
+ * @property {string[]} [aliases] - Optional additional CLI commands.
+ * @property {string[]} [examples] - Optional action-owned CLI examples.
+ */
+export const SmartActionCliDescriptor = {};
+
+/**
  * @typedef {Object} SmartActionToolDescriptor
  * @property {string} name - Stable public tool name.
  * @property {SmartActionToolWhen} [when] - Optional capability predicate.
+ * @property {SmartActionCliDescriptor} [cli] - Optional CLI-specific command metadata.
  * @property {SmartActionToolEffects} [effects] - Optional public effect hints.
  * @property {SmartActionToolProjectRequest} [project_request] - Optional public-to-natural request projection.
  * @property {JsonSchemaObject} [input_schema] - Optional public-request schema; valid only when project_request is present.
