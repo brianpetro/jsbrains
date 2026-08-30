@@ -142,6 +142,7 @@ export class SmartContext extends CollectionItem {
     return {
       data: {
         key: '',
+        description: '',
         context_items: {},
         exclusions: {},
         context_opts: {}, // REMOVE?

@@ -71,6 +71,7 @@ export const ContextItemMediaResult = {};
  * @typedef {Object} SmartContextData
  * @property {string} [key] - Stable context key.
  * @property {string} [name] - Optional user-facing context name.
+ * @property {string} [description] - Optional plain-text description used to discover and select the context.
  * @property {ContextItemsData} [context_items] - Included context items and dynamic inclusion rules keyed by item key.
  * @property {ContextItemsData} [exclusions] - Durable source exclusions keyed by exact source or glob identity.
  * @property {Object.<string, unknown>} [context_opts] - Legacy context options bag retained for compatibility.
