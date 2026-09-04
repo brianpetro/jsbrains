@@ -128,6 +128,7 @@ export const SmartActionCliDescriptor = {};
 /**
  * @typedef {Object} SmartActionToolDescriptor
  * @property {string} name - Stable public tool name.
+ * @property {string} [description] - Model-facing guidance for selecting and correctly using this public tool.
  * @property {SmartActionToolWhen} [when] - Optional capability predicate.
  * @property {SmartActionCliDescriptor} [cli] - Optional CLI-specific command metadata.
  * @property {SmartActionToolEffects} [effects] - Optional public effect hints.
