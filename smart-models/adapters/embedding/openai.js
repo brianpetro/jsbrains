@@ -40,16 +40,21 @@ export class OpenAIEmbeddingModelAdapter extends SmartEmbedOpenAIAdapter {
     const model_profile = openai_models[model_item.data.model_key];
     if (!model_profile) return false;
 
+    const should_default_dimensions = model_item.data.model_key !== 'text-embedding-ada-002'
+      && !model_item.data.dimensions
+    ;
     const dims = model_item.data.model_key === 'text-embedding-ada-002'
       ? model_profile.dims
       : Number(model_item.data.dimensions || 512)
     ;
-    const changed = model_item.data.dims !== dims
+    const changed = should_default_dimensions
+      || model_item.data.dims !== dims
       || model_item.data.max_tokens !== model_profile.max_tokens
       || model_item.data.endpoint !== model_profile.endpoint
     ;
     if (!changed) return false;
 
+    if (should_default_dimensions) model_item.data.dimensions = '512';
     model_item.data.dims = dims;
     model_item.data.max_tokens = model_profile.max_tokens;
     model_item.data.endpoint = model_profile.endpoint;

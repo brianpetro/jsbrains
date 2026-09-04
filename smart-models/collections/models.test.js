@@ -181,10 +181,12 @@ test('legacy non-credential models store raw API keys in model data', (t) => {
 test('new OpenAI embedding models can be tested before changing model key', async (t) => {
   const endpoint = 'https://api.openai.com/v1/embeddings';
   let request_url = '';
+  let request_body = null;
 
   class TestHttpAdapter {
     async request(params) {
       request_url = params.url;
+      request_body = JSON.parse(params.body);
       if (request_url !== endpoint) {
         throw new Error(`Unexpected OpenAI endpoint: ${String(request_url)}`);
       }
@@ -220,9 +222,35 @@ test('new OpenAI embedding models can be tested before changing model key', asyn
   const result = await model.test_model();
 
   t.is(model.data.model_key, 'text-embedding-3-small');
+  t.is(model.data.dimensions, '512');
+  t.is(model.data.dims, 512);
   t.is(model.data.endpoint, endpoint);
   t.is(request_url, endpoint);
+  t.is(request_body.dimensions, 512);
   t.true(result.success);
+});
+
+test('OpenAI sync persists missing default dimensions when model metadata is current', (t) => {
+  const endpoint = 'https://api.openai.com/v1/embeddings';
+  let save_count = 0;
+  const model = {
+    data: {
+      model_key: 'text-embedding-3-small',
+      dims: 512,
+      max_tokens: 8191,
+      endpoint,
+    },
+    queue_save() {
+      save_count += 1;
+    },
+  };
+
+  t.true(OpenAIEmbeddingModelAdapter.sync_model_data(model));
+  t.is(model.data.dimensions, '512');
+  t.is(save_count, 1);
+
+  t.false(OpenAIEmbeddingModelAdapter.sync_model_data(model));
+  t.is(save_count, 1);
 });
 
 test('new credential-backed model reuses the latest selected credential ID', (t) => {
