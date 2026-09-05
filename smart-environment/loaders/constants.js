@@ -16,6 +16,7 @@ export const ACTION_EXPORT_PROPS = [
   'display_description',
   'pre_process',
   'action_scope',
+  'inbox',
   'tool',
   'commands',
   'ribbon_icons',
