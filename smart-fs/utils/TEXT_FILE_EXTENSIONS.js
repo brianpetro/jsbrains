@@ -113,6 +113,7 @@ export const TEXT_FILE_EXTENSIONS = [
   '.jl',
   '.js',
   '.json',
+  '.jsonl',
   '.json5',
   '.jsonc',
   '.jsx',
