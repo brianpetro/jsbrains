@@ -99,12 +99,16 @@ export const ConnectionsFilter = {};
  * @property {number} [limit]
  * @property {ConnectionsCollectionKey} [results_collection_key]
  * @property {string} [score_algo_key]
+ * @property {Object} [score_settings]
+ * @property {string} [connections_post_process]
+ * @property {boolean} [exclude_inlinks]
+ * @property {boolean} [exclude_outlinks]
+ * @property {boolean} [exclude_frontmatter_blocks]
+ * @property {string} [rank_query]
  * @property {ConnectionsFilter} [filter]
  * @property {ConnectionItem} [to_item]
  * @property {ConnectionItem[]} [hidden]
- * @property {string[]} [hidden_keys]
  * @property {ConnectionItem[]} [pinned]
- * @property {string[]} [pinned_keys]
  */
 export const ConnectionsQueryParamsOverrides = {};
 
@@ -117,15 +121,21 @@ export const ConnectionsQueryParamsOverrides = {};
 export const ConnectionsQueryParams = {};
 
 /**
+ * Target-local user feedback; pinned takes precedence over hidden.
+ * @typedef {Object} ConnectionFeedback
+ * @property {'default'|'pinned'|'hidden'} state
+ */
+export const ConnectionFeedback = {};
+
+/**
  * @typedef {Object} ConnectionResultOverrides
+ * @property {ConnectionFeedback} feedback
  * @property {ConnectionItem} item
  * @property {number|null} [score]
  * @property {number|string|null} [score_display]
  * @property {number|null} [og_score]
  * @property {string} [error]
  * @property {ConnectionsListScope} [connections_list]
- * @property {boolean} [is_hidden]
- * @property {string} [prefixed_key]
  */
 export const ConnectionResultOverrides = {};
 
@@ -259,7 +269,10 @@ export const ConnectionsActions = {};
  * @property {ConnectionsActions} actions
  * @property {ConnectionResult[]} results
  * @property {Promise<ConnectionResult[]>|null} [_results_promise]
- * @property {(params?: ConnectionsQueryParams|ConnectionsComponentOptions) => Promise<ConnectionResult[]>} get_results
+ * @property {WeakMap<ConnectionResult[], ConnectionsQueryParams>} _result_params - Prepared context retained per raw result snapshot.
+ * @property {(params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} get_results
+ * @property {(params: ConnectionsQueryParams, options: {states: Array<'pinned'|'hidden'>}) => Array<{item: ConnectionItem, feedback: ConnectionFeedback}>} get_feedback_items
+ * @property {(item: ConnectionItem, params?: ConnectionsQueryParams) => boolean} is_candidate_eligible
  * @property {(params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} [_get_results]
  * @property {(params?: ConnectionsQueryParams) => ConnectionResult[]} [filter_and_score]
  * @property {(results: ConnectionResult[], params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} [post_process]
@@ -755,6 +768,7 @@ export const ConnectionsViewElement = {};
  * @property {ConnectionsListSettings} [connections_settings]
  * @property {string} [connections_list_component_key]
  * @property {ConnectionResult[]} [results]
+ * @property {ConnectionResult[]} [visible_results]
  * @property {HTMLElement} [container]
  * @property {() => Promise<void>|void} [render_connections]
  * @property {string} [event_key_domain]
@@ -762,6 +776,7 @@ export const ConnectionsViewElement = {};
  * @property {number} [width]
  * @property {number} [height]
  * @property {boolean} [force]
+ * @property {(results: ConnectionResult[]) => void} [on_visible_results] - Reports rendered results to presenter-owned state.
  */
 export const ConnectionsComponentOptions = {};
 
@@ -771,6 +786,7 @@ export const ConnectionsComponentOptions = {};
  * @property {ConnectionsViewElement} container
  * @property {ConnectionsListScope} connections_list
  * @property {ConnectionsListSettings} [connections_settings]
+ * @property {ConnectionResult[]} visible_results - Last successfully rendered list snapshot.
  */
 export const ConnectionsMenuState = {};
 
