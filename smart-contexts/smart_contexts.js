@@ -42,7 +42,9 @@ export class SmartContexts extends Collection {
    * @returns {*}
    */
   get_named_context(name) {
-    return this.filter((ctx) => ctx.data?.name === name)[0];
+    if (typeof name !== 'string' || !name.trim()) return null;
+    const lower_case_name = name.toLowerCase();
+    return this.filter((ctx) => ctx.data?.name?.toLowerCase() === lower_case_name)[0];
   }
   async process_load_queue() {
     await super.process_load_queue();
