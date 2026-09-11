@@ -254,14 +254,30 @@ export class SmartSource extends SmartEntity {
    * Reads the entire content of the source file.
    * @async
    * @param {Object} [opts={}] - Additional options for reading.
+   * @param {boolean} [opts.throw_on_error=false] - Throw read failures instead of returning an empty string.
    * @returns {Promise<string>} A promise that resolves with the content of the file.
    */
   async read(opts = {}) {
+    const {
+      throw_on_error = false,
+      ...adapter_opts
+    } = opts;
     try {
-      // return await this.source_adapter.read(opts) || '';
-      return await this.use_source_adapter('read', opts) || '';
+      // return await this.source_adapter.read(adapter_opts) || '';
+      const result = await this.use_source_adapter('read', adapter_opts);
+      if (result === null || result === undefined) {
+        if (throw_on_error) {
+          throw new Error(`No content returned while reading ${this.key}.`);
+        }
+        return '';
+      }
+      return result || '';
     } catch (error) {
-      console.error(`Error during reading ${this.key} (returning empty string)`, error);
+      console.error(
+        `Error during reading ${this.key}${throw_on_error ? '' : ' (returning empty string)'}`,
+        error,
+      );
+      if (throw_on_error) throw error;
       return '';
     }
   }

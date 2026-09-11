@@ -53,7 +53,16 @@ export class SourceContextItemAdapter extends ContextItemAdapter {
    * @returns {Promise<string>}
    */
   async get_text() {
-    return await this.ref?.read() || 'MISSING SOURCE';
+    if (!this.exists) return 'MISSING SOURCE';
+    try {
+      const item_text = await this.ref.read({ throw_on_error: true });
+      return item_text === null || item_text === undefined
+        ? 'ERROR READING SOURCE'
+        : item_text
+      ;
+    } catch {
+      return 'ERROR READING SOURCE';
+    }
   }
   /**
    * @this {SourceContextItemAdapterThis}
