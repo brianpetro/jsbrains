@@ -1,7 +1,7 @@
 import { SmartEntity } from "smart-entities";
 import { find_connections } from "smart-entities/actions/find_connections.js";
 import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.js";
-import { block_get_embed_input_markdown } from "./actions/get_embed_input/markdown.js";
+import { block_markdown_get_embed_input } from "./actions/get_embed_input/markdown.js";
 import { get_block_display_name } from "./utils/get_block_display_name.js";
 
 /**
@@ -480,7 +480,7 @@ export class SmartBlock extends SmartEntity {
 export default {
   class: SmartBlock,
   actions: {
-    block_get_embed_input_markdown: block_get_embed_input_markdown,
+    block_markdown_get_embed_input: block_markdown_get_embed_input,
     find_connections: find_connections,
   },
 }

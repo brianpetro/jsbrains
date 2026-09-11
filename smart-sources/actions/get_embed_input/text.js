@@ -1,5 +1,3 @@
-import { source_get_embed_input_markdown } from './markdown.js';
-
 export const display_name = 'Get text source embed input';
 
 /**
@@ -9,6 +7,6 @@ export const display_name = 'Get text source embed input';
  * @param {object} [params={}]
  * @returns {Promise<string>}
  */
-export async function source_get_embed_input_text(params = {}) {
-  return await source_get_embed_input_markdown.call(this, params);
+export async function source_text_get_embed_input(params = {}) {
+  return await this.actions.source_markdown_get_embed_input(params);
 }

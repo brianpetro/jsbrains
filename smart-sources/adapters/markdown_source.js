@@ -14,7 +14,7 @@ const MARKDOWN_OUTLINKS_VERSION = 2;
  */
 export class MarkdownSourceContentAdapter extends FileSourceContentAdapter {
   static extensions = ['md', 'txt'];
-  static embed_input_action_key = 'source_get_embed_input_markdown';
+  static embed_input_action_key = 'source_markdown_get_embed_input';
 
   get embed_input_action_key() {
     return this.constructor.embed_input_action_key;

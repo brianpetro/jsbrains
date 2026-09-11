@@ -2,7 +2,7 @@ import test from 'ava';
 import { create_actions_proxy } from 'smart-collections/utils/create_actions_proxy.js';
 import { BlockContentAdapter } from './adapters/_adapter.js';
 import { MarkdownBlockContentAdapter } from './adapters/markdown_block.js';
-import { block_get_embed_input_markdown } from './actions/get_embed_input/markdown.js';
+import { block_markdown_get_embed_input } from './actions/get_embed_input/markdown.js';
 import smart_block_config, { SmartBlock } from './smart_block.js';
 
 test('read forwards params to the block adapter', async t => {
@@ -64,7 +64,7 @@ test('block outlinks delegate to the active block adapter', t => {
 
 
 test('get_embed_input delegates to the adapter-selected action', async t => {
-  const action_key = 'block_get_embed_input_markdown';
+  const action_key = 'block_markdown_get_embed_input';
   const block_adapter = { embed_input_action_key: action_key };
   const content = 'staged content';
   let received_params;
@@ -109,7 +109,7 @@ test('get_embed_input rejects a missing configured action', async t => {
     SmartBlock.prototype.get_embed_input.call({
       key: 'Notes/Example.md#Heading',
       block_adapter: {
-        embed_input_action_key: 'block_get_embed_input_markdown',
+        embed_input_action_key: 'block_markdown_get_embed_input',
       },
       actions: {},
     }),
@@ -117,20 +117,20 @@ test('get_embed_input rejects a missing configured action', async t => {
 
   t.is(
     error.message,
-    'SmartBlock.get_embed_input: missing action "block_get_embed_input_markdown" for Notes/Example.md#Heading',
+    'SmartBlock.get_embed_input: missing action "block_markdown_get_embed_input" for Notes/Example.md#Heading',
   );
 });
 
 test('get_embed_input preserves action errors and intentionally empty output', async t => {
   const action_error = new Error('action failed');
   const block_adapter = {
-    embed_input_action_key: 'block_get_embed_input_markdown',
+    embed_input_action_key: 'block_markdown_get_embed_input',
   };
   const failing_block = {
     key: 'Notes/Failing.md#Heading',
     block_adapter,
     actions: {
-      async block_get_embed_input_markdown() {
+      async block_markdown_get_embed_input() {
         throw action_error;
       },
     },
@@ -147,7 +147,7 @@ test('get_embed_input preserves action errors and intentionally empty output', a
     key: 'Bases/Projects.base#view/Empty',
     block_adapter,
     actions: {
-      async block_get_embed_input_markdown() {
+      async block_markdown_get_embed_input() {
         return '';
       },
     },
@@ -158,11 +158,11 @@ test('get_embed_input preserves action errors and intentionally empty output', a
 test('Markdown block adapter key resolves to the registered core action', t => {
   t.is(
     MarkdownBlockContentAdapter.embed_input_action_key,
-    'block_get_embed_input_markdown',
+    'block_markdown_get_embed_input',
   );
   t.is(
-    smart_block_config.actions.block_get_embed_input_markdown,
-    block_get_embed_input_markdown,
+    smart_block_config.actions.block_markdown_get_embed_input,
+    block_markdown_get_embed_input,
   );
 });
 

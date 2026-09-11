@@ -2,9 +2,9 @@ import { SmartEntity } from "smart-entities";
 import { filter_by_frontmatter } from "smart-entities/utils/frontmatter_filter.js";
 import { compute_centroid, compute_medoid } from "smart-utils/geom.js";
 import { find_connections } from "./actions/find_connections.js";
-import { source_get_embed_input_data } from "./actions/get_embed_input/data.js";
-import { source_get_embed_input_markdown } from "./actions/get_embed_input/markdown.js";
-import { source_get_embed_input_text } from "./actions/get_embed_input/text.js";
+import { source_data_get_embed_input } from "./actions/get_embed_input/data.js";
+import { source_markdown_get_embed_input } from "./actions/get_embed_input/markdown.js";
+import { source_text_get_embed_input } from "./actions/get_embed_input/text.js";
 
 /**
  * @class SmartSource
@@ -610,8 +610,8 @@ export default {
   class: SmartSource,
   actions: {
     find_connections: find_connections,
-    source_get_embed_input_data: source_get_embed_input_data,
-    source_get_embed_input_markdown: source_get_embed_input_markdown,
-    source_get_embed_input_text: source_get_embed_input_text,
+    source_data_get_embed_input: source_data_get_embed_input,
+    source_markdown_get_embed_input: source_markdown_get_embed_input,
+    source_text_get_embed_input: source_text_get_embed_input,
   },
 }

@@ -1,7 +1,7 @@
 import { FileSourceContentAdapter } from "./_file.js";
 
 export class TextSourceContentAdapter extends FileSourceContentAdapter {
-  static embed_input_action_key = 'source_get_embed_input_text';
+  static embed_input_action_key = 'source_text_get_embed_input';
 
   get embed_input_action_key() {
     return this.constructor.embed_input_action_key;

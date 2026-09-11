@@ -8,7 +8,7 @@ export const display_name = 'Get markdown block embed input';
  * @param {string|null} [params.content]
  * @returns {Promise<string>}
  */
-export async function block_get_embed_input_markdown(params = {}) {
+export async function block_markdown_get_embed_input(params = {}) {
   const has_content = typeof params.content === 'string' && params.content.length > 0;
   if (has_content) {
     this.clear_staged_embed_content?.();
