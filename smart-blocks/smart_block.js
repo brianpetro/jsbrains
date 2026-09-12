@@ -385,10 +385,18 @@ export class SmartBlock extends SmartEntity {
 
   /**
    * Retrieves the SmartSource associated with the block.
+   *
+   * Detached blocks use `_source_override` for their unregistered parent.
+   * This lets source-dependent adapter selection (via `file_type`) work without
+   * adding hypothetical items to collections or using an existing same-key source.
+   * The override is instance-only, never persisted in `data`. Assign it before
+   * adapter resolution and keep it stable, since the selected adapter is cached.
+   * Without an override, source resolution remains the normal collection lookup.
+   *
    * @readonly
    * @returns {import("smart-sources").SmartSource} The associated SmartSource instance.
    */
-  get source() { return this.source_collection.get(this.source_key); }
+  get source() { return this._source_override || this.source_collection.get(this.source_key); }
 
   /**
    * Retrieves the SmartSources collection instance.

@@ -7,10 +7,9 @@ export const LookupListItemComponentSettings = {};
 
 /**
  * @typedef {Object} LookupListSettings
- * @property {string} [get_results_action_key] - Action used to retrieve Lookup results.
  * @property {string} [results_collection_key] - Collection used as the result source.
- * @property {string} [score_algo_key] - Scoring action key.
  * @property {number} [results_limit] - Maximum number of results.
+ * @property {number} [hyde_context_top_k] - Query excerpts used by explicit Pro generation (0-20; default 5).
  * @property {boolean} [expanded_view] - Whether result items render expanded by default.
  * @property {{lookup_v3_list_item?: LookupListItemComponentSettings}} [components] - Component-specific settings.
  */
@@ -72,8 +71,20 @@ export const LookupItemCollection = {};
 export const LookupResult = {};
 
 /**
+ * @typedef {Object} LookupHypotheticalDocument
+ * @property {string} path - Hypothetical source path or block key.
+ * @property {string} content - Hypothetical item content.
+ */
+export const LookupHypotheticalDocument = {};
+
+/**
  * @typedef {Object} LookupComponentParams
  * @property {string} [query] - Lookup query.
+ * @property {LookupHypotheticalDocument} [hypothetical_document] - Caller-provided hypothetical item for document retrieval; not persisted.
+ * @property {number} [limit] - Maximum number of results.
+ * @property {'smart_sources'|'smart_blocks'} [results_collection_key] - Candidate collection.
+ * @property {object} [filter] - Candidate filters.
+ * @property {() => boolean} [is_current] - UI request guard for asynchronous generation.
  * @property {boolean} [auto_submit] - Whether the query should auto-submit.
  * @property {string} [event_source] - Source that initiated the action.
  * @property {boolean} [active] - Whether an opened view should be active.
@@ -97,7 +108,7 @@ export const LookupComponentParams = {};
  * @property {string} key - Stable Lookup List key.
  * @property {LookupListData} data - Persisted Lookup List data.
  * @property {LookupEnvironment} env - Smart Environment containing the list.
- * @property {{lookup_list_get_results?: (params?: LookupComponentParams) => Promise<LookupResult[]>|LookupResult[]}} actions - Lookup List actions.
+ * @property {Object.<string, (params?: LookupComponentParams) => Promise<LookupResult[]>|LookupResult[]>} actions - Lookup List actions.
  * @property {LookupListSettings} settings - Resolved Lookup settings.
  * @property {(params?: LookupComponentParams) => Promise<LookupResult[]>|LookupResult[]} [get_results] - Direct result retrieval fallback.
  * @property {LookupList} [item] - Compatibility item alias.
@@ -138,7 +149,7 @@ export const LookupPlugin = {};
  * @property {LookupPlugin} [smart_lookup_plugin] - Smart Lookup plugin reference.
  * @property {LookupPlugin} [main] - Primary plugin reference.
  * @property {LookupApp} [obsidian_app] - Host application reference.
- * @property {{collections: {lookup_lists: {settings_config: import('./smart-environment.js').SettingsConfig}}}} config - Resolved environment configuration.
+ * @property {{actions?: Object.<string, object>, collections: {lookup_lists: {settings_config: import('./smart-environment.js').SettingsConfig}}}} config - Resolved environment configuration.
  * @property {{settings?: {native_notice_attention?: boolean}}} [event_logs] - Event log settings.
  * @property {{emit?: (event_key: string, payload?: Object.<string, unknown>) => unknown}} [events] - Environment event bus.
  * @property {(menu_key: string, menu: unknown, scope: LookupList|LookupLists, params?: LookupComponentParams) => unknown} [build_menu] - Builds registered menu actions.
