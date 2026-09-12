@@ -1,7 +1,6 @@
 import {Models, settings_config} from './models.js';
 import ajson_single_file_data_adapter from 'smart-collections/adapters/ajson_single_file.js';
 import { RankingModel } from '../items/ranking_model.js';
-import cohere from "../adapters/ranking/cohere.js";
 
 export class RankingModels extends Models {
   model_type = 'Ranking';
@@ -16,9 +15,7 @@ export const ranking_models_collection = {
   collection_key: 'ranking_models',
   data_adapter: ajson_single_file_data_adapter,
   item_type: RankingModel,
-  providers: {
-    cohere
-  },
+  providers: {},
   settings_config
 };
 

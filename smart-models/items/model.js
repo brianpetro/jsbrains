@@ -46,8 +46,8 @@ export class Model extends CollectionItem {
   get instance() {
     if (!this._instance) {
       if(!this.ProviderAdapterClass) {
-        const new_default_model = this.collection.new_model({ provider_key: this.collection.default_provider_key });
-        return new_default_model.instance;
+        // Keep saved models and embedding spaces intact when a provider is unavailable.
+        throw new Error(`Model provider unavailable: ${this.provider_key}`);
       }
       const Class = this.ProviderAdapterClass;
       this._instance = new Class(this);

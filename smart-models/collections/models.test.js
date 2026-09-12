@@ -1,11 +1,6 @@
 import test from 'ava';
 import { LmStudioEmbeddingModelAdapter } from '../adapters/embedding/lm_studio.js';
 import { OllamaEmbeddingModelAdapter } from '../adapters/embedding/ollama.js';
-import { OpenAIEmbeddingModelAdapter } from '../adapters/embedding/openai.js';
-import {
-  OpenRouterEmbeddingModelAdapter,
-  settings_config as open_router_settings_config,
-} from '../adapters/embedding/open_router.js';
 import { EmbeddingModel } from '../items/embedding_model.js';
 import { EmbeddingModels } from './embedding_models.js';
 
@@ -73,6 +68,11 @@ function create_model_collection(providers, HttpAdapterClass = class {}) {
   collection.emit_event = () => {};
   collection.process_save_queue = async () => {};
   return { env, collection };
+}
+
+// Generic credential tests do not depend on any cloud provider implementation.
+class TestProvider {
+  load() {}
 }
 
 test('new LM Studio embedding models do not inherit the Transformers model key', (t) => {
@@ -157,7 +157,7 @@ test('credential-free providers do not copy legacy API key data', (t) => {
 test('legacy non-credential models store raw API keys in model data', (t) => {
   const { collection } = create_model_collection({
     openai: {
-      class: OpenAIEmbeddingModelAdapter,
+      class: TestProvider,
       settings_config: {
         api_key: { type: 'password' },
       },
@@ -176,81 +176,6 @@ test('legacy non-credential models store raw API keys in model data', (t) => {
 
   model.api_key = 'updated-key';
   t.is(model.data.api_key, 'updated-key');
-});
-
-test('new OpenAI embedding models can be tested before changing model key', async (t) => {
-  const endpoint = 'https://api.openai.com/v1/embeddings';
-  let request_url = '';
-  let request_body = null;
-
-  class TestHttpAdapter {
-    async request(params) {
-      request_url = params.url;
-      request_body = JSON.parse(params.body);
-      if (request_url !== endpoint) {
-        throw new Error(`Unexpected OpenAI endpoint: ${String(request_url)}`);
-      }
-      return {
-        async json() {
-          return {
-            data: [{ embedding: new Array(512).fill(0.1) }],
-            usage: { total_tokens: 2 },
-          };
-        },
-        status() {
-          return 200;
-        },
-      };
-    }
-  }
-
-  const { collection } = create_model_collection({
-    openai: {
-      class: OpenAIEmbeddingModelAdapter,
-      settings_config: {
-        api_key: { type: 'password' },
-      },
-    },
-  }, TestHttpAdapter);
-  const model = collection.new_model({
-    provider_key: 'openai',
-    api_key: 'test-key',
-  });
-  const adapter = model.instance;
-  adapter.count_tokens = async () => ({ tokens: 2 });
-
-  const result = await model.test_model();
-
-  t.is(model.data.model_key, 'text-embedding-3-small');
-  t.is(model.data.dimensions, '512');
-  t.is(model.data.dims, 512);
-  t.is(model.data.endpoint, endpoint);
-  t.is(request_url, endpoint);
-  t.is(request_body.dimensions, 512);
-  t.true(result.success);
-});
-
-test('OpenAI sync persists missing default dimensions when model metadata is current', (t) => {
-  const endpoint = 'https://api.openai.com/v1/embeddings';
-  let save_count = 0;
-  const model = {
-    data: {
-      model_key: 'text-embedding-3-small',
-      dims: 512,
-      max_tokens: 8191,
-      endpoint,
-    },
-    queue_save() {
-      save_count += 1;
-    },
-  };
-
-  t.true(OpenAIEmbeddingModelAdapter.sync_model_data(model));
-  t.is(model.data.dimensions, '512');
-  t.is(save_count, 1);
-
-  t.false(OpenAIEmbeddingModelAdapter.sync_model_data(model));
-  t.is(save_count, 1);
 });
 
 test('new credential-backed model reuses the latest selected credential ID', (t) => {
@@ -274,6 +199,7 @@ test('new credential-backed model reuses the latest selected credential ID', (t)
       api_key_is_credential_id: true,
       providers: {
         openai: {
+          class: TestProvider,
           settings_config: {
             api_key: { type: 'password' },
           },
@@ -312,6 +238,7 @@ test('explicit credential ID overrides same-provider reuse', (t) => {
       api_key_is_credential_id: true,
       providers: {
         openai: {
+          class: TestProvider,
           settings_config: {
             api_key: { type: 'password' },
           },
@@ -346,7 +273,7 @@ test('explicit credential ID overrides same-provider reuse', (t) => {
 test('credential-backed model resolves the selected ID and preserves provider settings', (t) => {
   const { env, collection } = create_model_collection({
     openai: {
-      class: OpenAIEmbeddingModelAdapter,
+      class: TestProvider,
       settings_config: {
         api_key: {
           name: 'API Key',
@@ -385,7 +312,7 @@ test('credential-backed model resolves the selected ID and preserves provider se
 test('model settings do not infer a secret control from model data', (t) => {
   const { env, collection } = create_model_collection({
     openai: {
-      class: OpenAIEmbeddingModelAdapter,
+      class: TestProvider,
       settings_config: {
         api_key: {
           name: 'API Key',
@@ -405,137 +332,73 @@ test('model settings do not infer a secret control from model data', (t) => {
   t.is(model.settings_config.api_key.type, 'password');
 });
 
-test('legacy OpenRouter model key is upgraded to the provider-qualified ID', (t) => {
-  const { env, collection } = create_model_collection({
-    open_router: {
-      class: OpenRouterEmbeddingModelAdapter,
-      settings_config: open_router_settings_config,
-    },
-  });
-  const model = new EmbeddingModel(env, {
-    provider_key: 'open_router',
-    model_key: 'text-embedding-3-small',
-    provider_models: {
-      'text-embedding-3-small': {
-        description: 'OpenRouter embedding model',
-      },
-    },
-  });
-  collection.set(model);
 
-  t.is(model.data.model_key, 'openai/text-embedding-3-small');
-  t.false(Object.prototype.hasOwnProperty.call(
-    model.data,
-    'provider_models',
-  ));
-  t.true(model._queue_save);
+test('unregistered providers are rejected before creating or saving a model', (t) => {
+  const { collection } = create_model_collection({});
+  let events = 0;
+  collection.emit_event = () => { events += 1; };
+
+  t.throws(() => collection.new_model({ provider_key: 'openai' }), {
+    message: 'Model provider unavailable: openai',
+  });
+  t.deepEqual(collection.items, {});
+  t.is(events, 0);
+  t.falsy(collection.settings.default_model_key);
 });
 
-test('OpenRouter model options refresh after selecting a credential', async (t) => {
-  let models_request_count = 0;
-  let embedding_request_count = 0;
-  class TestHttpAdapter {
-    async request(params) {
-      if (params.url.endsWith('/embeddings/models')) {
-        models_request_count += 1;
-        return {
-          async json() {
-            return {
-              data: [
-                {
-                  id: 'openai/text-embedding-3-small',
-                  name: 'OpenAI: Text Embedding 3 Small',
-                  context_length: 8191,
-                },
-                {
-                  id: 'qwen/qwen3-embedding-8b',
-                  name: 'Qwen: Qwen3 Embedding 8B',
-                  context_length: 32768,
-                },
-              ],
-            };
-          },
-        };
-      }
+test('an unavailable default fails without recursively creating models', (t) => {
+  const { collection } = create_model_collection({});
 
-      embedding_request_count += 1;
-      const request_body = JSON.parse(params.body);
-      const dims = request_body.model === 'qwen/qwen3-embedding-8b'
-        ? 4096
-        : 1536
-      ;
-      return {
-        async json() {
-          return {
-            data: [{ embedding: new Array(dims).fill(0) }],
-            usage: { total_tokens: 1 },
-          };
-        },
-      };
-    }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    t.throws(() => collection.default, {
+      message: 'Model provider unavailable: transformers',
+    });
+    t.deepEqual(collection.items, {});
+    t.falsy(collection.settings.default_model_key);
   }
+});
 
+test('an unavailable saved default is preserved even when a local provider exists', (t) => {
   const { env, collection } = create_model_collection({
-    open_router: {
-      class: OpenRouterEmbeddingModelAdapter,
-      settings_config: open_router_settings_config,
-    },
-  }, TestHttpAdapter);
-  env.config.collections.embedding_models.api_key_is_credential_id = true;
-  env.get_secret_by_id = (credential_id) => {
-    return credential_id === 'openrouter-work'
-      ? 'resolved-openrouter-key'
-      : ''
-    ;
-  };
-  const model = collection.new_model({ provider_key: 'open_router' });
+    transformers: { class: TestProvider },
+  });
+  const model = new EmbeddingModel(env, {
+    key: 'openai#saved',
+    provider_key: 'openai',
+    model_key: 'text-embedding-3-small',
+    dims: 512,
+    api_key: 'openai-work',
+    api_key_is_credential_id: true,
+  });
+  collection.set(model);
+  collection.settings.default_model_key = model.key;
+  const saved_data = structuredClone(model.data);
+  let created = 0;
+  collection.new_model = () => { created += 1; t.fail('must not substitute a model'); };
 
-  const before_selection = await model.get_model_key_options();
-  t.deepEqual(before_selection, [{
-    label: 'openai/text-embedding-3-small',
-    value: 'openai/text-embedding-3-small',
-  }]);
-  t.is(models_request_count, 0);
-  t.is(embedding_request_count, 0);
+  t.is(collection.default, model);
+  t.throws(() => collection.default.instance, {
+    message: 'Model provider unavailable: openai',
+  });
+  t.deepEqual(model.data, saved_data);
+  t.is(collection.settings.default_model_key, 'openai#saved');
+  t.deepEqual(Object.keys(collection.items), ['openai#saved']);
+  t.is(created, 0);
 
-  model.settings.api_key = 'openrouter-work';
-  model.model_changed('api_key', 'openrouter-work');
-  const after_selection = await model.get_model_key_options();
+  // Registering Pro later must make the same saved item usable without a data migration.
+  env.config.collections.embedding_models.providers.openai = { class: TestProvider };
+  t.true(model.instance instanceof TestProvider);
+  t.deepEqual(model.data, saved_data);
+});
 
-  t.deepEqual(after_selection, [
-    {
-      label: 'openai/text-embedding-3-small',
-      value: 'openai/text-embedding-3-small',
-    },
-    {
-      label: 'qwen/qwen3-embedding-8b',
-      value: 'qwen/qwen3-embedding-8b',
-    },
-  ]);
-  t.is(models_request_count, 1);
-  t.is(embedding_request_count, 1);
-  t.is(model.data.max_tokens, 8191);
-  t.is(model.data.dims, 1536);
+test('a configured default provider can still create its first model', (t) => {
+  const { collection } = create_model_collection({
+    transformers: { class: TestProvider },
+  });
+  const model = collection.default;
 
-  model.settings.model_key = 'qwen/qwen3-embedding-8b';
-  // The focused test event stub does not run Model.instance's one-time
-  // model:changed listener, so mirror the production instance reset here.
-  model._instance = null;
-  await model.settings_config.model_key.callback.call(
-    model,
-    'qwen/qwen3-embedding-8b',
-  );
-
-  t.is(model.data.api_key, 'openrouter-work');
-  t.is(model.api_key, 'resolved-openrouter-key');
-  t.is(model.data.model_key, 'qwen/qwen3-embedding-8b');
-  t.is(model.data.max_tokens, 32768);
-  t.is(model.data.dims, 4096);
-  t.is(
-    model.data.provider_models['qwen/qwen3-embedding-8b'].dims,
-    4096,
-  );
-  t.deepEqual(await model.get_model_key_options(), after_selection);
-  t.is(models_request_count, 1);
-  t.is(embedding_request_count, 2);
+  t.is(model.provider_key, 'transformers');
+  t.is(collection.settings.default_model_key, model.key);
+  t.is(collection.default, model);
+  t.is(Object.keys(collection.items).length, 1);
 });

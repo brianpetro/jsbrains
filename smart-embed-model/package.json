@@ -3,7 +3,7 @@
   "author": "Brian Joseph Petro (🌴 Brian)",
   "license": "MIT",
   "type": "module",
-  "version": "1.0.8",
+  "version": "2.0.0",
   "description": "Convenient interface for utilizing various embedding models via API and locally.",
   "main": "index.js",
   "scripts": {
@@ -35,6 +35,7 @@
   "dependencies": {
     "js-tiktoken": "^1.0.11",
     "smart-http-request": "*",
-    "smart-model": "*"
+    "smart-model": "*",
+    "smart-utils": "*"
   }
 }

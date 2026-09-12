@@ -8,6 +8,10 @@ export class Models extends Collection {
     if(!data.provider_key) throw new Error('provider_key is required to create a new model');
     const model_data = { ...data };
     const provider_config = this.env_config.providers?.[model_data.provider_key] || {};
+
+    if (!provider_config.class) {
+      throw new Error(`Model provider unavailable: ${model_data.provider_key}`);
+    }
     const uses_api_key = Boolean(provider_config.settings_config?.api_key);
     const uses_credential_id = Boolean(
       this.env_config.api_key_is_credential_id && uses_api_key

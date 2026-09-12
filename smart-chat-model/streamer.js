@@ -13,9 +13,7 @@ export class SmartStreamer {
     this.body = body;
     this.withCredentials = withCredentials;
     this.listeners = {};
-    this.readyState = this.CONNECTING;
     this.progress = 0;
-    this.chunk = '';
     this.last_event_id = '';
     this.xhr = null;
     this.FIELD_SEPARATOR = ':';
@@ -23,6 +21,7 @@ export class SmartStreamer {
     this.CONNECTING = 0;
     this.OPEN = 1;
     this.CLOSED = 2;
+    this.readyState = this.CONNECTING;
 
     this.chunk_accumulator = '';
     this.chunk_splitting_regex = options.chunk_splitting_regex || /(\r\n|\n|\r)/g;
@@ -99,9 +98,10 @@ export class SmartStreamer {
    */
   end() {
     if (this.readyState === this.CLOSED) return;
-    this.xhr.abort();
+    const xhr = this.xhr;
     this.xhr = null;
     this.#setReadyState(this.CLOSED);
+    xhr?.abort();
   }
 
   // private methods
@@ -128,6 +128,7 @@ export class SmartStreamer {
   }
   #onStreamAbort(e) {
     const event = new CustomEvent('abort');
+    this.dispatchEvent(event);
     this.end();
   }
   #onStreamProgress(e) {
@@ -143,30 +144,29 @@ export class SmartStreamer {
     const data = this.xhr.responseText.substring(this.progress);
     this.progress += data.length;
     
-    // Split the data and handle the parts
-    const parts = data.split(this.chunk_splitting_regex);
-    parts.forEach((part, index) => {
-      if (part.trim().length === 0) {
-        // If we have accumulated chunk, dispatch it
-        if (this.chunk) {
-          this.dispatchEvent(this.#parseEventChunk(this.chunk.trim()));
-          this.chunk = '';
-        }
-      } else {
-        this.chunk += part;
-        // If this is the last part and we're in onStreamLoaded, dispatch it
-        if (index === parts.length - 1 && this.xhr.readyState === XMLHttpRequest.DONE) {
-          this.dispatchEvent(this.#parseEventChunk(this.chunk.trim()));
-          this.chunk = '';
-        }
-      }
-    });
+    // Retain partial delimiters as well as partial JSON across XHR progress events.
+    // Protocol adapters may split on lines or complete SSE events (double newlines).
+    this.chunk_accumulator += data;
+    this.chunk_splitting_regex.lastIndex = 0;
+    let match;
+    let offset = 0;
+    while ((match = this.chunk_splitting_regex.exec(this.chunk_accumulator)) !== null) {
+      const chunk = this.chunk_accumulator.slice(offset, match.index).trim();
+      offset = match.index + match[0].length;
+      if (chunk) this.dispatchEvent(this.#parseEventChunk(chunk));
+      if (!this.xhr) return;
+    }
+    this.chunk_accumulator = this.chunk_accumulator.slice(offset);
   }
   #onStreamLoaded(e) {
     this.#onStreamProgress(e);
-    this.dispatchEvent(this.#parseEventChunk(this.chunk));
-    this.chunk = '';
+    if (!this.xhr) return;
+    const chunk = this.chunk_accumulator.trim();
+    if (chunk) this.dispatchEvent(this.#parseEventChunk(chunk));
+    this.chunk_accumulator = '';
+    this.dispatchEvent(new CustomEvent('end'));
   }
+
   #parseEventChunk(chunk) {
     if(!chunk) return console.log('no chunk');
     const event = new CustomEvent('message');

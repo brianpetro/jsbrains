@@ -3,8 +3,8 @@
   "author": "Brian Joseph Petro (🌴 Brian)",
   "type": "module",
   "license": "MIT",
-  "version": "1.0.6",
-  "description": "no-nonsense adapter for Anthropic Claude, Google Gemini, Cohere & more with OpenAI style API interface.",
+  "version": "2.0.0",
+  "description": "Shared chat model contracts, API transport infrastructure, and local-server adapters.",
   "main": "index.js",
   "scripts": {
     "test": "npx ava"
@@ -27,7 +27,7 @@
   "dependencies": {
     "smart-http-request": "*",
     "smart-model": "*",
-    "smart-models": "file:../smart-models"
+    "smart-utils": "*"
   },
   "devDependencies": {
     "ava": "^6.1.2",

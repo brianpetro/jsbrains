@@ -203,7 +203,7 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
       const normalized_error = normalize_error(error?.data || error);
       console.error('Error in SmartChatModelApiAdapter.complete():', {normalized_error, error});
       console.error(http_resp);
-      return normalized_error;
+      return { error: normalized_error };
     }
   }
 
@@ -219,64 +219,75 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * @returns {Promise<Object>} Complete response object
    */
   async stream(req, handlers = {}) {
-    let request_params;
-    try {
-      const _req = new this.req_adapter(this, req);
-      request_params = await _req.to_platform(true);
-      if(this.streaming_chunk_splitting_regex) request_params.chunk_splitting_regex = this.streaming_chunk_splitting_regex; // handle Google's BS
-    } catch (error) {
-      const normalized_error = normalize_error(error?.data || error);
-      console.error('Failed to start stream (request prep):', { error, normalized_error });
-      if (typeof handlers?.error === 'function') handlers.error(normalized_error);
-      this.stop_stream();
-      throw normalized_error;
-    }
-    
+    this._cancel_stream?.();
     return await new Promise((resolve, reject) => {
-      try {
-        this.active_stream = new SmartStreamer(this.endpoint_streaming, request_params);
-        const resp_adapter = new this.res_adapter(this);
-        
-        this.active_stream.addEventListener("message", async (e) => {
-          // console.log('message', e);
-          if (this.is_end_of_stream(e)) {
-            await resp_adapter.handle_chunk(e.data);
-            this.stop_stream();
-            const final_resp = resp_adapter.to_openai();
-            handlers.done && await handlers.done(final_resp);
-            // should return the final aggregated response if needed
-            resolve(final_resp);
-            return;
-          }
-          
-          try {
-            const raw = resp_adapter.handle_chunk(e.data);
-            handlers.chunk && await handlers.chunk({...resp_adapter.to_openai(), raw});
-          } catch (error) {
-            const normalized_error = normalize_error({...e.data, ...error});
-            console.error('Error processing stream chunk:', {e, error, normalized_error});
-            handlers.error && handlers.error(normalized_error);
-            this.stop_stream();
-            reject(normalized_error);
-          }
-        });
-        
-        this.active_stream.addEventListener("error", (e) => {
-          console.error('Stream error:', e);
-          const normalized_error = normalize_error(e?.data || e);
-          handlers.error && handlers.error(normalized_error);
-          this.stop_stream();
+      let streamer;
+      let settled = false;
+      let processing = Promise.resolve();
+      const close = () => {
+        if (this._cancel_stream === cancel) this._cancel_stream = null;
+        if (this.active_stream === streamer) this.active_stream = null;
+        streamer?.end();
+      };
+      const reject_with_error = async (error) => {
+        const normalized_error = normalize_error(error?.data || error);
+        try {
+          await handlers.error?.(normalized_error);
+        } finally {
           reject(normalized_error);
+        }
+      };
+      const fail = (error) => {
+        if (settled) return;
+        settled = true;
+        close();
+        // A throwing error handler must not leave this request pending either.
+        void reject_with_error(error).catch(reject);
+      };
+      const cancel = () => fail(new Error('Stream cancelled'));
+      this._cancel_stream = cancel; // Also covers cancellation during async request preparation.
+
+      const start = async () => {
+        const request_adapter = new this.req_adapter(this, req);
+        const request_params = await request_adapter.to_platform(true);
+        if (settled) return;
+        if (this.streaming_chunk_splitting_regex) request_params.chunk_splitting_regex = this.streaming_chunk_splitting_regex;
+        streamer = new SmartStreamer(this.endpoint_streaming, request_params);
+        this.active_stream = streamer;
+        const response_adapter = new this.res_adapter(this);
+
+        streamer.addEventListener('message', (event) => {
+          // Serialize async handlers so a terminal event cannot overtake a text/tool delta.
+          processing = processing.then(async () => {
+            if (settled) return;
+            const raw = response_adapter.handle_chunk(event.data);
+            const response = response_adapter.to_openai();
+            if (response.error) throw response.error;
+            if (this.is_end_of_stream(event)) {
+              settled = true;
+              close();
+              try {
+                await handlers.done?.(response);
+                resolve(response);
+              } catch (error) {
+                await reject_with_error(error);
+              }
+              return;
+            }
+            await handlers.chunk?.({ ...response, raw });
+          }).catch(fail);
         });
-        
-        this.active_stream.stream();
-      } catch (err) {
-        console.error('Failed to start stream:', err);
-        const normalized_error = normalize_error(err?.data || err);
-        handlers.error && handlers.error(normalized_error);
-        this.stop_stream();
-        reject(normalized_error);
-      }
+        streamer.addEventListener('error', event => fail(event.data || event));
+        streamer.addEventListener('abort', cancel);
+        streamer.addEventListener('end', () => {
+          // A closed connection without the protocol's terminal event is not success.
+          processing = processing.then(() => {
+            if (!settled) fail(new Error('Stream ended before completion'));
+          }).catch(fail);
+        });
+        streamer.stream();
+      };
+      void start().catch(fail);
     });
   }
 
@@ -293,6 +304,10 @@ export class SmartChatModelApiAdapter extends SmartChatModelAdapter {
    * Stop active stream.
    */
   stop_stream() {
+    if (this._cancel_stream) {
+      this._cancel_stream();
+      return;
+    }
     if (this.active_stream) {
       this.active_stream.end();
       this.active_stream = null;
@@ -390,6 +405,13 @@ export class SmartChatModelRequestAdapter {
   constructor(adapter, req = {}) {
     this.adapter = adapter;
     this._req = req;
+  }
+
+  /** Request values override configuration; empty/null values retain the configured default. */
+  get_request_value(key) {
+    if (this._req[key] !== undefined && this._req[key] !== null && this._req[key] !== '') return this._req[key];
+    const settings_value = this.adapter.model.data?.[key];
+    if (settings_value !== undefined && settings_value !== null && settings_value !== '') return settings_value;
   }
 
   /**

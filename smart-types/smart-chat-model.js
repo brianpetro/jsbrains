@@ -8,7 +8,7 @@ export const ChatModelMessageTextPart = {};
 /**
  * @typedef {Object} ChatModelMessageImagePart
  * @property {'image_url'} type - Image content discriminator.
- * @property {{url: string}} image_url - Image URL payload.
+ * @property {{url: string, detail?: string}} image_url - Image URL payload.
  */
 export const ChatModelMessageImagePart = {};
 
@@ -32,6 +32,7 @@ export const ChatModelMessageContentPart = {};
  * @property {string} function.name - Tool name.
  * @property {string} [function.description] - Tool description.
  * @property {Object.<string, unknown>} [function.parameters] - JSON schema-like parameter object.
+ * @property {boolean} [function.strict] - Explicit function-schema strictness. Responses preserves non-strict behavior when omitted.
  */
 export const ChatModelToolDefinition = {};
 
@@ -47,8 +48,8 @@ export const ChatModelToolCall = {};
 
 /**
  * @typedef {Object} ChatModelRequestMessage
- * @property {'system'|'user'|'assistant'|'tool'|'function'} role - Message role.
- * @property {string|Array<import('./smart-chat-model.js').ChatModelMessageContentPart>} content - Message content.
+ * @property {'system'|'developer'|'user'|'assistant'|'tool'|'function'} role - Message role.
+ * @property {string|Array<import('./smart-chat-model.js').ChatModelMessageContentPart>|null} content - Message content, or null for an assistant tool call.
  * @property {string} [name] - Function or tool name for function-role payloads.
  * @property {Array<import('./smart-chat-model.js').ChatModelToolCall>} [tool_calls] - Tool calls attached to an assistant message.
  * @property {string} [tool_call_id] - Tool call id used by tool-role follow-up messages.
@@ -60,6 +61,13 @@ export const ChatModelRequestMessage = {};
  * @typedef {Object} ChatModelRequest
  * @property {Array<import('./smart-chat-model.js').ChatModelRequestMessage>} messages - Normalized chat history.
  * @property {string} [model] - Provider model override.
+ * @property {'auto'|'responses'|'completions'} [api_format] - Native OpenAI transport override; not sent to the provider.
+ * @property {string} [reasoning_effort] - Request-level reasoning effort, overriding configured effort when nonempty.
+ * @property {string} [verbosity] - Request-level response verbosity.
+ * @property {number} [max_completion_tokens] - Output cap including reasoning; mapped to max_output_tokens for Responses.
+ * @property {boolean} [parallel_tool_calls] - Whether parallel function calls are allowed.
+ * @property {boolean} [store] - Responses storage opt-in; defaults to false.
+ * @property {Object.<string, unknown>} [response_format] - Text/JSON output format; mapped to Responses text.format.
  * @property {number} [temperature] - Sampling temperature.
  * @property {number} [max_tokens] - Maximum completion token count.
  * @property {boolean} [stream] - Whether the request should stream partial responses.
@@ -67,7 +75,7 @@ export const ChatModelRequestMessage = {};
  * @property {number} [presence_penalty] - Presence penalty.
  * @property {number} [frequency_penalty] - Frequency penalty.
  * @property {Array<import('./smart-chat-model.js').ChatModelToolDefinition>} [tools] - Tool definitions available to the model.
- * @property {'auto'|'none'|Object.<string, unknown>} [tool_choice] - Tool-choice strategy or provider-specific override.
+ * @property {'auto'|'none'|'required'|Object.<string, unknown>} [tool_choice] - Tool-choice strategy or provider-specific override.
  */
 export const ChatModelRequest = {};
 
@@ -76,6 +84,7 @@ export const ChatModelRequest = {};
  * @property {'assistant'|'function'|'tool'} role - Normalized response role.
  * @property {string|Array<import('./smart-chat-model.js').ChatModelMessageContentPart>} content - Response content.
  * @property {string} [name] - Function name for function-role responses.
+ * @property {string} [refusal] - Refusal text when provided separately from ordinary content.
  * @property {Array<import('./smart-chat-model.js').ChatModelToolCall>} [tool_calls] - Tool calls emitted by the model.
  */
 export const ChatModelResponseMessage = {};
@@ -84,7 +93,7 @@ export const ChatModelResponseMessage = {};
  * @typedef {Object} ChatModelChoice
  * @property {number} index - Choice index.
  * @property {import('./smart-chat-model.js').ChatModelResponseMessage} message - Normalized response message.
- * @property {'stop'|'length'|'tool_calls'|'content_filter'|'function_call'|string} [finish_reason] - Provider finish reason.
+ * @property {'stop'|'length'|'tool_calls'|'content_filter'|'function_call'|string|null} [finish_reason] - Provider finish reason.
  */
 export const ChatModelChoice = {};
 
@@ -93,6 +102,8 @@ export const ChatModelChoice = {};
  * @property {number} [prompt_tokens] - Prompt token count.
  * @property {number} [completion_tokens] - Completion token count.
  * @property {number} [total_tokens] - Combined token count.
+ * @property {Object.<string, number>} [prompt_tokens_details] - Provider input-token breakdown, including cached tokens.
+ * @property {Object.<string, number>} [completion_tokens_details] - Provider output-token breakdown, including reasoning tokens.
  */
 export const ChatModelUsage = {};
 
