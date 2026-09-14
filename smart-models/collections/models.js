@@ -58,8 +58,7 @@ export class Models extends Collection {
 
   get default_model_key() {
     const should_update_default = !this.settings.default_model_key
-      || !this.get(this.settings.default_model_key)
-      || this.get(this.settings.default_model_key).deleted
+      || this.get(this.settings.default_model_key)?.deleted
     ;
     if(should_update_default) {
       const existing = this.filter(m => !m.deleted)

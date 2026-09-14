@@ -32,9 +32,12 @@ export async function source_markdown_get_embed_input(params = {}) {
     content = content_lines.filter(line => line.length).join("\n");
   }
   const breadcrumbs = this.path.split("/").join(" > ").replace(".md", "");
-  const max_tokens = this.collection.embed_model.model.data.max_tokens || 500;
+  const embed_model = this.collection.embed_model;
+  const max_tokens = embed_model?.model.data.max_tokens || 500;
   // Prevent loading too much content
   const max_chars = Math.floor(max_tokens * 3.7); // more conservative estimate for characters
-  this._embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_chars);
-  return this._embed_input;
+  const embed_input = `${breadcrumbs}:\n${content}`.substring(0, max_chars);
+  // Do not cache an unresolved model's temporary token budget.
+  if (embed_model) this._embed_input = embed_input;
+  return embed_input;
 }

@@ -79,10 +79,11 @@ export class SmartEntities extends Collection {
    * @returns {EmbedModel|null} The embedding model instance or null if none.
    */
   get embed_model() {
-    if (this.env.embedding_models.default) {
-      return this.env.embedding_models.default.instance;
+    if (!this.env.embedding_models) {
+      throw new Error("DEPRECATED SMART ENVIRONMENT LOADED: UPDATE SMART PLUGINS.");
     }
-    throw new Error("DEPRECATED SMART ENVIRONMENT LOADED: UPDATE SMART PLUGINS.");
+    const model_item = this.env.embedding_models.default;
+    return model_item ? model_item.instance : null;
   }
   /**
    * @this {SmartEntitiesThis}
