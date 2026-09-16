@@ -84,7 +84,6 @@ export const LookupHypotheticalDocument = {};
  * @property {number} [limit] - Maximum number of results.
  * @property {'smart_sources'|'smart_blocks'} [results_collection_key] - Candidate collection.
  * @property {object} [filter] - Candidate filters.
- * @property {() => boolean} [is_current] - UI request guard for asynchronous generation.
  * @property {boolean} [auto_submit] - Whether the query should auto-submit.
  * @property {string} [event_source] - Source that initiated the action.
  * @property {boolean} [active] - Whether an opened view should be active.
@@ -108,7 +107,7 @@ export const LookupComponentParams = {};
  * @property {string} key - Stable Lookup List key.
  * @property {LookupListData} data - Persisted Lookup List data.
  * @property {LookupEnvironment} env - Smart Environment containing the list.
- * @property {Object.<string, (params?: LookupComponentParams) => Promise<LookupResult[]>|LookupResult[]>} actions - Lookup List actions.
+ * @property {Object.<string, (params?: LookupComponentParams, request_context?: {is_current?: () => boolean}) => Promise<LookupResult[]>|LookupResult[]>} actions - Lookup List actions.
  * @property {LookupListSettings} settings - Resolved Lookup settings.
  * @property {(params?: LookupComponentParams) => Promise<LookupResult[]>|LookupResult[]} [get_results] - Direct result retrieval fallback.
  * @property {LookupList} [item] - Compatibility item alias.
