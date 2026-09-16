@@ -24,12 +24,15 @@ export class MarkdownBlockContentAdapter extends BlockContentAdapter {
   /**
    * Read the content of the block.
    * @async
+   * @param {object} [params={}]
+   * @param {boolean} [params.throw_on_error=false]
    * @returns {Promise<string>} The block content as a string.
    * @throws {Error} If the block cannot be found.
    */
-  async read() {
-    const source_content = await this.item.source?.read();
+  async read(params = {}) {
+    const source_content = await this.item.source?.read(params);
     if(!source_content) {
+      if (params.throw_on_error) throw new Error(`BLOCK NOT FOUND: ${this.item.key} has no source content.`);
       console.warn(`BLOCK NOT FOUND: ${this.item.key} has no source content.`);
       return "";
     }

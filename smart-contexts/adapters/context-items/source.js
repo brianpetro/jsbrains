@@ -50,17 +50,24 @@ export class SourceContextItemAdapter extends ContextItemAdapter {
   }
   /**
    * @this {SourceContextItemAdapterThis}
+   * @param {object} [params={}]
+   * @param {boolean} [params.throw_on_error=false]
    * @returns {Promise<string>}
    */
-  async get_text() {
-    if (!this.exists) return 'MISSING SOURCE';
+  async get_text(params = {}) {
+    if (!this.exists) {
+      if (params.throw_on_error) throw new Error(`Source not found: ${this.item.key}`);
+      return 'MISSING SOURCE';
+    }
     try {
       const item_text = await this.ref.read({ throw_on_error: true });
+      if (params.throw_on_error && item_text == null) throw new Error(`Unable to read source: ${this.item.key}`);
       return item_text === null || item_text === undefined
         ? 'ERROR READING SOURCE'
         : item_text
       ;
-    } catch {
+    } catch (error) {
+      if (params.throw_on_error) throw error;
       return 'ERROR READING SOURCE';
     }
   }

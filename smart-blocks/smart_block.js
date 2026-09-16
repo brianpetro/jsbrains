@@ -97,6 +97,7 @@ export class SmartBlock extends SmartEntity {
     try{
       return await this.block_adapter.read(params);
     } catch (e) {
+      if (params.throw_on_error) throw e;
       if(e.message.includes('BLOCK NOT FOUND')){
         return "BLOCK NOT FOUND (run \"Prune\" to remove)";
       } else {

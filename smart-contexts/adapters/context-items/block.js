@@ -51,12 +51,14 @@ export class BlockContextItemAdapter extends ContextItemAdapter {
   }
   /**
    * @this {BlockContextItemAdapterThis}
+   * @param {object} [params={}]
+   * @param {boolean} [params.throw_on_error=false]
    * @returns {Promise<string|Object.<string, *>>}
    */
-  async get_text() {
+  async get_text(params = {}) {
     const block = this.ref;
     if(!block) return { error: 'Block not found' };
-    return await block.read();
+    return await block.read(params);
   }
   /**
    * @this {BlockContextItemAdapterThis}

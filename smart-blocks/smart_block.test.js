@@ -188,3 +188,24 @@ test('staged block content is consumed only for the matching read hash', t => {
   t.is(SmartBlock.prototype.consume_staged_embed_content.call(block), null);
   t.is(block._staged_embed_content, null);
 });
+
+test('strict attachment reads reject missing blocks while legacy callers retain their diagnostic', async t => {
+  const block = { block_adapter: { read: async () => { throw new Error('BLOCK NOT FOUND: deleted'); } } };
+  t.is(await SmartBlock.prototype.read.call(block), 'BLOCK NOT FOUND (run "Prune" to remove)');
+  await t.throwsAsync(() => SmartBlock.prototype.read.call(block, { throw_on_error: true }), { message: 'BLOCK NOT FOUND: deleted' });
+});
+
+test('strict Markdown block reads preserve scope and propagate source read errors', async t => {
+  const options = [];
+  const adapter = new MarkdownBlockContentAdapter({
+    key: 'Plan.md#Scope', line_start: 2, line_end: 3,
+    source: { read: async params => { options.push(params); return 'outside\n# Scope\nselected\nSECRET'; } },
+  });
+  adapter.update_last_read = () => {};
+  t.is(await adapter.read({ throw_on_error: true }), '# Scope\nselected');
+  t.deepEqual(options, [{ throw_on_error: true }]);
+  adapter.item.source.read = async () => null;
+  await t.throwsAsync(() => adapter.read({ throw_on_error: true }), { message: /BLOCK NOT FOUND/ });
+  adapter.item.source.read = async () => { throw new Error('Source failed'); };
+  await t.throwsAsync(() => adapter.read({ throw_on_error: true }), { message: 'Source failed' });
+});

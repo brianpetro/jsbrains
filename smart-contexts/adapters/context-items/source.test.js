@@ -79,3 +79,12 @@ test('source adapter maps strict read failures to read error', async (t) => {
   t.is(await adapter.get_text(), 'ERROR READING SOURCE');
   t.deepEqual(received_opts, { throw_on_error: true });
 });
+
+test('strict text output propagates source failures without changing legacy diagnostics', async t => {
+  await t.throwsAsync(() => create_adapter(null).get_text({ throw_on_error: true }), { message: /Source not found/ });
+  const failed = create_adapter({ read: async () => { throw new Error('Read failed'); } });
+  t.is(await failed.get_text(), 'ERROR READING SOURCE');
+  await t.throwsAsync(() => failed.get_text({ throw_on_error: true }), { message: 'Read failed' });
+  await t.throwsAsync(() => create_adapter({ read: async () => null }).get_text({ throw_on_error: true }), { message: /Unable to read source/ });
+  t.is(await create_adapter({ read: async () => '' }).get_text({ throw_on_error: true }), '');
+});
