@@ -1,4 +1,5 @@
 import test from 'ava';
+import * as context_items_module from './context_items.js';
 import {
   ContextItems,
   normalize_context_item_data,
@@ -134,3 +135,26 @@ test('load_item_from_data routes legacy named contexts through normalized kind',
     named_context: true,
   });
 });
+
+
+test('Context media capability follows image/PDF adapters, not source media classification', (t) => {
+  for (const key of ['photo.png', 'photo.JPG', 'photo.webp', 'photo.gif', 'icon.ico', 'scan.PDF']) {
+    t.true(context_items_module.is_supported_context_media(key), key);
+  }
+  for (const key of ['movie.mp4', 'audio.mp3', 'drawing.excalidraw.md', 'drawing.excalidraw', 'note.md']) {
+    t.false(context_items_module.is_supported_context_media(key), key);
+  }
+  t.false(context_items_module.is_supported_context_media('scan.pdf#Heading'));
+  t.false(context_items_module.is_supported_context_media('photos.png', { folder: true }));
+  t.false(context_items_module.is_supported_context_media('scan.pdf', { named_context: true }));
+  t.false(context_items_module.is_supported_context_media('external:../photo.png'));
+  t.false(context_items_module.is_supported_context_media('selection:photo.png', { kind: 'text' }));
+});
+
+test('MP4 is not dispatched to the Context image adapter', (t) => {
+  const data = normalize_context_item_data('movie.MP4');
+  t.false(ImageContextItemAdapter.detect(data.key, data));
+  t.false(PdfContextItemAdapter.detect(data.key, data));
+  t.true(SourceContextItemAdapter.detect(data.key, data));
+});
+

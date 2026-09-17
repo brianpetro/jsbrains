@@ -321,3 +321,70 @@ test('SmartContext counts and clears included items and durable exclusions separ
   t.deepEqual(ctx.data.context_items, {});
   t.deepEqual(ctx.data.exclusions, {});
 });
+
+
+test('get_text uses a supplied snapshot, preserves depth order and does not mutate its order', async (t) => {
+  const reads = [];
+  const items = [
+    { key: 'late.md', data: { d: 2 }, get_text: async () => { reads.push('late'); return 'late'; } },
+    { key: 'image.png', data: { d: 1 }, is_media: true, get_text: async () => { t.fail('Media text read'); } },
+    { key: 'early.md', data: { d: 0 }, get_text: async () => { reads.push('early'); return 'early'; } },
+  ];
+  const scope = {
+    get context_items() { throw new Error('Snapshot must not rehydrate'); },
+    actions: {
+      context_merge_template(text, params) {
+        t.deepEqual(params.context_items.map(({ key }) => key), ['early.md', 'image.png', 'late.md']);
+        return `<context>${text}</context>`;
+      },
+    },
+  };
+  t.is(await SmartContext.prototype.get_text.call(scope, { context_items: items }), '<context>early\nlate</context>');
+  t.deepEqual(reads, ['early', 'late']);
+  t.deepEqual(items.map(({ key }) => key), ['late.md', 'image.png', 'early.md']);
+});
+
+test('get_text applies function and item filters to a supplied snapshot, including an empty one', async (t) => {
+  const items = ['a', 'b'].map((key) => ({
+    key, data: { d: 0 },
+    get_text: async () => key,
+    filter: (params) => params.key === key,
+  }));
+  const scope = {
+    get context_items() { throw new Error('Snapshot must not rehydrate'); },
+    actions: {},
+  };
+  t.is(await SmartContext.prototype.get_text.call(scope, { context_items: items, filter: (item) => item.key === 'b' }), 'b');
+  t.is(await SmartContext.prototype.get_text.call(scope, { context_items: items, filter: { key: 'a' } }), 'a');
+  t.is(await SmartContext.prototype.get_text.call(scope, { context_items: [] }), '');
+});
+
+test('get_text still hydrates by default and preserves non-string read-error handling', async (t) => {
+  const errors = [];
+  const filter = () => true;
+  const scope = {
+    context_items: {
+      filter(actual_filter) {
+        t.is(actual_filter, filter);
+        return [
+          { key: 'empty.md', data: { d: 0 }, get_text: async () => '' },
+          { key: 'missing.md', data: { d: 1 }, get_text: async () => ({ error: 'missing' }) },
+        ];
+      },
+    },
+    actions: {},
+    emit_get_text_error(item, result) { errors.push({ key: item.key, result }); },
+  };
+  t.is(await SmartContext.prototype.get_text.call(scope, { filter }), '');
+  t.deepEqual(errors, [{ key: 'missing.md', result: { error: 'missing' } }]);
+});
+
+test('get_text preserves thrown read failures for supplied snapshots', async (t) => {
+  const error = new Error('Read failed');
+  const scope = { actions: {} };
+  const result = await t.throwsAsync(() => SmartContext.prototype.get_text.call(scope, {
+    context_items: [{ key: 'broken.md', data: { d: 0 }, get_text: async () => { throw error; } }],
+  }));
+  t.is(result, error);
+});
+

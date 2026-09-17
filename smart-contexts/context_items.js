@@ -82,6 +82,22 @@ export function normalize_context_item_data(key, item_data = {}) {
   return data;
 }
 
+/**
+ * Media supported by Context's current vault image/PDF output adapters.
+ * External text adapters do not provide binary attachment support.
+ *
+ * @param {string} key
+ * @param {Partial<ContextItemData>} [item_data={}]
+ * @returns {boolean}
+ */
+export function is_supported_context_media(key, item_data = {}) {
+  const data = normalize_context_item_data(key, item_data);
+  return data.is_external !== true && Boolean(
+    ImageContextItemAdapter.detect(data.key, data)
+    || PdfContextItemAdapter.detect(data.key, data)
+  );
+}
+
 export class ContextItems extends Collection {
   /**
    * @this {*}

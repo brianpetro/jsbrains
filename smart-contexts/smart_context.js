@@ -360,14 +360,17 @@ export class SmartContext extends CollectionItem {
   /**
    * @this {SmartContextThis}
    * @param {Object.<string, *>} [params={}]
+   * @param {ContextItemInstance[]} [params.context_items] - Optional resolved snapshot.
    * @returns {Promise<string>}
    */
   async get_text(params = {}) {
     const segments = [];
-    const context_items = this.context_items
-      .filter(params.filter)
-      .sort((a, b) => a.data.d - b.data.d)
-    ;
+    const context_items = (params.context_items
+      ? params.context_items.filter((item) => !params.filter || (
+        typeof params.filter === 'function' ? params.filter(item) : item.filter(params.filter)
+      ))
+      : this.context_items.filter(params.filter)
+    ).sort((a, b) => a.data.d - b.data.d);
     console.log('get_text context_items', context_items);
     for (const item of context_items) {
       if (item.is_media) continue;
