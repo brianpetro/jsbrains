@@ -158,3 +158,36 @@ test('MP4 is not dispatched to the Context image adapter', (t) => {
   t.true(SourceContextItemAdapter.detect(data.key, data));
 });
 
+
+for (const is_env_excluded of [false, true]) {
+  test(`hydration retains unavailable items and identifies environment exclusion: ${is_env_excluded}`, (t) => {
+    const key = 'Notes/Plan.md';
+    const warnings = [];
+    const loaded_item = { key, exists: false, is_env_excluded, size: 0, mtime: null };
+    const context_items_data = { [key]: { key } };
+    const scope = {
+      items: {},
+      smart_context: {
+        data: {},
+        emit_missing_context_item_event(...args) { warnings.push(args); },
+      },
+      load_item_from_data() { return loaded_item; },
+    };
+
+    const loaded = ContextItems.prototype.load_from_data.call(scope, context_items_data);
+
+    t.deepEqual(loaded, [loaded_item]);
+    t.truthy(context_items_data[key]);
+    t.is(warnings.length, 1);
+    t.is(warnings[0][0], key);
+    if (is_env_excluded) {
+      t.is(warnings[0][1], 'Context item is excluded by Smart Environment settings');
+      t.regex(warnings[0][2].message, /Settings > Smart Environment > Sources/);
+      t.regex(warnings[0][2].message, /reopen this context/);
+      t.is(warnings[0][2].btn_text, 'Remove from context');
+    } else {
+      t.is(warnings[0][1], 'Context item does not exist');
+      t.deepEqual(warnings[0][2] || {}, {});
+    }
+  });
+}

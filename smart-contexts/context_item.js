@@ -6,10 +6,10 @@ import { CollectionItem } from 'smart-collections';
 /** @typedef {import('smart-types').ContextItemMediaResult} ContextItemMediaResult */
 /** @typedef {import('smart-types').ContextItemTextResult} ContextItemTextResult */
 /** @typedef {import('smart-types').CollectionItemRef} CollectionItemRef */
-/** @typedef {ContextItem & Object.<string, *> & {data: ContextItemData, key: string, collection: *, context_type_adapter: *}} ContextItemThis */
+/** @typedef {ContextItem & Object.<string, *> & {env: *, data: ContextItemData, key: string, collection: *, context_type_adapter: *}} ContextItemThis */
 
 export class ContextItem extends CollectionItem {
-  static version = '1.1.0';
+  static version = '1.1.1';
   // special handling because current name_to_collection_key removes "Items" suffix
   /**
    * @returns {string}
@@ -35,7 +35,21 @@ export class ContextItem extends CollectionItem {
    * @returns {boolean}
    */
   get exists() {
-    return this.context_type_adapter.exists;
+    return !this.is_env_excluded && this.context_type_adapter.exists;
+  }
+
+  /**
+   * Check the source path, not a block key, against current environment exclusions.
+   * Keep this derived so removing an exclusion does not leave a stale missing flag.
+   *
+   * @this {ContextItemThis}
+   * @returns {boolean}
+   */
+  get is_env_excluded() {
+    return this.data.is_external !== true
+      && !!this.data.source_path
+      && this.env.smart_sources?.fs?.is_excluded?.(this.data.source_path) === true
+    ;
   }
 
   /**

@@ -117,7 +117,7 @@ export class ContextItems extends Collection {
     // ALT: handle in action itself? (easy access to the default settings there)
   }
 
-  static version = '1.1.0';
+  static version = '1.1.1';
 
   /**
    * @this {ContextItemsThis}
@@ -204,7 +204,18 @@ export class ContextItems extends Collection {
           loaded_items.push(...loaded);
         } else {
           if (!loaded.exists) {
-            this.smart_context.emit_missing_context_item_event(key, 'Context item does not exist');
+            const is_env_excluded = loaded.is_env_excluded;
+            this.smart_context.emit_missing_context_item_event(
+              key,
+              is_env_excluded
+                ? 'Context item is excluded by Smart Environment settings'
+                : 'Context item does not exist',
+              is_env_excluded ? {
+                message: `Context item excluded by Smart Environment settings: ${key}. `
+                  + 'Review Settings > Smart Environment > Sources, then reopen this context, or remove the item from this context.',
+                btn_text: 'Remove from context',
+              } : {},
+            );
           }
           item_data.size = loaded.size;
           item_data.mtime = loaded.mtime;
