@@ -106,6 +106,7 @@ export const LookupComponentParams = {};
  * @typedef {Object} LookupList
  * @property {string} key - Stable Lookup List key.
  * @property {LookupListData} data - Persisted Lookup List data.
+ * @property {LookupResult[]|null} results - Final displayed results; null until available, never persisted.
  * @property {LookupEnvironment} env - Smart Environment containing the list.
  * @property {Object.<string, (params?: LookupComponentParams, request_context?: {is_current?: () => boolean}) => Promise<LookupResult[]>|LookupResult[]>} actions - Lookup List actions.
  * @property {LookupListSettings} settings - Resolved Lookup settings.
@@ -120,6 +121,7 @@ export const LookupList = {};
  * @property {LookupListSettings} settings - Resolved collection settings.
  * @property {import('./smart-environment.js').SettingsConfig} settings_config - Collection settings schema.
  * @property {(params: LookupComponentParams) => LookupList} new_item - Creates or reuses a Lookup List.
+ * @property {(key?: string) => LookupList|undefined} get - Resolves a retained Lookup List by key.
  */
 export const LookupLists = {};
 
@@ -151,7 +153,7 @@ export const LookupPlugin = {};
  * @property {{actions?: Object.<string, object>, collections: {lookup_lists: {settings_config: import('./smart-environment.js').SettingsConfig}}}} config - Resolved environment configuration.
  * @property {{settings?: {native_notice_attention?: boolean}}} [event_logs] - Event log settings.
  * @property {{emit?: (event_key: string, payload?: Object.<string, unknown>) => unknown}} [events] - Environment event bus.
- * @property {(menu_key: string, menu: unknown, scope: LookupList|LookupLists, params?: LookupComponentParams) => unknown} [build_menu] - Builds registered menu actions.
+ * @property {(menu_key: string, menu: unknown, scope: LookupList|LookupLists|LookupView, params?: LookupComponentParams) => unknown} [build_menu] - Builds registered menu actions.
  * @property {(plugin: LookupPlugin) => unknown} [unload_main] - Unloads a plugin from the environment.
  */
 export const LookupEnvironment = {};
@@ -161,6 +163,8 @@ export const LookupEnvironment = {};
  * @property {LookupEnvironment} env - Lookup environment.
  * @property {LookupPlugin} [plugin] - Owning plugin.
  * @property {LookupApp} [app] - Host application.
+ * @property {{keys: string[], index: number}} [query_history] - Lookup List keys and current index for this view session; never persisted.
+ * @property {() => Promise<void>} open_settings - Opens the owning plugin's settings.
  */
 export const LookupView = {};
 
@@ -170,6 +174,7 @@ export const LookupView = {};
  * @property {(html: string) => DocumentFragment} create_doc_fragment - Creates a document fragment from HTML.
  * @property {(icon_name: string) => string} get_icon_html - Returns icon markup.
  * @property {(container: Node) => void} empty - Clears a rendered container.
+ * @property {(container: Element, dispose: () => void) => void} attach_disposer - Runs cleanup when a rendered container is removed.
  * @property {(container: Element, html: string) => void} safe_inner_html - Safely replaces container HTML.
  * @property {(markdown: string, scope?: unknown) => Promise<DocumentFragment>} render_markdown - Renders Markdown.
  */
