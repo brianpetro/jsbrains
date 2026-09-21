@@ -14,7 +14,8 @@ const smart_chat_model_schema = {
     },
     "api_key": {
       "type": "string",
-      "description": "API key for accessing the platform"
+      "format": "password",
+      "description": "API key for accessing the platform (sensitive; must not be logged or exposed)"
     },
     "endpoint_url": {
       "type": "string",
