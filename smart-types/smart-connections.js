@@ -302,7 +302,6 @@ export const ConnectionsActions = {};
  * @property {(params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} [_get_results]
  * @property {(params?: ConnectionsPreparedParams) => ConnectionResult[]} [filter_and_score]
  * @property {(results: ConnectionResult[], params?: ConnectionsPreparedParams) => Promise<ConnectionResult[]>} [post_process]
- * @property {(params: ConnectionsQueryParams) => Promise<void>|void} [pre_process]
  * @property {string} connections_list_component_key
  */
 export const ConnectionsListScopeOverrides = {};
