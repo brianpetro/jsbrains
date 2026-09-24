@@ -49,7 +49,11 @@ export const ConnectionsComponentSettingsMap = {};
  * @property {boolean} [footer_connections]
  * @property {boolean} [embed_blocks]
  * @property {ConnectionsComponentSettingsMap} [components]
- * @property {Object.<string, string>} [actions]
+ * @property {string} [include_filter]
+ * @property {string} [exclude_filter]
+ * @property {boolean} [exclude_inlinks]
+ * @property {boolean} [exclude_outlinks]
+ * @property {Object.<string, Object>} [actions]
  */
 export const ConnectionsListSettings = {};
 
@@ -89,7 +93,8 @@ export const ConnectionsFilterOverrides = {};
 /**
  * @typedef {Omit<
  *   import('./smart-collections.js').CollectionFilterOptions,
- *   keyof ConnectionsFilterOverrides
+ *   keyof ConnectionsFilterOverrides | 'exclude_key' | 'exclude_key_starts_with'
+ *   | 'exclude_key_includes' | 'exclude_key_ends_with' | 'first_n'
  * > & ConnectionsFilterOverrides} ConnectionsFilter
  */
 export const ConnectionsFilter = {};
@@ -106,9 +111,6 @@ export const ConnectionsFilter = {};
  * @property {boolean} [exclude_frontmatter_blocks]
  * @property {string} [rank_query]
  * @property {ConnectionsFilter} [filter]
- * @property {ConnectionItem} [to_item]
- * @property {ConnectionItem[]} [hidden]
- * @property {ConnectionItem[]} [pinned]
  */
 export const ConnectionsQueryParamsOverrides = {};
 
@@ -119,6 +121,30 @@ export const ConnectionsQueryParamsOverrides = {};
  * > & ConnectionsQueryParamsOverrides} ConnectionsQueryParams
  */
 export const ConnectionsQueryParams = {};
+
+/** Sparse caller overrides; saved settings are resolved during preprocessing.
+ * @typedef {ConnectionsQueryParams} ConnectionsRequestParams
+ */
+export const ConnectionsRequestParams = {};
+
+/**
+ * @typedef {ConnectionsQueryParams & {
+ *   limit: number,
+ *   results_collection_key: ConnectionsCollectionKey,
+ *   score_algo_key: string,
+ *   score_settings: Object,
+ *   filter: ConnectionsFilter,
+ *   to_item: ConnectionItem,
+ *   hidden: ConnectionItem[],
+ *   pinned: ConnectionItem[]
+ * }} ConnectionsPreparedParams
+ */
+export const ConnectionsPreparedParams = {};
+
+/** Direct scoring also accepts partial context and a precomputed similarity.
+ * @typedef {Partial<ConnectionsPreparedParams> & {to_item_similarity?: number}} ConnectionsScoreParams
+ */
+export const ConnectionsScoreParams = {};
 
 /**
  * Target-local user feedback; pinned takes precedence over hidden.
@@ -149,7 +175,7 @@ export const ConnectionResult = {};
 
 /**
  * @callback ConnectionScoreFunction
- * @param {ConnectionsQueryParams} [params]
+ * @param {ConnectionsScoreParams} [params]
  * @returns {Partial<ConnectionResult>|null|undefined}
  */
 export const ConnectionScoreFunction = function () {};
@@ -172,7 +198,7 @@ export const ConnectionScoreFunction = function () {};
  * @property {boolean} [is_media]
  * @property {boolean} [should_embed]
  * @property {ConnectionScoreFunction} [score]
- * @property {(params?: ConnectionsQueryParams) => ConnectionResult|null|undefined} filter_and_score
+ * @property {(params?: ConnectionsScoreParams) => ConnectionResult|null|undefined} filter_and_score
  * @property {() => Promise<string>} read
  * @property {() => void} queue_import
  */
@@ -269,13 +295,13 @@ export const ConnectionsActions = {};
  * @property {ConnectionsActions} actions
  * @property {ConnectionResult[]} results
  * @property {Promise<ConnectionResult[]>|null} [_results_promise]
- * @property {WeakMap<ConnectionResult[], ConnectionsQueryParams>} _result_params - Prepared context retained per raw result snapshot.
+ * @property {WeakMap<ConnectionResult[], ConnectionsPreparedParams>} _result_params - Prepared context retained per raw result snapshot.
  * @property {(params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} get_results
- * @property {(params: ConnectionsQueryParams, options: {states: Array<'pinned'|'hidden'>}) => Array<{item: ConnectionItem, feedback: ConnectionFeedback}>} get_feedback_items
- * @property {(item: ConnectionItem, params?: ConnectionsQueryParams) => boolean} is_candidate_eligible
+ * @property {(params: ConnectionsPreparedParams, options: {states: Array<'pinned'|'hidden'>}) => Array<{item: ConnectionItem, feedback: ConnectionFeedback}>} get_feedback_items
+ * @property {(item: ConnectionItem, params?: Partial<ConnectionsPreparedParams>) => boolean} is_candidate_eligible
  * @property {(params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} [_get_results]
- * @property {(params?: ConnectionsQueryParams) => ConnectionResult[]} [filter_and_score]
- * @property {(results: ConnectionResult[], params?: ConnectionsQueryParams) => Promise<ConnectionResult[]>} [post_process]
+ * @property {(params?: ConnectionsPreparedParams) => ConnectionResult[]} [filter_and_score]
+ * @property {(results: ConnectionResult[], params?: ConnectionsPreparedParams) => Promise<ConnectionResult[]>} [post_process]
  * @property {(params: ConnectionsQueryParams) => Promise<void>|void} [pre_process]
  * @property {string} connections_list_component_key
  */
