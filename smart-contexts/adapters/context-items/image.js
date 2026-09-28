@@ -39,14 +39,31 @@ export class ImageContextItemAdapter extends ContextItemAdapter {
 
   /**
    * @this {ImageContextItemAdapterThis}
+   * @returns {string}
+   */
+  get mime_type() {
+    const source_path = this.item.data?.source_path || this.item.key;
+    return `image/${source_path.split('.').pop().toLowerCase()}`;
+  }
+
+  /**
+   * @this {ImageContextItemAdapterThis}
+   * @returns {Promise<ArrayBuffer|Uint8Array|null|{error: string}>}
+   */
+  async get_binary() {
+    const source_path = this.item.data?.source_path || this.item.key;
+    return await this.item.env.fs.read_binary(source_path);
+  }
+
+  /**
+   * @this {ImageContextItemAdapterThis}
    * @returns {Promise<ContextItemMediaResult>}
    */
   async get_base64() {
     const source_path = this.item.data?.source_path || this.item.key;
-    const ext = source_path.split('.').pop().toLowerCase();
     try {
       const base64_data = await this.item.env.fs.read(source_path, 'base64');
-      const base64_url = `data:image/${ext};base64,${base64_data}`;
+      const base64_url = `data:${this.mime_type};base64,${base64_data}`;
       return {
         type: 'image_url',
         key: this.item.key,

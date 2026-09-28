@@ -39,13 +39,30 @@ export class PdfContextItemAdapter extends ContextItemAdapter {
   }
   /**
    * @this {PdfContextItemAdapterThis}
+   * @returns {string}
+   */
+  get mime_type() {
+    return 'application/pdf';
+  }
+
+  /**
+   * @this {PdfContextItemAdapterThis}
+   * @returns {Promise<ArrayBuffer|Uint8Array|null|{error: string}>}
+   */
+  async get_binary() {
+    const source_path = this.item.data?.source_path || this.item.key;
+    return await this.item.env.fs.read_binary(source_path);
+  }
+
+  /**
+   * @this {PdfContextItemAdapterThis}
    * @returns {Promise<ContextItemMediaResult>}
    */
   async get_base64() {
     const source_path = this.item.data?.source_path || this.item.key;
     try {
       const base64_data = await this.item.env.fs.read(source_path, 'base64');
-      const base64_url = `data:application/pdf;base64,${base64_data}`;
+      const base64_url = `data:${this.mime_type};base64,${base64_data}`;
       return {
         type: 'pdf_url',
         key: this.item.key,
