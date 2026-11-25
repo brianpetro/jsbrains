@@ -423,6 +423,65 @@ Content under heading.
   t.deepEqual(result, expected);
 });
 
+for (const newline of ['\n', '\r\n']) {
+  test(`tilde fences keep example headings inside their real block ${JSON.stringify(newline)}`, t => {
+    const markdown = ['# Actual', '~~~md', '# Phantom', 'example body', '~~~', '# Tail', 'keep this', ''].join(newline);
+    const { blocks, task_lines, codeblock_ranges } = parse_markdown_blocks(markdown);
+    t.deepEqual(blocks, {
+      '#Actual': [1, 5],
+      '#Actual#{1}': [2, 5],
+      '#Tail': [6, 8],
+      '#Tail#{1}': [7, 8],
+    });
+    t.deepEqual(task_lines, []);
+    t.deepEqual(codeblock_ranges, [[2, 5]]);
+  });
+}
+
+for (const fence of ['`', '~']) {
+  test(`${fence} fences require a matching type, sufficient length, and an otherwise empty closer`, t => {
+    const other_fence = fence === '`' ? '~' : '`';
+    const markdown = [
+      '# Actual', `${fence.repeat(4)}md`, '# Opening', '- [ ] example task',
+      other_fence.repeat(4), '# Wrong type', fence.repeat(3), '# Too short',
+      `${fence.repeat(4)} trailing text`, '# Trailing content', `${fence.repeat(5)} \t`,
+      '# Tail', '- [ ] keep', '',
+    ].join('\n');
+    const { blocks, task_lines, tasks, codeblock_ranges } = parse_markdown_blocks(markdown);
+    t.deepEqual(blocks, {
+      '#Actual': [1, 11],
+      '#Actual#{1}': [2, 11],
+      '#Tail': [12, 14],
+      '#Tail#{1}': [13, 14],
+    });
+    t.deepEqual(task_lines, [13]);
+    t.deepEqual(tasks, { incomplete: { all: [13], top: [13] } });
+    t.deepEqual(codeblock_ranges, [[2, 11]]);
+  });
+}
+
+test('codeblock ranges respect a zero start_index', t => {
+  const markdown = ['```', '# Phantom', '```', '# Tail', 'keep'].join('\r\n');
+  const { blocks, codeblock_ranges } = parse_markdown_blocks(markdown, { start_index: 0 });
+  t.deepEqual(blocks, { '#': [0, 2], '#Tail': [3, 4], '#Tail#{1}': [4, 4] });
+  t.deepEqual(codeblock_ranges, [[0, 2]]);
+});
+
+test('an unclosed fence retains its code range through the final line', t => {
+  const markdown = ['# Actual', '````md', '# Phantom', '```', '- [ ] hidden'].join('\n');
+  const { blocks, task_lines, codeblock_ranges } = parse_markdown_blocks(markdown);
+  t.deepEqual(blocks, { '#Actual': [1, 5], '#Actual#{1}': [2, 5] });
+  t.deepEqual(task_lines, []);
+  t.deepEqual(codeblock_ranges, [[2, 5]]);
+});
+
+test('a backtick in the opening info string does not start a fence', t => {
+  const markdown = ['```lang`example`', '# Visible', 'text'].join('\n');
+  const { blocks, codeblock_ranges } = parse_markdown_blocks(markdown);
+  t.deepEqual(blocks, { '#': [1, 1], '#Visible': [2, 3], '#Visible#{1}': [3, 3] });
+  t.deepEqual(codeblock_ranges, []);
+});
+
 test('should handle nested list items with line break between items', t => {
   const markdown = `# Heading
 - parent list item one

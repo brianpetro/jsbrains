@@ -4,7 +4,7 @@
  * - Multiple occurrences of the same top-level heading (e.g. "# Overview[2]")
  * - Subheadings (nested headings are joined in the key with additional "#" characters)
  * - Frontmatter demarcated by "---" as a special heading: "#---frontmatter---"
- * - Code blocks delimited by triple backticks (```), which ignore headings found within
+ * - Code blocks fenced by backticks or tildes, which ignore headings found within
  * - Top-level list items treated as sub-blocks under their parent heading (customizable with `opts.line_keys`)
  *
  * The returned object keys reflect the path of headings (or list items) in the document, and
@@ -69,8 +69,8 @@ export function parse_markdown_blocks(markdown, opts={}) {
   // The root heading key for content that appears before any heading ("#" for top-level).
   const root_heading_key = '#';
 
-  // Whether we are currently in a fenced code block delimited by triple backticks (```).
-  let in_code_block = false;
+  // Track the delimiter and opening length of the current fenced code block.
+  let code_fence = null;
   // track codeblock ranges
   const codeblock_ranges = [];
   let codeblock_start = null;
@@ -105,7 +105,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
     }
 
     // all tasks
-    if (!in_code_block && /^[-*+]\s+\[(?: |x|X)\]/.test(trimmed_line)) {
+    if (!code_fence && /^[-*+]\s+\[(?: |x|X)\]/.test(trimmed_line)) {
       task_lines.push(line_number);
       // incomplete tasks
       if (/^[-*+]\s+\[ \]/.test(trimmed_line)) {
@@ -118,13 +118,24 @@ export function parse_markdown_blocks(markdown, opts={}) {
       }
     }
 
-    // Check for code block start/end using triple backticks.
-    if (trimmed_line.startsWith('```')) {
-      in_code_block = !in_code_block;
+    // A closing fence must match the opening type and be at least as long, without trailing content.
+    const fence_match = (trimmed_line.startsWith('```') || trimmed_line.startsWith('~~~'))
+      ? trimmed_line.match(/^(`{3,}|~{3,})(.*)$/)
+      : null;
+    const opens_fence = !code_fence && fence_match
+      && (fence_match[1][0] !== '`' || !fence_match[2].includes('`'));
+    const closes_fence = code_fence && fence_match
+      && fence_match[1][0] === code_fence.char
+      && fence_match[1].length >= code_fence.length
+      && fence_match[2] === '';
+    if (opens_fence || closes_fence) {
       // track codeblock ranges
-      if(in_code_block && !codeblock_start) codeblock_start = line_number;
-      else if(!in_code_block && codeblock_start){
+      if (opens_fence) {
+        code_fence = { char: fence_match[1][0], length: fence_match[1].length };
+        codeblock_start = line_number;
+      } else {
         codeblock_ranges.push([codeblock_start, line_number]);
+        code_fence = null;
         codeblock_start = null;
       }
 
@@ -166,7 +177,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
     // If not in code block, check for headings (lines starting with one or more "#" followed by space).
     const heading_match = trimmed_line.match(/^(#{1,6})\s+(.+)$/);
-    if (heading_match && !in_code_block) {
+    if (heading_match && !code_fence) {
       const level = heading_match[1].length; // Number of "#" is the heading level
       let title = heading_match[2].trim();
 
@@ -254,7 +265,7 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
     // Check for top-level list items (no indentation, starting with "- ").
     const list_match = line.match(/^(\s*)([-*]|\d+\.) (.+)$/);
-    if (list_match && !in_code_block) {
+    if (list_match && !code_fence) {
       const indentation = list_match[1].length;
       if (indentation === 0) {
         // Close any currently open list item.
@@ -365,6 +376,9 @@ export function parse_markdown_blocks(markdown, opts={}) {
 
   // After processing all lines, close any open headings, list items, or content blocks with the last line as their end.
   const total_lines = lines.length;
+  if (code_fence) {
+    codeblock_ranges.push([codeblock_start, total_lines + start_index - 1]);
+  }
   while (heading_stack.length > 0) {
     const finished_heading = heading_stack.pop();
     if (heading_lines[finished_heading.key][1] === null) {
